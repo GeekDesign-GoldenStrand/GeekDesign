@@ -8,10 +8,10 @@ Web platform for Geek Design built with Next.js 16, PostgreSQL 18, and Prisma 7.
 
 Install these once on your machine. You don't need to install PostgreSQL directly — Docker handles it.
 
-| Tool | Version | Download |
-|---|---|---|
-| **Node.js** | 22+ (LTS) | via [nvm](https://github.com/nvm-sh/nvm) (Mac/Linux) or [nvm-windows](https://github.com/coreybutler/nvm-windows) (Windows) |
-| **Docker Desktop** | Latest | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop) |
+| Tool               | Version   | Download                                                                                                                    |
+| ------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Node.js**        | 22+ (LTS) | via [nvm](https://github.com/nvm-sh/nvm) (Mac/Linux) or [nvm-windows](https://github.com/coreybutler/nvm-windows) (Windows) |
+| **Docker Desktop** | Latest    | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)                                        |
 
 ### Install Node 22 via nvm
 
@@ -100,17 +100,17 @@ npm run dev                   # from portal-geek/
 
 ## Useful commands
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Start Next.js dev server |
-| `npm run build` | Production build |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Auto-fix lint errors |
-| `npm run format` | Format all files with Prettier |
-| `npm run db:migrate` | Create and apply a new migration |
-| `npm run db:generate` | Regenerate Prisma client after schema changes |
-| `npm run db:seed` | Seed the database with test data |
-| `npm run db:studio` | Open Prisma Studio (visual DB browser) at localhost:5555 |
+| Command               | What it does                                             |
+| --------------------- | -------------------------------------------------------- |
+| `npm run dev`         | Start Next.js dev server                                 |
+| `npm run build`       | Production build                                         |
+| `npm run lint`        | Run ESLint                                               |
+| `npm run lint:fix`    | Auto-fix lint errors                                     |
+| `npm run format`      | Format all files with Prettier                           |
+| `npm run db:migrate`  | Create and apply a new migration                         |
+| `npm run db:generate` | Regenerate Prisma client after schema changes            |
+| `npm run db:seed`     | Seed the database with test data                         |
+| `npm run db:studio`   | Open Prisma Studio (visual DB browser) at localhost:5555 |
 
 ---
 
@@ -130,6 +130,7 @@ Docker volume (data persists between restarts)
 ```
 
 **Stopping the database:**
+
 ```bash
 docker compose stop        # stops the container, keeps data
 docker compose down        # stops and removes the container, keeps data
@@ -140,12 +141,12 @@ docker compose down -v     # stops, removes container AND wipes data (fresh star
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 6 |
-| Database | PostgreSQL 18 |
-| ORM | Prisma 7 |
-| Styling | Tailwind CSS 4 |
-| Linting | ESLint 9 + Airbnb rules |
-| Formatting | Prettier 3 |
+| Layer      | Technology              |
+| ---------- | ----------------------- |
+| Framework  | Next.js 16 (App Router) |
+| Language   | TypeScript 6            |
+| Database   | PostgreSQL 18           |
+| ORM        | Prisma 7                |
+| Styling    | Tailwind CSS 4          |
+| Linting    | ESLint 9 + Airbnb rules |
+| Formatting | Prettier 3              |

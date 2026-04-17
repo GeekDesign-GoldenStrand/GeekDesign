@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db/client";
 import { createSession } from "@/lib/auth/session";
+import { prisma } from "@/lib/db/client";
 import type { UserRole } from "@/types";
 
 // Step 2 — OAuth provider redirects here with ?code=...

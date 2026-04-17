@@ -29,7 +29,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin portal — requires internal role
-  if (pathname.startsWith("/dashboard") || pathname.match(/^\/(pedidos|cotizaciones|clientes|colaboradores|sucursales|materiales|maquinas|proveedores|instaladores|servicios|usuarios|finanzas|metricas)/)) {
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.match(
+      /^\/(pedidos|cotizaciones|clientes|colaboradores|sucursales|materiales|maquinas|proveedores|instaladores|servicios|usuarios|finanzas|metricas)/
+    )
+  ) {
     const role = await getSessionRole(request);
     if (!role) return NextResponse.redirect(new URL("/login", request.url));
     if (!ADMIN_ROLES.includes(role)) return NextResponse.redirect(new URL("/login", request.url));
