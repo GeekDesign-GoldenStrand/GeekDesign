@@ -1,47 +1,57 @@
-import { jwtVerify } from "jose";
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-const SESSION_COOKIE = "gd_session";
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+import { auth0 } from "@/lib/auth/auth0";
 
+const ROLES_CLAIM = "https://geekdesign.mx/roles";
 const ADMIN_ROLES = ["Direccion", "Administrador", "Colaborador", "Finanzas"];
 
-async function getSessionRole(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-
-  try {
-    const { payload } = await jwtVerify(token, secret);
-    return (payload.role as string) ?? null;
-  } catch {
-    return null;
-  }
-}
+const ADMIN_PATHS = [
+  "/dashboard",
+  "/pedidos",
+  "/cotizaciones",
+  "/clientes",
+  "/colaboradores",
+  "/sucursales",
+  "/materiales",
+  "/maquinas",
+  "/proveedores",
+  "/instaladores",
+  "/servicios",
+  "/usuarios",
+  "/finanzas",
+  "/metricas",
+];
 
 export async function middleware(request: NextRequest) {
+  // Let Auth0 handle its own routes (callback, logout, etc.)
+  const authResponse = await auth0.middleware(request);
+
   const { pathname } = request.nextUrl;
+  const session = await auth0.getSession(request);
 
-  // Auth routes — redirect to dashboard if already logged in
+  // Redirect to dashboard if already logged in and hitting /login
   if (pathname.startsWith("/login")) {
-    const role = await getSessionRole(request);
-    if (role) return NextResponse.redirect(new URL("/dashboard", request.url));
-    return NextResponse.next();
+    if (session) return NextResponse.redirect(new URL("/dashboard", request.url));
+    return authResponse;
   }
 
-  // Admin portal — requires internal role
-  if (
-    pathname.startsWith("/dashboard") ||
-    pathname.match(
-      /^\/(pedidos|cotizaciones|clientes|colaboradores|sucursales|materiales|maquinas|proveedores|instaladores|servicios|usuarios|finanzas|metricas)/
-    )
-  ) {
-    const role = await getSessionRole(request);
-    if (!role) return NextResponse.redirect(new URL("/login", request.url));
-    if (!ADMIN_ROLES.includes(role)) return NextResponse.redirect(new URL("/login", request.url));
-    return NextResponse.next();
+  // Protect admin portal routes
+  const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
+  if (isAdminPath) {
+    if (!session) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const roles: string[] = session.user[ROLES_CLAIM] ?? [];
+    const hasAdminRole = roles.some((r) => ADMIN_ROLES.includes(r));
+
+    if (!hasAdminRole) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
   }
 
-  return NextResponse.next();
+  return authResponse;
 }
 
 export const config = {
@@ -61,5 +71,7 @@ export const config = {
     "/usuarios/:path*",
     "/finanzas/:path*",
     "/metricas/:path*",
+    // Required for Auth0 SDK to handle its own routes
+    "/auth/:path*",
   ],
 };

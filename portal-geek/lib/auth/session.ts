@@ -1,48 +1,25 @@
-import { jwtVerify, SignJWT } from "jose";
-import { cookies } from "next/headers";
-
+import { auth0 } from "@/lib/auth/auth0";
 import type { UserRole } from "@/types";
 
-const SESSION_COOKIE = "gd_session";
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+// Roles are injected into the Auth0 token via a Post Login Action.
+// The Action must set: api.idToken.setCustomClaim("https://geekdesign.mx/roles", event.authorization.roles)
+const ROLES_CLAIM = "https://geekdesign.mx/roles";
 
 export interface SessionPayload {
-  id: number;
+  id: string;
   email: string;
-  role: UserRole;
-}
-
-export async function createSession(payload: SessionPayload) {
-  const token = await new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("8h")
-    .sign(secret);
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 8, // 8 hours
-    path: "/",
-  });
+  role: UserRole | null;
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
+  const session = await auth0.getSession();
+  if (!session) return null;
 
-  try {
-    const { payload } = await jwtVerify(token, secret);
-    return payload as unknown as SessionPayload;
-  } catch {
-    return null;
-  }
-}
+  const roles: string[] = session.user[ROLES_CLAIM] ?? [];
 
-export async function deleteSession() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
+  return {
+    id: session.user.sub,
+    email: session.user.email ?? "",
+    role: (roles[0] as UserRole) ?? null,
+  };
 }
