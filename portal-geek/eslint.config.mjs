@@ -7,13 +7,10 @@ import prettierPlugin from "eslint-plugin-prettier";
 /**
  * ESLint flat config — Next.js 16 + Airbnb-style rules + Prettier
  *
- * Why no FlatCompat + eslint-config-airbnb?
- * Next.js 16 ships eslint-config-next as native flat config and pre-registers
- * the jsx-a11y, react, react-hooks, and import plugins. FlatCompat also
- * registers those same plugins when converting the legacy Airbnb config,
- * causing ESLint v9 to throw "Cannot redefine plugin". The solution is to
- * use Next.js as the base (which already includes all those plugins) and
- * layer the Airbnb rules we care about directly in the rules block.
+ * Why no eslint-config-airbnb package?
+ * eslint-config-airbnb@19 requires eslint@^7/8 and eslint-plugin-react-hooks@^4.
+ * Next.js 16 requires eslint@>=9 and ships eslint-plugin-react-hooks@^7.
+ * These are mutually incompatible, so Airbnb rules are applied directly below.
  */
 const eslintConfig = defineConfig([
   // ── Base: Next.js (includes @typescript-eslint, react, react-hooks,
