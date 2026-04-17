@@ -33,6 +33,7 @@ jobs:
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
       - run: npm ci
+      - run: npx prisma generate
       - run: npm run lint
 
   format:
@@ -59,6 +60,7 @@ jobs:
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
       - run: npm ci
+      - run: npx prisma generate
       - run: npx tsc --noEmit
 
   test:
@@ -72,6 +74,7 @@ jobs:
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
       - run: npm ci
+      - run: npx prisma generate
       - run: npm test -- --passWithNoTests --ci
 
   # ── Heavier checks — only on PRs to main or develop ─────────────────────────
@@ -89,16 +92,16 @@ jobs:
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
       - run: npm ci
+      - run: npx prisma generate
       - run: npm run build
         env:
-          # Dummy value so Next.js build doesn't fail on missing env
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          JWT_SECRET: ci-dummy-secret-not-used-in-build
 
   links:
     name: Link Check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    # Run independently — don't block on code checks
     steps:
       - uses: actions/checkout@v4
       - name: Check links in markdown files
