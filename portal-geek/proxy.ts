@@ -23,7 +23,7 @@ const ADMIN_PATHS = [
   "/metricas",
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Let Auth0 handle its own routes (callback, logout, etc.)
   const authResponse = await auth0.middleware(request);
 
