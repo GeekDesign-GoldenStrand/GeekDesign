@@ -14,3 +14,20 @@ export type OrderStatus =
 export type QuotationStatus = "En_revision" | "Validada" | "Aprobada" | "Rechazada";
 
 export type PaymentMethod = "efectivo" | "transferencia" | "mercadopago";
+
+export interface ApiResponse<T> {
+  data: T | null;
+  error: string | null;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginationParams {
+  page?: number;
+  pageSize?: number;
+}
