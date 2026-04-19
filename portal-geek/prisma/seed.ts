@@ -1,9 +1,13 @@
 /* eslint-disable no-console */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
+
+// Dev-only default password for the seeded admin.
+const ADMIN_DEFAULT_PASSWORD = "admin123";
 
 async function main() {
   // ── Roles ──────────────────────────────────────────────────────────────────
@@ -47,19 +51,22 @@ async function main() {
 
   // ── Admin user ─────────────────────────────────────────────────────────────
   const adminRole = roles.find((r) => r.nombre_rol === "Administrador")!;
+  const adminPasswordHash = await bcrypt.hash(ADMIN_DEFAULT_PASSWORD, 12);
   const adminUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "admin@geekdesign.mx" },
-    update: {},
+    update: { contrasena_hash: adminPasswordHash },
     create: {
       nombre_completo: "Admin GeekDesign",
       correo_electronico: "admin@geekdesign.mx",
-      contrasena_hash: "$2b$10$placeholder_hash", // replace with real bcrypt hash
+      contrasena_hash: adminPasswordHash,
       id_rol: adminRole.id_rol,
       estatus: "Activo",
     },
   });
 
-  console.log(`Seeded admin user: ${adminUser.correo_electronico}`);
+  console.log(
+    `Seeded admin user: ${adminUser.correo_electronico} (password: ${ADMIN_DEFAULT_PASSWORD})`
+  );
 
   // ── Admin as Colaborador ───────────────────────────────────────────────────
   await prisma.colaboradores.upsert({

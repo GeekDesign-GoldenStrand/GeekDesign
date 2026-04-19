@@ -1,6 +1,12 @@
 import path from "node:path";
 
+import dotenv from "dotenv";
 import { defineConfig } from "prisma/config";
+
+// Prisma CLI only auto-loads `.env`. Next.js uses `.env.local` for local
+// secrets, so we load it manually here to keep a single source of truth.
+dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 export default defineConfig({
   schema: path.join("prisma", "schema.prisma"),

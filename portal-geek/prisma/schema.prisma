@@ -29,8 +29,9 @@ model Usuarios {
   correo_electronico String   @unique @db.VarChar(150)
   contrasena_hash    String   @db.VarChar(255)
   id_rol             Int
-  estatus            String   @db.VarChar(20) // Activo / Inactivo
-  fecha_creacion     DateTime @default(now())
+  estatus            String    @db.VarChar(20) // Activo / Inactivo
+  fecha_creacion     DateTime  @default(now())
+  ultimo_acceso      DateTime?
 
   rol          Roles          @relation(fields: [id_rol], references: [id_rol])
   colaborador  Colaboradores?

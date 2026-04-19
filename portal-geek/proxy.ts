@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { SESSION_COOKIE } from "@/lib/auth/session";
+import { verifyToken } from "@/lib/auth/tokens";
+import type { UserRole } from "@/types";
 
-import { auth0 } from "@/lib/auth/auth0";
-
-const ROLES_CLAIM = "https://geekdesign.mx/roles";
-const ADMIN_ROLES = ["Direccion", "Administrador", "Colaborador", "Finanzas"];
+const ADMIN_ROLES: UserRole[] = ["Direccion", "Administrador", "Colaborador", "Finanzas"];
 
 const ADMIN_PATHS = [
   "/dashboard",
@@ -24,34 +24,33 @@ const ADMIN_PATHS = [
 ];
 
 export async function proxy(request: NextRequest) {
-  // Let Auth0 handle its own routes (callback, logout, etc.)
-  const authResponse = await auth0.middleware(request);
-
   const { pathname } = request.nextUrl;
-  const session = await auth0.getSession(request);
 
-  // Redirect to dashboard if already logged in and hitting /login
-  if (pathname.startsWith("/login")) {
-    if (session) return NextResponse.redirect(new URL("/dashboard", request.url));
-    return authResponse;
+  // Dev-time bypass: no auth secret configured yet → let every request through.
+  if (!process.env.AUTH_SECRET) {
+    return NextResponse.next();
   }
 
-  // Protect admin portal routes
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const claims = token ? await verifyToken(token) : null;
+
+  // Already logged in → skip the login page.
+  if (pathname.startsWith("/login")) {
+    if (claims) return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.next();
+  }
+
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdminPath) {
-    if (!session) {
+    if (!claims) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-
-    const roles: string[] = session.user[ROLES_CLAIM] ?? [];
-    const hasAdminRole = roles.some((r) => ADMIN_ROLES.includes(r));
-
-    if (!hasAdminRole) {
+    if (!ADMIN_ROLES.includes(claims.rol)) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 
-  return authResponse;
+  return NextResponse.next();
 }
 
 export const config = {
@@ -71,7 +70,5 @@ export const config = {
     "/usuarios/:path*",
     "/finanzas/:path*",
     "/metricas/:path*",
-    // Required for Auth0 SDK to handle its own routes
-    "/auth/:path*",
   ],
 };
