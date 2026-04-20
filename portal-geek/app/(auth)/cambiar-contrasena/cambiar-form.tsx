@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { PasswordField } from "@/components/ui/password-field";
 
 interface Props {
   token: string;
@@ -46,29 +47,22 @@ export function CambiarForm({ token }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-4" noValidate>
-      <input
-        type="password"
-        name="password"
-        autoComplete="new-password"
-        required
-        minLength={8}
-        placeholder="Nueva contraseña"
+      <PasswordField
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={setPassword}
         disabled={isSubmitting}
-        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
+        placeholder="Nueva contraseña"
+        autoComplete="new-password"
+        name="password"
       />
 
-      <input
-        type="password"
-        name="confirmPassword"
-        autoComplete="new-password"
-        required
-        placeholder="Confirmar contraseña"
+      <PasswordField
         value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
+        onChange={setConfirmPassword}
         disabled={isSubmitting}
-        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
+        placeholder="Confirmar contraseña"
+        autoComplete="new-password"
+        name="confirmPassword"
       />
 
       {error && (
