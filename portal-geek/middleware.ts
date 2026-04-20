@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { auth0 } from "@/lib/auth/auth0";
+// import { auth0 } from "@/lib/auth/auth0";
 
 const ROLES_CLAIM = "https://geekdesign.mx/roles";
 const ADMIN_ROLES = ["Direccion", "Administrador", "Colaborador", "Finanzas"];
@@ -15,43 +15,46 @@ const ADMIN_PATHS = [
   "/sucursales",
   "/materiales",
   "/maquinas",
-  "/proveedores",
-  "/instaladores",
+  "/terceros",
   "/servicios",
   "/usuarios",
   "/finanzas",
   "/metricas",
 ];
 
-export async function middleware(request: NextRequest) {
-  // Let Auth0 handle its own routes (callback, logout, etc.)
-  const authResponse = await auth0.middleware(request);
+async function _authMiddleware(request: NextRequest) {
+  // const authResponse = await auth0.middleware(request);
 
   const { pathname } = request.nextUrl;
-  const session = await auth0.getSession(request);
+  // const session = await auth0.getSession(request);
 
   // Redirect to dashboard if already logged in and hitting /login
   if (pathname.startsWith("/login")) {
-    if (session) return NextResponse.redirect(new URL("/dashboard", request.url));
-    return authResponse;
+    // if (session) return NextResponse.redirect(new URL("/dashboard", request.url));
+    // return authResponse;
   }
 
   // Protect admin portal routes
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
   if (isAdminPath) {
-    if (!session) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    const roles: string[] = session.user[ROLES_CLAIM] ?? [];
-    const hasAdminRole = roles.some((r) => ADMIN_ROLES.includes(r));
-
-    if (!hasAdminRole) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+    // if (!session) {
+    //   return NextResponse.redirect(new URL("/login", request.url));
+    // }
+    // const roles: string[] = session.user[ROLES_CLAIM] ?? [];
+    // const hasAdminRole = roles.some((r) => ADMIN_ROLES.includes(r));
+    // if (!hasAdminRole) {
+    //   return NextResponse.redirect(new URL("/login", request.url));
+    // }
   }
 
-  return authResponse;
+  // return authResponse;
+  void ROLES_CLAIM;
+  void ADMIN_ROLES;
+  void isAdminPath;
+}
+
+export async function middleware(_request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {
@@ -65,8 +68,7 @@ export const config = {
     "/sucursales/:path*",
     "/materiales/:path*",
     "/maquinas/:path*",
-    "/proveedores/:path*",
-    "/instaladores/:path*",
+    "/terceros/:path*",
     "/servicios/:path*",
     "/usuarios/:path*",
     "/finanzas/:path*",
