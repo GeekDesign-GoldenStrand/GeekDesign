@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { PasswordField } from "@/components/ui/password-field";
 
 export function LoginForm() {
   const router = useRouter();
@@ -66,28 +67,15 @@ export function LoginForm() {
         />
       </label>
 
-      <label className="relative block w-full">
-        <span className="sr-only">Contraseña</span>
-        <Image
-          src="/images/login/lock.png"
-          alt=""
-          width={34}
-          height={34}
-          aria-hidden
-          className="pointer-events-none absolute left-[44px] top-1/2 -translate-y-1/2 opacity-40"
-        />
-        <input
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          required
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isSubmitting}
-          className="h-[63px] w-full rounded-full border border-[#a79999] bg-white pl-[116px] pr-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
-        />
-      </label>
+      <PasswordField
+        value={password}
+        onChange={setPassword}
+        disabled={isSubmitting}
+        placeholder="Contraseña"
+        autoComplete="current-password"
+        name="password"
+        hasIcon
+      />
 
       {passwordReset && (
         <p role="status" className="text-[14px] text-green-600 tracking-[0.5px]">

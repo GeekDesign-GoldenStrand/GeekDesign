@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { PasswordField } from "@/components/ui/password-field";
 
 export function CambiarContrasenaForm() {
   const [fields, setFields] = useState({
@@ -12,8 +13,8 @@ export function CambiarContrasenaForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFields((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  function handleChange(name: string, value: string) {
+    setFields((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -52,38 +53,29 @@ export function CambiarContrasenaForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4" noValidate>
-      <input
-        type="password"
-        name="currentPassword"
-        autoComplete="current-password"
-        required
-        placeholder="Contraseña actual"
+      <PasswordField
         value={fields.currentPassword}
-        onChange={handleChange}
+        onChange={(v) => handleChange("currentPassword", v)}
         disabled={isSubmitting}
-        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
+        placeholder="Contraseña actual"
+        autoComplete="current-password"
+        name="currentPassword"
       />
-      <input
-        type="password"
-        name="newPassword"
-        autoComplete="new-password"
-        required
-        placeholder="Nueva contraseña"
+      <PasswordField
         value={fields.newPassword}
-        onChange={handleChange}
+        onChange={(v) => handleChange("newPassword", v)}
         disabled={isSubmitting}
-        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
-      />
-      <input
-        type="password"
-        name="confirmPassword"
+        placeholder="Nueva contraseña"
         autoComplete="new-password"
-        required
-        placeholder="Confirmar nueva contraseña"
+        name="newPassword"
+      />
+      <PasswordField
         value={fields.confirmPassword}
-        onChange={handleChange}
+        onChange={(v) => handleChange("confirmPassword", v)}
         disabled={isSubmitting}
-        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
+        placeholder="Confirmar nueva contraseña"
+        autoComplete="new-password"
+        name="confirmPassword"
       />
 
       {error && (
