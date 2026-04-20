@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -194,32 +195,13 @@ function LogoutIcon() {
   );
 }
 
-function GeekLogo() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <circle cx="24" cy="24" r="24" fill="#E42200" />
-      <text
-        x="24"
-        y="32"
-        textAnchor="middle"
-        fill="white"
-        fontSize="28"
-        fontWeight="700"
-        fontFamily="IBM Plex Sans JP, sans-serif"
-      >
-        G
-      </text>
-    </svg>
-  );
-}
-
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-25.5 bg-white shadow-[0px_4px_7px_0px_rgba(0,0,0,0.25)] flex flex-col items-center py-6 z-50">
       <div className="mb-6 shrink-0">
-        <GeekLogo />
+        <Image src="/geekdesign.png" alt="GeekDesign" width={48} height={48} />
       </div>
 
       <nav className="flex flex-col items-center gap-1 flex-1 w-full overflow-y-auto">
