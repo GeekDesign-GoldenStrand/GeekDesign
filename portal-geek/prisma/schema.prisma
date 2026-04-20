@@ -270,7 +270,7 @@ model Instaladores {
   tipo              String  @db.VarChar(50)  // Instalador / Contratista
   telefono          String? @db.VarChar(20)
   correo            String? @db.VarChar(150)
-  costo_instalacion String  @db.VarChar(100)
+  costo_instalacion Float
   notas             String? @db.VarChar(500)
   ubicacion         String? @db.VarChar(255)
   estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
