@@ -6,10 +6,8 @@ import { listPagosByPedido, createPago } from "@/lib/services/pagos";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-const ALL_ADMIN = ["Direccion", "Administrador", "Colaborador", "Finanzas"] as const;
-
 // GET /api/pagos?pedidoId=1
-export const GET = withRole([...ALL_ADMIN], async (req: NextRequest) => {
+export const GET = withRole(["Direccion", "Finanzas"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const pedidoId = Number(searchParams.get("pedidoId") ?? 0);
@@ -22,7 +20,7 @@ export const GET = withRole([...ALL_ADMIN], async (req: NextRequest) => {
   }
 });
 
-export const POST = withRole([...ALL_ADMIN], async (req: NextRequest) => {
+export const POST = withRole(["Direccion", "Finanzas"], async (req: NextRequest) => {
   try {
     const body = CreatePagoSchema.parse(await req.json());
     return created(await createPago(body));

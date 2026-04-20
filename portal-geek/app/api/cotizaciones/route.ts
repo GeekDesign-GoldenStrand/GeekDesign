@@ -6,9 +6,7 @@ import { listCotizaciones, createCotizacion } from "@/lib/services/cotizaciones"
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-const ALL_ADMIN = ["Direccion", "Administrador", "Colaborador", "Finanzas"] as const;
-
-export const GET = withRole([...ALL_ADMIN], async (req: NextRequest) => {
+export const GET = withRole(["Direccion"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
@@ -20,7 +18,7 @@ export const GET = withRole([...ALL_ADMIN], async (req: NextRequest) => {
   }
 });
 
-export const POST = withRole([...ALL_ADMIN], async (req: NextRequest) => {
+export const POST = withRole(["Direccion"], async (req: NextRequest) => {
   try {
     const body = CreateCotizacionSchema.parse(await req.json());
     return created(await createCotizacion(body));

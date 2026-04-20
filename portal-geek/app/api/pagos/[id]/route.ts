@@ -6,9 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-const ALL_ADMIN = ["Direccion", "Administrador", "Colaborador", "Finanzas"] as const;
-
-export const GET = withRoleParams<Params>([...ALL_ADMIN], async (_req, ctx) => {
+export const GET = withRoleParams<Params>(["Direccion", "Finanzas"], async (_req, ctx) => {
   try {
     const { id } = PagoIdParams.parse(await ctx.params);
     return ok(await getPago(id));
@@ -18,7 +16,7 @@ export const GET = withRoleParams<Params>([...ALL_ADMIN], async (_req, ctx) => {
 });
 
 export const PUT = withRoleParams<Params>(
-  ["Direccion", "Administrador", "Finanzas"],
+  ["Finanzas"],
   async (req, ctx) => {
     try {
       const { id } = PagoIdParams.parse(await ctx.params);

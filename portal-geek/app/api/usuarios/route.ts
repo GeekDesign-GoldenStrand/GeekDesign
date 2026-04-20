@@ -6,7 +6,7 @@ import { listUsuarios, createUsuario } from "@/lib/services/usuarios";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
+export const GET = withRole(["Direccion"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
@@ -18,7 +18,7 @@ export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequ
   }
 });
 
-export const POST = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
+export const POST = withRole(["Direccion"], async (req: NextRequest) => {
   try {
     const body = CreateUsuarioSchema.parse(await req.json());
     return created(await createUsuario(body));
