@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const passwordReset = searchParams.get("reset") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +89,12 @@ export function LoginForm() {
         />
       </label>
 
+      {passwordReset && (
+        <p role="status" className="text-[14px] text-green-600 tracking-[0.5px]">
+          Contraseña actualizada. Ya puedes iniciar sesión.
+        </p>
+      )}
+
       {error && (
         <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
           {error}
@@ -102,7 +110,7 @@ export function LoginForm() {
       </button>
 
       <a
-        href="/forgot-password"
+        href="/recuperar-contrasena"
         className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
       >
         Olvidé mi contraseña
