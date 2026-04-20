@@ -111,7 +111,7 @@ jobs:
             --verbose
             --no-progress
             --exclude-loopback
-            --exclude-mail
+            --exclude "^mailto:.*"
             --exclude "^https?://localhost"
             "**/*.md"
         env:
