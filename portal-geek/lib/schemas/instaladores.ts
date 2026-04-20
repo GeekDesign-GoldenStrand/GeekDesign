@@ -5,7 +5,7 @@ export const CreateInstaladorSchema = z.object({
   apodo: z.string().max(100).optional(),
   tipo: z.enum(["Instalador", "Contratista"]),
   telefono: z.string().max(20).optional(),
-  correo: z.email().max(150).optional(),
+  correo: z.string().email().max(150).optional(),
   costo_instalacion: z.number().positive(),
   notas: z.string().max(500).optional(),
   ubicacion: z.string().max(255).optional(),
