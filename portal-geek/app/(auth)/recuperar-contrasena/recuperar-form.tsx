@@ -1,0 +1,88 @@
+"use client";
+
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
+
+export function RecuperarForm() {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(json?.error ?? "Error al enviar la solicitud");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("No se pudo conectar con el servidor");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex w-full flex-col items-center gap-6 text-center">
+        <p className="text-[15px] leading-relaxed tracking-[0.5px] text-[#555]">
+          Si el correo está registrado, recibirás un enlace para restablecer tu contraseña en los
+          próximos minutos.
+        </p>
+        <Link
+          href="/login"
+          className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
+        >
+          Volver al inicio de sesión
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-4" noValidate>
+      <input
+        type="email"
+        name="email"
+        autoComplete="email"
+        required
+        placeholder="Correo electrónico"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={isSubmitting}
+        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
+      />
+
+      {error && (
+        <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="mt-2 h-[63px] w-full rounded-full bg-[#8b434a] font-semibold text-[18px] tracking-[1px] text-white transition-colors hover:bg-[#7a3a41] focus:outline-none focus:ring-2 focus:ring-[#df2646] focus:ring-offset-2 disabled:opacity-60"
+      >
+        {isSubmitting ? "Enviando…" : "Enviar enlace"}
+      </button>
+
+      <Link
+        href="/login"
+        className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
+      >
+        Volver al inicio de sesión
+      </Link>
+    </form>
+  );
+}
