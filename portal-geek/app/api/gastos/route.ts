@@ -6,10 +6,8 @@ import { listGastosByPedido, createGasto } from "@/lib/services/gastos";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-const FIN_ADMIN = ["Direccion", "Administrador", "Finanzas"] as const;
-
 // GET /api/gastos?pedidoId=1
-export const GET = withRole([...FIN_ADMIN], async (req: NextRequest) => {
+export const GET = withRole(["Finanzas"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const pedidoId = Number(searchParams.get("pedidoId") ?? 0);
@@ -22,7 +20,7 @@ export const GET = withRole([...FIN_ADMIN], async (req: NextRequest) => {
   }
 });
 
-export const POST = withRole([...FIN_ADMIN], async (req: NextRequest) => {
+export const POST = withRole(["Finanzas"], async (req: NextRequest) => {
   try {
     const body = CreateGastoSchema.parse(await req.json());
     return created(await createGasto(body));
