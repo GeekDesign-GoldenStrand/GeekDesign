@@ -15,15 +15,12 @@ export const GET = withRoleParams<Params>(["Direccion", "Finanzas"], async (_req
   }
 });
 
-export const PUT = withRoleParams<Params>(
-  ["Finanzas"],
-  async (req, ctx) => {
-    try {
-      const { id } = PagoIdParams.parse(await ctx.params);
-      const body = UpdatePagoSchema.parse(await req.json());
-      return ok(await updatePago(id, body));
-    } catch (err) {
-      return handleError(err);
-    }
+export const PUT = withRoleParams<Params>(["Finanzas"], async (req, ctx) => {
+  try {
+    const { id } = PagoIdParams.parse(await ctx.params);
+    const body = UpdatePagoSchema.parse(await req.json());
+    return ok(await updatePago(id, body));
+  } catch (err) {
+    return handleError(err);
   }
-);
+});

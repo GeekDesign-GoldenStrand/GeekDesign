@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
 
 import { CambiarForm } from "./cambiar-form";
 
@@ -20,7 +20,9 @@ export default async function CambiarContrasenaPage({ searchParams }: PageProps)
       <div className="flex w-full max-w-[519px] flex-col items-center text-center gap-6">
         <div className="flex items-center gap-3">
           <Image src="/images/login/logo.png" alt="Geek Design" width={46} height={46} priority />
-          <span className="font-semibold text-[20px] tracking-[1px] text-[#df2646]">GEEK DESIGN</span>
+          <span className="font-semibold text-[20px] tracking-[1px] text-[#df2646]">
+            GEEK DESIGN
+          </span>
         </div>
         <p className="mt-10 text-[16px] text-[#555] tracking-[0.5px]">
           El enlace de recuperación es inválido o ya expiró.
