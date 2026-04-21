@@ -1,6 +1,6 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
+import { Suspense } from "react";
 
 import { LoginForm } from "./login-form";
 
