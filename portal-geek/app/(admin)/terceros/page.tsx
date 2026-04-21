@@ -7,7 +7,7 @@ import TercerosHeader from "@/components/ui/terceros/TercerosHeader";
 import TercerosToolbar from "@/components/ui/terceros/TercerosToolbar";
 import type { TerceroCardProps, TerceroStatus, TercerosTab as Tab } from "@/types";
 
-type InstaladorRow = TerceroCardProps & { id: number };
+type InstaladorRow = TerceroCardProps;
 
 type DbInstalador = {
   id_instalador: number;
@@ -21,7 +21,7 @@ type DbInstalador = {
 
 function mapInstalador(item: DbInstalador): InstaladorRow {
   return {
-    id: item.id_instalador,
+    id_instalador: item.id_instalador,
     companyName: item.nombre_proveedor,
     contactName: item.apodo ?? item.nombre_proveedor,
     location: item.ubicacion ?? "",
@@ -50,7 +50,7 @@ export default function TercerosPage() {
   }, []);
 
   async function handleStatusChange(id: number, newStatus: TerceroStatus) {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)));
+    setRows((prev) => prev.map((r) => (r.id_instalador === id ? { ...r, status: newStatus } : r)));
     await fetch(`/api/instaladores/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -74,7 +74,7 @@ export default function TercerosPage() {
     })
     .map((r) => ({
       ...r,
-      onStatusChange: (newStatus: TerceroStatus) => handleStatusChange(r.id, newStatus),
+      onStatusChange: (newStatus: TerceroStatus) => handleStatusChange(r.id_instalador, newStatus),
     }));
 
   return (

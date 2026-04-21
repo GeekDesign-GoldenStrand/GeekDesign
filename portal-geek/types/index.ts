@@ -39,6 +39,7 @@ export type TerceroStatus = "Activo" | "Inactivo";
 export type TercerosTab = "Todos" | "Proveedores" | "Instaladores";
 
 export interface TerceroCardProps {
+  id_instalador: number;
   companyName: string;
   contactName: string;
   location: string;
