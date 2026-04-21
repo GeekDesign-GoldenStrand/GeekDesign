@@ -3,7 +3,7 @@ import { z } from "zod";
 export const CreateUsuarioSchema = z.object({
   nombre_completo: z.string().min(1).max(100),
   correo_electronico: z.string().email().max(150),
-  contrasena_hash: z.string().min(8),
+  contrasena: z.string().min(8),
   id_rol: z.number().int().positive(),
   estatus: z.enum(["Activo", "Inactivo"]).default("Activo"),
 });

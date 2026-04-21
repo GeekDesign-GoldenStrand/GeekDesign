@@ -101,11 +101,10 @@ export function PasswordField({
 
       <button
         type="button"
-        tabIndex={-1}
         aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
         onClick={() => setShow((s) => !s)}
         disabled={disabled}
-        className="absolute right-5 top-1/2 -translate-y-1/2 text-[#8e908f] hover:text-[#df2646] transition-colors focus:outline-none disabled:pointer-events-none"
+        className="absolute right-5 top-1/2 -translate-y-1/2 text-[#8e908f] hover:text-[#df2646] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#df2646] focus-visible:ring-offset-2 rounded disabled:pointer-events-none"
       >
         {show ? <EyeOpenIcon /> : <EyeClosedIcon />}
       </button>
