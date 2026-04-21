@@ -43,7 +43,9 @@ export default function TercerosPage() {
   useEffect(() => {
     fetch("/api/instaladores?pageSize=100")
       .then((r) => r.json())
-      .then((json: { data: DbInstalador[] | null }) => setRows((json.data ?? []).map(mapInstalador)))
+      .then((json: { data: DbInstalador[] | null }) =>
+        setRows((json.data ?? []).map(mapInstalador))
+      )
       .finally(() => setLoading(false));
   }, []);
 
