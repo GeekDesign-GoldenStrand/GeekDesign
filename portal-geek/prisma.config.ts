@@ -1,11 +1,20 @@
+import fs from "node:fs";
 import path from "node:path";
 
 import { defineConfig } from "prisma/config";
 
+// Load .env.local manually since Prisma doesn't pick it up automatically
+const envLocal = path.resolve(".env.local");
+if (fs.existsSync(envLocal)) {
+  for (const line of fs.readFileSync(envLocal, "utf-8").split("\n")) {
+    const match = line.match(/^([^#=\s]+)\s*=\s*"?([^"]*)"?\s*$/);
+    if (match) process.env[match[1]] ??= match[2];
+  }
+}
+
 export default defineConfig({
   schema: path.join("prisma", "schema.prisma"),
 
-  // Database URL used by Prisma Migrate and Studio
   datasource: {
     url: process.env.DATABASE_URL ?? "",
   },
