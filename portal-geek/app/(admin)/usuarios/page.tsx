@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db/client";
 
 import { UsuariosTable } from "./usuarios-table";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Usuarios — Geek Design" };
 
 export default async function UsuariosPage() {
