@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
 import { getSession } from "@/lib/auth/session";
+
 import { CambiarContrasenaForm } from "./cambiar-form";
 
 export const metadata: Metadata = { title: "Mi perfil — Geek Design" };
