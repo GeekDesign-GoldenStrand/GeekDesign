@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import dotenv from "dotenv";
 import { defineConfig } from "prisma/config";
 
 // Prisma CLI only auto-loads `.env`. Next.js uses `.env.local` for local
