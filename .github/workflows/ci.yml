@@ -97,6 +97,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
           JWT_SECRET: ci-dummy-secret-not-used-in-build
+          RESEND_API_KEY: re_ci_dummy_key_not_used_in_build
+          RESEND_FROM_EMAIL: noreply@geekdesign.mx
 
   links:
     name: Link Check
