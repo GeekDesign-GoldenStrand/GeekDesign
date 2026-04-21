@@ -1,21 +1,6 @@
 "use client";
 
-export type TerceroStatus = "Activo" | "Inactivo";
-export type TerceroRole = "Instalador" | "Proveedor";
-
-export interface TerceroCardProps {
-  companyName: string;
-  contactName: string;
-  location: string;
-  role: TerceroRole;
-  status: TerceroStatus;
-  email: string;
-  phone: string;
-  onCall?: () => void;
-  onMail?: () => void;
-  onEdit?: () => void;
-  onStatusChange?: (status: TerceroStatus) => void;
-}
+import type { TerceroCardProps } from "@/types";
 
 function MapPinIcon() {
   return (
@@ -174,6 +159,7 @@ export default function TerceroCard({
         </button>
         <button
           onClick={onEdit}
+          aria-label="Editar"
           className="flex items-center justify-center border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
         >
           <EditIcon />
