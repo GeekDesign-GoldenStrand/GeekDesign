@@ -7,6 +7,7 @@ interface TercerosToolbarProps {
   onTabChange: (tab: Tab) => void;
   search: string;
   onSearchChange: (value: string) => void;
+  onAddClick?: () => void;
 }
 
 export default function TercerosToolbar({
@@ -15,6 +16,7 @@ export default function TercerosToolbar({
   onTabChange,
   search,
   onSearchChange,
+  onAddClick,
 }: TercerosToolbarProps) {
   return (
     <div className="flex items-center gap-4 mb-6 flex-wrap">
@@ -49,7 +51,10 @@ export default function TercerosToolbar({
       </div>
 
       <div className="flex items-center gap-3 ml-auto">
-        <button className="flex items-center gap-1.5 bg-[#e8e8e8] border border-[#575757] text-[#575757] text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#d8d8d8]">
+        <button
+          onClick={onAddClick}
+          className="flex items-center gap-1.5 bg-[#e8e8e8] border border-[#575757] text-[#575757] text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#d8d8d8]"
+        >
           <PlusIcon />
           Agregar
         </button>
