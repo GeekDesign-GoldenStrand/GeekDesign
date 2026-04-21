@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -13,6 +12,7 @@
   --font-mono: var(--font-geist-mono);
   --font-ibm-plex-sans-jp: var(--font-ibm-plex-sans-jp);
   --font-alexandria: var(--font-alexandria);
+  --font-ibm-plex-sans-jp: var(--font-ibm-plex-sans-jp);
 }
 
 @media (prefers-color-scheme: dark) {
