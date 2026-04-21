@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import dotenv from "dotenv";
 import { defineConfig } from "prisma/config";
 
 // Load .env.local manually since Prisma doesn't pick it up automatically
