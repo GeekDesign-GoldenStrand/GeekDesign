@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 
@@ -25,7 +26,9 @@ export default function LoginPage() {
       </div>
 
       <div className="mt-14 w-full">
-        <LoginForm />
+        <Suspense>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );
