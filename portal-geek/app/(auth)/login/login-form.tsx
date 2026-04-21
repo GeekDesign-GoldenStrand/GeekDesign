@@ -25,13 +25,8 @@ export function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const json = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) {
-        setError(
-          res.status === 401
-            ? "Correo o contraseña incorrectos"
-            : (json?.error ?? "Error al iniciar sesión")
-        );
+        setError("Correo o contraseña incorrectos");
         return;
       }
       router.push("/dashboard");
