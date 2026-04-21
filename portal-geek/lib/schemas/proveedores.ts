@@ -4,7 +4,7 @@ export const CreateProveedorSchema = z.object({
   nombre_proveedor: z.string().min(1).max(100),
   tipo: z.enum(["Proveedor de material", "Proveedor de servicio"]),
   telefono: z.string().max(20).optional(),
-  correo: z.string().email().max(150).optional(),
+  correo: z.email().max(150).optional(),
   descripcion_proveedor: z.string().optional(),
   costo: z.number().nonnegative().optional(),
   ubicacion: z.string().max(255).optional(),
