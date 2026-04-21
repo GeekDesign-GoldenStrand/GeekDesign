@@ -1,3 +1,4 @@
+import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
 import type { CreateUsuarioInput, UpdateUsuarioInput } from "@/lib/schemas/usuarios";
 import { NotFoundError } from "@/lib/utils/errors";
@@ -37,7 +38,9 @@ export async function getUsuario(id: number) {
 }
 
 export async function createUsuario(data: CreateUsuarioInput) {
-  return prisma.usuarios.create({ data, select: USER_SELECT });
+  const { contrasena, ...rest } = data;
+  const contrasena_hash = await hashPassword(contrasena);
+  return prisma.usuarios.create({ data: { ...rest, contrasena_hash }, select: USER_SELECT });
 }
 
 export async function updateUsuario(id: number, data: UpdateUsuarioInput) {

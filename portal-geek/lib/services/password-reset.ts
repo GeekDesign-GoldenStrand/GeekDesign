@@ -67,8 +67,18 @@ export async function resetPassword(token: string, newPassword: string): Promise
   ]);
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildResetEmail(nombre: string, url: string): string {
   const year = new Date().getFullYear();
+  const safeNombre = escapeHtml(nombre);
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
@@ -81,7 +91,7 @@ function buildResetEmail(nombre: string, url: string): string {
           <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:1px;">GEEK DESIGN</span>
         </td></tr>
         <tr><td style="padding:40px;">
-          <h1 style="color:#333;font-size:22px;margin:0 0 16px;">Hola, ${nombre}</h1>
+          <h1 style="color:#333;font-size:22px;margin:0 0 16px;">Hola, ${safeNombre}</h1>
           <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
             Recibimos una solicitud para restablecer la contraseña de tu cuenta.
             Haz clic en el botón de abajo para continuar.

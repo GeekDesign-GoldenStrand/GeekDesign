@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 
 import { UsuariosTable } from "./usuarios-table";
@@ -9,6 +11,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Usuarios — Geek Design" };
 
 export default async function UsuariosPage() {
+  const session = await getSession();
+  if (!session || session.role !== "Direccion") redirect("/login");
+
   const [usuarios, roles] = await Promise.all([
     prisma.usuarios.findMany({
       select: {

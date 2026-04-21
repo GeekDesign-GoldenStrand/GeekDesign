@@ -7,7 +7,8 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 // Dev-only default password for the seeded admin.
-const ADMIN_DEFAULT_PASSWORD = "admin123";
+// In production / CI set SEED_ADMIN_PASSWORD to override.
+const ADMIN_DEFAULT_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin123";
 
 async function main() {
   // ── Roles ──────────────────────────────────────────────────────────────────
@@ -64,9 +65,7 @@ async function main() {
     },
   });
 
-  console.log(
-    `Seeded admin user: ${adminUser.correo_electronico} (password: ${ADMIN_DEFAULT_PASSWORD})`
-  );
+  console.log(`Seeded admin user: ${adminUser.correo_electronico}`);
 
   // ── Admin as Colaborador ───────────────────────────────────────────────────
   await prisma.colaboradores.upsert({
