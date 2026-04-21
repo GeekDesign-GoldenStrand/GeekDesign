@@ -23,23 +23,28 @@ export async function requestPasswordReset(email: string): Promise<void> {
   // Always succeed silently — avoids leaking whether an email exists.
   if (!usuario || usuario.estatus !== "Activo") return;
 
-  const { raw, hash } = makeToken();
-  const expiraEn = new Date(Date.now() + TOKEN_TTL_MS);
+  try {
+    const { raw, hash } = makeToken();
+    const expiraEn = new Date(Date.now() + TOKEN_TTL_MS);
 
-  await prisma.tokensRecuperacion.upsert({
-    where: { id_usuario: usuario.id_usuario },
-    create: { id_usuario: usuario.id_usuario, token_hash: hash, expira_en: expiraEn },
-    update: { token_hash: hash, expira_en: expiraEn, usado: false },
-  });
+    await prisma.tokensRecuperacion.upsert({
+      where: { id_usuario: usuario.id_usuario },
+      create: { id_usuario: usuario.id_usuario, token_hash: hash, expira_en: expiraEn },
+      update: { token_hash: hash, expira_en: expiraEn, usado: false },
+    });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const resetUrl = `${appUrl}/cambiar-contrasena?token=${raw}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const resetUrl = `${appUrl}/cambiar-contrasena?token=${raw}`;
 
-  await sendMail({
-    to: normalizedEmail,
-    subject: "Recupera tu contraseña — Geek Design",
-    html: buildResetEmail(usuario.nombre_completo, resetUrl),
-  });
+    await sendMail({
+      to: normalizedEmail,
+      subject: "Recupera tu contraseña — Geek Design",
+      html: buildResetEmail(usuario.nombre_completo, resetUrl),
+    });
+  } catch (err) {
+    // Log but never expose — prevents account-enumeration via error responses.
+    console.error("[password-reset] Failed to process reset request:", (err as Error).message);
+  }
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
