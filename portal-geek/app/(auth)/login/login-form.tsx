@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 
-import { PasswordField } from "@/components/ui/password-field";
+import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
 export function LoginForm() {
   const router = useRouter();

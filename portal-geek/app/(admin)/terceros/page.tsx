@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import AgregarTerceroModal from "@/components/ui/terceros/AgregarTerceroModal";
-import TercerosGrid from "@/components/ui/terceros/TercerosGrid";
-import TercerosHeader from "@/components/ui/terceros/TercerosHeader";
-import TercerosToolbar from "@/components/ui/terceros/TercerosToolbar";
+import {
+  AgregarTerceroModal,
+  TercerosGrid,
+  TercerosHeader,
+  TercerosToolbar,
+} from "@/components/ui/terceros";
 import type { TerceroCardProps, TerceroStatus, TercerosTab as Tab } from "@/types";
 
 type TerceroRow = TerceroCardProps;

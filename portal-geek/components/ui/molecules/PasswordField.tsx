@@ -3,8 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 
-// ─── Eye SVG Icons ────────────────────────────────────────────────────────────
-
 function EyeOpenIcon() {
   return (
     <svg
@@ -45,8 +43,6 @@ function EyeClosedIcon() {
     </svg>
   );
 }
-
-// ─── PasswordField ────────────────────────────────────────────────────────────
 
 export interface PasswordFieldProps {
   value: string;

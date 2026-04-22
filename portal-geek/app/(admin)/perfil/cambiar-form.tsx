@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 
-import { PasswordField } from "@/components/ui/password-field";
+import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
 export function CambiarContrasenaForm() {
   const [fields, setFields] = useState({

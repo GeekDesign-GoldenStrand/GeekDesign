@@ -2,17 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { ChevronDownIcon, CheckIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, CheckIcon } from "@/components/ui/atoms/icons";
 import type { TerceroStatus } from "@/types";
 
-const STATUS_OPTIONS: TerceroStatus[] = ["Activo", "Inactivo"];
+const STATUS_OPTIONS: TerceroStatus[] = ["Activo", "Inactivo", "Baneado"];
 
 interface StatusDropdownProps {
   status: TerceroStatus;
   onChange?: (status: TerceroStatus) => void;
 }
 
-export default function StatusDropdown({ status, onChange }: StatusDropdownProps) {
+export function StatusDropdown({ status, onChange }: StatusDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -39,7 +39,9 @@ export default function StatusDropdown({ status, onChange }: StatusDropdownProps
         className={`flex items-center gap-1 px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
           status === "Activo"
             ? "bg-[rgba(255,0,0,0.07)] border-red-500 text-red-500"
-            : "bg-[rgba(0,0,0,0.07)] border-[#090909] text-[#090909]"
+            : status === "Baneado"
+              ? "bg-[rgba(255,0,0, 0.07)] border-[rgb(115,0,255)] text-[rgb(115,0,255)]"
+              : "bg-[rgba(0,0,0,0.07)] border-[#090909] text-[#090909]"
         }`}
       >
         {status}

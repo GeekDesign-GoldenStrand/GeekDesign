@@ -1,4 +1,4 @@
-import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/icons";
+import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/atoms/icons";
 import type { TercerosTab as Tab } from "@/types";
 
 interface TercerosToolbarProps {
@@ -10,7 +10,7 @@ interface TercerosToolbarProps {
   onAddClick?: () => void;
 }
 
-export default function TercerosToolbar({
+export function TercerosToolbar({
   tabs,
   activeTab,
   onTabChange,

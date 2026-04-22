@@ -1,10 +1,10 @@
-"use client";
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+};
 
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const navItems = [
+export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
@@ -176,57 +176,3 @@ const navItems = [
     ),
   },
 ];
-
-function LogoutIcon() {
-  return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 32 32"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 16h14M20 10l6 6-6 6" />
-      <path d="M18 6H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10" />
-    </svg>
-  );
-}
-
-export default function Sidebar() {
-  const pathname = usePathname();
-
-  return (
-    <aside className="fixed left-0 top-0 h-screen w-25.5 bg-white shadow-[0px_4px_7px_0px_rgba(0,0,0,0.25)] flex flex-col items-center py-6 z-50">
-      <div className="mb-6 shrink-0">
-        <Image src="/geekdesign.png" alt="GeekDesign" width={48} height={48} />
-      </div>
-
-      <nav className="flex flex-col items-center gap-1 flex-1 w-full overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={item.label}
-              className={`flex items-center justify-center w-full h-17 rounded-xs transition-colors ${
-                isActive
-                  ? "bg-[#e42200] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                  : "text-[#1e1e1e] hover:bg-gray-100"
-              }`}
-            >
-              {item.icon}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <button className="mt-2 text-[#1e1e1e] hover:opacity-70 transition-opacity shrink-0">
-        <LogoutIcon />
-      </button>
-    </aside>
-  );
-}

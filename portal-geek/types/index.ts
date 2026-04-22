@@ -34,7 +34,7 @@ export interface PaginationParams {
 
 export type TerceroRole = "Instalador" | "Proveedor";
 
-export type TerceroStatus = "Activo" | "Inactivo";
+export type TerceroStatus = "Activo" | "Inactivo" | "Baneado";
 
 export type TercerosTab = "Todos" | "Proveedores" | "Instaladores";
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/icons";
-import StatusDropdown from "@/components/ui/terceros/StatusDropdown";
+import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
+import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import type { TerceroCardProps } from "@/types";
 
-export default function TerceroCard({
+export function TerceroCard({
   companyName,
   contactName,
   location,

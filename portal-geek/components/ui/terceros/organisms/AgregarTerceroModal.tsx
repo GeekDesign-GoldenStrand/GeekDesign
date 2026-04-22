@@ -1,6 +1,6 @@
 "use client";
 
-import RegistrarTerceroForm from "@/components/ui/terceros/RegistrarTerceroForm";
+import { RegistrarTerceroForm } from "@/components/ui/terceros/organisms/RegistrarTerceroForm";
 import type { TerceroCardProps } from "@/types";
 
 interface AgregarTerceroModalProps {
@@ -10,7 +10,7 @@ interface AgregarTerceroModalProps {
   initialType?: "Proveedor" | "Instalador";
 }
 
-export default function AgregarTerceroModal({
+export function AgregarTerceroModal({
   isOpen,
   onClose,
   onCreated,

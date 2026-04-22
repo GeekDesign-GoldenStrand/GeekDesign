@@ -22,7 +22,7 @@ const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-export default function RegistrarTerceroForm({
+export function RegistrarTerceroForm({
   onCreated,
   onClose,
   initialType = "Proveedor",
@@ -138,7 +138,7 @@ export default function RegistrarTerceroForm({
           contactName: data.nombre_proveedor,
           location: data.ubicacion ?? "",
           role: "Proveedor",
-          status: data.estatus === "Activo" ? "Activo" : "Inactivo",
+          status: data.estatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
         });
@@ -176,7 +176,7 @@ export default function RegistrarTerceroForm({
           contactName: data.apodo ?? data.nombre_proveedor,
           location: data.ubicacion ?? "",
           role: "Instalador",
-          status: data.estatus === "Activo" ? "Activo" : "Inactivo",
+          status: data.estatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
         });
@@ -297,6 +297,19 @@ export default function RegistrarTerceroForm({
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
             />
+          </div>
+
+          <div>
+            <label className={LABEL}>Estatus</label>
+            <select
+              value={form.estatus}
+              onChange={(e) => setField("estatus", e.target.value)}
+              className={`${FIELD} ${getFieldClass("estatus")}`}
+            >
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+              <option value="Baneado">Baneado</option>
+            </select>
           </div>
 
           <div>
