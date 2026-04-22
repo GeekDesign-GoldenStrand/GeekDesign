@@ -71,6 +71,7 @@ export function PasswordField({
   error,
 }: PasswordFieldProps) {
   const [show, setShow] = useState(false);
+  const errorId = error ? `${name}-error` : undefined;
 
   return (
     <label className="relative block w-full">
@@ -96,6 +97,8 @@ export function PasswordField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errorId}
         className={`h-[62px] w-full rounded-full border border-[#a79999] bg-white text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60 pr-14 ${
           hasIcon ? "pl-[116px]" : "pl-8"
         }`}
@@ -111,7 +114,7 @@ export function PasswordField({
         {show ? <EyeOpenIcon /> : <EyeClosedIcon />}
       </button>
       {error && (
-        <p role="alert" className="mt-1 px-4 text-[13px] text-[#df2646]">
+        <p id={errorId} role="alert" className="mt-1 px-4 text-[13px] text-[#df2646]">
           {error}
         </p>
       )}

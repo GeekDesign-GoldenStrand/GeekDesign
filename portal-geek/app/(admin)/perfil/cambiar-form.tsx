@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { PasswordField } from "@/components/ui/password-field";
+import { ChangePasswordSchema } from "@/lib/schemas/auth";
 
 interface FieldErrors {
   currentPassword?: string;
@@ -11,39 +12,11 @@ interface FieldErrors {
   confirmPassword?: string;
 }
 
-function validateFields(
-  currentPassword: string,
-  newPassword: string,
-  confirmPassword: string
-): FieldErrors {
-  const errors: FieldErrors = {};
-
-  if (!currentPassword) {
-    errors.currentPassword = "La contraseña actual es requerida";
-  }
-
-  if (newPassword.length < 8) {
-    errors.newPassword = "La contraseña debe tener al menos 8 caracteres";
-  } else if (!/[A-Z]/.test(newPassword)) {
-    errors.newPassword = "La contraseña debe contener al menos una mayúscula";
-  } else if (!/[0-9]/.test(newPassword)) {
-    errors.newPassword = "La contraseña debe contener al menos un número";
-  }
-
-  if (!errors.newPassword && newPassword !== confirmPassword) {
-    errors.confirmPassword = "Las contraseñas nuevas no coinciden";
-  }
-
-  return errors;
-}
+const EMPTY_FIELDS = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
 export function CambiarContrasenaForm() {
   const router = useRouter();
-  const [fields, setFields] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const [fields, setFields] = useState(EMPTY_FIELDS);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -59,12 +32,13 @@ export function CambiarContrasenaForm() {
     setError(null);
     setSuccess(false);
 
-    const errors = validateFields(
-      fields.currentPassword,
-      fields.newPassword,
-      fields.confirmPassword
-    );
-    if (Object.keys(errors).length > 0) {
+    const result = ChangePasswordSchema.safeParse(fields);
+    if (!result.success) {
+      const errors: FieldErrors = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof FieldErrors;
+        if (!errors[field]) errors[field] = issue.message;
+      }
       setFieldErrors(errors);
       return;
     }
@@ -74,11 +48,7 @@ export function CambiarContrasenaForm() {
       const res = await fetch("/api/auth/change-password", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword: fields.currentPassword,
-          newPassword: fields.newPassword,
-          confirmPassword: fields.confirmPassword,
-        }),
+        body: JSON.stringify(result.data),
       });
 
       if (res.status === 401) {
@@ -94,6 +64,7 @@ export function CambiarContrasenaForm() {
         return;
       }
 
+      setFields(EMPTY_FIELDS);
       setSuccess(true);
       await fetch("/api/auth/logout", { method: "POST" });
       setTimeout(() => router.push("/login"), 1500);
