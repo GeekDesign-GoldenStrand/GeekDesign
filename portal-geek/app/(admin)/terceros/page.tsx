@@ -38,7 +38,8 @@ function mapInstalador(item: DbInstalador): TerceroRow {
     contactName: item.apodo ?? item.nombre_proveedor,
     location: item.ubicacion ?? "",
     role: "Instalador",
-    status: item.estatus === "Activo" ? "Activo" : "Inactivo",
+    status:
+      item.estatus === "Activo" ? "Activo" : item.estatus === "Baneado" ? "Baneado" : "Inactivo",
     email: item.correo ?? "",
     phone: item.telefono ?? "",
   };
@@ -51,7 +52,8 @@ function mapProveedor(item: DbProveedor): TerceroRow {
     contactName: item.nombre_proveedor,
     location: item.ubicacion ?? "",
     role: "Proveedor",
-    status: item.estatus === "Activo" ? "Activo" : "Inactivo",
+    status:
+      item.estatus === "Activo" ? "Activo" : item.estatus === "Baneado" ? "Baneado" : "Inactivo",
     email: item.correo ?? "",
     phone: item.telefono ?? "",
   };

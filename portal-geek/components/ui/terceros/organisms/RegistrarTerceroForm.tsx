@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import type { CreateProveedorInput } from "@/lib/schemas/proveedores";
-import type { TerceroCardProps } from "@/types";
+import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 type TerceroType = "Proveedor" | "Instalador";
 
@@ -138,7 +138,7 @@ export function RegistrarTerceroForm({
           contactName: data.nombre_proveedor,
           location: data.ubicacion ?? "",
           role: "Proveedor",
-          status: data.estatus,
+          status: data.estatus as TerceroStatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
         });
@@ -176,7 +176,7 @@ export function RegistrarTerceroForm({
           contactName: data.apodo ?? data.nombre_proveedor,
           location: data.ubicacion ?? "",
           role: "Instalador",
-          status: data.estatus,
+          status: data.estatus as TerceroStatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
         });
