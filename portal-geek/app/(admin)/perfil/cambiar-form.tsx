@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { PasswordField } from "@/components/ui/password-field";
+import { PrimaryButton } from "@/components/ui/primary-button";
 import { ChangePasswordSchema } from "@/lib/schemas/auth";
 
 interface FieldErrors {
@@ -77,7 +78,7 @@ export function CambiarContrasenaForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-4" noValidate>
       <PasswordField
         value={fields.currentPassword}
         onChange={(v) => handleChange("currentPassword", v)}
@@ -85,6 +86,7 @@ export function CambiarContrasenaForm() {
         placeholder="Contraseña actual"
         autoComplete="current-password"
         name="currentPassword"
+        hasIcon
         error={fieldErrors.currentPassword}
       />
       <PasswordField
@@ -94,6 +96,7 @@ export function CambiarContrasenaForm() {
         placeholder="Nueva contraseña"
         autoComplete="new-password"
         name="newPassword"
+        hasIcon
         error={fieldErrors.newPassword}
       />
       <PasswordField
@@ -103,27 +106,29 @@ export function CambiarContrasenaForm() {
         placeholder="Confirmar nueva contraseña"
         autoComplete="new-password"
         name="confirmPassword"
+        hasIcon
         error={fieldErrors.confirmPassword}
       />
 
       {error && (
-        <p role="alert" className="px-2 text-[14px] tracking-[0.5px] text-[#df2646]">
+        <p role="alert" className="text-[14px] tracking-[0.5px] text-[#df2646]">
           {error}
         </p>
       )}
       {success && (
-        <p role="status" className="px-2 text-[14px] tracking-[0.5px] text-green-600">
-          Contraseña actualizada correctamente. Redirigiendo…
+        <p role="status" className="text-[14px] tracking-[0.5px] text-green-600">
+          Contraseña actualizada. Redirigiendo…
         </p>
       )}
 
-      <button
+      <PrimaryButton
         type="submit"
+        variant="red"
         disabled={isSubmitting || success}
-        className="mt-2 h-[63px] w-full rounded-full bg-[#8b434a] font-semibold text-[18px] tracking-[1px] text-white transition-colors hover:bg-[#7a3a41] focus:outline-none focus:ring-2 focus:ring-[#df2646] focus:ring-offset-2 disabled:opacity-60"
+        className="mt-2"
       >
         {isSubmitting ? "Guardando…" : "Cambiar contraseña"}
-      </button>
+      </PrimaryButton>
     </form>
   );
 }

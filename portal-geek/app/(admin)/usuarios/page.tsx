@@ -1,20 +1,26 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AdminHeader } from "@/components/admin/admin-header";
+import { ADMIN_ROLES } from "@/lib/auth/guards";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 
-import { UsuariosTable } from "./usuarios-table";
+import { UsuariosGrid } from "./usuarios-grid";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Usuarios — Geek Design" };
+export const metadata: Metadata = { title: "Colaboradores | Geek Design" };
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 export default async function UsuariosPage() {
   const session = await getSession();
-  if (!session || session.role !== "Direccion") redirect("/login");
+  if (!session || !ADMIN_ROLES.includes(session.role)) redirect("/login");
 
-  const [usuarios, roles] = await Promise.all([
+  const [raw, roles] = await Promise.all([
     prisma.usuarios.findMany({
       select: {
         id_usuario: true,
@@ -23,22 +29,41 @@ export default async function UsuariosPage() {
         estatus: true,
         id_rol: true,
         rol: { select: { id_rol: true, nombre_rol: true } },
+        colaborador: {
+          select: {
+            edad: true,
+            sexo: true,
+            telefono: true,
+            fecha_modificacion: true,
+            sucursal: { select: { nombre_sucursal: true } },
+          },
+        },
       },
       orderBy: { fecha_creacion: "desc" },
     }),
     prisma.roles.findMany({ orderBy: { id_rol: "asc" } }),
   ]);
 
+  const usuarios = raw.map((u) => ({
+    id_usuario: u.id_usuario,
+    nombre_completo: u.nombre_completo,
+    correo_electronico: u.correo_electronico,
+    estatus: u.estatus,
+    id_rol: u.id_rol,
+    rol: u.rol,
+    edad: u.colaborador?.edad ?? null,
+    sexo: u.colaborador?.sexo ?? null,
+    sucursal: u.colaborador?.sucursal?.nombre_sucursal ?? null,
+    telefono: u.colaborador?.telefono ?? null,
+    fecha_modificacion: u.colaborador?.fecha_modificacion
+      ? formatDate(u.colaborador.fecha_modificacion)
+      : null,
+  }));
+
   return (
-    <main className="min-h-screen bg-[#fff8f9] px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="mb-8 text-[22px] font-semibold tracking-[0.5px] text-[#333]">
-          Gestión de usuarios
-        </h1>
-        <div className="rounded-2xl bg-white p-8 shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
-          <UsuariosTable usuarios={usuarios} roles={roles} />
-        </div>
-      </div>
-    </main>
+    <>
+      <AdminHeader title="Colaboradores" />
+      <UsuariosGrid usuarios={usuarios} roles={roles} />
+    </>
   );
 }
