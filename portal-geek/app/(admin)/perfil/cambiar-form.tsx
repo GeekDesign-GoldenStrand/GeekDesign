@@ -43,6 +43,7 @@ export function CambiarContrasenaForm() {
       return;
     }
 
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/auth/change-password", {
