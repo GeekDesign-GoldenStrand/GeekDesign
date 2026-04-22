@@ -57,25 +57,31 @@ export function AdminToolbar({
         </span>
       </div>
 
-      <div className="ml-auto flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onAgregar}
-          className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#575757] bg-[#e8e8e8] font-ibm-plex font-medium text-[20px] text-[#575757] transition-colors hover:bg-[#d8d8d8]"
-        >
-          <PlusIcon />
-          {agregarLabel}
-        </button>
+      {(onAgregar || onFiltrar) && (
+        <div className="ml-auto flex items-center gap-3">
+          {onAgregar && (
+            <button
+              type="button"
+              onClick={onAgregar}
+              className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#575757] bg-[#e8e8e8] font-ibm-plex font-medium text-[20px] text-[#575757] transition-colors hover:bg-[#d8d8d8]"
+            >
+              <PlusIcon />
+              {agregarLabel}
+            </button>
+          )}
 
-        <button
-          type="button"
-          onClick={onFiltrar}
-          className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[20px] text-[#e42200] transition-colors hover:bg-[#ffd5d5]"
-        >
-          <FilterIcon />
-          Filtrar
-        </button>
-      </div>
+          {onFiltrar && (
+            <button
+              type="button"
+              onClick={onFiltrar}
+              className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[20px] text-[#e42200] transition-colors hover:bg-[#ffd5d5]"
+            >
+              <FilterIcon />
+              Filtrar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

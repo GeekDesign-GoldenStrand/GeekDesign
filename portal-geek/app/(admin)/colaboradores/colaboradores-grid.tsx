@@ -46,6 +46,8 @@ export function ColaboradoresGrid({ colaboradores: initialColaboradores, roles }
             : u
         )
       );
+    } catch {
+      setError("No se pudo conectar con el servidor");
     } finally {
       setSaving(null);
     }

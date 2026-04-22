@@ -42,7 +42,7 @@ export default async function CambiarContrasenaPage({ searchParams }: PageProps)
           Restablecer contraseña
         </h1>
         <p className="mt-4 font-normal text-[18px] tracking-[0.9px] text-[#5b5b5b]">
-          Introduce tu dirección de correo electrónico y tu nueva contraseña
+          Elige una nueva contraseña segura para tu cuenta
         </p>
       </div>
 

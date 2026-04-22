@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export type RoleName = "Administrador" | "Colaborador" | "Finanzas" | (string & {});
+export type RoleName = "Administrador" | "Colaborador" | "Finanzas" | "Direccion" | (string & {});
 
 interface RoleConfig {
   color: string;
