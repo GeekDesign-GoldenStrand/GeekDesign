@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { PasswordField } from "@/components/ui/molecules/PasswordField";
 import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
 interface Props {
   token: string;
@@ -79,7 +79,10 @@ export function CambiarForm({ token }: Props) {
         {isSubmitting ? "Guardando…" : "Aceptar"}
       </PrimaryButton>
 
-      <Link href="/login" className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline">
+      <Link
+        href="/login"
+        className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
+      >
         Volver al inicio de sesión
       </Link>
     </form>

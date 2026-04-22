@@ -4,8 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 
 import { AuthInput } from "@/components/ui/atoms/AuthInput";
-import { PasswordField } from "@/components/ui/molecules/PasswordField";
 import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
 export function LoginForm() {
   const router = useRouter();

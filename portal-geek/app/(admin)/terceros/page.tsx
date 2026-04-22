@@ -3,11 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
-import {
-  AgregarTerceroModal,
-  TercerosGrid,
-  TercerosHeader,
-} from "@/components/ui/terceros";
+import { AgregarTerceroModal, TercerosGrid, TercerosHeader } from "@/components/ui/terceros";
 import type { TerceroCardProps, TerceroStatus, TercerosTab as Tab } from "@/types";
 
 type TerceroRow = TerceroCardProps;
