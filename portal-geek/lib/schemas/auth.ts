@@ -23,7 +23,12 @@ export const ResetPasswordSchema = z
 export const ChangePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Contraseña actual requerida"),
-    newPassword: z.string().min(8, "La contraseña debe tener al menos 8 caracteres").max(255),
+    newPassword: z
+      .string()
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .max(255)
+      .regex(/[A-Z]/, "La contraseña debe contener al menos una mayúscula")
+      .regex(/[0-9]/, "La contraseña debe contener al menos un número"),
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {

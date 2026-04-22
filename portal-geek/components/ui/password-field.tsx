@@ -57,6 +57,7 @@ export interface PasswordFieldProps {
   name?: string;
   /** Reserve left padding for a lock icon (login page layout). */
   hasIcon?: boolean;
+  error?: string;
 }
 
 export function PasswordField({
@@ -67,6 +68,7 @@ export function PasswordField({
   autoComplete = "current-password",
   name = "password",
   hasIcon = false,
+  error,
 }: PasswordFieldProps) {
   const [show, setShow] = useState(false);
 
@@ -108,6 +110,11 @@ export function PasswordField({
       >
         {show ? <EyeOpenIcon /> : <EyeClosedIcon />}
       </button>
+      {error && (
+        <p role="alert" className="mt-1 px-4 text-[13px] text-[#df2646]">
+          {error}
+        </p>
+      )}
     </label>
   );
 }
