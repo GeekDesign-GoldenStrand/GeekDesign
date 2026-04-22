@@ -29,7 +29,7 @@ export const ChangePasswordSchema = z
       .max(255)
       .regex(/[A-Z]/, "La contraseña debe contener al menos una mayúscula")
       .regex(/[0-9]/, "La contraseña debe contener al menos un número"),
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, "La confirmación es requerida"),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
