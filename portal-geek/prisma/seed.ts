@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Roles } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -37,6 +37,27 @@ async function main() {
 
   console.log(`Seeded ${roles.length} roles`);
 
+
+  // ── Variable Types for Formulas Engine ───────────────────────────────────────────────────────────
+  const tiposVariable = [
+  { nombre_tipo: "Dimensión", unidad_default: "cm", estatus: "Activo" },
+  { nombre_tipo: "Cantidad", unidad_default: "pz", estatus: "Activo" },
+  { nombre_tipo: "Costo adicional", unidad_default: "$", estatus: "Activo" },
+  { nombre_tipo: "Costo de material", unidad_default: "$", estatus: "Activo" },
+  { nombre_tipo: "Descuento", unidad_default: "%", estatus: "Activo" },
+  { nombre_tipo: "Tiempo", unidad_default: "min", estatus: "Activo" },
+  ];
+
+  for (const tipo of tiposVariable) {
+    await prisma.tiposVariable.upsert({
+      where: { nombre_tipo: tipo.nombre_tipo },
+      update: {},
+      create: tipo,
+    });
+  }
+
+  console.log("✔ Tipos de variable base creados");
+
   // ── Sucursal (needed before Colaboradores) ─────────────────────────────────
   const sucursal = await prisma.sucursales.upsert({
     where: { id_sucursal: 1 },
@@ -51,7 +72,7 @@ async function main() {
   console.log(`Seeded branch "${sucursal.nombre_sucursal}"`);
 
   // ── Admin user ─────────────────────────────────────────────────────────────
-  const adminRole = roles.find((r) => r.nombre_rol === "Administrador")!;
+  const adminRole = roles.find((r: Roles) => r.nombre_rol === "Administrador")!;
   const adminPasswordHash = await bcrypt.hash(ADMIN_DEFAULT_PASSWORD, 12);
   const adminUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "admin@geekdesign.mx" },
