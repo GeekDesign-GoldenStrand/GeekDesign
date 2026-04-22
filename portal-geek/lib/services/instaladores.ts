@@ -2,42 +2,54 @@ import type { Instaladores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateInstaladorInput, UpdateInstaladorInput } from "@/lib/schemas/instaladores";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listInstaladores(
   page: number,
   pageSize: number
 ): Promise<{ items: Instaladores[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await prisma.$transaction([
+    prisma.instaladores.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { nombre_proveedor: "asc" },
+    }),
+    prisma.instaladores.count(),
+  ]);
+  return { items, total };
 }
 
 export async function getInstalador(id: number): Promise<Instaladores> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+  const instalador = await prisma.instaladores.findUnique({ where: { id_instalador: id } });
+  if (!instalador) throw new NotFoundError(`Instalador ${id} no encontrado`);
+  return instalador;
 }
 
 export async function createInstalador(data: CreateInstaladorInput): Promise<Instaladores> {
-  // TODO: implement
-  void data;
-  throw new Error("Not implemented");
+  return prisma.instaladores.create({ data });
 }
 
 export async function updateInstalador(
   id: number,
   data: UpdateInstaladorInput
 ): Promise<Instaladores> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  try {
+    return await prisma.instaladores.update({ where: { id_instalador: id }, data });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025") {
+      throw new NotFoundError(`Instalador ${id} no encontrado`);
+    }
+    throw err;
+  }
 }
 
 export async function deleteInstalador(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.instaladores.delete({ where: { id_instalador: id } });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025") {
+      throw new NotFoundError(`Instalador ${id} no encontrado`);
+    }
+    throw err;
+  }
 }

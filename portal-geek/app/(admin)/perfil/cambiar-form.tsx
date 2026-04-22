@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { PasswordField } from "@/components/ui/password-field";
-import { PrimaryButton } from "@/components/ui/primary-button";
+import { PasswordField } from "@/components/ui/molecules/PasswordField";
+import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 import { ChangePasswordSchema } from "@/lib/schemas/auth";
 
 interface FieldErrors {
@@ -121,12 +121,7 @@ export function CambiarContrasenaForm() {
         </p>
       )}
 
-      <PrimaryButton
-        type="submit"
-        variant="red"
-        disabled={isSubmitting || success}
-        className="mt-2"
-      >
+      <PrimaryButton type="submit" variant="red" disabled={isSubmitting || success} className="mt-2">
         {isSubmitting ? "Guardando…" : "Cambiar contraseña"}
       </PrimaryButton>
     </form>
