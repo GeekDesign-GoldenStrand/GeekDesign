@@ -14,7 +14,10 @@ export const CreateInstaladorSchema = z.object({
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
     .optional(),
   tipo: z.enum(["Instalador", "Contratista"]),
-  telefono: z.string().regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos.").optional(),
+  telefono: z
+    .string()
+    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos.")
+    .optional(),
   correo: z.email().max(150),
   costo_instalacion: z.number().positive(),
   notas: z.string().max(500).optional(),

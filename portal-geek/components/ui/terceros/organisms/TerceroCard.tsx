@@ -1,6 +1,8 @@
 "use client";
 
 import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
+import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
+import type { TerceroCardProps } from "@/types";
 
 function formatPhone(phone: string) {
   if (/^(55|33|81)/.test(phone)) {
@@ -8,8 +10,6 @@ function formatPhone(phone: string) {
   }
   return phone.replace(/^(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3");
 }
-import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
-import type { TerceroCardProps } from "@/types";
 
 export function TerceroCard({
   companyName,
