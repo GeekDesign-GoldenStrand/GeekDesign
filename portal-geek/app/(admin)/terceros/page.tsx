@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import {
   AgregarTerceroModal,
   TercerosGrid,
   TercerosHeader,
-  TercerosToolbar,
 } from "@/components/ui/terceros";
 import type { TerceroCardProps, TerceroStatus, TercerosTab as Tab } from "@/types";
 
@@ -127,13 +127,13 @@ export default function TercerosPage() {
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-white">
       <TercerosHeader />
       <main className="p-8">
-        <TercerosToolbar
+        <AdminToolbar
           tabs={TABS}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => setActiveTab(tab as Tab)}
           search={search}
           onSearchChange={setSearch}
-          onAddClick={() => setIsModalOpen(true)}
+          onAgregar={() => setIsModalOpen(true)}
         />
         {loading ? (
           <p className="text-[#8e908f] text-[16px]">Cargando...</p>

@@ -2,25 +2,25 @@
 
 import { useState } from "react";
 
-import { AdminToolbar } from "@/components/admin/admin-toolbar";
-import { UserCard, type UserCardUser } from "@/components/admin/user-card";
+import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
+import { UserCard, type UserCardUser } from "@/components/admin/organisms/UserCard";
 
 interface Rol {
   id_rol: number;
   nombre_rol: string;
 }
 
-interface UsuarioRow extends UserCardUser {
+interface ColaboradorRow extends UserCardUser {
   correo_electronico: string;
 }
 
 interface Props {
-  usuarios: UsuarioRow[];
+  colaboradores: ColaboradorRow[];
   roles: Rol[];
 }
 
-export function UsuariosGrid({ usuarios: initialUsuarios, roles }: Props) {
-  const [usuarios, setUsuarios] = useState(initialUsuarios);
+export function ColaboradoresGrid({ colaboradores: initialColaboradores, roles }: Props) {
+  const [colaboradores, setColaboradores] = useState(initialColaboradores);
   const [saving, setSaving] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function UsuariosGrid({ usuarios: initialUsuarios, roles }: Props) {
         setError(json?.error ?? "Error al actualizar el rol");
         return;
       }
-      setUsuarios((prev) =>
+      setColaboradores((prev) =>
         prev.map((u) =>
           u.id_usuario === userId
             ? { ...u, id_rol: newRolId, rol: roles.find((r) => r.id_rol === newRolId) ?? u.rol }
@@ -53,12 +53,12 @@ export function UsuariosGrid({ usuarios: initialUsuarios, roles }: Props) {
 
   const q = search.trim().toLowerCase();
   const filtered = q
-    ? usuarios.filter(
+    ? colaboradores.filter(
         (u) =>
           u.nombre_completo.toLowerCase().includes(q) ||
           u.correo_electronico.toLowerCase().includes(q)
       )
-    : usuarios;
+    : colaboradores;
 
   return (
     <div>
@@ -83,7 +83,7 @@ export function UsuariosGrid({ usuarios: initialUsuarios, roles }: Props) {
         ))}
         {filtered.length === 0 && (
           <p className="col-span-4 py-16 text-center font-ibm-plex text-[#888]">
-            {q ? "Sin resultados para esa búsqueda." : "No hay usuarios registrados."}
+            {q ? "Sin resultados para esa búsqueda." : "No hay colaboradores registrados."}
           </p>
         )}
       </div>

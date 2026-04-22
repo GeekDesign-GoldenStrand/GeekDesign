@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { getSession } from "@/lib/auth/session";
 
 import { CambiarContrasenaForm } from "./cambiar-form";

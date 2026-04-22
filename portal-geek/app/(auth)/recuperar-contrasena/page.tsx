@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { BrandLogo } from "@/components/ui/brand-logo";
+import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 
 import { RecuperarForm } from "./recuperar-form";
 

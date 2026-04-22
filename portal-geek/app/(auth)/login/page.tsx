@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { BrandLogo } from "@/components/ui/brand-logo";
+import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 
 import { LoginForm } from "./login-form";
 

@@ -11,9 +11,9 @@ interface RoleConfig {
 
 const ROLE_CONFIGS: Record<string, RoleConfig> = {
   Administrador: { color: "#006aff", bg: "rgba(0,106,255,0.07)" },
-  Colaborador: { color: "#ff9500", bg: "rgba(255,149,0,0.07)" },
-  Finanzas: { color: "#28b12d", bg: "rgba(40,177,45,0.07)" },
-  Direccion: { color: "#df2646", bg: "rgba(223,38,70,0.07)" },
+  Colaborador:   { color: "#ff9500", bg: "rgba(255,149,0,0.07)" },
+  Finanzas:      { color: "#28b12d", bg: "rgba(40,177,45,0.07)" },
+  Direccion:     { color: "#df2646", bg: "rgba(223,38,70,0.07)" },
 };
 
 const DEFAULT_CONFIG: RoleConfig = {
@@ -24,13 +24,7 @@ const DEFAULT_CONFIG: RoleConfig = {
 function ChevronRight({ color }: { color: string }) {
   return (
     <svg width="6" height="10" viewBox="0 0 6 10" fill="none" aria-hidden>
-      <path
-        d="M1 1l4 4-4 4"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M1 1l4 4-4 4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -71,10 +65,7 @@ export function RoleTag({ role, roles, currentRolId, onRolChange, saving }: Role
         className="flex h-[24px] items-center justify-between gap-1 rounded-[7px] px-2 shadow-[0_4px_10px_rgba(0,0,0,0.25)] disabled:cursor-default"
         style={{ minWidth: "96px", border: `1px solid ${cfg.color}`, backgroundColor: cfg.bg }}
       >
-        <span
-          className="font-ibm-plex font-medium leading-none text-[12px]"
-          style={{ color: cfg.color }}
-        >
+        <span className="font-ibm-plex font-medium leading-none text-[12px]" style={{ color: cfg.color }}>
           {saving ? "..." : role}
         </span>
         {interactive && <ChevronRight color={cfg.color} />}
@@ -93,10 +84,7 @@ export function RoleTag({ role, roles, currentRolId, onRolChange, saving }: Role
               <li key={r.id_rol} role="option" aria-selected={selected}>
                 <button
                   type="button"
-                  onClick={() => {
-                    onRolChange!(r.id_rol);
-                    setOpen(false);
-                  }}
+                  onClick={() => { onRolChange!(r.id_rol); setOpen(false); }}
                   className="w-full flex h-[28px] items-center justify-center rounded-[7px] px-3 font-ibm-plex font-medium text-[12px] transition-opacity hover:opacity-80"
                   style={{
                     border: `1px solid ${rcfg.color}`,

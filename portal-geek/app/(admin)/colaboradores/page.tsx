@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { ADMIN_ROLES } from "@/lib/auth/guards";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 
-import { UsuariosGrid } from "./usuarios-grid";
+import { ColaboradoresGrid } from "./colaboradores-grid";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export default async function UsuariosPage() {
+export default async function ColaboradoresPage() {
   const session = await getSession();
   if (!session || !ADMIN_ROLES.includes(session.role)) redirect("/login");
 
@@ -44,7 +44,7 @@ export default async function UsuariosPage() {
     prisma.roles.findMany({ orderBy: { id_rol: "asc" } }),
   ]);
 
-  const usuarios = raw.map((u) => ({
+  const colaboradores = raw.map((u) => ({
     id_usuario: u.id_usuario,
     nombre_completo: u.nombre_completo,
     correo_electronico: u.correo_electronico,
@@ -63,7 +63,7 @@ export default async function UsuariosPage() {
   return (
     <>
       <AdminHeader title="Colaboradores" />
-      <UsuariosGrid usuarios={usuarios} roles={roles} />
+      <ColaboradoresGrid colaboradores={colaboradores} roles={roles} />
     </>
   );
 }

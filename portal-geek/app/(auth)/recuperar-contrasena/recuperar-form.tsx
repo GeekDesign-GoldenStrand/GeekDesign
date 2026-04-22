@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
-import { AuthInput } from "@/components/ui/auth-input";
-import { PrimaryButton } from "@/components/ui/primary-button";
+import { AuthInput } from "@/components/ui/atoms/AuthInput";
+import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 
 export function RecuperarForm() {
   const [email, setEmail] = useState("");

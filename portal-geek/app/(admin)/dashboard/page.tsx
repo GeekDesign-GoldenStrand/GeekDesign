@@ -1,4 +1,4 @@
-import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 
 export default function DashboardPage() {
   return (
