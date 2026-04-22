@@ -8,7 +8,7 @@ import TercerosHeader from "@/components/ui/terceros/TercerosHeader";
 import TercerosToolbar from "@/components/ui/terceros/TercerosToolbar";
 import type { TerceroCardProps, TerceroStatus, TercerosTab as Tab } from "@/types";
 
-type InstaladorRow = TerceroCardProps;
+type TerceroRow = TerceroCardProps;
 
 type DbInstalador = {
   id_instalador: number;
@@ -31,7 +31,7 @@ type DbProveedor = {
 
 function mapInstalador(item: DbInstalador): TerceroRow {
   return {
-    id_instalador: item.id_instalador,
+    id: item.id_instalador,
     companyName: item.nombre_proveedor,
     contactName: item.apodo ?? item.nombre_proveedor,
     location: item.ubicacion ?? "",
@@ -77,7 +77,11 @@ export default function TercerosPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleStatusChange(id: number, newStatus: TerceroStatus, role: TerceroRow["role"]) {
+  async function handleStatusChange(
+    id: number,
+    newStatus: TerceroStatus,
+    role: TerceroRow["role"]
+  ) {
     setRows((prev) =>
       prev.map((r) => (r.id === id && r.role === role ? { ...r, status: newStatus } : r))
     );
