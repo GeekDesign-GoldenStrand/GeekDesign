@@ -6,7 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Direccion", "Administrador"], async (_req, ctx) => {
+export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
   try {
     const { id } = UsuarioIdParams.parse(await ctx.params);
     return ok(await getUsuario(id));
@@ -15,7 +15,7 @@ export const GET = withRoleParams<Params>(["Direccion", "Administrador"], async 
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion", "Administrador"], async (req, ctx) => {
+export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   try {
     const { id } = UsuarioIdParams.parse(await ctx.params);
     const body = UpdateUsuarioSchema.parse(await req.json());

@@ -1,40 +1,64 @@
-import type { Usuarios } from "@prisma/client";
-
+import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
 import type { CreateUsuarioInput, UpdateUsuarioInput } from "@/lib/schemas/usuarios";
+import { NotFoundError } from "@/lib/utils/errors";
 
-export async function listUsuarios(
-  page: number,
-  pageSize: number
-): Promise<{ items: Usuarios[]; total: number }> {
-  // TODO: implement — exclude contrasena_hash from response
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+const USER_SELECT = {
+  id_usuario: true,
+  nombre_completo: true,
+  correo_electronico: true,
+  id_rol: true,
+  estatus: true,
+  fecha_creacion: true,
+  ultimo_acceso: true,
+  rol: { select: { id_rol: true, nombre_rol: true } },
+} as const;
+
+export async function listUsuarios(page: number, pageSize: number) {
+  const skip = (page - 1) * pageSize;
+  const [items, total] = await prisma.$transaction([
+    prisma.usuarios.findMany({
+      skip,
+      take: pageSize,
+      select: USER_SELECT,
+      orderBy: { fecha_creacion: "desc" },
+    }),
+    prisma.usuarios.count(),
+  ]);
+  return { items, total };
 }
 
-export async function getUsuario(id: number): Promise<Usuarios> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+export async function getUsuario(id: number) {
+  const usuario = await prisma.usuarios.findUnique({
+    where: { id_usuario: id },
+    select: USER_SELECT,
+  });
+  if (!usuario) throw new NotFoundError("Usuario no encontrado");
+  return usuario;
 }
 
-export async function createUsuario(data: CreateUsuarioInput): Promise<Usuarios> {
-  // TODO: implement — hash password before storing
-  void data;
-  throw new Error("Not implemented");
+export async function createUsuario(data: CreateUsuarioInput) {
+  const { contrasena, ...rest } = data;
+  const contrasena_hash = await hashPassword(contrasena);
+  return prisma.usuarios.create({ data: { ...rest, contrasena_hash }, select: USER_SELECT });
 }
 
-export async function updateUsuario(id: number, data: UpdateUsuarioInput): Promise<Usuarios> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+export async function updateUsuario(id: number, data: UpdateUsuarioInput) {
+  try {
+    return await prisma.usuarios.update({ where: { id_usuario: id }, data, select: USER_SELECT });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025")
+      throw new NotFoundError("Usuario no encontrado");
+    throw err;
+  }
 }
 
 export async function deleteUsuario(id: number): Promise<void> {
-  // TODO: implement — soft-delete by setting estatus = 'Inactivo' instead of hard delete
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.usuarios.update({ where: { id_usuario: id }, data: { estatus: "Inactivo" } });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025")
+      throw new NotFoundError("Usuario no encontrado");
+    throw err;
+  }
 }

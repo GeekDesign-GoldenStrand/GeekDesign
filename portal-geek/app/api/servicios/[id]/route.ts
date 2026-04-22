@@ -6,9 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-const ALL_ADMIN = ["Direccion", "Administrador", "Colaborador", "Finanzas"] as const;
-
-export const GET = withRoleParams<Params>([...ALL_ADMIN], async (_req, ctx) => {
+export const GET = withRoleParams<Params>(["Administrador"], async (_req, ctx) => {
   try {
     const { id } = ServicioIdParams.parse(await ctx.params);
     return ok(await getServicio(id));
@@ -17,7 +15,7 @@ export const GET = withRoleParams<Params>([...ALL_ADMIN], async (_req, ctx) => {
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion", "Administrador"], async (req, ctx) => {
+export const PUT = withRoleParams<Params>(["Administrador"], async (req, ctx) => {
   try {
     const { id } = ServicioIdParams.parse(await ctx.params);
     const body = UpdateServicioSchema.parse(await req.json());
@@ -27,7 +25,7 @@ export const PUT = withRoleParams<Params>(["Direccion", "Administrador"], async 
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Direccion", "Administrador"], async (_req, ctx) => {
+export const DELETE = withRoleParams<Params>(["Administrador"], async (_req, ctx) => {
   try {
     const { id } = ServicioIdParams.parse(await ctx.params);
     await deleteServicio(id);

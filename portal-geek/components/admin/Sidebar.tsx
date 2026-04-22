@@ -156,6 +156,25 @@ const navItems = [
     ),
   },
   {
+    href: "/materiales",
+    label: "Materiales",
+    icon: (
+      <svg
+        width="44"
+        height="44"
+        viewBox="0 0 44 44"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="8" y="7" width="28" height="30" rx="3" />
+        <path d="M14 7v30M30 7v30M8 18h28M8 26h28" />
+      </svg>
+    ),
+  },
+  {
     href: "/sucursales",
     label: "Sucursales",
     icon: (

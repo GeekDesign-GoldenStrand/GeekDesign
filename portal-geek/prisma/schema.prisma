@@ -14,6 +14,19 @@ datasource db {
 // AUTH / USERS
 // ─────────────────────────────────────────────
 
+model TokensRecuperacion {
+  id         Int      @id @default(autoincrement())
+  id_usuario Int      @unique
+  token_hash String   @unique @db.VarChar(64)
+  expira_en  DateTime
+  usado      Boolean  @default(false)
+  creado_en  DateTime @default(now())
+
+  usuario Usuarios @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+
+  @@map("TOKENS_RECUPERACION")
+}
+
 model Roles {
   id_rol     Int    @id @default(autoincrement())
   nombre_rol String @unique @db.VarChar(50)
@@ -29,11 +42,13 @@ model Usuarios {
   correo_electronico String   @unique @db.VarChar(150)
   contrasena_hash    String   @db.VarChar(255)
   id_rol             Int
-  estatus            String   @db.VarChar(20) // Activo / Inactivo
-  fecha_creacion     DateTime @default(now())
+  estatus            String    @db.VarChar(20) // Activo / Inactivo
+  fecha_creacion     DateTime  @default(now())
+  ultimo_acceso      DateTime?
 
   rol          Roles          @relation(fields: [id_rol], references: [id_rol])
   colaborador  Colaboradores?
+  tokenRecuperacion TokensRecuperacion?
 
   matrizModificada      MatrizDePrecios[]
   notasCliente          NotasCliente[]
