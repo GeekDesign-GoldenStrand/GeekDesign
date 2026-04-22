@@ -1,11 +1,21 @@
 import { z } from "zod";
 
+const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
+
 export const CreateInstaladorSchema = z.object({
-  nombre_proveedor: z.string().min(1).max(100),
-  apodo: z.string().max(100).optional(),
+  nombre_proveedor: z
+    .string()
+    .min(1)
+    .max(30, "Máximo 30 caracteres.")
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+  apodo: z
+    .string()
+    .max(30, "Máximo 30 caracteres.")
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
+    .optional(),
   tipo: z.enum(["Instalador", "Contratista"]),
-  telefono: z.string().max(20).optional(),
-  correo: z.email().max(150).optional(),
+  telefono: z.string().regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos.").optional(),
+  correo: z.email().max(150),
   costo_instalacion: z.number().positive(),
   notas: z.string().max(500).optional(),
   ubicacion: z.string().max(255).optional(),

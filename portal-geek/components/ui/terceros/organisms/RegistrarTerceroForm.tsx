@@ -1,10 +1,75 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import type { CreateProveedorInput } from "@/lib/schemas/proveedores";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
+
+const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function formatPhone(digits: string): string {
+  const metro = /^(55|33|81)/.test(digits);
+  if (metro) {
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+    return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
+  }
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+}
+
+const proveedorSchema = z.object({
+  nombre_proveedor: z
+    .string()
+    .min(1, "El nombre es requerido.")
+    .max(30, "Máximo 30 caracteres.")
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+  correo: z
+    .string()
+    .min(1, "El correo es requerido.")
+    .refine((v) => EMAIL_REGEX.test(v), "Correo electrónico inválido."),
+  telefono: z
+    .string()
+    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos."),
+  ubicacion: z
+    .string()
+    .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+});
+
+const instaladorSchema = z.object({
+  nombre_proveedor: z
+    .string()
+    .min(1, "El nombre es requerido.")
+    .max(30, "Máximo 30 caracteres.")
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+  apodo: z
+    .string()
+    .refine((v) => !v || v.length <= 30, "Máximo 30 caracteres.")
+    .refine(
+      (v) => !v || NOMBRE_REGEX.test(v),
+      "Solo letras, números, puntos, guiones y apóstrofes."
+    ),
+  correo: z
+    .string()
+    .min(1, "El correo es requerido.")
+    .refine((v) => EMAIL_REGEX.test(v), "Correo electrónico inválido."),
+  telefono: z
+    .string()
+    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos."),
+  costo_instalacion: z
+    .number()
+    .positive("El costo debe ser mayor a 0.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 10, "Máximo 10 dígitos enteros.")
+    .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
+  notas: z.string().max(500, "Máximo 500 caracteres."),
+  ubicacion: z
+    .string()
+    .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+});
 
 type TerceroType = "Proveedor" | "Instalador";
 
@@ -58,23 +123,10 @@ export function RegistrarTerceroForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const val = form[key as keyof typeof form];
-      if (
-        key === "correo" &&
-        typeof val === "string" &&
-        val &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
-      )
-        return "";
-      if (
-        key === "correo" &&
-        typeof val === "string" &&
-        val &&
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
-      )
-        return FIELD_SUCCESS;
-      if (key === "telefono" && typeof val === "string" && val && val.length > 20) return "";
-      if (key === "telefono" && typeof val === "string" && val && val.length <= 20)
-        return FIELD_SUCCESS;
+      if (key === "correo" && typeof val === "string")
+        return val && EMAIL_REGEX.test(val) ? FIELD_SUCCESS : "";
+      if (key === "telefono" && typeof val === "string")
+        return val && /^\d{10}$/.test(val) ? FIELD_SUCCESS : "";
       if (typeof val === "string" && val.trim()) return FIELD_SUCCESS;
       if (typeof val === "number" && val > 0) return FIELD_SUCCESS;
     }
@@ -83,22 +135,43 @@ export function RegistrarTerceroForm({
 
   function validate() {
     const next: Record<string, string> = {};
-    if (!form.nombre_proveedor.trim()) next.nombre_proveedor = "El nombre es requerido.";
-    if (form.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo))
-      next.correo = "Correo inválido.";
-    if (form.telefono && form.telefono.length > 20) next.telefono = "Máximo 20 caracteres.";
 
-    if (terceroType === "Instalador") {
-      if (!form.costo_instalacion || form.costo_instalacion <= 0)
-        next.costo_instalacion = "El costo debe ser mayor a 0.";
-      if (form.notas && form.notas.length > 500) next.notas = "Máximo 500 caracteres.";
+    if (terceroType === "Proveedor") {
+      const result = proveedorSchema.safeParse({
+        nombre_proveedor: form.nombre_proveedor,
+        correo: form.correo,
+        telefono: form.telefono,
+        ubicacion: form.ubicacion,
+      });
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          const field = issue.path[0] as string;
+          if (!next[field]) next[field] = issue.message;
+        }
+      }
+    } else {
+      const result = instaladorSchema.safeParse({
+        nombre_proveedor: form.nombre_proveedor,
+        apodo: form.apodo,
+        correo: form.correo,
+        telefono: form.telefono,
+        costo_instalacion: form.costo_instalacion,
+        notas: form.notas,
+        ubicacion: form.ubicacion,
+      });
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          const field = issue.path[0] as string;
+          if (!next[field]) next[field] = issue.message;
+        }
+      }
     }
 
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validate()) return;
 
@@ -239,6 +312,7 @@ export function RegistrarTerceroForm({
               <input
                 type="text"
                 placeholder="Ej. Empresa SA"
+                maxLength={30}
                 value={form.nombre_proveedor}
                 onChange={(e) => setField("nombre_proveedor", e.target.value)}
                 className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
@@ -265,7 +339,9 @@ export function RegistrarTerceroForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={LABEL}>Correo</label>
+              <label className={LABEL}>
+                Correo <span className="text-[#e42200]">*</span>
+              </label>
               <input
                 type="email"
                 placeholder="correo@ejemplo.com"
@@ -279,9 +355,13 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>Teléfono</label>
               <input
                 type="tel"
-                placeholder="442 234 5678"
-                value={form.telefono}
-                onChange={(e) => setField("telefono", e.target.value)}
+                placeholder="442 123 4567"
+                inputMode="numeric"
+                value={formatPhone(form.telefono)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setField("telefono", digits);
+                }}
                 className={`${FIELD} ${getFieldClass("telefono")}`}
               />
               {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
@@ -292,11 +372,12 @@ export function RegistrarTerceroForm({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Ciudad, Estado"
+              placeholder="Querétaro, Querétaro"
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
             />
+            {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
           </div>
 
           <div>
@@ -333,6 +414,7 @@ export function RegistrarTerceroForm({
               <input
                 type="text"
                 placeholder="Ej. Juan Pérez"
+                maxLength={30}
                 value={form.nombre_proveedor}
                 onChange={(e) => setField("nombre_proveedor", e.target.value)}
                 className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
@@ -344,10 +426,12 @@ export function RegistrarTerceroForm({
               <input
                 type="text"
                 placeholder="Ej. El Rápido"
+                maxLength={30}
                 value={form.apodo}
                 onChange={(e) => setField("apodo", e.target.value)}
                 className={`${FIELD} ${getFieldClass("apodo")}`}
               />
+              {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
             </div>
           </div>
 
@@ -375,7 +459,22 @@ export function RegistrarTerceroForm({
                 step={0.01}
                 placeholder="0.00"
                 value={form.costo_instalacion || ""}
-                onChange={(e) => setField("costo_instalacion", parseFloat(e.target.value) || 0)}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (!raw) {
+                    setField("costo_instalacion", 0);
+                    return;
+                  }
+                  const dotIdx = raw.indexOf(".");
+                  if (dotIdx !== -1 && raw.length - dotIdx - 1 > 2) return;
+                  const intPart = dotIdx !== -1 ? raw.slice(0, dotIdx) : raw;
+                  if (intPart.replace(/^0+/, "").length > 10) return;
+                  const num = parseFloat(raw);
+                  if (!isNaN(num)) setField("costo_instalacion", num);
+                }}
                 className={`${FIELD} ${getFieldClass("costo_instalacion")}`}
               />
               {errors.costo_instalacion && <p className={ERROR_MSG}>{errors.costo_instalacion}</p>}
@@ -384,7 +483,9 @@ export function RegistrarTerceroForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={LABEL}>Correo</label>
+              <label className={LABEL}>
+                Correo <span className="text-[#e42200]">*</span>
+              </label>
               <input
                 type="email"
                 placeholder="correo@ejemplo.com"
@@ -398,9 +499,13 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>Teléfono</label>
               <input
                 type="tel"
-                placeholder="442 234 5678"
-                value={form.telefono}
-                onChange={(e) => setField("telefono", e.target.value)}
+                placeholder="442 123 4567"
+                inputMode="numeric"
+                value={formatPhone(form.telefono)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setField("telefono", digits);
+                }}
                 className={`${FIELD} ${getFieldClass("telefono")}`}
               />
               {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
@@ -411,11 +516,12 @@ export function RegistrarTerceroForm({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Ciudad, Estado"
+              placeholder="Querétaro, Querétaro"
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
             />
+            {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
           </div>
 
           <div>

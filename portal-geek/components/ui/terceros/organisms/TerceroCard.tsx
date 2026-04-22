@@ -1,6 +1,13 @@
 "use client";
 
 import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
+
+function formatPhone(phone: string) {
+  if (/^(55|33|81)/.test(phone)) {
+    return phone.replace(/^(\d{2})(\d{4})(\d{4})$/, "$1 $2 $3");
+  }
+  return phone.replace(/^(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3");
+}
 import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import type { TerceroCardProps } from "@/types";
 
@@ -12,8 +19,6 @@ export function TerceroCard({
   status,
   email,
   phone,
-  onCall,
-  onMail,
   onEdit,
   onStatusChange,
 }: TerceroCardProps) {
@@ -45,24 +50,25 @@ export function TerceroCard({
 
       <div className="flex items-center gap-2 text-[#1e1e1e] font-medium text-[18px] lowercase">
         <PhoneIcon />
-        <span>{phone}</span>
+        <span>{phone ? formatPhone(phone) : "–"}</span>
       </div>
 
       <div className="flex items-center gap-2 mt-1">
-        <button
-          onClick={onCall}
-          className="flex items-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+        <a
+          href={phone ? `tel:${phone}` : undefined}
+          aria-disabled={!phone}
+          className="flex items-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] aria-disabled:opacity-40 aria-disabled:pointer-events-none"
         >
           <PhoneIcon />
           Llamar
-        </button>
-        <button
-          onClick={onMail}
+        </a>
+        <a
+          href={`mailto:${email}`}
           className="flex items-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
         >
           <MailIcon />
           Mail
-        </button>
+        </a>
         <button
           onClick={onEdit}
           aria-label="Editar"
