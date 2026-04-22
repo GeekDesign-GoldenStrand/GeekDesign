@@ -12,7 +12,6 @@
   --font-mono: var(--font-geist-mono);
   --font-ibm-plex-sans-jp: var(--font-ibm-plex-sans-jp);
   --font-alexandria: var(--font-alexandria);
-  --font-ibm-plex-sans-jp: var(--font-ibm-plex-sans-jp);
 }
 
 @media (prefers-color-scheme: dark) {

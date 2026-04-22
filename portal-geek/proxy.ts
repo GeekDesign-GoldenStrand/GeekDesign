@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
   if (process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development") {
     return NextResponse.next();
   }
-  return _authMiddleware(request);
+  return proxy(request);
 }
 
 export const config = {

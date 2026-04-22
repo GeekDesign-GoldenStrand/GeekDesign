@@ -12,12 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const ibmPlexSansJP = IBM_Plex_Sans_JP({
-  variable: "--font-ibm-plex-sans-jp",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
 const alexandria = Alexandria({
   variable: "--font-alexandria",
   subsets: ["latin"],

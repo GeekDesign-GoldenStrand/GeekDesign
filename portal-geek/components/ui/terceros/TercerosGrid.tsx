@@ -9,7 +9,7 @@ export default function TercerosGrid({ items }: TercerosGridProps) {
   return (
     <div className="grid grid-cols-4 gap-5 xl:grid-cols-3 lg:grid-cols-2 sm:grid-cols-1">
       {items.map((item) => (
-        <TerceroCard key={item.id} {...item} />
+        <TerceroCard key={`${item.role}-${item.id}`} {...item} />
       ))}
     </div>
   );
