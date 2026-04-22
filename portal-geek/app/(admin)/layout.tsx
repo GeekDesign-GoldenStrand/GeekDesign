@@ -1,3 +1,10 @@
+import { Sidebar } from "@/components/admin/sidebar";
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 pl-25.5">{children}</div>
+    </div>
+  );
 }

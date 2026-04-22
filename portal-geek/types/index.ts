@@ -31,3 +31,22 @@ export interface PaginationParams {
   page?: number;
   pageSize?: number;
 }
+
+export type TerceroRole = "Instalador" | "Proveedor";
+
+export type TerceroStatus = "Activo" | "Inactivo" | "Baneado";
+
+export type TercerosTab = "Todos" | "Proveedores" | "Instaladores";
+
+export interface TerceroCardProps {
+  id: number;
+  companyName: string;
+  contactName: string;
+  location: string;
+  role: TerceroRole;
+  status: TerceroStatus;
+  email: string;
+  phone: string;
+  onEdit?: () => void;
+  onStatusChange?: (status: TerceroStatus) => void;
+}

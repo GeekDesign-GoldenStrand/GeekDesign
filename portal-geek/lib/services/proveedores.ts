@@ -2,42 +2,54 @@ import type { Proveedores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateProveedorInput, UpdateProveedorInput } from "@/lib/schemas/proveedores";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listProveedores(
   page: number,
   pageSize: number
 ): Promise<{ items: Proveedores[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await prisma.$transaction([
+    prisma.proveedores.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { nombre_proveedor: "asc" },
+    }),
+    prisma.proveedores.count(),
+  ]);
+  return { items, total };
 }
 
 export async function getProveedor(id: number): Promise<Proveedores> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+  const proveedor = await prisma.proveedores.findUnique({ where: { id_proveedor: id } });
+  if (!proveedor) throw new NotFoundError(`Proveedor ${id} no encontrado`);
+  return proveedor;
 }
 
 export async function createProveedor(data: CreateProveedorInput): Promise<Proveedores> {
-  // TODO: implement
-  void data;
-  throw new Error("Not implemented");
+  return prisma.proveedores.create({ data });
 }
 
 export async function updateProveedor(
   id: number,
   data: UpdateProveedorInput
 ): Promise<Proveedores> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  try {
+    return await prisma.proveedores.update({ where: { id_proveedor: id }, data });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025") {
+      throw new NotFoundError(`Proveedor ${id} no encontrado`);
+    }
+    throw err;
+  }
 }
 
 export async function deleteProveedor(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.proveedores.delete({ where: { id_proveedor: id } });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025") {
+      throw new NotFoundError(`Proveedor ${id} no encontrado`);
+    }
+    throw err;
+  }
 }

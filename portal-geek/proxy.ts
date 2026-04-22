@@ -16,8 +16,7 @@ const ADMIN_PATHS = [
   "/sucursales",
   "/materiales",
   "/maquinas",
-  "/proveedores",
-  "/instaladores",
+  "/terceros",
   "/servicios",
   "/usuarios",
   "/finanzas",
@@ -54,6 +53,13 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
+export async function middleware(request: NextRequest) {
+  if (process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+  return proxy(request);
+}
+
 export const config = {
   matcher: [
     "/login",
@@ -65,8 +71,7 @@ export const config = {
     "/sucursales/:path*",
     "/materiales/:path*",
     "/maquinas/:path*",
-    "/proveedores/:path*",
-    "/instaladores/:path*",
+    "/terceros/:path*",
     "/servicios/:path*",
     "/usuarios/:path*",
     "/finanzas/:path*",
