@@ -39,3 +39,54 @@ export async function deletePedido(id: number): Promise<void> {
   void id;
   throw new Error("Not implemented");
 }
+
+/* Lo de acá abajo es lo que antes era lib/services/orders.ts, pero cambió con lo que hay arriba que venía en la rama develop
+import { prisma } from "@/lib/db/client";
+
+/**
+ * Get orders with optional filters:
+ * - onlyActive: filter by active status
+ * - serviceId: filter by service
+ */
+/*
+export async function getOrders(options?: { onlyActive?: boolean; serviceId?: number }) {
+  // Extract values from options, set default for onlyActive = false
+  const { onlyActive = false, serviceId } = options || {};
+
+
+  return prisma.pedidos.findMany({
+    where: {
+      // If onlyActive is true, exclude orders with status "Entregado" or "Cancelado"
+      ...(onlyActive && {
+        estatus: {
+          descripcion: {
+            notIn: ["Entregado", "Cancelado"],
+          },
+        },
+      }),
+      // If serviceId is provided, filter orders that have at least one detail with that service
+      ...(serviceId && {
+        detalles: {
+          some: {
+            id_servicio: serviceId,
+          },
+        },
+      }),
+    },
+    include: {
+      // Include related data for richer response
+      cliente: true,
+      sucursal: true,
+      estatus: true,
+      detalles: {
+        include: {
+          servicio: true,
+          material: true,
+          archivo: true,
+        },
+      },
+    },
+  });
+}
+
+*/

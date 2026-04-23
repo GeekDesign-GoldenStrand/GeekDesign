@@ -22,7 +22,7 @@
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@testing-library/jest-dom": "^6.9.1",
-    "bcryptjs": "^3.0.2",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "jose": "^6.2.2",
     "next": "16.2.3",
