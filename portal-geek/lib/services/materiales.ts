@@ -2,22 +2,34 @@ import type { Materiales } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/materiales";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listMateriales(
   page: number,
   pageSize: number
 ): Promise<{ items: Materiales[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  // Keep list and total count in the same transaction for consistent pagination.
+  const [items, total] = await prisma.$transaction([
+    prisma.materiales.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { nombre_material: "asc" },
+    }),
+    prisma.materiales.count(),
+  ]);
+
+  return { items, total };
 }
 
 export async function getMaterial(id: number): Promise<Materiales> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+  // Fetch one material by primary key.
+  const material = await prisma.materiales.findUnique({ where: { id_material: id } });
+
+  if (!material) {
+    throw new NotFoundError(`Material ${id} no encontrado`);
+  }
+
+  return material;
 }
 
 export async function createMaterial(data: CreateMaterialInput): Promise<Materiales> {
