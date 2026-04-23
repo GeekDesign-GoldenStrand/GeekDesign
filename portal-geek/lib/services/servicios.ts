@@ -27,11 +27,21 @@ export async function listServicios(
   return { items, total };
 }
 
-export async function getServicios(id: number): Promise<Servicios> {
+/*
+Get a single service by an ID. Throws NotFoundError if the service does not exist.
+*/
 
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+export async function getServicios(id: number): Promise<Servicios> {
+  const servicio = await prisma.servicios.findUnique({
+    where: { id_servicio: id },
+  });
+
+  if (!servicio) {
+    throw new NotFoundError(`Servicio con id ${id} no encontrado`);
+  }
+
+  return servicio;
+
 }
 
 export async function createServicio(data: CreateServicioInput): Promise<Servicios> {
