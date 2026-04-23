@@ -12,7 +12,7 @@ export async function listInstaladores(
     prisma.instaladores.findMany({
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: { nombre_proveedor: "asc" },
+      orderBy: { nombre_instalador: "asc" },
     }),
     prisma.instaladores.count(),
   ]);
