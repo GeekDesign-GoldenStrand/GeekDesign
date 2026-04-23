@@ -144,10 +144,11 @@ model Servicios {
   descripcion_servicio String?
   estatus_servicio  Boolean @default(true)
 
-  estatusServicio  EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  opciones         OpcionesProducto[]
-  formulaVariables FormulaVariables[]
-  detallesPedido   DetallePedido[]
+  estatusServicio      EstatusServicio      @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  opciones             OpcionesProducto[]
+  formulaVariables     FormulaVariables[]
+  detallesPedido       DetallePedido[]
+  instaladorServicios  InstaladorServicios[]
 
   @@map("SERVICIOS")
 }
@@ -298,9 +299,10 @@ model Instaladores {
 model InstaladorServicios {
   id_instalador_servicio Int    @id @default(autoincrement())
   id_instalador          Int
-  servicio               String @db.VarChar(100)
+  id_servicio            Int
 
   instalador Instaladores @relation(fields: [id_instalador], references: [id_instalador])
+  servicio   Servicios    @relation(fields: [id_servicio], references: [id_servicio])
 
   @@map("INSTALADORSERVICIOS")
 }
