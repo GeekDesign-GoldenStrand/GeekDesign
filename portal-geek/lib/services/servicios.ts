@@ -30,7 +30,7 @@ export async function listServicios(
 Get a single service by an ID. Throws NotFoundError if the service does not exist.
 */
 
-export async function getServicios(id: number): Promise<Servicios> {
+export async function getServicio(id: number): Promise<Servicios> {
   const servicio = await prisma.servicios.findUnique({
     where: { id_servicio: id },
   });
@@ -38,9 +38,7 @@ export async function getServicios(id: number): Promise<Servicios> {
   if (!servicio) {
     throw new NotFoundError(`Servicio con id ${id} no encontrado`);
   }
-
   return servicio;
-
 }
 
 /*
@@ -136,7 +134,7 @@ export async function updateServicio(id: number, data: UpdateServicioInput): Pro
     });
   } catch (error) {
     if (
-      error instanceof Prisma.PrismaClientKnownRequestError 
+      error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025"
     ) {
       throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
@@ -156,7 +154,7 @@ export async function deleteServicio(id: number): Promise<void> {
       });
     } catch (error) {
       if (
-        error instanceof Prisma.PrismaClientKnownRequestError
+        error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025"
       ) {
         throw new NotFoundError(`Servicio con id ${id} no encontrado`);
       }
