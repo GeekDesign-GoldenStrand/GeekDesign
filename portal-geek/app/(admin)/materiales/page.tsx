@@ -2,17 +2,57 @@
 
 import { useEffect, useState } from "react";
 
-import type { Materiales } from "@prisma/client";
-
 type MaterialsResponse = {
-  data: Materiales[] | null;
+  data: DbMaterial[] | null;
   total: number;
   page: number;
   pageSize: number;
 };
 
-type MaterialRow = Materiales;
+// We keep two types on purpose:
+// - DbMaterial matches the API payload (snake_case contract from backend/DB).
+// - MaterialRow matches the UI layer (camelCase convention in frontend TypeScript).
+// mapMaterial is the boundary that translates between both contracts.
+type DbMaterial = {
+  id_material: number;
+  nombre_material: string;
+  descripcion_material: string | null;
+  unidad_medida: string;
+  ancho: unknown;
+  alto: unknown;
+  grosor: unknown;
+  color: string | null;
+  imagen_url: string | null;
+};
 
+type MaterialRow = {
+  idMaterial: number;
+  nombreMaterial: string;
+  descripcionMaterial: string | null;
+  unidadMedida: string;
+  ancho: unknown;
+  alto: unknown;
+  grosor: unknown;
+  color: string | null;
+  imagenUrl: string | null;
+};
+
+// Maps raw API payload (snake_case) into UI-friendly camelCase fields.
+function mapMaterial(item: DbMaterial): MaterialRow {
+  return {
+    idMaterial: item.id_material,
+    nombreMaterial: item.nombre_material,
+    descripcionMaterial: item.descripcion_material,
+    unidadMedida: item.unidad_medida,
+    ancho: item.ancho,
+    alto: item.alto,
+    grosor: item.grosor,
+    color: item.color,
+    imagenUrl: item.imagen_url,
+  };
+}
+
+// Icon helpers for search, actions, and profile controls.
 function SearchIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -71,6 +111,7 @@ function ProfileIcon() {
   );
 }
 
+// Normalizes nullable values so the table always renders a readable placeholder.
 function formatValue(value: unknown) {
   if (value === null || value === undefined || value === "") {
     return "—";
@@ -79,6 +120,7 @@ function formatValue(value: unknown) {
   return String(value);
 }
 
+// Renders a color swatch and falls back to neutral gray when color is missing.
 function MaterialColor({ color, name }: { color: string | null | undefined; name: string }) {
   const fallbackColor = "#d9d9d9";
   const swatchColor = color?.trim() || fallbackColor;
@@ -92,11 +134,12 @@ function MaterialColor({ color, name }: { color: string | null | undefined; name
   );
 }
 
+// Builds a searchable string from material fields used in client-side filtering.
 function mapMaterialSearchValue(item: MaterialRow) {
   return [
-    item.nombre_material,
-    item.descripcion_material ?? "",
-    item.unidad_medida,
+    item.nombreMaterial,
+    item.descripcionMaterial ?? "",
+    item.unidadMedida,
     formatValue(item.ancho),
     formatValue(item.alto),
     formatValue(item.grosor),
@@ -113,6 +156,7 @@ export default function MaterialesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Loads materials from the API once on mount and updates UI states accordingly.
     async function loadMaterials() {
       try {
         const response = await fetch("/api/materiales?page=1&pageSize=100");
@@ -122,7 +166,7 @@ export default function MaterialesPage() {
           throw new Error((json as { error?: string })?.error ?? "No se pudo cargar materiales");
         }
 
-        setRows(json.data ?? []);
+        setRows((json.data ?? []).map(mapMaterial));
       } catch {
         setError("No se pudo cargar materiales");
       } finally {
@@ -133,6 +177,7 @@ export default function MaterialesPage() {
     loadMaterials();
   }, []);
 
+  // Applies client-side search over the loaded materials.
   const filtered = rows.filter((item) => mapMaterialSearchValue(item).includes(search.toLowerCase()));
 
   return (
@@ -209,23 +254,23 @@ export default function MaterialesPage() {
               ) : filtered.length > 0 ? (
                 filtered.map((item) => (
                   <article
-                    key={item.id_material}
+                    key={item.idMaterial}
                     className="grid grid-cols-[1.3fr_1fr_0.8fr_0.8fr_0.9fr_0.6fr_0.9fr_0.3fr] items-center rounded-[4px] bg-white px-4 py-4 text-[14px] text-[#111] shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
                   >
-                    <div>{item.nombre_material}</div>
-                    <div>{item.unidad_medida}</div>
+                    <div>{item.nombreMaterial}</div>
+                    <div>{item.unidadMedida}</div>
                     <div>{formatValue(item.ancho)}</div>
                     <div>{formatValue(item.alto)}</div>
                     <div>{formatValue(item.grosor)}</div>
                     <div>
-                      <MaterialColor color={item.color} name={item.nombre_material} />
+                      <MaterialColor color={item.color} name={item.nombreMaterial} />
                     </div>
                     <div>
-                      {item.imagen_url ? (
+                      {item.imagenUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={item.imagen_url}
-                          alt={item.nombre_material}
+                          src={item.imagenUrl}
+                          alt={item.nombreMaterial}
                           className="h-16 w-16 rounded-[2px] object-cover"
                         />
                       ) : (
@@ -234,7 +279,7 @@ export default function MaterialesPage() {
                     </div>
                     <button
                       type="button"
-                      aria-label={`Editar ${item.nombre_material}`}
+                      aria-label={`Editar ${item.nombreMaterial}`}
                       className="flex items-center justify-end text-[#111] transition-opacity hover:opacity-70"
                     >
                       <EditIcon />
