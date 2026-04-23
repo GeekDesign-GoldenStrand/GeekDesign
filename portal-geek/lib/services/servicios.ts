@@ -1,4 +1,5 @@
 import type { Servicios } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import { NotFoundError } from "@/lib/utils/errors";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
@@ -155,7 +156,7 @@ export async function deleteServicio(id: number): Promise<void> {
       });
     } catch (error) {
       if (
-        error instanceof prisma.PrismaClientKnownRequestError
+        error instanceof Prisma.PrismaClientKnownRequestError
       ) {
         throw new NotFoundError(`Servicio con id ${id} no encontrado`);
       }
