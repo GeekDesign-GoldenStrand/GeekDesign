@@ -34,3 +34,5 @@ export const DELETE = withRoleParams<Params>(["Administrador"], async (_req, ctx
     return handleError(err);
   }
 });
+
+
