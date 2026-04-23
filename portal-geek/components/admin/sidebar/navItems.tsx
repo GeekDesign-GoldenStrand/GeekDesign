@@ -27,8 +27,8 @@ export const navItems: NavItem[] = [
     ),
   },
   {
-    href: "/finanzas",
-    label: "Finanzas",
+    href: "/cotizaciones",
+    label: "Cotizaciones",
     icon: (
       <svg
         width="40"
