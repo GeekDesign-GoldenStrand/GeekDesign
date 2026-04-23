@@ -31,4 +31,3 @@ export const POST = withRole(["Direccion", "Colaborador"], async (req: NextReque
     return handleError(err);
   }
 });
-

@@ -1,5 +1,6 @@
-import { withRoleParams } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
+
+import { withRoleParams } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/client";
 
 type Params = { id: string };
@@ -32,7 +33,7 @@ export const PATCH = withRoleParams<Params>(["Direccion"], async (_req, ctx, ses
     await prisma.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
-        id_usuario: session.id, // ✅ real user from auth
+        id_usuario: session.id,
         id_estado_anterior: currentQuotation.id_estatus_cotizacion,
         id_estado_nuevo: newStatusId,
       },

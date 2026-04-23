@@ -1,14 +1,17 @@
-import { withRoleParams } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
+
+import { withRoleParams } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/client";
 
 type Params = { id: string };
 
+// PATCH /api/cotizaciones/[id]/validar
 export const PATCH = withRoleParams<Params>(["Direccion"], async (_req, ctx, session) => {
   try {
     const { id } = await ctx.params;
     const quotationId = parseInt(id, 10);
 
+    // Find current quotation to know its previous status
     const currentQuotation = await prisma.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
     });
@@ -16,24 +19,27 @@ export const PATCH = withRoleParams<Params>(["Direccion"], async (_req, ctx, ses
       return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
     }
 
+    // Get the ID of the "Validada" status from EstatusCotizacion table
     const newStatusId = await getQuotationStatusId("Validada");
 
+    // Update quotation status to "Validada"
     const validatedQuotation = await prisma.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: { id_estatus_cotizacion: newStatusId },
       include: { cliente: true, pedido: true },
     });
 
-    // ✅ Aquí ya puedes usar session.id
+    // Save the change in history with the real authenticated user
     await prisma.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
-        id_usuario: session.id, // real authenticated user
+        id_usuario: session.id,
         id_estado_anterior: currentQuotation.id_estatus_cotizacion,
         id_estado_nuevo: newStatusId,
       },
     });
 
+    // Return updated quotation as JSON
     return NextResponse.json(validatedQuotation);
   } catch (error) {
     console.error(error);
@@ -41,6 +47,7 @@ export const PATCH = withRoleParams<Params>(["Direccion"], async (_req, ctx, ses
   }
 });
 
+// Helper function to get status ID by description
 async function getQuotationStatusId(description: string) {
   const status = await prisma.estatusCotizacion.findUnique({
     where: { descripcion: description },
