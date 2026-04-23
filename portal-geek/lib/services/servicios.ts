@@ -1,20 +1,34 @@
 import type { Servicios } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
+import { NotFoundError } from "@/lib/utils/errors";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
 
+/*
+Servicios list paginated with total count for pagination controls. Sorted by id_servicio desc (newest first).
+*/
 export async function listServicios(
   page: number,
   pageSize: number
 ): Promise<{ items: Servicios[]; total: number }> {
   // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const skip = (page - 1) * pageSize;
+
+  const [items, total] = await Promise.all([
+    prisma.servicios.findMany({
+      skip,
+      take: pageSize,
+      orderBy: { id_servicio: "desc" },
+    }),
+    prisma.servicios.count(),
+  ]);
+
+  return { items, total };
 }
 
-export async function getServicio(id: number): Promise<Servicios> {
+export async function getServicios(id: number): Promise<Servicios> {
+
   // TODO: implement — throw new NotFoundError(...) if not found
   void id;
   throw new Error("Not implemented");
