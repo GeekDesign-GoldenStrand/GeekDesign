@@ -1,4 +1,6 @@
 import type { Pedidos } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
 
@@ -12,7 +14,7 @@ export async function listPedidos(
     const skip = (page - 1) * pageSize;
 
     // Build dynamic filter conditions
-    const where: any = {};
+    const where: Prisma.PedidosWhereInput = {};
     if (serviceId) {
       // Include only orders that have at least one detail with the given serviceId
       where.detalles = { some: { id_servicio: serviceId } };
@@ -32,7 +34,8 @@ export async function listPedidos(
         where, // apply filters
         skip,
         take: pageSize,
-        include: { // include related entities for richer response
+        include: {
+          // include related entities for richer response
           cliente: true,
           sucursal: true,
           estatus: true,
@@ -85,7 +88,6 @@ export async function deletePedido(id: number): Promise<void> {
 export async function getOrders(options?: { onlyActive?: boolean; serviceId?: number }) {
   // Extract values from options, set default for onlyActive = false
   const { onlyActive = false, serviceId } = options || {};
-
 
   return prisma.pedidos.findMany({
     where: {

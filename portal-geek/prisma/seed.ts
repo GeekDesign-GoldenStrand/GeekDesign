@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "@/lib/auth/password";
 import bcrypt from "bcryptjs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -83,23 +82,22 @@ async function main() {
   });
 
   // ── Dirección user ──────────────────────────────────────────────────────────
-const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
-const direccionPasswordHash = await bcrypt.hash("direccion123", 12);
+  const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
+  const direccionPasswordHash = await bcrypt.hash("direccion123", 12);
 
-const direccionUser = await prisma.usuarios.upsert({
-  where: { correo_electronico: "direccion@geekdesign.mx" },
-  update: { contrasena_hash: direccionPasswordHash },
-  create: {
-    nombre_completo: "Usuario Dirección",
-    correo_electronico: "direccion@geekdesign.mx",
-    contrasena_hash: direccionPasswordHash,
-    id_rol: direccionRole.id_rol,
-    estatus: "Activo",
-  },
-});
+  const direccionUser = await prisma.usuarios.upsert({
+    where: { correo_electronico: "direccion@geekdesign.mx" },
+    update: { contrasena_hash: direccionPasswordHash },
+    create: {
+      nombre_completo: "Usuario Dirección",
+      correo_electronico: "direccion@geekdesign.mx",
+      contrasena_hash: direccionPasswordHash,
+      id_rol: direccionRole.id_rol,
+      estatus: "Activo",
+    },
+  });
 
-console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
-
+  console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
 
   console.log("Seeded admin colaborador");
 

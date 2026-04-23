@@ -16,7 +16,7 @@ type ParamHandler<P> = (
   session: SessionPayload
 ) => Promise<NextResponse>;
 
-const DEV_SESSION: SessionPayload = { id: 0, email: "dev@local", role: "Administrador" };
+//const DEV_SESSION: SessionPayload = { id: 0, email: "dev@local", role: "Administrador" };
 
 // Reads the current session and checks role access when needed.
 async function resolveSession(roles?: UserRole[]): Promise<SessionPayload> {
