@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+
+
+export const ServicioSchema = z.object({
+  id_servicio: z.number().int().positive(),
+  id_estatus: z.number().int().positive(),
+  nombre_servicio: z.string().min(1).max(100),
+  descripcion_servicio: z.string().optional(),
+  estatus_servicio: z.boolean(),
+});
+
+
+
 export const CreateServicioSchema = z.object({
   id_estatus: z.number().int().positive(),
   nombre_servicio: z.string().min(1).max(100),
