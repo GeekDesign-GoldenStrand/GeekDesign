@@ -1,0 +1,50 @@
+import { withRoleParams } from "@/lib/auth/guards";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db/client";
+
+type Params = { id: string };
+
+export const PATCH = withRoleParams<Params>(["Direccion"], async (_req, ctx, session) => {
+  try {
+    const { id } = await ctx.params;
+    const quotationId = parseInt(id, 10);
+
+    const currentQuotation = await prisma.cotizaciones.findUnique({
+      where: { id_cotizacion: quotationId },
+    });
+    if (!currentQuotation) {
+      return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
+    }
+
+    const newStatusId = await getQuotationStatusId("Validada");
+
+    const validatedQuotation = await prisma.cotizaciones.update({
+      where: { id_cotizacion: quotationId },
+      data: { id_estatus_cotizacion: newStatusId },
+      include: { cliente: true, pedido: true },
+    });
+
+    // ✅ Aquí ya puedes usar session.id
+    await prisma.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: quotationId,
+        id_usuario: session.id, // real authenticated user
+        id_estado_anterior: currentQuotation.id_estatus_cotizacion,
+        id_estado_nuevo: newStatusId,
+      },
+    });
+
+    return NextResponse.json(validatedQuotation);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to validate quotation" }, { status: 500 });
+  }
+});
+
+async function getQuotationStatusId(description: string) {
+  const status = await prisma.estatusCotizacion.findUnique({
+    where: { descripcion: description },
+  });
+  if (!status) throw new Error(`Quotation status '${description}' not found`);
+  return status.id_estatus;
+}

@@ -1,17 +1,59 @@
 import type { Pedidos } from "@prisma/client";
-
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
 
 export async function listPedidos(
   page: number,
-  pageSize: number
+  pageSize: number,
+  serviceId?: number,
+  onlyActive?: boolean
 ): Promise<{ items: Pedidos[]; total: number }> {
-  // TODO: implement — consider including cliente and estatus relations
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  try {
+    const skip = (page - 1) * pageSize;
+
+    // Build dynamic filter conditions
+    const where: any = {};
+    if (serviceId) {
+      // Include only orders that have at least one detail with the given serviceId
+      where.detalles = { some: { id_servicio: serviceId } };
+    }
+    if (onlyActive) {
+      // Exclude orders whose status is "Entregado" or "Cancelado"
+      where.estatus = {
+        descripcion: { notIn: ["Entregado", "Cancelado"] },
+      };
+    }
+
+    // Execute two queries in parallel:
+    // 1. Fetch the paginated list of orders with relations
+    // 2. Count the total number of matching orders (for pagination metadata)
+    const [items, total] = await Promise.all([
+      prisma.pedidos.findMany({
+        where, // apply filters
+        skip,
+        take: pageSize,
+        include: { // include related entities for richer response
+          cliente: true,
+          sucursal: true,
+          estatus: true,
+          detalles: {
+            include: {
+              servicio: true,
+              material: true,
+              archivo: true,
+            },
+          },
+        },
+        orderBy: { fecha_creacion: "desc" },
+      }),
+      prisma.pedidos.count({ where }),
+    ]);
+
+    return { items, total };
+  } catch (error) {
+    console.error("Error fetching pedidos:", error);
+    throw error;
+  }
 }
 
 export async function getPedido(id: number): Promise<Pedidos> {
@@ -40,15 +82,6 @@ export async function deletePedido(id: number): Promise<void> {
   throw new Error("Not implemented");
 }
 
-/* Lo de acá abajo es lo que antes era lib/services/orders.ts, pero cambió con lo que hay arriba que venía en la rama develop
-import { prisma } from "@/lib/db/client";
-
-/**
- * Get orders with optional filters:
- * - onlyActive: filter by active status
- * - serviceId: filter by service
- */
-/*
 export async function getOrders(options?: { onlyActive?: boolean; serviceId?: number }) {
   // Extract values from options, set default for onlyActive = false
   const { onlyActive = false, serviceId } = options || {};
@@ -88,5 +121,3 @@ export async function getOrders(options?: { onlyActive?: boolean; serviceId?: nu
     },
   });
 }
-
-*/
