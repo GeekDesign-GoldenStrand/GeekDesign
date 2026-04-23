@@ -15,10 +15,10 @@ export default function LoginPage() {
       <BrandLogo />
 
       <div className="mt-16 flex flex-col items-center text-center">
-        <h1 className="font-ibm-plex font-semibold text-[54px] tracking-[2.7px] bg-gradient-to-l from-[#eb696b] to-[#ff6388] to-[93%] bg-clip-text text-transparent">
+        <h1 className="font-ibm-plex font-semibold text-[48px] tracking-[2.4px] bg-gradient-to-l from-[#eb696b] to-[#ff6388] to-[93%] bg-clip-text text-transparent">
           Bienvenid@
         </h1>
-        <p className="font-ibm-plex font-light text-[36px] tracking-[1.8px] text-[#3b2223]">
+        <p className="font-ibm-plex font-normal text-[18px] tracking-[0.9px] text-[#5b5b5b]">
           al portal administrativo
         </p>
       </div>

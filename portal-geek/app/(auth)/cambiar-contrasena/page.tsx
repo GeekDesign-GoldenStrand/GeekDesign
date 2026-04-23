@@ -20,7 +20,7 @@ export default async function CambiarContrasenaPage({ searchParams }: PageProps)
     return (
       <div className="flex w-full max-w-[519px] flex-col items-center gap-6 text-center">
         <BrandLogo />
-        <p className="mt-10 text-[16px] text-[#555] tracking-[0.5px]">
+        <p className="font-ibm-plex mt-10 text-[16px] text-[#555] tracking-[0.5px]">
           El enlace de recuperación es inválido o ya expiró.
         </p>
         <Link
@@ -38,10 +38,10 @@ export default async function CambiarContrasenaPage({ searchParams }: PageProps)
       <BrandLogo />
 
       <div className="mt-16 flex flex-col items-center text-center">
-        <h1 className="font-semibold text-[48px] tracking-[2.4px] bg-gradient-to-l from-[#eb696b] to-[#ff6388] to-[93%] bg-clip-text text-transparent">
+        <h1 className="font-ibm-plex font-semibold text-[48px] tracking-[2.4px] bg-gradient-to-l from-[#eb696b] to-[#ff6388] to-[93%] bg-clip-text text-transparent">
           Restablecer contraseña
         </h1>
-        <p className="mt-4 font-normal text-[18px] tracking-[0.9px] text-[#5b5b5b]">
+        <p className="font-ibm-plex mt-4 font-normal text-[18px] tracking-[0.9px] text-[#5b5b5b]">
           Elige una nueva contraseña segura para tu cuenta
         </p>
       </div>
