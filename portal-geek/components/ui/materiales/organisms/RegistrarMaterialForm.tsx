@@ -143,24 +143,24 @@ export function RegistrarMaterialForm({ onCreated, onClose }: RegistrarMaterialF
     event.preventDefault();
     setServerError(null);
 
-      const validatedPayload = validate();
-      if (!validatedPayload) return;
+    const validatedPayload = validate();
+    if (!validatedPayload) return;
 
     setLoading(true);
     try {
       const res = await fetch("/api/materiales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(validatedPayload),
+        body: JSON.stringify(validatedPayload),
       });
 
-        const responsePayload = await res.json().catch(() => ({}));
+      const responsePayload = await res.json().catch(() => ({}));
       if (!res.ok) {
-          setServerError(responsePayload?.error ?? `Error ${res.status}`);
+        setServerError(responsePayload?.error ?? `Error ${res.status}`);
         return;
       }
 
-        onCreated(mapCreatedMaterial(responsePayload.data as CreatedMaterialResponse));
+      onCreated(mapCreatedMaterial(responsePayload.data as CreatedMaterialResponse));
       // Close modal only after successful creation and local list update.
       onClose();
     } catch {

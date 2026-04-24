@@ -65,9 +65,8 @@ export default function MaterialesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialCardProps | null>(null);
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
-  const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(
-    DEFAULT_VISIBLE_COLUMNS
-  );
+  const [visibleColumns, setVisibleColumns] =
+    useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
 
   useEffect(() => {
     // Initial read-only load for the materials catalog.
@@ -88,14 +87,13 @@ export default function MaterialesPage() {
     // free-text search
     const q = search.trim().toLowerCase();
     const base = q
-      ? rows.filter((row) => {
-          return (
+      ? rows.filter(
+          (row) =>
             row.name.toLowerCase().includes(q) ||
             row.unit.toLowerCase().includes(q) ||
             row.color.toLowerCase().includes(q) ||
             row.description.toLowerCase().includes(q)
-          );
-        })
+        )
       : rows;
 
     return [...base].sort((a, b) => {
@@ -136,9 +134,7 @@ export default function MaterialesPage() {
 
   function handleUpdated(row: MaterialCardProps) {
     // Update the row in the list
-    setRows((prev) =>
-      prev.map((item) => (item.id === row.id ? row : item))
-    );
+    setRows((prev) => prev.map((item) => (item.id === row.id ? row : item)));
   }
 
   function handleDeleted(materialId: number) {

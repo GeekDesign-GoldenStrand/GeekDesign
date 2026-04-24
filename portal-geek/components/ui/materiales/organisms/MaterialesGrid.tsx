@@ -33,11 +33,13 @@ export function MaterialesGrid({ items, visibleColumns, onEditMaterial }: Materi
         style={{ gridTemplateColumns: templateColumns }}
       >
         {enabledColumns.map((column) => (
-          <span key={column.key} className="text-center flex items-center justify-center">{column.label}</span>
+          <span key={column.key} className="text-center flex items-center justify-center">
+            {column.label}
+          </span>
         ))}
         <span />
       </div>
-        
+
       <div className="space-y-2">
         {items.map((item) => (
           <MaterialCard

@@ -14,8 +14,7 @@ export const CreateMaterialSchema = z.object({
     .string()
     .min(1, "La descripción es requerida.")
     .max(500, "Máximo 500 caracteres."),
-  unidad_medida: z
-    .enum(UNIDADES_MEDIDA, { message: "La unidad de medida es requerida." }),
+  unidad_medida: z.enum(UNIDADES_MEDIDA, { message: "La unidad de medida es requerida." }),
   ancho: z
     .number({ message: "Campo requerido" })
     .positive("El ancho debe ser mayor a 0.")

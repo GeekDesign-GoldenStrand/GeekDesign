@@ -69,7 +69,12 @@ function normalizeNumericInput(raw: string): string {
   return `${intPart}.${decimalPart}`;
 }
 
-export function EditarMaterialForm({ material, onUpdated, onDeleted, onClose }: EditarMaterialFormProps) {
+export function EditarMaterialForm({
+  material,
+  onUpdated,
+  onDeleted,
+  onClose,
+}: EditarMaterialFormProps) {
   const [form, setForm] = useState({
     nombre_material: material.name,
     descripcion_material: material.description,
@@ -361,11 +366,10 @@ export function EditarMaterialForm({ material, onUpdated, onDeleted, onClose }: 
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">
-              ¿Eliminar material?
-            </h3>
+            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">¿Eliminar material?</h3>
             <p className="text-[14px] text-[#575757] mb-6">
-              Esta acción no se puede deshacer. El material &quot;{material.name}&quot; será eliminado permanentemente.
+              Esta acción no se puede deshacer. El material &quot;{material.name}&quot; será
+              eliminado permanentemente.
             </p>
             <div className="flex justify-end gap-3">
               <button

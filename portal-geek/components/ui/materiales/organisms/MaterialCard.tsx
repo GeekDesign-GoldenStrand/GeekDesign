@@ -70,11 +70,15 @@ export function MaterialCard({
       {visibleColumns.unit && <p className="text-[14px] text-[#1e1e1e] text-center">{unit}</p>}
       {visibleColumns.width && <p className="text-[16px] text-[#1e1e1e] text-center">{width}</p>}
       {visibleColumns.height && <p className="text-[16px] text-[#1e1e1e] text-center">{height}</p>}
-      {visibleColumns.thickness && <p className="text-[16px] text-[#1e1e1e] text-center">{thickness}</p>}
+      {visibleColumns.thickness && (
+        <p className="text-[16px] text-[#1e1e1e] text-center">{thickness}</p>
+      )}
       {visibleColumns.color && <ColorDescription value={color} />}
       {visibleColumns.image && <PreviewImage imageUrl={imageUrl} name={name} />}
       <button
-        onClick={() => onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl })}
+        onClick={() =>
+          onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl })
+        }
         aria-label={`Editar material ${id}`}
         className="text-[#1e1e1e] hover:opacity-70 transition-opacity flex items-center justify-center"
       >
