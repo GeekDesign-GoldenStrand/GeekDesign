@@ -14,7 +14,7 @@ type TerceroRow = TerceroCardProps;
 
 type DbInstalador = {
   id_instalador: number;
-  nombre_proveedor: string;
+  nombre_instalador: string;
   apodo: string | null;
   ubicacion: string | null;
   estatus: string;
@@ -25,6 +25,7 @@ type DbInstalador = {
 type DbProveedor = {
   id_proveedor: number;
   nombre_proveedor: string;
+  apodo: string | null;
   ubicacion: string | null;
   estatus: string;
   correo: string | null;
@@ -34,8 +35,8 @@ type DbProveedor = {
 function mapInstalador(item: DbInstalador): TerceroRow {
   return {
     id: item.id_instalador,
-    companyName: item.nombre_proveedor,
-    contactName: item.apodo ?? item.nombre_proveedor,
+    companyName: item.nombre_instalador,
+    contactName: item.apodo ?? item.nombre_instalador,
     location: item.ubicacion ?? "",
     role: "Instalador",
     status:
@@ -49,7 +50,7 @@ function mapProveedor(item: DbProveedor): TerceroRow {
   return {
     id: item.id_proveedor,
     companyName: item.nombre_proveedor,
-    contactName: item.nombre_proveedor,
+    contactName: item.apodo ?? item.nombre_proveedor,
     location: item.ubicacion ?? "",
     role: "Proveedor",
     status:

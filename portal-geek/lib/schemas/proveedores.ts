@@ -8,8 +8,16 @@ export const CreateProveedorSchema = z.object({
     .min(1)
     .max(30, "Máximo 30 caracteres.")
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+  apodo: z
+    .string()
+    .max(30, "Máximo 30 caracteres.")
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
+    .optional(),
   tipo: z.enum(["Proveedor de material", "Proveedor de servicio"]),
-  telefono: z.string().regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+  telefono: z
+    .string()
+    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos.")
+    .optional(),
   correo: z.email().max(150),
   descripcion_proveedor: z.string().optional(),
   ubicacion: z.string().max(255).optional(),

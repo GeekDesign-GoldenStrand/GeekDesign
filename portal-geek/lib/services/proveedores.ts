@@ -26,7 +26,13 @@ export async function getProveedor(id: number): Promise<Proveedores> {
 }
 
 export async function createProveedor(data: CreateProveedorInput): Promise<Proveedores> {
-  return prisma.proveedores.create({ data });
+  return prisma.proveedores.create({
+    data: {
+      ...data,
+      telefono: data.telefono || null,
+      correo: data.correo || null,
+    },
+  });
 }
 
 export async function updateProveedor(
