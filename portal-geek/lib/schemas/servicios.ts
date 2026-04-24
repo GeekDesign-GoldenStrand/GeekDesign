@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const VariableSchema = z.object({
   id_tipo_variable: z.number().int().positive(),
-  id_nombre_variable:z.string().min(1).max(100).regex(/^[a-zA-Z0-9_]+$/, "Solo minusculas, números y guiones bajos; "),
+  nombre_variable: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_]+$/, "Solo minusculas, números y guiones bajos; "),
   etiqueta: z.string().min(1).max(100),
   valor_default: z.string().optional(),
   editable_por_cliente: z.boolean().default(false),
