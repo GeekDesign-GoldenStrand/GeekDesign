@@ -48,8 +48,8 @@ export const CreateServicioSchema = z.object({
 
   // Array for entities to vinculate with this service
   id_maquinas: z.array(z.number().int().positive()).optional().default([]),
-  id_instaladores: z.array(z.number().int().positive()).optional().default([]),
-  id_proveedores: z.array(z.number().int().positive()).optional().default([]),
+  id_instalador: z.number().int().positive().nullable().optional(),
+  id_proveedor: z.number().int().positive().nullable().optional(),
 
   formula: FormulaSchema.optional(),
 });

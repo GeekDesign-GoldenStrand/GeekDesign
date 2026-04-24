@@ -162,14 +162,16 @@ model Servicios {
   nombre_servicio      String  @db.VarChar(100)
   descripcion_servicio String?
   estatus_servicio     Boolean @default(true)
+  id_instalador        Int?    // NUEVO: null si no requiere instalación
+  id_proveedor         Int?    // NUEVO: null si no requiere proveedor
 
-  estatusServicio     EstatusServicio       @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  opciones            OpcionesProducto[]
-  detallesPedido      DetallePedido[]
-  formulas            Formulas[]
-  maquinas            ServicioMaquina[]
-  proveedores         ServicioProveedor[]
-  instaladorServicios InstaladorServicios[]
+  estatusServicio EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  instalador      Instaladores?      @relation(fields: [id_instalador], references: [id_instalador])
+  proveedor       Proveedores?       @relation(fields: [id_proveedor], references: [id_proveedor])
+  opciones        OpcionesProducto[]
+  detallesPedido  DetallePedido[]
+  formulas        Formulas[]
+  maquinas        ServicioMaquina[]
 
   @@map("SERVICIOS")
 }
@@ -299,7 +301,7 @@ model Proveedores {
   estatus               String   @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   gastos            Gastos[]
-  servicios         ServicioProveedor[]
+  servicios         Servicios[]
   formulaConstantes FormulaConstantes[]
 
   @@map("PROVEEDORES")
@@ -317,25 +319,12 @@ model Instaladores {
   ubicacion         String? @db.VarChar(255)
   estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
-  servicios         InstaladorServicios[]
+  servicios         Servicios[]
   formulaConstantes FormulaConstantes[]
 
   @@map("INSTALADORES")
 }
 
-// Pivote instalador ↔ servicio (muchos-a-muchos).
-// Se conserva el nombre de la tabla; se corrige el bug del campo 'servicio: String' -> 'id_servicio: Int' con FK.
-model InstaladorServicios {
-  id_instalador_servicio Int @id @default(autoincrement())
-  id_instalador          Int
-  id_servicio            Int // FIX: antes era 'servicio String' libre, ahora FK a Servicios
-
-  instalador Instaladores @relation(fields: [id_instalador], references: [id_instalador])
-  servicio   Servicios    @relation(fields: [id_servicio], references: [id_servicio])
-
-  @@unique([id_instalador, id_servicio])
-  @@map("INSTALADORSERVICIOS")
-}
 
 // ─────────────────────────────────────────────
 // SERVICE PIVOTS (many-to-many)
@@ -353,17 +342,6 @@ model ServicioMaquina {
   @@map("SERVICIOMAQUINA")
 }
 
-model ServicioProveedor {
-  id_servicio_proveedor Int @id @default(autoincrement())
-  id_servicio           Int
-  id_proveedor          Int
-
-  servicio  Servicios   @relation(fields: [id_servicio], references: [id_servicio])
-  proveedor Proveedores @relation(fields: [id_proveedor], references: [id_proveedor])
-
-  @@unique([id_servicio, id_proveedor])
-  @@map("SERVICIOPROVEEDOR")
-}
 
 // ─────────────────────────────────────────────
 // ORDERS

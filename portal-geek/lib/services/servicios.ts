@@ -37,8 +37,9 @@ export async function getServicio(id: number): Promise<Servicios> {
     include:{
       estatusServicio: true,
       maquinas: { include: { maquina: true } },
-      instaladorServicios: { include: { instalador: true } },
-      proveedores: { include: { proveedor: true } },
+      instalador: true,
+      proveedor: true,
+      
       formulas: {
         where: { estatus: "Activa" },
         include: {
@@ -61,7 +62,7 @@ Create a new service with the provided data. Returns the created service. Throws
 failure or other issues.
 */
 export async function createServicio(data: CreateServicioInput, id_usuario: number): Promise<Servicios> {
-  const { id_maquinas, id_instaladores, id_proveedores, formula, ...servicioData } = data;
+  const { id_maquinas, formula, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
     // Here the service is created first, then the relations are created in their respective tables. 
@@ -75,26 +76,6 @@ export async function createServicio(data: CreateServicioInput, id_usuario: numb
         data: id_maquinas.map((id_maquina) => ({
           id_servicio: servicio.id_servicio,
           id_maquina,
-        })),
-      });
-    }
-
-    //If it´s needed it is vinculated to an installer
-    if (id_instaladores && id_instaladores.length > 0) {
-      await tx.instaladorServicios.createMany({
-        data: id_instaladores.map((id_instalador) => ({
-          id_servicio: servicio.id_servicio,
-          id_instalador,
-        })),
-      });
-    }
-
-    //Then to a provider
-    if (id_proveedores && id_proveedores.length > 0) {
-      await tx.servicioProveedor.createMany({
-        data: id_proveedores.map((id_proveedor) => ({
-          id_servicio: servicio.id_servicio,
-          id_proveedor,
         })),
       });
     }
@@ -148,7 +129,7 @@ export async function createServicio(data: CreateServicioInput, id_usuario: numb
 Updates a service and resincs their latch if there are new arrays.
 */
 export async function updateServicio(id: number, data: UpdateServicioInput, id_usuario: number): Promise<Servicios> {
-  const { id_maquinas, id_instaladores, id_proveedores, formula, ...servicioData } = data;
+  const { id_maquinas, formula, ...servicioData } = data;
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -164,30 +145,6 @@ export async function updateServicio(id: number, data: UpdateServicioInput, id_u
             data: id_maquinas.map((id_maquina) => ({
               id_servicio: id,
               id_maquina,
-            })),
-          });
-        }
-      }
-
-      if (id_instaladores !== undefined) {
-        await tx.instaladorServicios.deleteMany({ where: { id_servicio: id } });
-        if (id_instaladores.length > 0) {
-          await tx.instaladorServicios.createMany({
-            data: id_instaladores.map((id_instalador) => ({
-              id_servicio: id,
-              id_instalador,
-            })),
-          });
-        }
-      }
-
-      if (id_proveedores !== undefined) {
-        await tx.servicioProveedor.deleteMany({ where: { id_servicio: id } });
-        if (id_proveedores.length > 0) {
-          await tx.servicioProveedor.createMany({
-            data: id_proveedores.map((id_proveedor) => ({
-              id_servicio: id,
-              id_proveedor,
             })),
           });
         }
