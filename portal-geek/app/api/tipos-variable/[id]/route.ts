@@ -2,12 +2,12 @@ import { withRoleParams } from "@/lib/auth/guards";
 import {
   TipoVariableIdParams,
   UpdateTipoVariableSchema,
-} from "@/lib/schemas/tiposVariable";
+} from "@/lib/schemas/tipos-variable";
 import {
   getTipoVariable,
   updateTipoVariable,
   deleteTipoVariable,
-} from "@/lib/services/tiposVariable";
+} from "@/lib/services/tipos-variable";
 import { ok, noContent } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 

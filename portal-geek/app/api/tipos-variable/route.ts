@@ -1,11 +1,11 @@
 import type { NextRequest } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
-import { CreateTipoVariableSchema } from "@/lib/schemas/tiposVariable";
+import { CreateTipoVariableSchema } from "@/lib/schemas/tipos-variable";
 import {
   listTiposVariable,
   createTipoVariable,
-} from "@/lib/services/tiposVariable";
+} from "@/lib/services/tipos-variable";
 import { ok, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
