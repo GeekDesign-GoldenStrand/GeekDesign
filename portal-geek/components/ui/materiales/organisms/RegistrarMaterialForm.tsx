@@ -98,7 +98,7 @@ export function RegistrarMaterialForm({ onCreated, onClose }: RegistrarMaterialF
       const value = form[key];
       if (key === "imagen_url") {
         if (!value.trim()) return "";
-        return /^https?:\/\//i.test(value.trim()) ? FIELD_SUCCESS : "";
+        return /^https:\/\//i.test(value.trim()) ? FIELD_SUCCESS : "";
       }
       if (["ancho", "alto", "grosor"].includes(key)) {
         const parsed = parseOptionalNumber(value);
