@@ -35,7 +35,10 @@ export const CreateMaterialSchema = z.object({
     .string()
     .min(1, "La URL de imagen es requerida.")
     .url("Debe ser una URL válida.")
-    .refine((value) => value.toLowerCase().startsWith("https://"), "La URL de imagen debe iniciar con https://")
+    .refine(
+      (value) => value.toLowerCase().startsWith("https://"),
+      "La URL de imagen debe iniciar con https://"
+    )
     .max(500, "Máximo 500 caracteres."),
 });
 
