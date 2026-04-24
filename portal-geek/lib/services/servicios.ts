@@ -38,8 +38,8 @@ export async function getServicio(id: number): Promise<Servicios> {
     include: {
       estatusServicio: true,
       maquinas: { include: { maquina: true } },
-      instaladorServicios: { include: { instalador: true } },
-      proveedores: { include: { proveedor: true } },
+      instalador: true,
+      proveedor: true,
       formulas: {
         where: { estatus: "Activa" },
         include: {
@@ -93,7 +93,7 @@ export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
 ): Promise<Servicios> {
-  const { id_maquinas, id_instaladores, id_proveedores, formula, ...servicioData } = data;
+  const { id_maquinas, formula, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
     // Here the service is created first, then the relations are created in their respective tables.
@@ -107,27 +107,6 @@ export async function createServicio(
         data: id_maquinas.map((id_maquina) => ({
           id_servicio: servicio.id_servicio,
           id_maquina,
-        })),
-      });
-    }
-
-    // If it´s needed it is vinculated to an installer
-    if (id_instaladores && id_instaladores.length > 0) {
-      await tx.instaladorServicios.createMany({
-        data: id_instaladores.map(({ id_instalador, precio }) => ({
-          id_servicio: servicio.id_servicio,
-          id_instalador,
-          precio,
-        })),
-      });
-    }
-
-    // Then to a provider
-    if (id_proveedores && id_proveedores.length > 0) {
-      await tx.servicioProveedor.createMany({
-        data: id_proveedores.map((id_proveedor) => ({
-          id_servicio: servicio.id_servicio,
-          id_proveedor,
         })),
       });
     }
@@ -185,7 +164,7 @@ export async function updateServicio(
   data: UpdateServicioInput,
   id_usuario: number
 ): Promise<Servicios> {
-  const { id_maquinas, id_instaladores, id_proveedores, formula, ...servicioData } = data;
+  const { id_maquinas, formula, ...servicioData } = data;
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -201,31 +180,6 @@ export async function updateServicio(
             data: id_maquinas.map((id_maquina) => ({
               id_servicio: id,
               id_maquina,
-            })),
-          });
-        }
-      }
-
-      if (id_instaladores !== undefined) {
-        await tx.instaladorServicios.deleteMany({ where: { id_servicio: id } });
-        if (id_instaladores.length > 0) {
-          await tx.instaladorServicios.createMany({
-            data: id_instaladores.map(({ id_instalador, precio }) => ({
-              id_servicio: id,
-              id_instalador,
-              precio,
-            })),
-          });
-        }
-      }
-
-      if (id_proveedores !== undefined) {
-        await tx.servicioProveedor.deleteMany({ where: { id_servicio: id } });
-        if (id_proveedores.length > 0) {
-          await tx.servicioProveedor.createMany({
-            data: id_proveedores.map((id_proveedor) => ({
-              id_servicio: id,
-              id_proveedor,
             })),
           });
         }
