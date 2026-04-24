@@ -67,7 +67,7 @@ const TABS: Tab[] = ["Todos", "Proveedores", "Instaladores"];
 export default function TercerosPage() {
   const [rows, setRows] = useState<TerceroRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("Instaladores");
+  const [activeTab, setActiveTab] = useState<Tab>("Todos");
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
