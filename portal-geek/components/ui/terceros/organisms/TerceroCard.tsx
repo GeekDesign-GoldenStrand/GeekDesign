@@ -2,6 +2,7 @@
 
 import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
 import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
+import { TerceroTypeTag } from "@/components/ui/terceros/atoms/TerceroTypeTag";
 import type { TerceroCardProps } from "@/types";
 
 function formatPhone(phone: string) {
@@ -19,9 +20,14 @@ export function TerceroCard({
   status,
   email,
   phone,
+  tipo,
   onEdit,
   onStatusChange,
 }: TerceroCardProps) {
+  const types = tipo ? tipo.split(",").map((t) => t.trim()) : [];
+  const hasMaterial = types.some((t) => t.toLowerCase().includes("material"));
+  const hasServicio = types.some((t) => t.toLowerCase().includes("servicio"));
+
   return (
     <div className="bg-white rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5 w-full font-['IBM_Plex_Sans_JP',sans-serif]">
       <h3 className="font-semibold text-xl text-[#1e1e1e] leading-tight">{companyName}</h3>
@@ -34,9 +40,18 @@ export function TerceroCard({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="px-2 py-0.5 rounded-[7px] bg-[rgba(0,128,255,0.07)] border border-[#006aff] text-[#006aff] text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]">
+        <span
+          className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+            role === "Proveedor"
+              ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
+              : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+          }`}
+        >
           {role}
         </span>
+
+        {hasMaterial && <TerceroTypeTag type="Material" />}
+        {hasServicio && <TerceroTypeTag type="Servicio" />}
 
         <StatusDropdown status={status} onChange={onStatusChange} />
       </div>

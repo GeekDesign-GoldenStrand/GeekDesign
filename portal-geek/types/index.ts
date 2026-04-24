@@ -47,6 +47,7 @@ export interface TerceroCardProps {
   status: TerceroStatus;
   email: string;
   phone: string;
+  tipo?: string;
   onEdit?: () => void;
   onStatusChange?: (status: TerceroStatus) => void;
 }

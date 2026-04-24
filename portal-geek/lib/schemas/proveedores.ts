@@ -13,7 +13,7 @@ export const CreateProveedorSchema = z.object({
     .max(30, "Máximo 30 caracteres.")
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
     .optional(),
-  tipo: z.enum(["Proveedor de material", "Proveedor de servicio"]),
+  tipo: z.string(),
   telefono: z
     .string()
     .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos.")

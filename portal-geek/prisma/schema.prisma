@@ -269,7 +269,7 @@ model Proveedores {
   id_proveedor          Int     @id @default(autoincrement())
   nombre_proveedor      String  @db.VarChar(100)
   apodo                 String? @db.VarChar(100)
-  tipo                  String  @db.VarChar(50)  // Proveedor de material / Proveedor de servicio
+  tipo                  String  @db.VarChar(100) // Proveedor de material / Proveedor de servicio
   telefono              String? @db.VarChar(20)
   correo                String? @db.VarChar(150)
   descripcion_proveedor String?

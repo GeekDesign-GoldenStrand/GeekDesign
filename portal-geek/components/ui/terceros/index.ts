@@ -5,3 +5,4 @@ export { TercerosToolbar } from "./organisms/TercerosToolbar";
 export { TercerosGrid } from "./organisms/TercerosGrid";
 export { AgregarTerceroModal } from "./organisms/AgregarTerceroModal";
 export { RegistrarTerceroForm } from "./organisms/RegistrarTerceroForm";
+export { TerceroTypeTag } from "./atoms/TerceroTypeTag";

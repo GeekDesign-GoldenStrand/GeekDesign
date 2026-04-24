@@ -30,6 +30,7 @@ type DbProveedor = {
   estatus: string;
   correo: string | null;
   telefono: string | null;
+  tipo: string;
 };
 
 function mapInstalador(item: DbInstalador): TerceroRow {
@@ -57,6 +58,7 @@ function mapProveedor(item: DbProveedor): TerceroRow {
       item.estatus === "Activo" ? "Activo" : item.estatus === "Baneado" ? "Baneado" : "Inactivo",
     email: item.correo ?? "",
     phone: item.telefono ?? "",
+    tipo: item.tipo,
   };
 }
 

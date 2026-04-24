@@ -99,7 +99,7 @@ export function RegistrarTerceroForm({
   const [form, setForm] = useState({
     nombre_proveedor: "",
     apodo: "",
-    tipo_proveedor: "Proveedor de material" as CreateProveedorInput["tipo"],
+    tipo_proveedor_selecion: "Material" as "Material" | "Servicio" | "Ambos",
     tipo_instalador: "Instalador" as CreateInstaladorInput["tipo"],
     telefono: "",
     correo: "",
@@ -114,7 +114,7 @@ export function RegistrarTerceroForm({
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  function setField(key: string, value: string | number) {
+  function setField(key: string, value: any) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
     setTouched((prev) => ({ ...prev, [key]: true }));
@@ -181,10 +181,17 @@ export function RegistrarTerceroForm({
 
     try {
       if (terceroType === "Proveedor") {
+        const selectedTypes =
+          form.tipo_proveedor_selecion === "Material"
+            ? ["Proveedor de material"]
+            : form.tipo_proveedor_selecion === "Servicio"
+            ? ["Proveedor de servicio"]
+            : ["Proveedor de material", "Proveedor de servicio"];
+
         const body = {
           nombre_proveedor: form.nombre_proveedor,
           apodo: form.apodo || undefined,
-          tipo: form.tipo_proveedor,
+          tipo: selectedTypes.join(", "),
           telefono: form.telefono || undefined,
           correo: form.correo || undefined,
           descripcion_proveedor: form.descripcion_proveedor || undefined,
@@ -216,6 +223,7 @@ export function RegistrarTerceroForm({
           status: data.estatus as TerceroStatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
+          tipo: data.tipo,
         });
       } else {
         const body = {
@@ -340,12 +348,13 @@ export function RegistrarTerceroForm({
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
               <select
-                value={form.tipo_proveedor}
-                onChange={(e) => setField("tipo_proveedor", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_proveedor")}`}
+                value={form.tipo_proveedor_selecion}
+                onChange={(e) => setField("tipo_proveedor_selecion", e.target.value)}
+                className={`${FIELD} ${getFieldClass("tipo_proveedor_selecion")}`}
               >
-                <option value="Proveedor de material">Proveedor de material</option>
-                <option value="Proveedor de servicio">Proveedor de servicio</option>
+                <option value="Material">Material</option>
+                <option value="Servicio">Servicio</option>
+                <option value="Ambos">Ambos</option>
               </select>
             </div>
           </div>
