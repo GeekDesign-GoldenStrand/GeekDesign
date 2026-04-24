@@ -34,7 +34,7 @@ export function MaterialesFilterPanel({
       <div className="flex gap-5">
         <section className="flex-1 min-w-0">
           {/* Column visibility controls */}
-          <p className="text-[4px] leading-none font-semibold text-[#1e1e1e] mb-2">Tipo</p>
+          <p className="text-[24px] leading-none font-semibold text-[#1e1e1e] mb-2">Tipo</p>
           <div className="space-y-1.5">
             {COLUMN_OPTIONS.map((option) => (
               <label
