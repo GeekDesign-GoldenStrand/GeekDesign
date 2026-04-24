@@ -270,8 +270,8 @@ model Proveedores {
   nombre_proveedor      String  @db.VarChar(100)
   apodo                 String? @db.VarChar(100)
   tipo                  String  @db.VarChar(100) // Proveedor de material / Proveedor de servicio
-  telefono              String? @db.VarChar(20)
-  correo                String? @db.VarChar(150)
+  telefono              String  @db.VarChar(20)
+  correo                String  @db.VarChar(150)
   descripcion_proveedor String?
   ubicacion             String? @db.VarChar(255)
   estatus               String  @db.VarChar(20)  // Activo / Inactivo / Baneado
@@ -302,8 +302,8 @@ model Instaladores {
   nombre_instalador String  @db.VarChar(100)
   apodo            String? @db.VarChar(100)
   tipo             String  @db.VarChar(50)  // Instalador / Contratista
-  telefono         String? @db.VarChar(20)
-  correo           String? @db.VarChar(150)
+  telefono         String  @db.VarChar(20)
+  correo           String  @db.VarChar(150)
   notas            String? @db.VarChar(500)
   ubicacion        String? @db.VarChar(255)
   estatus          String  @db.VarChar(20)  // Activo / Inactivo / Baneado

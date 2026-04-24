@@ -18,8 +18,8 @@ type DbInstalador = {
   apodo: string | null;
   ubicacion: string | null;
   estatus: string;
-  correo: string | null;
-  telefono: string | null;
+  correo: string;
+  telefono: string;
 };
 
 type DbProveedor = {
@@ -28,8 +28,8 @@ type DbProveedor = {
   apodo: string | null;
   ubicacion: string | null;
   estatus: string;
-  correo: string | null;
-  telefono: string | null;
+  correo: string;
+  telefono: string;
   tipo: string;
 };
 

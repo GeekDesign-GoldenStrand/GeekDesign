@@ -41,7 +41,8 @@ const proveedorSchema = z.object({
     .refine((v) => EMAIL_REGEX.test(v), "Correo electrónico inválido."),
   telefono: z
     .string()
-    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos."),
+    .min(1, "El teléfono es requerido.")
+    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   ubicacion: z
     .string()
     .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
@@ -66,7 +67,8 @@ const instaladorSchema = z.object({
     .refine((v) => EMAIL_REGEX.test(v), "Correo electrónico inválido."),
   telefono: z
     .string()
-    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos."),
+    .min(1, "El teléfono es requerido.")
+    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   notas: z.string().max(500, "Máximo 500 caracteres."),
   ubicacion: z
     .string()
@@ -192,8 +194,8 @@ export function RegistrarTerceroForm({
           nombre_proveedor: form.nombre_proveedor,
           apodo: form.apodo || undefined,
           tipo: selectedTypes.join(", "),
-          telefono: form.telefono || undefined,
-          correo: form.correo || undefined,
+          telefono: form.telefono,
+          correo: form.correo,
           descripcion_proveedor: form.descripcion_proveedor || undefined,
           ubicacion: form.ubicacion || undefined,
           estatus: form.estatus,
@@ -230,8 +232,8 @@ export function RegistrarTerceroForm({
           nombre_instalador: form.nombre_proveedor,
           apodo: form.apodo || undefined,
           tipo: form.tipo_instalador,
-          telefono: form.telefono || undefined,
-          correo: form.correo || undefined,
+          telefono: form.telefono,
+          correo: form.correo,
           notas: form.notas || undefined,
           ubicacion: form.ubicacion || undefined,
           estatus: form.estatus,
@@ -374,7 +376,9 @@ export function RegistrarTerceroForm({
               {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
             </div>
             <div>
-              <label className={LABEL}>Teléfono</label>
+              <label className={LABEL}>
+                Teléfono <span className="text-[#e42200]">*</span>
+              </label>
               <input
                 type="tel"
                 placeholder="442 123 4567"
@@ -488,7 +492,9 @@ export function RegistrarTerceroForm({
               {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
             </div>
             <div>
-              <label className={LABEL}>Teléfono</label>
+              <label className={LABEL}>
+                Teléfono <span className="text-[#e42200]">*</span>
+              </label>
               <input
                 type="tel"
                 placeholder="442 123 4567"

@@ -29,8 +29,8 @@ export async function createProveedor(data: CreateProveedorInput): Promise<Prove
   return prisma.proveedores.create({
     data: {
       ...data,
-      telefono: data.telefono || null,
-      correo: data.correo || null,
+      telefono: data.telefono,
+      correo: data.correo,
     },
   });
 }

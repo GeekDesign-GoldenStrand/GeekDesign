@@ -16,9 +16,9 @@ export const CreateInstaladorSchema = z.object({
   tipo: z.enum(["Instalador", "Contratista"]),
   telefono: z
     .string()
-    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos.")
-    .optional(),
-  correo: z.email().max(150),
+    .min(1, "El teléfono es requerido.")
+    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+  correo: z.email("Correo electrónico inválido.").max(150),
   notas: z.string().max(500).optional(),
   ubicacion: z.string().max(255).optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
