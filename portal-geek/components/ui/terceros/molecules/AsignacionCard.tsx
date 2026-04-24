@@ -4,7 +4,6 @@ interface AsignacionCardProps {
   description?: string;
   selected: boolean;
   onToggle: () => void;
-  activeColor?: string;
 }
 
 export function AsignacionCard({
@@ -12,35 +11,26 @@ export function AsignacionCard({
   description,
   selected,
   onToggle,
-  activeColor = "#006aff",
 }: AsignacionCardProps) {
   return (
     <div
       onClick={onToggle}
       className={`group relative p-4 rounded-[12px] border transition-all duration-300 cursor-pointer flex flex-col gap-1.5 ${
         selected
-          ? "border-current shadow-[0_4px_15px_rgba(0,0,0,0.1)]"
+          ? "bg-[rgba(0,106,255,0.04)] border-[#006aff] shadow-[0_2px_10px_rgba(0,106,255,0.08)]"
           : "bg-white border-[#e0e0e0] hover:border-[#b9b8b8] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
       }`}
-      style={{
-        backgroundColor: selected ? `${activeColor}10` : undefined,
-        borderColor: selected ? activeColor : undefined,
-        color: selected ? activeColor : undefined,
-      }}
     >
       <div className="flex justify-between items-start">
-        <h4
-          className="font-semibold text-[16px] transition-colors"
-          style={{ color: selected ? activeColor : "#1e1e1e" }}
-        >
+        <h4 className={`font-semibold text-[15px] transition-colors ${
+          selected ? "text-[#006aff]" : "text-[#1e1e1e]"
+        }`}>
           {name}
         </h4>
         <div
-          className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all`}
-          style={{
-            backgroundColor: selected ? activeColor : "white",
-            borderColor: selected ? activeColor : "#b9b8b8",
-          }}
+          className={`h-5 w-5 rounded-full border flex items-center justify-center transition-all ${
+            selected ? "bg-[#006aff] border-[#006aff]" : "bg-white border-[#b9b8b8]"
+          }`}
         >
           {selected && (
             <svg
