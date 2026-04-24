@@ -1,18 +1,8 @@
+import { SignOutIcon } from "@phosphor-icons/react";
+
 function LogoutIcon() {
   return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 32 32"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 16h14M20 10l6 6-6 6" />
-      <path d="M18 6H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10" />
-    </svg>
+    <SignOutIcon size={32} weight="light" />
   );
 }
 
