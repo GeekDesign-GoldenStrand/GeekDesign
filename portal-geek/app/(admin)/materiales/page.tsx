@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   AgregarMaterialModal,
+  EditarMaterialModal,
   MaterialesGrid,
   MaterialesHeader,
   MaterialesToolbar,
@@ -61,6 +62,8 @@ export default function MaterialesPage() {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialCardProps | null>(null);
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(
     DEFAULT_VISIBLE_COLUMNS
@@ -121,6 +124,28 @@ export default function MaterialesPage() {
     setRows((prev) => [row, ...prev]);
   }
 
+  function handleEditClick(material: MaterialCardProps) {
+    setSelectedMaterial(material);
+    setShowEditModal(true);
+  }
+
+  function handleEditClose() {
+    setShowEditModal(false);
+    setSelectedMaterial(null);
+  }
+
+  function handleUpdated(row: MaterialCardProps) {
+    // Update the row in the list
+    setRows((prev) =>
+      prev.map((item) => (item.id === row.id ? row : item))
+    );
+  }
+
+  function handleDeleted(materialId: number) {
+    // Remove the deleted material from the list
+    setRows((prev) => prev.filter((item) => item.id !== materialId));
+  }
+
   return (
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-[#ececec]">
       <MaterialesHeader />
@@ -143,13 +168,27 @@ export default function MaterialesPage() {
 
         {error && !loading && <p className="text-[#e42200] text-[16px]">{error}</p>}
 
-        {!loading && !error && <MaterialesGrid items={filtered} visibleColumns={visibleColumns} />}
+        {!loading && !error && (
+          <MaterialesGrid
+            items={filtered}
+            visibleColumns={visibleColumns}
+            onEditMaterial={handleEditClick}
+          />
+        )}
       </main>
 
       <AgregarMaterialModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onCreated={handleCreated}
+      />
+
+      <EditarMaterialModal
+        isOpen={showEditModal}
+        material={selectedMaterial}
+        onClose={handleEditClose}
+        onUpdated={handleUpdated}
+        onDeleted={handleDeleted}
       />
     </div>
   );

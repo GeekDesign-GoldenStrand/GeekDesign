@@ -4,6 +4,7 @@ import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 interface MaterialesGridProps {
   items: MaterialCardProps[];
   visibleColumns: MaterialesVisibleColumns;
+  onEditMaterial: (material: MaterialCardProps) => void;
 }
 
 const COLUMN_META: Array<{
@@ -21,7 +22,7 @@ const COLUMN_META: Array<{
   { key: "image", label: "Imagen", width: "1fr" },
 ];
 
-export function MaterialesGrid({ items, visibleColumns }: MaterialesGridProps) {
+export function MaterialesGrid({ items, visibleColumns, onEditMaterial }: MaterialesGridProps) {
   const enabledColumns = COLUMN_META.filter((column) => visibleColumns[column.key]);
   const templateColumns = `${enabledColumns.map((column) => column.width).join(" ")} auto`;
 
@@ -44,6 +45,7 @@ export function MaterialesGrid({ items, visibleColumns }: MaterialesGridProps) {
             {...item}
             visibleColumns={visibleColumns}
             gridTemplateColumns={templateColumns}
+            onEdit={onEditMaterial}
           />
         ))}
       </div>

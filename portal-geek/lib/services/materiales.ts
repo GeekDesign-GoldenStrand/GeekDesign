@@ -38,14 +38,31 @@ export async function createMaterial(data: CreateMaterialInput): Promise<Materia
 }
 
 export async function updateMaterial(id: number, data: UpdateMaterialInput): Promise<Materiales> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  try {
+    const updated = await prisma.materiales.update({
+      where: { id_material: id },
+      data,
+    });
+    return updated;
+  } catch (err) {
+    // Prisma throws P2025 when record not found
+    if (err instanceof Error && err.message.includes("P2025")) {
+      throw new NotFoundError(`Material ${id} no encontrado`);
+    }
+    throw err;
+  }
 }
 
 export async function deleteMaterial(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.materiales.delete({
+      where: { id_material: id },
+    });
+  } catch (err) {
+    // Prisma throws P2025 when record not found
+    if (err instanceof Error && err.message.includes("P2025")) {
+      throw new NotFoundError(`Material ${id} no encontrado`);
+    }
+    throw err;
+  }
 }

@@ -4,6 +4,7 @@ import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 interface MaterialCardRowProps extends MaterialCardProps {
   visibleColumns: MaterialesVisibleColumns;
   gridTemplateColumns: string;
+  onEdit: (material: MaterialCardProps) => void;
 }
 
 function ColorDescription({ value }: { value: string }) {
@@ -53,6 +54,7 @@ export function MaterialCard({
   imageUrl,
   visibleColumns,
   gridTemplateColumns,
+  onEdit,
 }: MaterialCardRowProps) {
   return (
     <article
@@ -70,6 +72,7 @@ export function MaterialCard({
       {visibleColumns.color && <ColorDescription value={color} />}
       {visibleColumns.image && <PreviewImage imageUrl={imageUrl} name={name} />}
       <button
+        onClick={() => onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl })}
         aria-label={`Editar material ${id}`}
         className="text-[#1e1e1e] hover:opacity-70 transition-opacity flex items-center justify-center"
       >
