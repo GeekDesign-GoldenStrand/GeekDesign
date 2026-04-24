@@ -24,20 +24,22 @@ function ColorDescription({ value }: { value: string }) {
 
 function PreviewImage({ imageUrl, name }: { imageUrl: string; name: string }) {
   return (
-    <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
-      {imageUrl ? (
-        // Use native img 
-        <img
-          src={imageUrl}
-          alt={name}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          className="h-full w-full object-cover"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      ) : null}
+    <div className="flex items-center justify-center">
+      <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
+        {imageUrl ? (
+          // Use native img
+          <img
+            src={imageUrl}
+            alt={name}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
