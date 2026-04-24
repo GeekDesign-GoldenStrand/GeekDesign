@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 
 import { withRoleParams } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/client";
+import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
 
 type Params = { id: string };
 
 // PATCH /api/cotizaciones/[id]/rechazar
-export const PATCH = withRoleParams<Params>(["Direccion"], async (_req, ctx, session) => {
+export const PATCH = withRoleParams<{ id: string }>(
+  ["Direccion"],
+  async (_req, ctx, session) =>  {
   try {
-    const { id } = await ctx.params;
-    const quotationId = parseInt(id, 10);
+    // Validate parameters with Zod
+    const { id } = CotizacionIdParams.parse(ctx.params);
+    const quotationId = id;
 
     // Find current quotation to know its previous status
     const currentQuotation = await prisma.cotizaciones.findUnique({

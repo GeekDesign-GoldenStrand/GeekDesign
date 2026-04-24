@@ -83,7 +83,10 @@ async function main() {
 
   // ── Dirección user ──────────────────────────────────────────────────────────
   const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
-  const direccionPasswordHash = await bcrypt.hash("direccion123", 12);
+  const direccionPasswordHash = await bcrypt.hash(
+    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123", 
+    12
+  );
 
   const direccionUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "direccion@geekdesign.mx" },
