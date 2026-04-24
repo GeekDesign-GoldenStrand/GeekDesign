@@ -64,10 +64,11 @@ export function AsignarMaterialesModal({
         body: JSON.stringify({ type: "material", ids: selectedIds }),
       });
       if (res.ok) {
+        window.alert("Materiales asignados correctamente");
         onSaved();
         onClose();
       } else {
-        alert("Error al guardar la asignación");
+        window.alert("Hubo un error al guardar la asignación");
       }
     } finally {
       setSaving(false);
@@ -81,7 +82,9 @@ export function AsignarMaterialesModal({
       <div className="bg-white rounded-[12px] shadow-lg w-full max-w-[550px] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <div className="flex flex-col gap-4 w-full">
-            <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar Materiales</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar Materiales</h2>
+            </div>
 
             <div className="h-px bg-[#e8e8e8] w-full" />
 
