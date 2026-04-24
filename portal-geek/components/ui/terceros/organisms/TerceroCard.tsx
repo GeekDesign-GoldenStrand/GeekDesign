@@ -107,14 +107,24 @@ export function TerceroCard({
       <AsignarServiciosModal
         id_proveedor={id}
         companyName={companyName}
+        contactName={contactName}
+        email={email}
+        phone={phone}
+        role={role}
+        status={status}
         isOpen={isServiciosOpen}
         onClose={() => setIsServiciosOpen(false)}
-        onSaved={() => {}} // No refresh needed for now as it's a sub-modal
+        onSaved={() => {}}
       />
 
       <AsignarMaterialesModal
         id_proveedor={id}
         companyName={companyName}
+        contactName={contactName}
+        email={email}
+        phone={phone}
+        role={role}
+        status={status}
         isOpen={isMaterialesOpen}
         onClose={() => setIsMaterialesOpen(false)}
         onSaved={() => {}}

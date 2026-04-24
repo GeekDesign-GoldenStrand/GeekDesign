@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { AsignacionCard } from "../molecules/AsignacionCard";
+import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 
 interface AsignarMaterialesModalProps {
   id_proveedor: number;
   companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
   isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -14,6 +20,11 @@ interface AsignarMaterialesModalProps {
 export function AsignarMaterialesModal({
   id_proveedor,
   companyName,
+  contactName,
+  email,
+  phone,
+  role,
+  status,
   isOpen,
   onClose,
   onSaved,
@@ -67,15 +78,49 @@ export function AsignarMaterialesModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-[500px] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <div>
+      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-[550px] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
+          <div className="flex flex-col gap-4 w-full">
             <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar Materiales</h2>
-            <p className="text-[13px] text-[#575757] mt-0.5">{companyName}</p>
+
+            <div className="h-px bg-[#e8e8e8] w-full" />
+
+            <div className="space-y-1">
+              <h3 className="text-[22px] font-semibold text-[#1e1e1e] leading-tight">{companyName}</h3>
+              <p className="text-[18px] font-medium text-[#1e1e1e]">{contactName}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[17px] font-medium text-[#575757]">
+                <span className="underline decoration-gray-300">{email}</span>
+                <span>{phone}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+                  role === "Proveedor"
+                    ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
+                    : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+                }`}
+              >
+                {role}
+              </span>
+              <TerceroTypeTag type="Material" />
+              <span
+                className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+                  status === "Activo"
+                    ? "bg-[rgba(0,200,83,0.07)] border-[#00c853] text-[#00c853]"
+                    : status === "Inactivo"
+                      ? "bg-[rgba(255,179,0,0.07)] border-[#ffb300] text-[#ffb300]"
+                      : "bg-[rgba(255,23,68,0.07)] border-[#ff1744] text-[#ff1744]"
+                }`}
+              >
+                {status}
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[#8e908f] hover:text-[#e42200] transition-colors"
+            className="text-[#8e908f] hover:text-[#e42200] transition-colors pt-1"
           >
             <svg
               width="20"
