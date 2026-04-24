@@ -84,7 +84,7 @@ async function main() {
   // ── Dirección user ──────────────────────────────────────────────────────────
   const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
   const direccionPasswordHash = await bcrypt.hash(
-    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123", 
+    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123",
     12
   );
 

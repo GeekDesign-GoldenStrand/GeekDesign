@@ -1,15 +1,12 @@
-import { NextResponse } from "next/server";
-
 import { withRoleParams } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/client";
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
-
-type Params = { id: string };
+import { getQuotationStatusId } from "@/lib/services/cotizaciones";
+import { ok } from "@/lib/utils/api";
+import { NotFoundError, handleError } from "@/lib/utils/errors";
 
 // PATCH /api/cotizaciones/[id]/rechazar
-export const PATCH = withRoleParams<{ id: string }>(
-  ["Direccion"],
-  async (_req, ctx, session) =>  {
+export const PATCH = withRoleParams<{ id: string }>(["Direccion"], async (_req, ctx, session) => {
   try {
     // Validate parameters with Zod
     const { id } = CotizacionIdParams.parse(ctx.params);
@@ -20,7 +17,7 @@ export const PATCH = withRoleParams<{ id: string }>(
       where: { id_cotizacion: quotationId },
     });
     if (!currentQuotation) {
-      return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
+      return handleError(new NotFoundError("Cotización no encontrada"));
     }
 
     // Get the ID of the "Rechazada" status from EstatusCotizacion table
@@ -44,18 +41,8 @@ export const PATCH = withRoleParams<{ id: string }>(
     });
 
     // Return updated quotation as JSON
-    return NextResponse.json(rejectedQuotation);
+    return ok(rejectedQuotation);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Failed to reject quotation" }, { status: 500 });
+    return handleError(error);
   }
 });
-
-// Helper function to get status ID by description
-async function getQuotationStatusId(description: string) {
-  const status = await prisma.estatusCotizacion.findUnique({
-    where: { descripcion: description },
-  });
-  if (!status) throw new Error(`Quotation status '${description}' not found`);
-  return status.id_estatus;
-}

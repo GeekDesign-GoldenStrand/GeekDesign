@@ -5,15 +5,25 @@ import { CreatePedidoSchema } from "@/lib/schemas/pedidos";
 import { listPedidos, createPedido } from "@/lib/services/pedidos";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
+import { ValidationError } from "@/lib/utils/errors";
 
 export const GET = withRole(["Direccion", "Colaborador"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
-    const serviceId = searchParams.get("serviceId")
-      ? Number(searchParams.get("serviceId"))
-      : undefined;
+    const rawServiceId = searchParams.get("serviceId");
+    let serviceId: number | undefined;
+
+    if (rawServiceId !== null) {
+      serviceId = Number(rawServiceId);
+      if (!Number.isInteger(serviceId) || serviceId <= 0) {
+        if (!Number.isInteger(serviceId) || serviceId <= 0) {
+          return handleError(new ValidationError("serviceId debe ser un entero positivo"));
+        }
+      }
+    }
+
     const onlyActive = searchParams.get("onlyActive") === "true";
 
     const result = await listPedidos(page, pageSize, serviceId, onlyActive);
