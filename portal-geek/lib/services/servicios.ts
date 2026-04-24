@@ -7,11 +7,16 @@ export async function listServicios(
   page: number,
   pageSize: number
 ): Promise<{ items: Servicios[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await prisma.$transaction([
+    prisma.servicios.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { nombre_servicio: "asc" },
+      where: { estatus_servicio: true },
+    }),
+    prisma.servicios.count({ where: { estatus_servicio: true } }),
+  ]);
+  return { items, total };
 }
 
 export async function getServicio(id: number): Promise<Servicios> {

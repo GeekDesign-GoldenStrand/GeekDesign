@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
 import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import { TerceroTypeTag } from "@/components/ui/terceros/atoms/TerceroTypeTag";
+import { AsignarServiciosModal } from "./AsignarServiciosModal";
+import { AsignarMaterialesModal } from "./AsignarMaterialesModal";
 import type { TerceroCardProps } from "@/types";
 
 function formatPhone(phone: string) {
@@ -13,6 +16,7 @@ function formatPhone(phone: string) {
 }
 
 export function TerceroCard({
+  id,
   companyName,
   contactName,
   location,
@@ -24,9 +28,12 @@ export function TerceroCard({
   onEdit,
   onStatusChange,
 }: TerceroCardProps) {
+  const [isServiciosOpen, setIsServiciosOpen] = useState(false);
+  const [isMaterialesOpen, setIsMaterialesOpen] = useState(false);
+
   const types = tipo ? tipo.split(",").map((t) => t.trim()) : [];
-  const hasMaterial = types.some((t) => t.toLowerCase().includes("material"));
-  const hasServicio = types.some((t) => t.toLowerCase().includes("servicio"));
+  const hasMaterial = types.some((t) => t.toLowerCase() === "proveedor de material" || t.toLowerCase() === "material");
+  const hasServicio = types.some((t) => t.toLowerCase() === "proveedor de servicio" || t.toLowerCase() === "servicio");
 
   return (
     <div className="bg-white rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5 w-full font-['IBM_Plex_Sans_JP',sans-serif]">
@@ -50,8 +57,12 @@ export function TerceroCard({
           {role}
         </span>
 
-        {hasMaterial && <TerceroTypeTag type="Material" />}
-        {hasServicio && <TerceroTypeTag type="Servicio" />}
+        {hasMaterial && (
+          <TerceroTypeTag type="Material" onClick={() => setIsMaterialesOpen(true)} />
+        )}
+        {hasServicio && (
+          <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />
+        )}
 
         <StatusDropdown status={status} onChange={onStatusChange} />
       </div>
@@ -92,6 +103,22 @@ export function TerceroCard({
           <EditIcon />
         </button>
       </div>
+
+      <AsignarServiciosModal
+        id_proveedor={id}
+        companyName={companyName}
+        isOpen={isServiciosOpen}
+        onClose={() => setIsServiciosOpen(false)}
+        onSaved={() => {}} // No refresh needed for now as it's a sub-modal
+      />
+
+      <AsignarMaterialesModal
+        id_proveedor={id}
+        companyName={companyName}
+        isOpen={isMaterialesOpen}
+        onClose={() => setIsMaterialesOpen(false)}
+        onSaved={() => {}}
+      />
     </div>
   );
 }
