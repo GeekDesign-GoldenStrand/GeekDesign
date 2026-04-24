@@ -79,18 +79,18 @@ export function TerceroCard({
         <span>{phone ? formatPhone(phone) : "–"}</span>
       </div>
 
-      <div className="flex items-center gap-2 mt-1">
+      <div className="flex items-center gap-2 mt-1 flex-wrap">
         <a
           href={phone ? `tel:${phone}` : undefined}
           aria-disabled={!phone}
-          className="flex items-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] aria-disabled:opacity-40 aria-disabled:pointer-events-none"
+          className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] aria-disabled:opacity-40 aria-disabled:pointer-events-none"
         >
           <PhoneIcon />
           Llamar
         </a>
         <a
           href={`mailto:${email}`}
-          className="flex items-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+          className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
         >
           <MailIcon />
           Mail
@@ -98,7 +98,7 @@ export function TerceroCard({
         <button
           onClick={onEdit}
           aria-label="Editar"
-          className="flex items-center justify-center border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+          className="flex-none flex items-center justify-center border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
         >
           <EditIcon />
         </button>

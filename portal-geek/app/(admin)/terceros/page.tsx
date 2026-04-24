@@ -129,7 +129,7 @@ export default function TercerosPage() {
   return (
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-white">
       <TercerosHeader />
-      <main className="p-8">
+      <main className="p-4 md:p-8">
         <TercerosToolbar
           tabs={TABS}
           activeTab={activeTab}
