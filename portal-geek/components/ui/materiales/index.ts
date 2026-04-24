@@ -1,4 +1,7 @@
 export { MaterialesHeader } from "./molecules/MaterialesHeader";
+export { MaterialesFilterPanel } from "./molecules/MaterialesFilterPanel";
 export { MaterialesToolbar } from "./organisms/MaterialesToolbar";
 export { MaterialesGrid } from "./organisms/MaterialesGrid";
 export { MaterialCard } from "./organisms/MaterialCard";
+export { AgregarMaterialModal } from "./organisms/AgregarMaterialModal";
+export { RegistrarMaterialForm } from "./organisms/RegistrarMaterialForm";

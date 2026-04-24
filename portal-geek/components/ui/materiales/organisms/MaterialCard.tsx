@@ -1,14 +1,23 @@
 import { EditIcon } from "@/components/ui/atoms/icons";
-import type { MaterialCardProps } from "@/types";
+import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
-function ColorSwatch({ value }: { value: string }) {
-  const hasColor = value !== "-";
+interface MaterialCardRowProps extends MaterialCardProps {
+  visibleColumns: MaterialesVisibleColumns;
+  gridTemplateColumns: string;
+}
+
+function ColorDescription({ value }: { value: string }) {
+  const hasValue = value !== "-";
+
   return (
-    <span
-      aria-label={hasColor ? `Color ${value}` : "Sin color"}
-      className="inline-block h-6 w-6 rounded-full border border-[#1e1e1e]"
-      style={{ backgroundColor: hasColor ? value : "#d9d9d9" }}
-    />
+    <div className="flex items-center justify-center">
+      <span
+        className="inline-flex min-h-6 items-center justify-center rounded-full border border-[#b9b8b8] px-3 py-1 text-[14px] text-[#1e1e1e] text-center"
+        aria-label={hasValue ? `Descripción del color ${value}` : "Sin descripción del color"}
+      >
+        {hasValue ? value : "-"}
+      </span>
+    </div>
   );
 }
 
@@ -40,20 +49,29 @@ export function MaterialCard({
   width,
   height,
   thickness,
+  description,
   imageUrl,
-}: MaterialCardProps) {
+  visibleColumns,
+  gridTemplateColumns,
+}: MaterialCardRowProps) {
   return (
-    <article className="grid grid-cols-[1.3fr_1.3fr_1fr_1fr_1fr_.9fr_1fr_auto] items-center gap-4 px-4 py-3 bg-white rounded-[7px] shadow-[0px_2px_7px_0px_rgba(0,0,0,0.14)]">
-      <p className="text-[28px] text-[#1e1e1e]">{name}</p>
-      <p className="text-[28px] text-[#1e1e1e]">{unit}</p>
-      <p className="text-[28px] text-[#1e1e1e]">{width}</p>
-      <p className="text-[28px] text-[#1e1e1e]">{height}</p>
-      <p className="text-[28px] text-[#1e1e1e]">{thickness}</p>
-      <ColorSwatch value={color} />
-      <PreviewImage imageUrl={imageUrl} name={name} />
+    <article
+      className="grid items-center gap-4 px-4 py-3 bg-white rounded-[7px] shadow-[0px_2px_7px_0px_rgba(0,0,0,0.14)]"
+      style={{ gridTemplateColumns }}
+    >
+      {visibleColumns.name && <p className="text-[16px] text-[#1e1e1e] text-center">{name}</p>}
+      {visibleColumns.description && (
+        <p className="text-[12px] text-[#575757] text-center line-clamp-2">{description || "-"}</p>
+      )}
+      {visibleColumns.unit && <p className="text-[14px] text-[#1e1e1e] text-center">{unit}</p>}
+      {visibleColumns.width && <p className="text-[16px] text-[#1e1e1e] text-center">{width}</p>}
+      {visibleColumns.height && <p className="text-[16px] text-[#1e1e1e] text-center">{height}</p>}
+      {visibleColumns.thickness && <p className="text-[16px] text-[#1e1e1e] text-center">{thickness}</p>}
+      {visibleColumns.color && <ColorDescription value={color} />}
+      {visibleColumns.image && <PreviewImage imageUrl={imageUrl} name={name} />}
       <button
         aria-label={`Editar material ${id}`}
-        className="text-[#1e1e1e] hover:opacity-70 transition-opacity"
+        className="text-[#1e1e1e] hover:opacity-70 transition-opacity flex items-center justify-center"
       >
         <EditIcon size={20} />
       </button>

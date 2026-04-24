@@ -2,8 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { MaterialesGrid, MaterialesHeader, MaterialesToolbar } from "@/components/ui/materiales";
-import type { MaterialCardProps } from "@/types";
+import {
+  AgregarMaterialModal,
+  MaterialesGrid,
+  MaterialesHeader,
+  MaterialesToolbar,
+} from "@/components/ui/materiales";
+import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
 
 type DbMaterial = {
   id_material: number;
@@ -18,7 +23,7 @@ type DbMaterial = {
 };
 
 function normalizeDecimal(value: string | number | null): string {
-  // Prisma Decimal can arrive serialized as string; normalize for UI rendering.
+  // Normalize units for UI rendering.
   if (value === null || value === undefined || value === "") return "-";
   return String(value);
 }
@@ -37,15 +42,32 @@ function mapMaterial(item: DbMaterial): MaterialCardProps {
   };
 }
 
+const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
+  // All columns visible when the module loads.
+  name: true,
+  description: true,
+  unit: true,
+  width: true,
+  height: true,
+  thickness: true,
+  color: true,
+  image: true,
+};
+
 export default function MaterialesPage() {
   const [rows, setRows] = useState<MaterialCardProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [unitFilter, setUnitFilter] = useState("Todos");
   const [showFilters, setShowFilters] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
+  const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(
+    DEFAULT_VISIBLE_COLUMNS
+  );
 
   useEffect(() => {
+    // Initial read-only load for the materials catalog.
     fetch("/api/materiales?pageSize=100")
       .then(async (res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -60,25 +82,44 @@ export default function MaterialesPage() {
   }, []);
 
   const filtered = useMemo(() => {
+    // free-text search
     const q = search.trim().toLowerCase();
-    const base = unitFilter === "Todos" ? rows : rows.filter((row) => row.unit === unitFilter);
+    const base = q
+      ? rows.filter((row) => {
+          return (
+            row.name.toLowerCase().includes(q) ||
+            row.unit.toLowerCase().includes(q) ||
+            row.color.toLowerCase().includes(q) ||
+            row.description.toLowerCase().includes(q)
+          );
+        })
+      : rows;
 
-    if (!q) return base;
-
-    return base.filter((row) => {
-      return (
-        row.name.toLowerCase().includes(q) ||
-        row.unit.toLowerCase().includes(q) ||
-        row.color.toLowerCase().includes(q) ||
-        row.description.toLowerCase().includes(q)
-      );
+    return [...base].sort((a, b) => {
+      const compare = a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+      return sortOrder === "az" ? compare : -compare;
     });
-  }, [rows, search, unitFilter]);
+  }, [rows, search, sortOrder]);
 
-  const units = useMemo(() => {
-    const allUnits = rows.map((row) => row.unit);
-    return ["Todos", ...Array.from(new Set(allUnits))];
-  }, [rows]);
+  function handleToggleColumn(key: keyof MaterialesVisibleColumns) {
+    setVisibleColumns((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      // Keep at least one column visible to avoid empty rows
+      if (!Object.values(next).some(Boolean)) return prev;
+      return next;
+    });
+  }
+
+  function handleResetFilters() {
+    // Restore filter popup state to its initial configuration
+    setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
+    setSortOrder("az");
+  }
+
+  function handleCreated(row: MaterialCardProps) {
+    // Optimistically prepend the new item so users see it immediately
+    setRows((prev) => [row, ...prev]);
+  }
 
   return (
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-[#ececec]">
@@ -87,44 +128,29 @@ export default function MaterialesPage() {
         <MaterialesToolbar
           search={search}
           onSearchChange={setSearch}
-          onFilterClick={() => setShowFilters((s) => !s)}
+          isFilterOpen={showFilters}
+          visibleColumns={visibleColumns}
+          sortOrder={sortOrder}
+          onToggleColumn={handleToggleColumn}
+          onSortChange={setSortOrder}
+          onResetFilters={handleResetFilters}
+          onAddClick={() => setShowAddModal(true)}
+          onFilterClick={() => setShowFilters((state) => !state)}
+          onCloseFilter={() => setShowFilters(false)}
         />
 
-        {showFilters && (
-          <section className="mb-5 rounded-[7px] border border-[#d7d7d7] bg-white p-4 flex items-end gap-3 flex-wrap">
-            <label className="flex flex-col gap-1 text-[13px] font-medium text-[#575757]">
-              Unidad
-              <select
-                value={unitFilter}
-                onChange={(e) => setUnitFilter(e.target.value)}
-                className="h-10 min-w-52 rounded-[6px] border border-[#b9b8b8] px-3 text-[14px] text-[#1e1e1e] outline-none"
-              >
-                {units.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <button
-              onClick={() => {
-                setUnitFilter("Todos");
-                setSearch("");
-              }}
-              className="h-10 px-4 rounded-[6px] border border-[#575757] text-[#575757] text-[14px] font-medium hover:bg-[#f5f5f5]"
-            >
-              Limpiar filtros
-            </button>
-          </section>
-        )}
-
-        {loading && <p className="text-[#8e908f] text-[16px]">Cargando...</p>}
+        {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
 
         {error && !loading && <p className="text-[#e42200] text-[16px]">{error}</p>}
 
-        {!loading && !error && <MaterialesGrid items={filtered} />}
+        {!loading && !error && <MaterialesGrid items={filtered} visibleColumns={visibleColumns} />}
       </main>
+
+      <AgregarMaterialModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }

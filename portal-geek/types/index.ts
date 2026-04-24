@@ -62,3 +62,16 @@ export interface MaterialCardProps {
   description: string;
   imageUrl: string;
 }
+
+export type MaterialSortOrder = "az" | "za";
+
+export interface MaterialesVisibleColumns {
+  name: boolean;
+  description: boolean;
+  unit: boolean;
+  width: boolean;
+  height: boolean;
+  thickness: boolean;
+  color: boolean;
+  image: boolean;
+}
