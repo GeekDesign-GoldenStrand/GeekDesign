@@ -18,7 +18,6 @@ type ParamHandler<P> = (
 
 // Roles that share full administrative access and are treated interchangeably.
 export const ADMIN_ROLES: UserRole[] = ["Direccion", "Administrador"];
-const DEV_SESSION: SessionPayload = { id: 0, email: "dev@local", role: "Administrador" };
 
 // Reads the current session and checks role access when needed.
 // Any route that allows a role in ADMIN_ROLES implicitly allows all of them.
