@@ -12,7 +12,12 @@ export const ForgotPasswordSchema = z.object({
 export const ResetPasswordSchema = z
   .object({
     token: z.string().min(1),
-    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres").max(255),
+    password: z
+      .string()
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .max(255)
+      .regex(/[A-Z]/, "La contraseña debe contener al menos una mayúscula")
+      .regex(/[0-9]/, "La contraseña debe contener al menos un número"),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -23,8 +28,13 @@ export const ResetPasswordSchema = z
 export const ChangePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Contraseña actual requerida"),
-    newPassword: z.string().min(8, "La contraseña debe tener al menos 8 caracteres").max(255),
-    confirmPassword: z.string(),
+    newPassword: z
+      .string()
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .max(255)
+      .regex(/[A-Z]/, "La contraseña debe contener al menos una mayúscula")
+      .regex(/[0-9]/, "La contraseña debe contener al menos un número"),
+    confirmPassword: z.string().min(1, "La confirmación es requerida"),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
