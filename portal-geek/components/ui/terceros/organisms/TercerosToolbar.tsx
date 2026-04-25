@@ -37,8 +37,8 @@ export function TercerosToolbar({
         ))}
       </div>
 
-      {/* Search & Utility Section */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 flex-1">
+      {/* Utility & Actions Section */}
+      <div className="flex flex-col sm:flex-row items-center gap-3 flex-1 lg:justify-end">
         <div className="flex items-center gap-2 border border-[#b9b8b8] rounded-sm px-3 py-2 bg-white w-full lg:max-w-md">
           <input
             type="text"
@@ -53,20 +53,21 @@ export function TercerosToolbar({
           </span>
         </div>
 
-        <button className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[18px] md:text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#ffe0dc]">
-          <FilterIcon />
-          Filtrar
-        </button>
-      </div>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <button className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[18px] md:text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#ffe0dc]">
+            <FilterIcon />
+            Filtrar
+          </button>
 
-      {/* Primary Action */}
-      <button
-        onClick={onAddClick}
-        className="w-full lg:w-auto flex items-center justify-center gap-1.5 bg-[#e8e8e8] border border-[#575757] text-[#575757] text-[18px] md:text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#d8d8d8]"
-      >
-        <PlusIcon />
-        Agregar
-      </button>
+          <button
+            onClick={onAddClick}
+            className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-[#e8e8e8] border border-[#575757] text-[#575757] text-[18px] md:text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#d8d8d8]"
+          >
+            <PlusIcon />
+            Agregar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

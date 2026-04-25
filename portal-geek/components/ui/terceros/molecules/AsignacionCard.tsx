@@ -6,12 +6,7 @@ interface AsignacionCardProps {
   onToggle: () => void;
 }
 
-export function AsignacionCard({
-  name,
-  description,
-  selected,
-  onToggle,
-}: AsignacionCardProps) {
+export function AsignacionCard({ name, description, selected, onToggle }: AsignacionCardProps) {
   return (
     <div
       onClick={onToggle}
@@ -22,9 +17,11 @@ export function AsignacionCard({
       }`}
     >
       <div className="flex justify-between items-start">
-        <h4 className={`font-semibold text-[15px] transition-colors ${
-          selected ? "text-[#006aff]" : "text-[#1e1e1e]"
-        }`}>
+        <h4
+          className={`font-semibold text-[15px] transition-colors ${
+            selected ? "text-[#006aff]" : "text-[#1e1e1e]"
+          }`}
+        >
           {name}
         </h4>
         <div
@@ -46,9 +43,7 @@ export function AsignacionCard({
         </div>
       </div>
       {description && (
-        <p className="text-[13px] text-[#575757] line-clamp-2 leading-relaxed">
-          {description}
-        </p>
+        <p className="text-[13px] text-[#575757] line-clamp-2 leading-relaxed">{description}</p>
       )}
     </div>
   );

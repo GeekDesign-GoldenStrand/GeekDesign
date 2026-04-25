@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AsignacionCard } from "../molecules/AsignacionCard";
+
 import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
+import { AsignacionCard } from "../molecules/AsignacionCard";
 
 interface AsignarServiciosModalProps {
   id_proveedor: number;
@@ -29,7 +30,9 @@ export function AsignarServiciosModal({
   onClose,
   onSaved,
 }: AsignarServiciosModalProps) {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<
+    { id_servicio: number; nombre_servicio: string; descripcion_servicio: string | null }[]
+  >([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,9 +53,7 @@ export function AsignarServiciosModal({
   }, [isOpen, id_proveedor]);
 
   function toggleId(id: number) {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   }
 
   async function handleSave() {
@@ -85,11 +86,13 @@ export function AsignarServiciosModal({
             <div className="flex justify-between items-center">
               <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar Servicios</h2>
             </div>
-            
+
             <div className="h-px bg-[#e8e8e8] w-full" />
 
             <div className="space-y-1">
-              <h3 className="text-[22px] font-semibold text-[#1e1e1e] leading-tight">{companyName}</h3>
+              <h3 className="text-[22px] font-semibold text-[#1e1e1e] leading-tight">
+                {companyName}
+              </h3>
               <p className="text-[18px] font-medium text-[#1e1e1e]">{contactName}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[17px] font-medium text-[#575757]">
                 <span className="underline decoration-gray-300">{email}</span>
@@ -156,7 +159,7 @@ export function AsignarServiciosModal({
                   key={item.id_servicio}
                   id={item.id_servicio}
                   name={item.nombre_servicio}
-                  description={item.descripcion_servicio}
+                  description={item.descripcion_servicio ?? undefined}
                   selected={selectedIds.includes(item.id_servicio)}
                   onToggle={() => toggleId(item.id_servicio)}
                 />

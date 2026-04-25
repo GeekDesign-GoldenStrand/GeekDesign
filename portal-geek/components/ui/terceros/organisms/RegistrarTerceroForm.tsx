@@ -4,7 +4,6 @@ import { useState } from "react";
 import { z } from "zod";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
-import type { CreateProveedorInput } from "@/lib/schemas/proveedores";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -116,7 +115,7 @@ export function RegistrarTerceroForm({
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  function setField(key: string, value: any) {
+  function setField(key: string, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
     setTouched((prev) => ({ ...prev, [key]: true }));
@@ -187,8 +186,8 @@ export function RegistrarTerceroForm({
           form.tipo_proveedor_selecion === "Material"
             ? ["Proveedor de material"]
             : form.tipo_proveedor_selecion === "Servicio"
-            ? ["Proveedor de servicio"]
-            : ["Proveedor de material", "Proveedor de servicio"];
+              ? ["Proveedor de servicio"]
+              : ["Proveedor de material", "Proveedor de servicio"];
 
         const body = {
           nombre_proveedor: form.nombre_proveedor,
@@ -315,7 +314,7 @@ export function RegistrarTerceroForm({
 
       {terceroType === "Proveedor" ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>
                 Nombre del proveedor <span className="text-[#e42200]">*</span>
@@ -361,7 +360,7 @@ export function RegistrarTerceroForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>
                 Correo <span className="text-[#e42200]">*</span>
@@ -432,7 +431,7 @@ export function RegistrarTerceroForm({
         </>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>
                 Nombre <span className="text-[#e42200]">*</span>
@@ -477,7 +476,7 @@ export function RegistrarTerceroForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>
                 Correo <span className="text-[#e42200]">*</span>

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+
 import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
-import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import { TerceroTypeTag } from "@/components/ui/terceros/atoms/TerceroTypeTag";
-import { AsignarServiciosModal } from "./AsignarServiciosModal";
-import { AsignarMaterialesModal } from "./AsignarMaterialesModal";
+import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import type { TerceroCardProps } from "@/types";
+
+import { AsignarMaterialesModal } from "./AsignarMaterialesModal";
+import { AsignarServiciosModal } from "./AsignarServiciosModal";
 
 function formatPhone(phone: string) {
   if (/^(55|33|81)/.test(phone)) {
@@ -32,8 +34,12 @@ export function TerceroCard({
   const [isMaterialesOpen, setIsMaterialesOpen] = useState(false);
 
   const types = tipo ? tipo.split(",").map((t) => t.trim()) : [];
-  const hasMaterial = types.some((t) => t.toLowerCase() === "proveedor de material" || t.toLowerCase() === "material");
-  const hasServicio = types.some((t) => t.toLowerCase() === "proveedor de servicio" || t.toLowerCase() === "servicio");
+  const hasMaterial = types.some(
+    (t) => t.toLowerCase() === "proveedor de material" || t.toLowerCase() === "material"
+  );
+  const hasServicio = types.some(
+    (t) => t.toLowerCase() === "proveedor de servicio" || t.toLowerCase() === "servicio"
+  );
 
   return (
     <div className="bg-white rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5 w-full font-['IBM_Plex_Sans_JP',sans-serif]">
@@ -60,9 +66,7 @@ export function TerceroCard({
         {hasMaterial && (
           <TerceroTypeTag type="Material" onClick={() => setIsMaterialesOpen(true)} />
         )}
-        {hasServicio && (
-          <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />
-        )}
+        {hasServicio && <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />}
 
         <StatusDropdown status={status} onChange={onStatusChange} />
       </div>

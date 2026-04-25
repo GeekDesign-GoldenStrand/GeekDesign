@@ -1,6 +1,6 @@
 import { withRoleParams } from "@/lib/auth/guards";
-import { ProveedorIdParams } from "@/lib/schemas/proveedores";
 import { AssignmentSchema } from "@/lib/schemas/asignaciones";
+import { ProveedorIdParams } from "@/lib/schemas/proveedores";
 import { getProviderAssignments, syncProviderAssignments } from "@/lib/services/proveedores";
 import { ok } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
