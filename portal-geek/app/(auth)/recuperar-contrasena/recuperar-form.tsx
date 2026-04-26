@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
+import { AuthInput } from "@/components/ui/atoms/AuthInput";
+import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+
 export function RecuperarForm() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +54,8 @@ export function RecuperarForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-4" noValidate>
-      <input
+      <AuthInput
+        label="Correo electrónico"
         type="email"
         name="email"
         autoComplete="email"
@@ -60,7 +64,7 @@ export function RecuperarForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         disabled={isSubmitting}
-        className="h-[62px] w-full rounded-full border border-[#a79999] bg-white px-8 text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60"
+        icon="email"
       />
 
       {error && (
@@ -69,13 +73,9 @@ export function RecuperarForm() {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="mt-2 h-[63px] w-full rounded-full bg-[#8b434a] font-semibold text-[18px] tracking-[1px] text-white transition-colors hover:bg-[#7a3a41] focus:outline-none focus:ring-2 focus:ring-[#df2646] focus:ring-offset-2 disabled:opacity-60"
-      >
-        {isSubmitting ? "Enviando…" : "Enviar enlace"}
-      </button>
+      <PrimaryButton type="submit" variant="red" disabled={isSubmitting} className="mt-2">
+        {isSubmitting ? "Enviando…" : "Enviar link"}
+      </PrimaryButton>
 
       <Link
         href="/login"

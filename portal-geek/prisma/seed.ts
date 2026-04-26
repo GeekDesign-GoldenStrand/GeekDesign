@@ -81,6 +81,27 @@ async function main() {
     },
   });
 
+  // ── Dirección user ──────────────────────────────────────────────────────────
+  const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
+  const direccionPasswordHash = await bcrypt.hash(
+    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123",
+    12
+  );
+
+  const direccionUser = await prisma.usuarios.upsert({
+    where: { correo_electronico: "direccion@geekdesign.mx" },
+    update: { contrasena_hash: direccionPasswordHash },
+    create: {
+      nombre_completo: "Usuario Dirección",
+      correo_electronico: "direccion@geekdesign.mx",
+      contrasena_hash: direccionPasswordHash,
+      id_rol: direccionRole.id_rol,
+      estatus: "Activo",
+    },
+  });
+
+  console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
+
   console.log("Seeded admin colaborador");
 
   // ── Machine ────────────────────────────────────────────────────────────────
