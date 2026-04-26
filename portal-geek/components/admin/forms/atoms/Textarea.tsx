@@ -1,10 +1,10 @@
-type textareaProps = {
+type TextareaProps = {
   label?: string;
   error?: string;
   required?: boolean;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-export function textarea({ label, error, required, className = "", ...props }: textareaProps) {
+export function Textarea({ label, error, required, className = "", ...props }: TextareaProps) {
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (
