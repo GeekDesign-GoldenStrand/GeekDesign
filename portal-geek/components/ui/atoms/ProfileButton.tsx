@@ -1,16 +1,15 @@
-"use client";
+import Link from "next/link";
 
 import { UserCircle } from "@phosphor-icons/react";
 
-export function ProfileButton(onProfileClick?: () => void) {
+export function ProfileButton() {
     return (
-        <button
-        type="button"
-        aria-label="Mi perfil"
-        className= "inline-flex items-end justify-end"
-        onClick={onProfileClick}
+        <Link
+        href={"/perfil"}
+        title={"Mi perfil"}
+        className={"inline-flex items-end justify-end"}
         >
             <UserCircle size={45} weight="thin" />
-        </button>
+        </Link>
     );
 }
