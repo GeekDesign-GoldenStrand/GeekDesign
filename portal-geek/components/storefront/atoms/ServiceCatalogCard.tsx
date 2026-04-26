@@ -16,7 +16,7 @@ export function ServiceCatalogCard({ id, nombre, descripcion }: ServiceCatalogCa
         </div>
 
         {/* Info bar — overlaps bottom of image */}
-        <div className="-mt-[20px] relative z-10 bg-[#8b434a] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] px-[17px] py-3 min-h-[85px] flex flex-col justify-center group-hover:bg-[#7a3a41] transition-colors duration-200">
+        <div className="-mt-[20px] relative z-10 bg-[#8b434a] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] px-[17px] py-3 h-[85px] flex flex-col justify-center group-hover:bg-[#7a3a41] transition-colors duration-200">
           <p className="font-bold text-[18px] md:text-[25px] text-[#fffcfc] leading-tight truncate">
             {nombre}
           </p>

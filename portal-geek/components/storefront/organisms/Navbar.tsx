@@ -11,7 +11,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 bg-white border-b-[1.5px] border-[#c2c0c0] w-full">
       {/* Row 1 — Logo · Search · Actions */}
-      <div className="max-w-[1440px] mx-auto px-4 md:px-[36px] h-[70px] md:h-[107px] flex items-center gap-3">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-[36px] h-[56px] md:h-[72px] flex items-center gap-3">
         {/* Logo */}
         <Link href="/storefront" className="flex items-center gap-[9px] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -60,7 +60,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
 
       {/* Row 2 — Category links (scrollable on small screens) */}
       {categories.length > 0 && (
-        <div className="max-w-[1440px] mx-auto px-4 md:px-[34px] h-[36px] md:h-[40px] flex items-center overflow-x-auto scrollbar-hide gap-6 sm:gap-10 lg:justify-between lg:gap-0">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-[34px] h-[32px] md:h-[34px] flex items-center overflow-x-auto scrollbar-hide gap-6 sm:gap-10 lg:justify-between lg:gap-0">
           {categories.map((cat) => (
             <Link
               key={cat.id}

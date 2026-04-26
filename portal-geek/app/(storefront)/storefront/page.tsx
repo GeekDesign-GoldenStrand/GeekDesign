@@ -1,6 +1,7 @@
 import type { Servicios } from "@prisma/client";
 
 import { ServiceCatalogCard } from "@/components/storefront/atoms/ServiceCatalogCard";
+import { AnnouncementBar } from "@/components/storefront/molecules/AnnouncementBar";
 import { CTABanner } from "@/components/storefront/molecules/CTABanner";
 import { HeroBanner } from "@/components/storefront/organisms/HeroBanner";
 import { ServiceGrid } from "@/components/storefront/organisms/ServiceGrid";
@@ -27,6 +28,7 @@ export default async function StorefrontHome({ searchParams }: Props) {
 
   return (
     <>
+      <AnnouncementBar />
       <HeroBanner />
       <ServiceGrid services={services} searchQuery={q} />
 
@@ -38,7 +40,7 @@ export default async function StorefrontHome({ searchParams }: Props) {
               Nuestros Servicios
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {services.map((s) => (
+              {services.slice(0, 6).map((s) => (
                 <ServiceCatalogCard
                   key={s.id_servicio}
                   id={s.id_servicio}

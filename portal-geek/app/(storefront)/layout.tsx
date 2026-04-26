@@ -1,4 +1,3 @@
-import { AnnouncementBar } from "@/components/storefront/molecules/AnnouncementBar";
 import { Navbar } from "@/components/storefront/organisms/Navbar";
 import { listServicios } from "@/lib/services/servicios";
 
@@ -14,7 +13,6 @@ export default async function StorefrontLayout({ children }: { children: React.R
   return (
     <div className="min-h-screen flex flex-col bg-[#fff8f9]">
       <Navbar categories={categories} />
-      <AnnouncementBar />
       <main className="flex-1">{children}</main>
     </div>
   );
