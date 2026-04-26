@@ -4,7 +4,7 @@ type inputProps = {
   required?: boolean;
 } & React.InputHTMLAttributes<HTMLInputElement>;
 
-export function input({ label, error, required, className = "", ...props }: inputProps) {
+export function Input({ label, error, required, className = "", ...props }: inputProps) {
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (
