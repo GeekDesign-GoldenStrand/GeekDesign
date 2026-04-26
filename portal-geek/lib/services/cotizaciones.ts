@@ -15,9 +15,15 @@ export async function listCotizaciones(
 }
 
 export async function getCotizacion(id: number): Promise<Cotizaciones> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+  const cotizacion = await prisma.cotizaciones.findUnique({
+    where: { id_cotizacion: id },               // ← adjust PK field name
+  });
+
+  if (!cotizacion) {
+    throw new Error(`Cotización con id ${id} no encontrada`);
+  }
+
+  return cotizacion;
 }
 
 export async function createCotizacion(data: CreateCotizacionInput): Promise<Cotizaciones> {
