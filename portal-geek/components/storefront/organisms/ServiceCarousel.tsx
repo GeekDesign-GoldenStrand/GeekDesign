@@ -65,7 +65,10 @@ export function ServiceCarousel({ services }: ServiceCarouselProps) {
         <CaretLeft size={16} weight="light" className="text-[#1e1e1e]" />
       </button>
 
-      <div ref={scrollRef} className="flex flex-1 overflow-x-auto scrollbar-hide gap-3 md:gap-5 py-2 px-1">
+      <div
+        ref={scrollRef}
+        className="flex flex-1 overflow-x-auto scrollbar-hide gap-3 md:gap-5 py-2 px-1"
+      >
         {tripled.map((s, i) => (
           <Link
             key={`${s.id_servicio}-${i}`}
