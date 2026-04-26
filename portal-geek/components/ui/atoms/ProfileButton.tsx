@@ -9,7 +9,7 @@ export function ProfileButton() {
         title={"Mi perfil"}
         className={"inline-flex items-end justify-end"}
         >
-            <UserCircle size={45} weight="thin" />
+            <UserCircle size={45} weight="light" />
         </Link>
     );
 }
