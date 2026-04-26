@@ -15,7 +15,7 @@ export function NavLink({ href, label, icon, isActive }: NavLinkProps) {
       className={`flex items-center justify-center w-full h-17 rounded-xs transition-colors ${
         isActive
           ? "bg-[#e42200] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-          : "text-[#1e1e1e] hover:bg-gray-100"
+          : "text-[#1e1e1e] hover:bg-[#E42200] hover:text-white hover:shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
       }`}
     >
       {icon}
