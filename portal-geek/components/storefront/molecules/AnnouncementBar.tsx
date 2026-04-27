@@ -7,7 +7,7 @@ interface AnnouncementBarProps {
 }
 
 export function AnnouncementBar({
-  mensaje = "Noticias importantes de ofetas, por ejemplo: 30% de descuento en carteles 3D | Termina el 10 de abril |",
+  mensaje = "Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el 10 de abril |",
   linkTexto = "Comprar ahora",
   linkHref = "/storefront",
 }: AnnouncementBarProps) {
