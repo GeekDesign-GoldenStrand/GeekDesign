@@ -7,7 +7,7 @@ interface HeroBannerProps {
 }
 
 export function HeroBanner({
-  titulo = "Noticia o información de algo\n(Producto, Oferta, ect)",
+  titulo = "Noticia o información de algo\n(Producto, Oferta, etc.)",
   botonTexto = "Botón a la noticia/producto",
   botonHref = "/storefront",
 }: HeroBannerProps) {
