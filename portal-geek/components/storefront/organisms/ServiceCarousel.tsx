@@ -45,7 +45,7 @@ export function ServiceCarousel({ services }: ServiceCarouselProps) {
       el.removeEventListener("scroll", onScroll);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [services.length]);
+  }, [services]);
 
   function scroll(dir: "left" | "right") {
     const el = scrollRef.current;
