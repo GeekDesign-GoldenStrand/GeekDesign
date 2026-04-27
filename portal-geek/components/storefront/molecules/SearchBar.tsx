@@ -17,6 +17,7 @@ export function SearchBar() {
 
   function clearSearch() {
     setQuery("");
+    router.push("/storefront");
     inputRef.current?.focus();
   }
 
