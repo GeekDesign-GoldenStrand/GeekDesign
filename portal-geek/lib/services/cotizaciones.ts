@@ -1,4 +1,5 @@
 import type { Cotizaciones } from "@prisma/client";
+import { NotFoundError } from "@/lib/utils/errors";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
@@ -7,20 +8,24 @@ export async function listCotizaciones(
   page: number,
   pageSize: number
 ): Promise<{ items: Cotizaciones[]; total: number }> {
-  // TODO: implement — consider including cliente and estatus relations
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await prisma.$transaction([
+    prisma.cotizaciones.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { fecha_creacion: "desc" },
+    }),
+    prisma.cotizaciones.count(),
+  ]);
+  return { items, total };
 }
 
 export async function getCotizacion(id: number): Promise<Cotizaciones> {
   const cotizacion = await prisma.cotizaciones.findUnique({
-    where: { id_cotizacion: id },               // ← adjust PK field name
+    where: { id_cotizacion: id },
   });
 
   if (!cotizacion) {
-    throw new Error(`Cotización con id ${id} no encontrada`);
+    throw new NotFoundError(`Cotización con id ${id} no encontrada`);
   }
 
   return cotizacion;
