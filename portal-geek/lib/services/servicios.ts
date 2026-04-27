@@ -1,25 +1,70 @@
-import type { Servicios } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import { NotFoundError } from "@/lib/utils/errors";
-import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
+import type {
+  CreateServicioInput,
+  UpdateServicioInput,
+} from "@/lib/schemas/servicios";
+
+// ─── Types ─────────────────────────────────────────────────────────────
+
+
+export type ServicioConMaquinas = Prisma.ServiciosGetPayload<{
+  include: {
+    maquinas: {
+      include: { maquina: true };
+    };
+  };
+}>;
+
+
+export type ServicioCompleto = Prisma.ServiciosGetPayload<{
+  include: {
+    estatusServicio: true;
+    maquinas: { include: { maquina: true } };
+    instalador: true;
+    proveedor: true;
+    formulas: {
+      include: {
+        variables: { include: { tipo: true } };
+        constantes: {
+          include: {
+            maquina: true;
+            instalador: true;
+            proveedor: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+
+type ServicioSimple = Prisma.ServiciosGetPayload<object>;
+
+// ─── Functions ─────────────────────────────────────────────────────────
 
 /*
-Servicios list paginated with total count for pagination controls. Sorted by id_servicio desc (newest first).
+Servicios list paginated with total count for pagination controls.
+Sorted by fecha_modificacion desc (most recently updated first).
 */
 export async function listServicios(
   page: number,
   pageSize: number
-): Promise<{ items: Servicios[]; total: number }> {
-  // TODO: implement
+): Promise<{ items: ServicioConMaquinas[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
   const [items, total] = await Promise.all([
     prisma.servicios.findMany({
       skip,
       take: pageSize,
-      orderBy: { id_servicio: "desc" },
+      orderBy: { fecha_modificacion: "desc" },
+      include: {
+        maquinas: {
+          include: { maquina: true },
+        },
+      },
     }),
     prisma.servicios.count(),
   ]);
@@ -28,23 +73,27 @@ export async function listServicios(
 }
 
 /*
-Get a single service by an ID. Throws NotFoundError if the service does not exist.
+Get a single service by ID with all its relations.
+Throws NotFoundError if the service does not exist.
 */
-
-export async function getServicio(id: number): Promise<Servicios> {
+export async function getServicio(id: number): Promise<ServicioCompleto> {
   const servicio = await prisma.servicios.findUnique({
     where: { id_servicio: id },
-    include:{
+    include: {
       estatusServicio: true,
       maquinas: { include: { maquina: true } },
       instalador: true,
       proveedor: true,
-      
       formulas: {
         where: { estatus: "Activa" },
         include: {
-          variables: {include: {tipo:true}},
-          constantes: {include:{maquina: true, instalador: true, proveedor: true},
+          variables: { include: { tipo: true } },
+          constantes: {
+            include: {
+              maquina: true,
+              instalador: true,
+              proveedor: true,
+            },
           },
         },
       },
@@ -58,19 +107,20 @@ export async function getServicio(id: number): Promise<Servicios> {
 }
 
 /*
-Create a new service with the provided data. Returns the created service. Throws AppError on validation 
-failure or other issues.
+Create a new service with optional machine vinculations and formula.
+All operations run in a transaction: if any step fails, nothing is persisted.
 */
-export async function createServicio(data: CreateServicioInput, id_usuario: number): Promise<Servicios> {
+export async function createServicio(
+  data: CreateServicioInput,
+  id_usuario: number
+): Promise<ServicioSimple> {
   const { id_maquinas, formula, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
-    // Here the service is created first, then the relations are created in their respective tables. 
-    // This is to ensure that if any of the relations fail to be created, the whole transaction will 
-    // be rolled back and we won't end up with orphaned relations without a service.
+    // 1. Create the service first.
     const servicio = await tx.servicios.create({ data: servicioData });
 
-    // Afterwards it is vinculated to a machine 
+    // 2. Vinculate machines if provided.
     if (id_maquinas && id_maquinas.length > 0) {
       await tx.servicioMaquina.createMany({
         data: id_maquinas.map((id_maquina) => ({
@@ -80,7 +130,7 @@ export async function createServicio(data: CreateServicioInput, id_usuario: numb
       });
     }
 
-    // Finally, if there is a formula, it is created and vinculated to the service.
+    // 3. Create formula if provided, with its variables and constants.
     if (formula) {
       const formulaCreada = await tx.formulas.create({
         data: {
@@ -91,7 +141,6 @@ export async function createServicio(data: CreateServicioInput, id_usuario: numb
         },
       });
 
-      // If there are variables, they are created and vinculated to the formula.
       if (formula.variables.length > 0) {
         await tx.formulaVariables.createMany({
           data: formula.variables.map((v) => ({
@@ -106,7 +155,7 @@ export async function createServicio(data: CreateServicioInput, id_usuario: numb
           })),
         });
       }
-      // If there are constantes, they are created and vinculated to the formula.     
+
       if (formula.constantes.length > 0) {
         await tx.formulaConstantes.createMany({
           data: formula.constantes.map((c) => ({
@@ -121,14 +170,21 @@ export async function createServicio(data: CreateServicioInput, id_usuario: numb
         });
       }
     }
+
     return servicio;
   });
 }
 
 /*
-Updates a service and resincs their latch if there are new arrays.
+Updates a service and resyncs its machines and formula if new arrays are provided.
+Old formulas are deactivated (soft delete) instead of being removed,
+preserving historical data for past quotations.
 */
-export async function updateServicio(id: number, data: UpdateServicioInput, id_usuario: number): Promise<Servicios> {
+export async function updateServicio(
+  id: number,
+  data: UpdateServicioInput,
+  id_usuario: number
+): Promise<ServicioSimple> {
   const { id_maquinas, formula, ...servicioData } = data;
 
   try {
@@ -138,6 +194,7 @@ export async function updateServicio(id: number, data: UpdateServicioInput, id_u
         data: servicioData,
       });
 
+      // Resync machines: drop old vinculations and create new ones.
       if (id_maquinas !== undefined) {
         await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });
         if (id_maquinas.length > 0) {
@@ -150,13 +207,13 @@ export async function updateServicio(id: number, data: UpdateServicioInput, id_u
         }
       }
 
+      // Replace formula: deactivate the previous one and create a new active one.
       if (formula !== undefined) {
         await tx.formulas.updateMany({
           where: { id_servicio: id, estatus: "Activa" },
           data: { estatus: "Inactiva" },
         });
 
-      
         const formulaCreada = await tx.formulas.create({
           data: {
             id_servicio: id,
@@ -195,12 +252,13 @@ export async function updateServicio(id: number, data: UpdateServicioInput, id_u
           });
         }
       }
+
       return servicio;
     });
-    
   } catch (error) {
     if (
-      error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025"
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
     ) {
       throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
@@ -209,21 +267,21 @@ export async function updateServicio(id: number, data: UpdateServicioInput, id_u
 }
 
 /*
-Deletes a service: technically changes estatus_servicio to false in order to not lose historical data. 
+Changes estatus_servicio to false in order to preserve historical data
 */
-
 export async function deleteServicio(id: number): Promise<void> {
   try {
-      await prisma.servicios.update({
-        where: { id_servicio: id },
-        data: { estatus_servicio: false },
-      });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025"
-      ) {
-        throw new NotFoundError(`Servicio con id ${id} no encontrado`);
-      }
-      throw error;
+    await prisma.servicios.update({
+      where: { id_servicio: id },
+      data: { estatus_servicio: false },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
+    throw error;
+  }
 }

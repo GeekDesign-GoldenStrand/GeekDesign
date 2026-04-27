@@ -162,8 +162,9 @@ model Servicios {
   nombre_servicio      String  @db.VarChar(100)
   descripcion_servicio String?
   estatus_servicio     Boolean @default(true)
-  id_instalador        Int?    // NUEVO: null si no requiere instalación
-  id_proveedor         Int?    // NUEVO: null si no requiere proveedor
+  id_instalador        Int?
+  id_proveedor         Int?
+  fecha_modificacion DateTime @default(now()) @updatedAt   
 
   estatusServicio EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
   instalador      Instaladores?      @relation(fields: [id_instalador], references: [id_instalador])
