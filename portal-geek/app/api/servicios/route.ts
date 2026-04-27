@@ -13,15 +13,16 @@ export async function GET(req: NextRequest) {
     const activo = searchParams.get("activo") === "true";
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
+    const q = searchParams.get("q")?.trim() || undefined;
 
     if (activo) {
-      const result = await listServicios(page, pageSize, true);
+      const result = await listServicios(page, pageSize, true, q);
       return paginated(result.items, result.total, page, pageSize);
     }
 
     // Admin-only for full catalog
     return withRole(["Administrador"], async () => {
-      const result = await listServicios(page, pageSize);
+      const result = await listServicios(page, pageSize, undefined, q);
       return paginated(result.items, result.total, page, pageSize);
     })(req);
   } catch (err) {
