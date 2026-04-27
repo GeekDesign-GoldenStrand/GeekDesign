@@ -1,38 +1,82 @@
-import type { Servicios } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
 import { NotFoundError } from "@/lib/utils/errors";
+import type {
+  CreateServicioInput,
+  UpdateServicioInput,
+} from "@/lib/schemas/servicios";
 
+// ─── Types ─────────────────────────────────────────────────────────────
+
+
+export type ServicioConMaquinas = Prisma.ServiciosGetPayload<{
+  include: {
+    maquinas: {
+      include: { maquina: true };
+    };
+  };
+}>;
+
+
+export type ServicioCompleto = Prisma.ServiciosGetPayload<{
+  include: {
+    estatusServicio: true;
+    maquinas: { include: { maquina: true } };
+    instalador: true;
+    proveedor: true;
+    formulas: {
+      include: {
+        variables: { include: { tipo: true } };
+        constantes: {
+          include: {
+            maquina: true;
+            instalador: true;
+            proveedor: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+
+type ServicioSimple = Prisma.ServiciosGetPayload<object>;
+
+// ─── Functions ─────────────────────────────────────────────────────────
+
+/*
+Servicios list paginated with total count for pagination controls.
+Sorted by fecha_modificacion desc (most recently updated first).
+*/
 export async function listServicios(
   page: number,
-  pageSize: number,
-  soloActivos = false,
-  query?: string
-): Promise<{ items: Servicios[]; total: number }> {
-  const where = {
-    ...(soloActivos && { estatus_servicio: true }),
-    ...(query && {
-      OR: [
-        { nombre_servicio: { contains: query, mode: "insensitive" as const } },
-        { descripcion_servicio: { contains: query, mode: "insensitive" as const } },
-      ],
-    }),
-  };
+  pageSize: number
+): Promise<{ items: ServicioConMaquinas[]; total: number }> {
+  const skip = (page - 1) * pageSize;
+
   const [items, total] = await Promise.all([
     prisma.servicios.findMany({
-      where,
-      skip: (page - 1) * pageSize,
+      skip,
       take: pageSize,
-      orderBy: { id_servicio: "asc" },
+      orderBy: { fecha_modificacion: "desc" },
+      include: {
+        maquinas: {
+          include: { maquina: true },
+        },
+      },
     }),
-    prisma.servicios.count({ where }),
+    prisma.servicios.count(),
   ]);
+
   return { items, total };
 }
 
-export async function getServicio(id: number): Promise<Servicios> {
+/*
+Get a single service by ID with all its relations.
+Throws NotFoundError if the service does not exist.
+*/
+export async function getServicio(id: number): Promise<ServicioCompleto> {
   const servicio = await prisma.servicios.findUnique({
     where: { id_servicio: id },
     include: {
@@ -45,7 +89,11 @@ export async function getServicio(id: number): Promise<Servicios> {
         include: {
           variables: { include: { tipo: true } },
           constantes: {
-            include: { maquina: true, instalador: true, proveedor: true },
+            include: {
+              maquina: true,
+              instalador: true,
+              proveedor: true,
+            },
           },
         },
       },
@@ -58,50 +106,21 @@ export async function getServicio(id: number): Promise<Servicios> {
   return servicio;
 }
 
-export async function getServicioWithDetails(id: number) {
-  const servicio = await prisma.servicios.findFirst({
-    where: { id_servicio: id, estatus_servicio: true },
-    include: {
-      opciones: {
-        include: {
-          material: true,
-          valores: {
-            orderBy: { es_default: "desc" },
-            include: {
-              matriz: { orderBy: { precio_unitario: "asc" } },
-            },
-          },
-        },
-      },
-    },
-  });
-  if (!servicio) throw new NotFoundError(`Servicio ${id} no encontrado`);
-
-  const allPrices = servicio.opciones.flatMap((o) =>
-    o.valores.flatMap((v) => v.matriz.map((m) => Number(m.precio_unitario)))
-  );
-  const precioBase = allPrices.length > 0 ? Math.min(...allPrices) : null;
-
-  return { servicio, precioBase };
-}
-
 /*
-Create a new service with the provided data. Returns the created service. Throws AppError on validation
-failure or other issues.
+Create a new service with optional machine vinculations and formula.
+All operations run in a transaction: if any step fails, nothing is persisted.
 */
 export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
-): Promise<Servicios> {
+): Promise<ServicioSimple> {
   const { id_maquinas, formula, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
-    // Here the service is created first, then the relations are created in their respective tables.
-    // This is to ensure that if any of the relations fail to be created, the whole transaction will
-    // be rolled back and we won't end up with orphaned relations without a service.
+    // 1. Create the service first.
     const servicio = await tx.servicios.create({ data: servicioData });
 
-    // Afterwards it is vinculated to a machine
+    // 2. Vinculate machines if provided.
     if (id_maquinas && id_maquinas.length > 0) {
       await tx.servicioMaquina.createMany({
         data: id_maquinas.map((id_maquina) => ({
@@ -111,7 +130,7 @@ export async function createServicio(
       });
     }
 
-    // Finally, if there is a formula, it is created and vinculated to the service.
+    // 3. Create formula if provided, with its variables and constants.
     if (formula) {
       const formulaCreada = await tx.formulas.create({
         data: {
@@ -122,7 +141,6 @@ export async function createServicio(
         },
       });
 
-      // If there are variables, they are created and vinculated to the formula.
       if (formula.variables.length > 0) {
         await tx.formulaVariables.createMany({
           data: formula.variables.map((v) => ({
@@ -137,7 +155,7 @@ export async function createServicio(
           })),
         });
       }
-      // If there are constantes, they are created and vinculated to the formula.
+
       if (formula.constantes.length > 0) {
         await tx.formulaConstantes.createMany({
           data: formula.constantes.map((c) => ({
@@ -152,18 +170,21 @@ export async function createServicio(
         });
       }
     }
+
     return servicio;
   });
 }
 
 /*
-Updates a service and resincs their latch if there are new arrays.
+Updates a service and resyncs its machines and formula if new arrays are provided.
+Old formulas are deactivated (soft delete) instead of being removed,
+preserving historical data for past quotations.
 */
 export async function updateServicio(
   id: number,
   data: UpdateServicioInput,
   id_usuario: number
-): Promise<Servicios> {
+): Promise<ServicioSimple> {
   const { id_maquinas, formula, ...servicioData } = data;
 
   try {
@@ -173,6 +194,7 @@ export async function updateServicio(
         data: servicioData,
       });
 
+      // Resync machines: drop old vinculations and create new ones.
       if (id_maquinas !== undefined) {
         await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });
         if (id_maquinas.length > 0) {
@@ -185,6 +207,7 @@ export async function updateServicio(
         }
       }
 
+      // Replace formula: deactivate the previous one and create a new active one.
       if (formula !== undefined) {
         await tx.formulas.updateMany({
           where: { id_servicio: id, estatus: "Activa" },
@@ -229,6 +252,7 @@ export async function updateServicio(
           });
         }
       }
+
       return servicio;
     });
   } catch (error) {
@@ -242,8 +266,22 @@ export async function updateServicio(
   }
 }
 
+/*
+Changes estatus_servicio to false in order to preserve historical data
+*/
 export async function deleteServicio(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.servicios.update({
+      where: { id_servicio: id },
+      data: { estatus_servicio: false },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new NotFoundError(`Servicio con id ${id} no encontrado`);
+    }
+    throw error;
+  }
 }

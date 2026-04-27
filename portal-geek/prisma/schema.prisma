@@ -1,7 +1,24 @@
 // Prisma schema — Geek Design Platform
 // Database: PostgreSQL 18
-// Generated from data dictionary v3 (Formula Engine) 
-
+// Generated from data dictionary v3 (Formula Engine)
+//
+// CAMBIOS RESPECTO A v2:
+//   + Tablas nuevas motor de fórmulas:
+//       Formulas, TiposVariable, FormulaConstantes,
+//       ServicioMaquina, ServicioProveedor
+//   ~ InstaladorServicios: cambio campo 'servicio: String' -> 'id_servicio: Int' con FK
+//     (se conserva el nombre de la tabla por decisión de equipo)
+//   ~ FormulaVariables: refactor completo — ahora apunta a Formulas (no Servicios),
+//     con tipo, etiqueta, valor_default, editable_por_cliente, estatus
+//   ~ VariablesCotizacion: FK 'id_formula' renombrado a 'id_variable'
+//   ~ Maquinas: agregado 'costo_por_minuto' (nullable hasta que Andrea defina la métrica)
+//   ~ Fix Float -> Decimal en campos de dinero:
+//       Instaladores.costo_instalacion
+//       Proveedores.costo
+//
+// CONSERVADO DEL ÚLTIMO PULL:
+//   TokensRecuperacion (recuperación de contraseña)
+//   Usuarios.ultimo_acceso
 
 generator client {
   provider = "prisma-client-js"
@@ -43,7 +60,7 @@ model Usuarios {
   correo_electronico String    @unique @db.VarChar(150)
   contrasena_hash    String    @db.VarChar(255)
   id_rol             Int
-  estatus            String    @db.VarChar(20)
+  estatus            String    @db.VarChar(20) // Activo / Inactivo
   fecha_creacion     DateTime  @default(now())
   ultimo_acceso      DateTime?
 
@@ -67,9 +84,9 @@ model Colaboradores {
   id_usuario          Int      @unique
   id_sucursal         Int
   edad                Int
-  sexo                String   @db.VarChar(2)
+  sexo                String   @db.VarChar(2)  // M / F / NA
   telefono            String   @db.VarChar(20)
-  estatus_colaborador String   @db.VarChar(20)
+  estatus_colaborador String   @db.VarChar(20) // Activo / Inactivo
   fecha_modificacion  DateTime @updatedAt
 
   usuario     Usuarios                @relation(fields: [id_usuario], references: [id_usuario])
@@ -102,7 +119,7 @@ model Clientes {
   rfc                String? @db.VarChar(13)
   correo_electronico String  @db.VarChar(150)
   numero_telefono    String  @db.VarChar(20)
-  categoria          String? @db.VarChar(30)
+  categoria          String? @db.VarChar(30) // Black / Silver / Gold / Emprendedor / Baneado
 
   pedidos      Pedidos[]
   cotizaciones Cotizaciones[]
@@ -132,7 +149,7 @@ model NotasCliente {
 
 model EstatusServicio {
   id_estatus_servicio Int    @id @default(autoincrement())
-  descripcion         String @db.VarChar(50)
+  descripcion         String @db.VarChar(50) // Aprobación Diseño / Grabado / Corte / Rotulación / Finalizado / Cancelado
 
   servicios Servicios[]
 
@@ -145,18 +162,17 @@ model Servicios {
   nombre_servicio      String  @db.VarChar(100)
   descripcion_servicio String?
   estatus_servicio     Boolean @default(true)
-  id_instalador        Int?    // null si no requiere instalación
-  id_proveedor         Int?    // null si no requiere proveedor
+  id_instalador        Int?
+  id_proveedor         Int?
+  fecha_modificacion DateTime @default(now()) @updatedAt   
 
-  estatusServicio     EstatusServicio       @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  instalador          Instaladores?         @relation(fields: [id_instalador], references: [id_instalador])
-  proveedor           Proveedores?          @relation(fields: [id_proveedor], references: [id_proveedor])
-  opciones            OpcionesProducto[]
-  detallesPedido      DetallePedido[]
-  formulas            Formulas[]
-  maquinas            ServicioMaquina[]
-  instaladorServicios InstaladorServicios[]
-  proveedorPrecios    ProveedorPrecios[]
+  estatusServicio EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  instalador      Instaladores?      @relation(fields: [id_instalador], references: [id_instalador])
+  proveedor       Proveedores?       @relation(fields: [id_proveedor], references: [id_proveedor])
+  opciones        OpcionesProducto[]
+  detallesPedido  DetallePedido[]
+  formulas        Formulas[]
+  maquinas        ServicioMaquina[]
 
   @@map("SERVICIOS")
 }
@@ -172,10 +188,9 @@ model Materiales {
   color                String?  @db.VarChar(50)
   imagen_url           String?  @db.VarChar(500)
 
-  opciones         OpcionesProducto[]
-  detallesPedido   DetallePedido[]
-  pedidoMaquinas   PedidoMaquina[]
-  proveedorPrecios ProveedorPrecios[]
+  opciones       OpcionesProducto[]
+  detallesPedido DetallePedido[]
+  pedidoMaquinas PedidoMaquina[]
 
   @@map("MATERIALES")
 }
@@ -237,7 +252,7 @@ model Sucursales {
   direccion        String    @db.VarChar(255)
   horario_apertura DateTime?
   horario_salida   DateTime?
-  estatus          String    @db.VarChar(20)
+  estatus          String    @db.VarChar(20) // Activo / Inactivo
 
   maquinas      SucursalesMaquina[]
   colaboradores Colaboradores[]
@@ -250,10 +265,10 @@ model Maquinas {
   id_maquina       Int      @id @default(autoincrement())
   nombre_maquina   String   @db.VarChar(100)
   apodo_maquina    String   @db.VarChar(100)
-  tipo             String   @db.VarChar(50)
+  tipo             String   @db.VarChar(50)  // Láser CO2 / Láser Fibra / Bordadora
   descripcion      String?
-  costo_por_minuto Decimal? @db.Decimal(10, 4)
-  estatus          String   @db.VarChar(30)
+  costo_por_minuto Decimal? @db.Decimal(10, 4) // NUEVO: nullable hasta que Andrea defina la métrica
+  estatus          String   @db.VarChar(30)  // Activa / Inactiva / En mantenimiento
   fecha_registro   DateTime @default(now())
 
   sucursales        SucursalesMaquina[]
@@ -278,15 +293,14 @@ model SucursalesMaquina {
 model Proveedores {
   id_proveedor          Int      @id @default(autoincrement())
   nombre_proveedor      String   @db.VarChar(100)
-  tipo                  String   @db.VarChar(50)
+  tipo                  String   @db.VarChar(50)  // Proveedor de material / Proveedor de servicio
   telefono              String?  @db.VarChar(20)
   correo                String?  @db.VarChar(150)
   descripcion_proveedor String?
-  costo                 Decimal? @db.Decimal(10, 2)
+  costo                 Decimal? @db.Decimal(10, 2)  // FIX: era Float?
   ubicacion             String?  @db.VarChar(255)
-  estatus               String   @db.VarChar(20)
+  estatus               String   @db.VarChar(20)  // Activo / Inactivo / Baneado
 
-  precios           ProveedorPrecios[]
   gastos            Gastos[]
   servicios         Servicios[]
   formulaConstantes FormulaConstantes[]
@@ -294,61 +308,27 @@ model Proveedores {
   @@map("PROVEEDORES")
 }
 
-model ProveedorPrecios {
-  id_proveedor_precio Int     @id @default(autoincrement())
-  id_proveedor        Int
-  id_servicio         Int?
-  id_material         Int?
-  precio              Decimal @db.Decimal(10, 2)
-  notas               String? @db.VarChar(500)
-
-  proveedor Proveedores  @relation(fields: [id_proveedor], references: [id_proveedor])
-  servicio  Servicios?   @relation(fields: [id_servicio], references: [id_servicio])
-  material  Materiales?  @relation(fields: [id_material], references: [id_material])
-  gastos    Gastos[]
-
-  @@map("PROVEEDORPRECIOS")
-}
-
 model Instaladores {
   id_instalador     Int     @id @default(autoincrement())
-  nombre_instalador String  @db.VarChar(100)
+  nombre_proveedor  String  @db.VarChar(100)
   apodo             String? @db.VarChar(100)
-  tipo              String  @db.VarChar(50)
+  tipo              String  @db.VarChar(50)  // Instalador / Contratista
   telefono          String? @db.VarChar(20)
   correo            String? @db.VarChar(150)
-  costo_instalacion Decimal @db.Decimal(10, 2)
+  costo_instalacion Decimal @db.Decimal(10, 2)  // FIX: era Float
   notas             String? @db.VarChar(500)
   ubicacion         String? @db.VarChar(255)
-  estatus           String  @db.VarChar(20)
+  estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   servicios         Servicios[]
-  installerServices InstaladorServicios[]
   formulaConstantes FormulaConstantes[]
 
   @@map("INSTALADORES")
 }
 
-// Pivote histórico instalador ↔ servicio.
-// Se conserva por compatibilidad con Gastos. La nueva relación de UN solo
-// instalador por servicio se modela con Servicios.id_instalador (FK directa).
-model InstaladorServicios {
-  id_instalador_servicio Int     @id @default(autoincrement())
-  id_instalador          Int
-  id_servicio            Int
-  precio                 Decimal @db.Decimal(10, 2)
-  notas                  String? @db.VarChar(500)
-
-  instalador Instaladores @relation(fields: [id_instalador], references: [id_instalador])
-  servicio   Servicios    @relation(fields: [id_servicio], references: [id_servicio])
-  gastos     Gastos[]
-
-  @@unique([id_instalador, id_servicio])
-  @@map("INSTALADORSERVICIOS")
-}
 
 // ─────────────────────────────────────────────
-// SERVICE PIVOTS
+// SERVICE PIVOTS (many-to-many)
 // ─────────────────────────────────────────────
 
 model ServicioMaquina {
@@ -362,6 +342,7 @@ model ServicioMaquina {
   @@unique([id_servicio, id_maquina])
   @@map("SERVICIOMAQUINA")
 }
+
 
 // ─────────────────────────────────────────────
 // ORDERS
@@ -461,9 +442,9 @@ model HistorialEstadosPedidos {
   id_historial       Int      @id @default(autoincrement())
   id_pedido          Int
   id_usuario         Int
-  id_estado_anterior Int?
+  id_estado_anterior Int?     // NULL on first assignment
   id_estado_nuevo    Int
-  id_estatus_pedido  String?
+  id_estatus_pedido  String?  // subproceso name when state is "En proceso"
   fecha_cambio       DateTime @default(now())
 
   pedido  Pedidos  @relation(fields: [id_pedido], references: [id_pedido])
@@ -487,7 +468,7 @@ model EstatusCotizacion {
 
 model Cotizaciones {
   id_cotizacion         Int       @id @default(autoincrement())
-  id_pedido             Int?
+  id_pedido             Int?      // NULL for special quotations before order creation
   id_cliente            Int
   id_estatus_cotizacion Int
   monto_total           Decimal   @db.Decimal(10, 2)
@@ -513,9 +494,9 @@ model HistorialEstadosCotizacion {
   id_historial        Int      @id @default(autoincrement())
   id_cotizacion       Int
   id_usuario          Int
-  id_estado_anterior  Int?
+  id_estado_anterior  Int?     // NULL on first assignment
   id_estado_nuevo     Int
-  id_estatus_servicio String?
+  id_estatus_servicio String?  // subproceso name when state is "En proceso"
   fecha_cambio        DateTime @default(now())
 
   cotizacion Cotizaciones @relation(fields: [id_cotizacion], references: [id_cotizacion])
@@ -528,11 +509,13 @@ model HistorialEstadosCotizacion {
 // FORMULA ENGINE
 // ─────────────────────────────────────────────
 
+// Fórmula: una por servicio (activa). Estructura matemática que calcula el precio.
+// La expresión se guarda como string (ej: "ancho * alto * costo_laser + iva").
 model Formulas {
   id_formula         Int      @id @default(autoincrement())
   id_servicio        Int
   expresion          String   @db.VarChar(500)
-  estatus            String   @db.VarChar(20)
+  estatus            String   @db.VarChar(20)  // Activa / Inactiva
   fecha_creacion     DateTime @default(now())
   fecha_modificacion DateTime @updatedAt
   id_usuario_creo    Int
@@ -545,24 +528,30 @@ model Formulas {
   @@map("FORMULAS")
 }
 
+// Catálogo de tipos de variable (dropdown al agregar variable).
+// Precargado con tipos base vía seed; el admin puede agregar nuevos desde el portal.
+// Tipos base sugeridos: Dimensión, Cantidad, Costo adicional, Descuento, Costo de material, Tiempo
 model TiposVariable {
   id_tipo_variable Int     @id @default(autoincrement())
   nombre_tipo      String  @unique @db.VarChar(50)
-  unidad_default   String? @db.VarChar(20)
+  unidad_default   String? @db.VarChar(20)  // cm / pz / $ / % / min
   descripcion      String?
-  estatus          String  @db.VarChar(20)
+  estatus          String  @db.VarChar(20)  // Activo / Inactivo
 
   variables FormulaVariables[]
 
   @@map("TIPOSVARIABLE")
 }
 
+// Variables: piezas EDITABLES de la fórmula.
+// El admin define el nombre y puede asignarle un valor default.
+// Si editable_por_cliente = true, el cliente puede cambiar el valor al cotizar.
 model FormulaVariables {
   id_variable          Int      @id @default(autoincrement())
   id_formula           Int
   id_tipo_variable     Int
-  nombre_variable      String   @db.VarChar(100)
-  etiqueta             String   @db.VarChar(100)
+  nombre_variable      String   @db.VarChar(100)  // identificador en la expresión: "ancho", "costo_extra"
+  etiqueta             String   @db.VarChar(100)  // lo que ve el cliente: "Ancho (cm)"
   valor_default        Decimal? @db.Decimal(10, 4)
   editable_por_cliente Boolean  @default(false)
   unidad               String?  @db.VarChar(20)
@@ -576,10 +565,13 @@ model FormulaVariables {
   @@map("FORMULA_VARIABLES")
 }
 
+// Constantes: piezas HEREDADAS de máquina/instalador/proveedor.
+// El valor NO se guarda aquí, se resuelve en runtime consultando la entidad origen.
+// Origen válido: 'maquina' | 'instalador' | 'proveedor'
 model FormulaConstantes {
   id_constante     Int     @id @default(autoincrement())
   id_formula       Int
-  nombre_constante String  @db.VarChar(100)
+  nombre_constante String  @db.VarChar(100)  // identificador en la expresión: "costo_laser_co2"
   origen           String  @db.VarChar(20)
   id_maquina       Int?
   id_instalador    Int?
@@ -595,11 +587,13 @@ model FormulaConstantes {
   @@map("FORMULA_CONSTANTES")
 }
 
+// Valores capturados por el cliente en una cotización.
+// Solo se llena para variables con editable_por_cliente = true.
 model VariablesCotizacion {
   id_valor          Int      @id @default(autoincrement())
   id_cotizacion     Int
   id_detalle        Int?
-  id_variable       Int
+  id_variable       Int      // RENOMBRADO: antes id_formula (ahora refleja que apunta a variable)
   valor             Decimal  @db.Decimal(10, 4)
   id_usuario_asigno Int
   fecha_asignacion  DateTime @default(now())
@@ -621,9 +615,9 @@ model Pagos {
   id_pedido              Int
   fecha                  DateTime @default(now())
   monto_pago             Decimal  @db.Decimal(10, 2)
-  metodo_pago            String   @db.VarChar(30)
+  metodo_pago            String   @db.VarChar(30)  // efectivo / transferencia / Mercado Pago
   referencia_mercadopago String?  @db.VarChar(255)
-  estatus_pago           String   @db.VarChar(20)
+  estatus_pago           String   @db.VarChar(20)  // Pendiente / Pagado / Reembolsado
 
   pedido Pedidos @relation(fields: [id_pedido], references: [id_pedido])
 
@@ -631,20 +625,16 @@ model Pagos {
 }
 
 model Gastos {
-  id_costo               Int      @id @default(autoincrement())
-  id_pedido              Int
-  tipo_costo             Int
-  id_proveedor_precio    Int?
-  id_instalador_servicio Int?
-  id_proveedor           Int?
-  monto                  Decimal  @db.Decimal(10, 2)
-  descripcion            String?
-  fecha_registro         DateTime @default(now())
+  id_costo       Int      @id @default(autoincrement())
+  id_pedido      Int
+  tipo_costo     Int      // 1 = Proveedor, 2 = Instalador, 3 = Mano de obra
+  id_proveedor   Int?
+  monto          Decimal  @db.Decimal(10, 2)
+  descripcion    String?
+  fecha_registro DateTime @default(now())
 
-  pedido              Pedidos              @relation(fields: [id_pedido], references: [id_pedido])
-  proveedorPrecio     ProveedorPrecios?    @relation(fields: [id_proveedor_precio], references: [id_proveedor_precio])
-  instaladorServicio  InstaladorServicios? @relation(fields: [id_instalador_servicio], references: [id_instalador_servicio])
-  proveedor           Proveedores?         @relation(fields: [id_proveedor], references: [id_proveedor])
+  pedido    Pedidos      @relation(fields: [id_pedido], references: [id_pedido])
+  proveedor Proveedores? @relation(fields: [id_proveedor], references: [id_proveedor])
 
   @@map("GASTOS")
 }
