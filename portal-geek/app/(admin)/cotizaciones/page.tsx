@@ -25,19 +25,19 @@ function CotizacionesHeader() {
                 font-bold font-['IBM_Plex_Sans_JP',sans-serif] text-black
             "
             >
-            // Visible on all screen sizes
+            {/* Visible on all screen sizes */}
             <span>Fecha de Creación</span>
             <span>Monto Total</span>
 
-            // Visible on md and up
+            {/* Visible on md and up */}
             <span className="hidden md:block">Entrega Estimada</span>
             <span className="hidden md:block">Empresa</span>
 
-            // Visible on lg and up
+            {/* Visible on lg and up */}
             <span className="hidden lg:block">Cliente</span>
             <span className="hidden lg:block">Folio</span>
 
-            // Visible on all screen sizes
+            {/* Visible on all screen sizes */}
             <span className="text-center">Estatus</span>
             <span className="sr-only">Acciones</span>
             </div>
