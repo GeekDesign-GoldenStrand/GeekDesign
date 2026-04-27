@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateServicioSchema } from "@/lib/schemas/servicios";
@@ -40,6 +40,3 @@ export const POST = withRole(["Administrador"], async (req: NextRequest) => {
 
 // Needed because GET is no longer a plain export
 export const dynamic = "force-dynamic";
-
-// Silence TS — NextResponse is used transitively via helpers
-void NextResponse;
