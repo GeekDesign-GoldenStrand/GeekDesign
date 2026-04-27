@@ -33,7 +33,7 @@ export async function listServicios(
 
 export async function getServicio(id: number): Promise<Servicios> {
   const servicio = await prisma.servicios.findUnique({ where: { id_servicio: id } });
-  if (!servicio) throw new NotFoundError(`Servicio ${id} not found`);
+  if (!servicio) throw new NotFoundError(`Servicio ${id} no encontrado`);
   return servicio;
 }
 
