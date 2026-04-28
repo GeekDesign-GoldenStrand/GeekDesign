@@ -10,7 +10,7 @@ import type {
 // ─── Types ─────────────────────────────────────────────────────────────
 
 
-export type ServicioConMaquinas = Prisma.ServiciosGetPayload<{
+export type ServicioListado = Prisma.ServiciosGetPayload<{
   include: {
     maquinas: {
       include: { maquina: true };
@@ -52,7 +52,7 @@ Sorted by fecha_modificacion desc (most recently updated first).
 export async function listServicios(
   page: number,
   pageSize: number
-): Promise<{ items: ServicioConMaquinas[]; total: number }> {
+): Promise<{ items: ServicioListado[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
   const [items, total] = await Promise.all([
