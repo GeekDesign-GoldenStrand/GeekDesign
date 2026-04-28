@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Icon } from "../atoms/FilterIcon";
+import { Icon } from "../atoms/Icon";
 import { FunnelIcon } from "@phosphor-icons/react";
 
 
