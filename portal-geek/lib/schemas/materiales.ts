@@ -1,15 +1,16 @@
 import { z } from "zod";
 
-const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
+// Blocklist: characters and structural symbols with no place in a material name
+const NOMBRE_BLOCKED = /[\x00-\x1F\x7F<>{}\[\]\\|^~`*]/;
 
-export const UNIDADES_MEDIDA = ["mm", "in", "cm", "µ", "pt"] as const;
+export const UNIDADES_MEDIDA = ["mm", "in", "cm", "mu", "pt"] as const;
 
 export const CreateMaterialSchema = z.object({
   nombre_material: z
     .string()
     .min(1, "El nombre es requerido.")
     .max(100, "Máximo 100 caracteres.")
-    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+    .refine((v) => !NOMBRE_BLOCKED.test(v), "El nombre contiene caracteres no permitidos."),
   descripcion_material: z
     .string()
     .min(1, "La descripción es requerida.")

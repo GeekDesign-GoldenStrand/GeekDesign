@@ -248,7 +248,7 @@ export function EditarMaterialForm({
               {unit === "mm" && "Milímetros (mm)"}
               {unit === "in" && "Pulgadas (in)"}
               {unit === "cm" && "Centímetros (cm)"}
-              {unit === "µ" && "Micras (µ)"}
+              {unit === "mu" && "Micras (mu)"}
               {unit === "pt" && "Puntos (pt)"}
             </option>
           ))}
