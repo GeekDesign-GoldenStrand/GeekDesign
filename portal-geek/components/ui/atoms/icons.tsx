@@ -1,11 +1,13 @@
 interface IconProps {
   size?: number;
   strokeWidth?: number;
+  className?: string;
 }
 
-export function MapPinIcon({ size = 14 }: IconProps) {
+export function MapPinIcon({ size = 14, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -21,9 +23,10 @@ export function MapPinIcon({ size = 14 }: IconProps) {
   );
 }
 
-export function MailIcon({ size = 16 }: IconProps) {
+export function MailIcon({ size = 16, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -39,9 +42,10 @@ export function MailIcon({ size = 16 }: IconProps) {
   );
 }
 
-export function PhoneIcon({ size = 16 }: IconProps) {
+export function PhoneIcon({ size = 16, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -56,9 +60,10 @@ export function PhoneIcon({ size = 16 }: IconProps) {
   );
 }
 
-export function EditIcon({ size = 16 }: IconProps) {
+export function EditIcon({ size = 16, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -74,9 +79,10 @@ export function EditIcon({ size = 16 }: IconProps) {
   );
 }
 
-export function ChevronDownIcon({ size = 10 }: IconProps) {
+export function ChevronDownIcon({ size = 10, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -91,9 +97,10 @@ export function ChevronDownIcon({ size = 10 }: IconProps) {
   );
 }
 
-export function CheckIcon({ size = 12 }: IconProps) {
+export function CheckIcon({ size = 12, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -108,9 +115,10 @@ export function CheckIcon({ size = 12 }: IconProps) {
   );
 }
 
-export function SearchIcon({ size = 20 }: IconProps) {
+export function SearchIcon({ size = 20, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -126,9 +134,10 @@ export function SearchIcon({ size = 20 }: IconProps) {
   );
 }
 
-export function FilterIcon({ size = 18 }: IconProps) {
+export function FilterIcon({ size = 18, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -143,9 +152,10 @@ export function FilterIcon({ size = 18 }: IconProps) {
   );
 }
 
-export function PlusIcon({ size = 18 }: IconProps) {
+export function PlusIcon({ size = 18, className }: IconProps) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -157,6 +167,63 @@ export function PlusIcon({ size = 18 }: IconProps) {
     >
       <path d="M5 12h14" />
       <path d="M12 5v14" />
+    </svg>
+  );
+}
+
+export function EyeIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+export function PlusBoxIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M12 8v8" />
+      <path d="M8 12h8" />
     </svg>
   );
 }
