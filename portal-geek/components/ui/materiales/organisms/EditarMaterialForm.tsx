@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { UpdateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
+import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import type { MaterialCardProps } from "@/types";
 
 type UpdateMaterialResponse = {
@@ -131,7 +131,7 @@ export function EditarMaterialForm({
       imagen_url: form.imagen_url.trim(),
     };
 
-    const result = UpdateMaterialSchema.safeParse(payload);
+    const result = CreateMaterialSchema.safeParse(payload);
     if (result.success) {
       setErrors({});
       return payload;

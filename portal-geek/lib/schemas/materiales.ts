@@ -42,11 +42,8 @@ export const CreateMaterialSchema = z.object({
     .max(500, "Máximo 500 caracteres."),
 });
 
-export const UpdateMaterialSchema = CreateMaterialSchema.partial();
-
 export const MaterialIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
 export type CreateMaterialInput = z.infer<typeof CreateMaterialSchema>;
-export type UpdateMaterialInput = z.infer<typeof UpdateMaterialSchema>;
