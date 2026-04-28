@@ -22,3 +22,41 @@ export type PaginatedResponse<T> = {
     totalPages: number;
   };
 };
+
+//------- Types for the service creation page -------
+
+// "Sucursal" availability for linking to the service. 
+export type SucursalOption = {
+  id_sucursal: number;
+  nombre_sucursal: string;
+};
+
+// "Máquina" availability for linking to the service.
+export type MaquinaOption = {
+  id_maquina: number;
+  nombre_maquina: string;
+  apodo_maquina: string;
+  costo_por_minuto: string | null;
+};
+
+// "Instalador" availability for linking to the service.
+export type InstaladorOption = {
+  id_instalador: number;
+  nombre_proveedor: string;
+  apodo: string | null;
+  costo_instalacion: string;
+};
+
+// "Proveedor" availability for linking to the service.
+export type ProveedorOption = {
+  id_proveedor: number;
+  nombre_proveedor: string;
+  costo: string | null;
+};
+
+// "Tipo de variable" availability for linking to the service.
+export type TipoVariableOption = {
+  id_tipo_variable: number;
+  nombre_tipo: string;
+  unidad_default: string | null;
+};
