@@ -109,9 +109,7 @@ export function EditarMaterialModal({
             <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>
           )}
 
-          {fetchError && (
-            <p className="text-[#e42200] text-[14px]">{fetchError}</p>
-          )}
+          {fetchError && <p className="text-[#e42200] text-[14px]">{fetchError}</p>}
 
           {!fetchLoading && !fetchError && freshMaterial && (
             <EditarMaterialForm
