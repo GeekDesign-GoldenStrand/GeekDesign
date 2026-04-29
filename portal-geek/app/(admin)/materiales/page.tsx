@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/materiales";
 import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
 
+// How many materials to fetch per page
+const PAGE_SIZE = 10;
+
 type DbMaterial = {
   id_material: number;
   nombre_material: string;
@@ -63,14 +66,21 @@ export default function MaterialesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialCardProps | null>(null);
+  // Only the ID is stored; EditarMaterialModal fetches fresh data on open.
+  const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [visibleColumns, setVisibleColumns] =
     useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  // Incrementing this re-triggers the fetch effect without changing the page.
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
   useEffect(() => {
-    // Initial read-only load for the materials catalog.
-    fetch("/api/materiales?pageSize=100")
+    setLoading(true);
+    setError(null);
+
+    fetch(`/api/materiales?page=${page}&pageSize=${PAGE_SIZE}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         return res.json();
@@ -78,13 +88,15 @@ export default function MaterialesPage() {
       .then((payload) => {
         const items = ((payload?.data ?? []) as DbMaterial[]).map(mapMaterial);
         setRows(items);
+        const total = payload?.total ?? 0;
+        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
       })
       .catch(() => setError("No se pudieron cargar los materiales"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, retryAttempt]);
 
   const filtered = useMemo(() => {
-    // free-text search
+    // Free-text search against the current page's rows.
     const q = search.trim().toLowerCase();
     const base = q
       ? rows.filter(
@@ -105,40 +117,41 @@ export default function MaterialesPage() {
   function handleToggleColumn(key: keyof MaterialesVisibleColumns) {
     setVisibleColumns((prev) => {
       const next = { ...prev, [key]: !prev[key] };
-      // Keep at least one column visible to avoid empty rows
+      // Keep at least one column visible to avoid empty rows.
       if (!Object.values(next).some(Boolean)) return prev;
       return next;
     });
   }
 
   function handleResetFilters() {
-    // Restore filter popup state to its initial configuration
+    // Restore all filter state (search, columns, sort) to initial configuration.
     setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
     setSortOrder("az");
+    setSearch("");
   }
 
   function handleCreated(row: MaterialCardProps) {
-    // Optimistically prepend the new item so users see it immediately
+    // Optimistically prepend the new item so users see it immediately.
     setRows((prev) => [row, ...prev]);
   }
 
   function handleEditClick(material: MaterialCardProps) {
-    setSelectedMaterial(material);
+    setSelectedMaterialId(material.id);
     setShowEditModal(true);
   }
 
   function handleEditClose() {
     setShowEditModal(false);
-    setSelectedMaterial(null);
+    setSelectedMaterialId(null);
   }
 
   function handleUpdated(row: MaterialCardProps) {
-    // Update the row in the list
+    // Update the row in the current page list.
     setRows((prev) => prev.map((item) => (item.id === row.id ? row : item)));
   }
 
   function handleDeleted(materialId: number) {
-    // Remove the deleted material from the list
+    // Remove the deleted material from the current page list.
     setRows((prev) => prev.filter((item) => item.id !== materialId));
   }
 
@@ -162,13 +175,28 @@ export default function MaterialesPage() {
 
         {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
 
-        {error && !loading && <p className="text-[#e42200] text-[16px]">{error}</p>}
+        {error && !loading && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[#e42200] text-[16px]">{error}</p>
+            <button
+              onClick={() => setRetryAttempt((n) => n + 1)}
+              className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
 
         {!loading && !error && (
           <MaterialesGrid
             items={filtered}
             visibleColumns={visibleColumns}
             onEditMaterial={handleEditClick}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            hasSearch={!!search.trim()}
+            onClearFilters={handleResetFilters}
           />
         )}
       </main>
@@ -181,7 +209,7 @@ export default function MaterialesPage() {
 
       <EditarMaterialModal
         isOpen={showEditModal}
-        material={selectedMaterial}
+        materialId={selectedMaterialId}
         onClose={handleEditClose}
         onUpdated={handleUpdated}
         onDeleted={handleDeleted}

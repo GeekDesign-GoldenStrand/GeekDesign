@@ -1,11 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { EditarMaterialForm } from "@/components/ui/materiales/organisms/EditarMaterialForm";
 import type { MaterialCardProps } from "@/types";
 
+// Raw shape returned by GET /api/materiales/:id
+type FreshMaterial = {
+  id_material: number;
+  nombre_material: string;
+  descripcion_material: string | null;
+  unidad_medida: string;
+  ancho: string | number | null;
+  alto: string | number | null;
+  grosor: string | number | null;
+  color: string | null;
+  imagen_url: string | null;
+};
+
+function mapFreshMaterial(item: FreshMaterial): MaterialCardProps {
+  const normalize = (v: string | number | null) => (v == null || v === "" ? "-" : String(v));
+  return {
+    id: item.id_material,
+    name: item.nombre_material,
+    unit: item.unidad_medida,
+    color: item.color ?? "-",
+    width: normalize(item.ancho),
+    height: normalize(item.alto),
+    thickness: normalize(item.grosor),
+    description: item.descripcion_material ?? "",
+    imageUrl: item.imagen_url ?? "",
+  };
+}
+
 interface EditarMaterialModalProps {
   isOpen: boolean;
-  material: MaterialCardProps | null;
+  // Only the ID is received; fresh data is fetched on open to avoid stale edits.
+  materialId: number | null;
   onClose: () => void;
   onUpdated: (row: MaterialCardProps) => void;
   onDeleted: (materialId: number) => void;
@@ -13,12 +44,40 @@ interface EditarMaterialModalProps {
 
 export function EditarMaterialModal({
   isOpen,
-  material,
+  materialId,
   onClose,
   onUpdated,
   onDeleted,
 }: EditarMaterialModalProps) {
-  if (!isOpen || !material) return null;
+  const [freshMaterial, setFreshMaterial] = useState<MaterialCardProps | null>(null);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Re-fetch from the server each time the modal opens so the form always
+  // reflects the current DB state, not a potentially stale in-memory row.
+  useEffect(() => {
+    if (!isOpen || materialId === null) {
+      setFreshMaterial(null);
+      setFetchError(null);
+      return;
+    }
+
+    setFetchLoading(true);
+    setFetchError(null);
+
+    fetch(`/api/materiales/${materialId}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        return res.json();
+      })
+      .then((payload) => {
+        setFreshMaterial(mapFreshMaterial(payload.data as FreshMaterial));
+      })
+      .catch(() => setFetchError("No se pudo cargar el material. Intenta de nuevo."))
+      .finally(() => setFetchLoading(false));
+  }, [isOpen, materialId]);
+
+  if (!isOpen || materialId === null) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -46,12 +105,22 @@ export function EditarMaterialModal({
         </div>
 
         <div className="p-6 overflow-y-auto">
-          <EditarMaterialForm
-            material={material}
-            onUpdated={onUpdated}
-            onDeleted={onDeleted}
-            onClose={onClose}
-          />
+          {fetchLoading && (
+            <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>
+          )}
+
+          {fetchError && (
+            <p className="text-[#e42200] text-[14px]">{fetchError}</p>
+          )}
+
+          {!fetchLoading && !fetchError && freshMaterial && (
+            <EditarMaterialForm
+              material={freshMaterial}
+              onUpdated={onUpdated}
+              onDeleted={onDeleted}
+              onClose={onClose}
+            />
+          )}
         </div>
       </div>
     </div>

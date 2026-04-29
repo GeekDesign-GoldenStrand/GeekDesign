@@ -1,8 +1,8 @@
 import type { Materiales } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/materiales";
-import { NotFoundError } from "@/lib/utils/errors";
+import type { CreateMaterialInput } from "@/lib/schemas/materiales";
+import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 export async function listMateriales(
   page: number,
@@ -37,7 +37,7 @@ export async function createMaterial(data: CreateMaterialInput): Promise<Materia
   return prisma.materiales.create({ data });
 }
 
-export async function updateMaterial(id: number, data: UpdateMaterialInput): Promise<Materiales> {
+export async function updateMaterial(id: number, data: CreateMaterialInput): Promise<Materiales> {
   try {
     const updated = await prisma.materiales.update({
       where: { id_material: id },
@@ -55,12 +55,47 @@ export async function updateMaterial(id: number, data: UpdateMaterialInput): Pro
 
 export async function deleteMaterial(id: number): Promise<void> {
   try {
-    await prisma.materiales.delete({
-      where: { id_material: id },
+    await prisma.$transaction(async (tx) => {
+      const material = await tx.materiales.findUnique({
+        where: { id_material: id },
+        select: {
+          id_material: true,
+          opciones: { select: { id_opcion: true } },
+          detallesPedido: { select: { id_detalle: true } },
+          pedidoMaquinas: { select: { id_pedido_maquina: true } },
+        },
+      });
+
+      if (!material) {
+        throw new NotFoundError(`Material ${id} no encontrado`);
+      }
+
+      if (material.detallesPedido.length > 0 || material.pedidoMaquinas.length > 0) {
+        throw new ConflictError(`Material ${id} no se puede eliminar porque ya está en uso`);
+      }
+
+      const optionIds = material.opciones.map((opcion) => opcion.id_opcion);
+
+      if (optionIds.length > 0) {
+        await tx.matrizDePrecios.deleteMany({
+          where: { id_opcion: { in: optionIds } },
+        });
+
+        await tx.valoresOpcion.deleteMany({
+          where: { id_opcion: { in: optionIds } },
+        });
+
+        await tx.opcionesProducto.deleteMany({
+          where: { id_material: id },
+        });
+      }
+
+      await tx.materiales.delete({
+        where: { id_material: id },
+      });
     });
   } catch (err) {
-    // Prisma throws P2025 when record not found
-    if (err instanceof Error && err.message.includes("P2025")) {
+    if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Material ${id} no encontrado`);
     }
     throw err;
