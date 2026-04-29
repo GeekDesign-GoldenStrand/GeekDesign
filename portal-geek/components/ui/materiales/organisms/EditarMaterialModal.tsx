@@ -50,34 +50,39 @@ export function EditarMaterialModal({
   onDeleted,
 }: EditarMaterialModalProps) {
   const [freshMaterial, setFreshMaterial] = useState<MaterialCardProps | null>(null);
-  const [fetchLoading, setFetchLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Re-fetch from the server each time the modal opens so the form always
   // reflects the current DB state, not a potentially stale in-memory row.
   useEffect(() => {
     if (!isOpen || materialId === null) {
-      setFreshMaterial(null);
-      setFetchError(null);
       return;
     }
 
-    setFetchLoading(true);
-    setFetchError(null);
+    const abortController = new AbortController();
 
-    fetch(`/api/materiales/${materialId}`)
+    fetch(`/api/materiales/${materialId}`, { signal: abortController.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         return res.json();
       })
       .then((payload) => {
+        if (abortController.signal.aborted) return;
         setFreshMaterial(mapFreshMaterial(payload.data as FreshMaterial));
       })
-      .catch(() => setFetchError("No se pudo cargar el material. Intenta de nuevo."))
-      .finally(() => setFetchLoading(false));
+      .catch(() => {
+        if (abortController.signal.aborted) return;
+        setFetchError("No se pudo cargar el material. Intenta de nuevo.");
+      });
+
+    return () => {
+      abortController.abort();
+    };
   }, [isOpen, materialId]);
 
   if (!isOpen || materialId === null) return null;
+
+  const isLoading = !freshMaterial && !fetchError;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -105,13 +110,13 @@ export function EditarMaterialModal({
         </div>
 
         <div className="p-6 overflow-y-auto">
-          {fetchLoading && (
+          {isLoading && (
             <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>
           )}
 
           {fetchError && <p className="text-[#e42200] text-[14px]">{fetchError}</p>}
 
-          {!fetchLoading && !fetchError && freshMaterial && (
+          {!isLoading && !fetchError && freshMaterial && (
             <EditarMaterialForm
               material={freshMaterial}
               onUpdated={onUpdated}

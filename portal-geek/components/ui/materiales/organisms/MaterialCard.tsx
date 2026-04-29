@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { EditIcon } from "@/components/ui/atoms/icons";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
@@ -27,16 +29,14 @@ function PreviewImage({ imageUrl, name }: { imageUrl: string; name: string }) {
     <div className="flex items-center justify-center">
       <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
         {imageUrl ? (
-          // Use native img
-          <img
+          <Image
             src={imageUrl}
             alt={name}
-            loading="lazy"
+            fill
+            sizes="3.75rem"
+            unoptimized
             referrerPolicy="no-referrer"
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
+            className="object-cover"
           />
         ) : null}
       </div>

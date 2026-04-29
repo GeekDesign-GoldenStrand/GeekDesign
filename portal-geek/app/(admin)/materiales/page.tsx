@@ -77,9 +77,6 @@ export default function MaterialesPage() {
   const [retryAttempt, setRetryAttempt] = useState(0);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-
     fetch(`/api/materiales?page=${page}&pageSize=${PAGE_SIZE}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -94,6 +91,18 @@ export default function MaterialesPage() {
       .catch(() => setError("No se pudieron cargar los materiales"))
       .finally(() => setLoading(false));
   }, [page, retryAttempt]);
+
+  function handlePageChange(nextPage: number) {
+    setLoading(true);
+    setError(null);
+    setPage(nextPage);
+  }
+
+  function handleRetry() {
+    setLoading(true);
+    setError(null);
+    setRetryAttempt((n) => n + 1);
+  }
 
   const filtered = useMemo(() => {
     // Free-text search against the current page's rows.
@@ -179,7 +188,7 @@ export default function MaterialesPage() {
           <div className="flex flex-col gap-3">
             <p className="text-[#e42200] text-[16px]">{error}</p>
             <button
-              onClick={() => setRetryAttempt((n) => n + 1)}
+              onClick={handleRetry}
               className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
             >
               Reintentar
@@ -194,7 +203,7 @@ export default function MaterialesPage() {
             onEditMaterial={handleEditClick}
             page={page}
             totalPages={totalPages}
-            onPageChange={setPage}
+            onPageChange={handlePageChange}
             hasSearch={!!search.trim()}
             onClearFilters={handleResetFilters}
           />
@@ -208,6 +217,7 @@ export default function MaterialesPage() {
       />
 
       <EditarMaterialModal
+        key={`${showEditModal}-${selectedMaterialId ?? "none"}`}
         isOpen={showEditModal}
         materialId={selectedMaterialId}
         onClose={handleEditClose}
