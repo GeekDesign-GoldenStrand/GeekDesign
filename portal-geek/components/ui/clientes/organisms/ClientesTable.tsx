@@ -49,40 +49,40 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
           >
             {/* Nombre */}
             <div className="flex-1">
-              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+              <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Nombre
               </span>
-              <div className="font-semibold text-[16px] text-black font-ibm-plex">
+              <div className="font-semibold text-[18px] text-black font-ibm-plex">
                 {cliente.nombre_cliente}
               </div>
             </div>
 
             {/* Empresa */}
             <div className="flex-1">
-              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+              <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Empresa
               </span>
-              <div className="font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
+              <div className="font-medium text-[17px] text-[#1e1e1e] font-ibm-plex">
                 {cliente.empresa || "—"}
               </div>
             </div>
 
             {/* RFC */}
             <div className="flex-1">
-              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+              <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 RFC
               </span>
-              <div className="font-medium text-[14px] text-[#1e1e1e] font-mono">
+              <div className="font-medium text-[16px] text-[#1e1e1e] font-mono">
                 {cliente.rfc || "—"}
               </div>
             </div>
 
             {/* Correo */}
             <div className="flex-1">
-              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+              <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Correo
               </span>
-              <div className="font-medium text-[14px] text-[#1e1e1e] truncate pr-2 font-ibm-plex">
+              <div className="font-medium text-[16px] text-[#1e1e1e] truncate pr-2 font-ibm-plex">
                 <a
                   href={`mailto:${cliente.correo_electronico}`}
                   className="hover:text-[#e42200] hover:underline transition-all"
@@ -94,10 +94,10 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
 
             {/* Teléfono */}
             <div className="flex-1">
-              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+              <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Teléfono
               </span>
-              <div className="font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
+              <div className="font-medium text-[17px] text-[#1e1e1e] font-ibm-plex">
                 <a
                   href={`tel:${cliente.numero_telefono}`}
                   className="hover:text-[#e42200] hover:underline transition-all"
@@ -110,7 +110,7 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
             {/* Categoría */}
             <div className="flex-1 flex lg:justify-center items-center">
               <div className="w-full lg:w-auto">
-                <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                   Categoría
                 </span>
                 <CategoryDropdown
@@ -136,19 +136,19 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
 
       {/* Contenedor de Paginación */}
       <div className="flex justify-center lg:justify-end mt-8 gap-2">
-        <button className="w-[32px] h-[32px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#d1d1d1] hover:bg-gray-50 transition-colors">
+        <button className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#d1d1d1] hover:bg-gray-50 transition-colors text-[15px]">
           {"<"}
         </button>
-        <button className="w-[32px] h-[32px] bg-[#e42200] text-white rounded-[4px] font-bold text-[14px] font-ibm-plex">
+        <button className="w-[36px] h-[36px] bg-[#e42200] text-white rounded-[4px] font-bold text-[15px] font-ibm-plex">
           1
         </button>
-        <button className="w-[32px] h-[32px] bg-[#f0f0f0] text-[#1e1e1e] rounded-[4px] font-bold text-[14px] font-ibm-plex hover:bg-gray-200 transition-colors">
+        <button className="w-[36px] h-[36px] bg-[#f0f0f0] text-[#1e1e1e] rounded-[4px] font-bold text-[15px] font-ibm-plex hover:bg-gray-200 transition-colors">
           2
         </button>
-        <button className="w-[32px] h-[32px] bg-[#f0f0f0] text-[#d1d1d1] rounded-[4px] font-bold text-[14px] font-ibm-plex cursor-default">
+        <button className="w-[36px] h-[36px] bg-[#f0f0f0] text-[#d1d1d1] rounded-[4px] font-bold text-[15px] font-ibm-plex cursor-default">
           ...
         </button>
-        <button className="w-[32px] h-[32px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 transition-colors">
+        <button className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 transition-colors text-[15px]">
           {">"}
         </button>
       </div>
