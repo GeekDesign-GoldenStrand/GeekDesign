@@ -53,7 +53,7 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center justify-between min-w-[125px] h-[32px] px-3 rounded-[16px] text-[12px] font-semibold font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border"
+        className="inline-flex items-center justify-between min-w-[140px] h-[38px] px-4 rounded-[19px] text-[14px] font-bold font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border"
         style={{
           color: style.color,
           backgroundColor: style.bg,
@@ -62,12 +62,12 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
       >
         <span className="truncate">{category || "Sin categoría"}</span>
         <span className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`}>
-          <ChevronDownIcon size={12} />
+          <ChevronDownIcon size={14} />
         </span>
       </button>
 
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 min-w-[150px] bg-white rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-gray-100 overflow-hidden p-1 flex flex-col gap-1">
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 min-w-[160px] bg-white rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-gray-100 overflow-hidden p-1 flex flex-col gap-1">
           {CATEGORY_OPTIONS.map((opt) => {
             const optStyle = CATEGORY_STYLES[opt];
             const isSelected = opt === category;
@@ -76,7 +76,7 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
               <button
                 key={opt}
                 onClick={() => handleSelect(opt)}
-                className="w-full text-left px-4 py-2 text-[13px] font-semibold rounded-[8px] flex items-center justify-between transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full text-left px-4 py-2.5 text-[15px] font-bold rounded-[8px] flex items-center justify-between transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{
                   backgroundColor: optStyle.bg,
                   color: optStyle.color,
@@ -85,7 +85,7 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
                 }}
               >
                 <span>{opt}</span>
-                {isSelected && <CheckIcon size={14} style={{ color: optStyle.color }} />}
+                {isSelected && <CheckIcon size={16} style={{ color: optStyle.color }} />}
               </button>
             );
           })}

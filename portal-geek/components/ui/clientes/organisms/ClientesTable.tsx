@@ -27,8 +27,8 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
 
   return (
     <div className="w-full">
-      {/* Table Header Container */}
-      <div className="flex items-center w-full h-[55px] bg-[#d1d1d1] rounded-[8px] px-6 mb-4">
+      {/* Table Header - Hidden on mobile */}
+      <div className="hidden lg:flex items-center w-full h-[55px] bg-[#d1d1d1] rounded-[8px] px-6 mb-4">
         <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">Nombre</div>
         <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">Empresa</div>
         <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">RFC</div>
@@ -40,49 +40,93 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
         <div className="w-[60px]"></div>
       </div>
 
-      {/* Table Rows */}
+      {/* Table Rows / Cards */}
       <div className="flex flex-col gap-4">
         {items.map((cliente) => (
           <div
             key={cliente.id_cliente}
-            className="flex items-center w-full h-[88px] bg-white rounded-[8px] px-6 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_15px_rgba(0,0,0,0.15)]"
+            className="flex flex-col lg:flex-row lg:items-center w-full min-h-[88px] bg-white rounded-[8px] p-6 lg:px-6 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_15px_rgba(0,0,0,0.15)] gap-4 lg:gap-0"
           >
-            <div className="flex-1 font-semibold text-[16px] text-black font-ibm-plex">
-              {cliente.nombre_cliente}
+            {/* Nombre */}
+            <div className="flex-1">
+              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                Nombre
+              </span>
+              <div className="font-semibold text-[16px] text-black font-ibm-plex">
+                {cliente.nombre_cliente}
+              </div>
             </div>
-            <div className="flex-1 font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
-              {cliente.empresa || "—"}
+
+            {/* Empresa */}
+            <div className="flex-1">
+              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                Empresa
+              </span>
+              <div className="font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
+                {cliente.empresa || "—"}
+              </div>
             </div>
-            <div className="flex-1 font-medium text-[14px] text-[#1e1e1e] font-mono">
-              {cliente.rfc || "—"}
+
+            {/* RFC */}
+            <div className="flex-1">
+              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                RFC
+              </span>
+              <div className="font-medium text-[14px] text-[#1e1e1e] font-mono">
+                {cliente.rfc || "—"}
+              </div>
             </div>
-            <div className="flex-1 font-medium text-[14px] text-[#1e1e1e] truncate pr-2 font-ibm-plex">
-              <a
-                href={`mailto:${cliente.correo_electronico}`}
-                className="hover:text-[#e42200] hover:underline transition-all"
-              >
-                {cliente.correo_electronico}
-              </a>
+
+            {/* Correo */}
+            <div className="flex-1">
+              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                Correo
+              </span>
+              <div className="font-medium text-[14px] text-[#1e1e1e] truncate pr-2 font-ibm-plex">
+                <a
+                  href={`mailto:${cliente.correo_electronico}`}
+                  className="hover:text-[#e42200] hover:underline transition-all"
+                >
+                  {cliente.correo_electronico}
+                </a>
+              </div>
             </div>
-            <div className="flex-1 font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
-              <a
-                href={`tel:${cliente.numero_telefono}`}
-                className="hover:text-[#e42200] hover:underline transition-all"
-              >
-                {cliente.numero_telefono}
-              </a>
+
+            {/* Teléfono */}
+            <div className="flex-1">
+              <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                Teléfono
+              </span>
+              <div className="font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
+                <a
+                  href={`tel:${cliente.numero_telefono}`}
+                  className="hover:text-[#e42200] hover:underline transition-all"
+                >
+                  {cliente.numero_telefono}
+                </a>
+              </div>
             </div>
-            <div className="flex-1 flex justify-center">
-              <CategoryDropdown
-                category={cliente.categoria}
-                onChange={(newCat) => onUpdateCategory?.(cliente.id_cliente, newCat)}
-              />
+
+            {/* Categoría */}
+            <div className="flex-1 flex lg:justify-center items-center">
+              <div className="w-full lg:w-auto">
+                <span className="lg:hidden block text-[12px] font-bold text-[#8e908f] uppercase mb-1">
+                  Categoría
+                </span>
+                <CategoryDropdown
+                  category={cliente.categoria}
+                  onChange={(newCat) => onUpdateCategory?.(cliente.id_cliente, newCat)}
+                />
+              </div>
             </div>
-            <div className="w-[60px] flex justify-end">
+
+            {/* Acción */}
+            <div className="w-full lg:w-[60px] flex justify-end items-center border-t lg:border-none pt-4 lg:pt-0">
               <button
-                className="text-black hover:text-[#e42200] transition-colors p-2"
+                className="flex items-center gap-2 lg:block text-black hover:text-[#e42200] transition-colors p-2"
                 title="Ver más información"
               >
+                <span className="lg:hidden font-semibold text-[14px]">Ver Detalles</span>
                 <PlusBoxIcon size={24} />
               </button>
             </div>
@@ -90,8 +134,8 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
         ))}
       </div>
 
-      {/* Pagination Container */}
-      <div className="flex justify-end mt-8 gap-2">
+      {/* Contenedor de Paginación */}
+      <div className="flex justify-center lg:justify-end mt-8 gap-2">
         <button className="w-[32px] h-[32px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#d1d1d1] hover:bg-gray-50 transition-colors">
           {"<"}
         </button>
