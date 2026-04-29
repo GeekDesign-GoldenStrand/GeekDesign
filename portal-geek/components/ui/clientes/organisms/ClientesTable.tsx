@@ -4,36 +4,14 @@ import type { Clientes } from "@prisma/client";
 
 import { PlusBoxIcon } from "@/components/ui/atoms/icons";
 
+import { CategoryDropdown, type ClientCategory } from "../molecules/CategoryDropdown";
+
 interface ClientesTableProps {
   items: Clientes[];
+  onUpdateCategory?: (id: number, category: ClientCategory) => void;
 }
 
-const CATEGORY_STYLES: Record<string, { color: string; bg: string }> = {
-  Black: { color: "#ffffff", bg: "#000000" },
-  Silver: { color: "#1e1e1e", bg: "#e0e0e0" },
-  Gold: { color: "#1e1e1e", bg: "#f4d966" },
-  Emprendedor: { color: "#1e1e1e", bg: "#acf466" },
-  Baneado: { color: "#ffffff", bg: "#ff0000" },
-};
-
-function CategoryBadge({ category }: { category: string | null }) {
-  if (!category) return null;
-  const style = CATEGORY_STYLES[category] || { color: "#1e1e1e", bg: "#f0f0f0" };
-
-  return (
-    <span
-      className="inline-flex items-center justify-center min-w-[105px] h-[32px] rounded-[16px] text-[12px] font-semibold font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
-      style={{
-        color: style.color,
-        backgroundColor: style.bg,
-      }}
-    >
-      {category}
-    </span>
-  );
-}
-
-export function ClientesTable({ items }: ClientesTableProps) {
+export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-20 bg-white rounded-[15px] border border-dashed border-[#b9b8b8]">
@@ -79,13 +57,26 @@ export function ClientesTable({ items }: ClientesTableProps) {
               {cliente.rfc || "—"}
             </div>
             <div className="flex-1 font-medium text-[14px] text-[#1e1e1e] truncate pr-2 font-ibm-plex">
-              {cliente.correo_electronico}
+              <a
+                href={`mailto:${cliente.correo_electronico}`}
+                className="hover:text-[#e42200] hover:underline transition-all"
+              >
+                {cliente.correo_electronico}
+              </a>
             </div>
             <div className="flex-1 font-medium text-[15px] text-[#1e1e1e] font-ibm-plex">
-              {cliente.numero_telefono}
+              <a
+                href={`tel:${cliente.numero_telefono}`}
+                className="hover:text-[#e42200] hover:underline transition-all"
+              >
+                {cliente.numero_telefono}
+              </a>
             </div>
             <div className="flex-1 flex justify-center">
-              <CategoryBadge category={cliente.categoria} />
+              <CategoryDropdown
+                category={cliente.categoria}
+                onChange={(newCat) => onUpdateCategory?.(cliente.id_cliente, newCat)}
+              />
             </div>
             <div className="w-[60px] flex justify-end">
               <button

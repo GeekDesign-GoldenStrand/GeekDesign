@@ -2,12 +2,14 @@ interface IconProps {
   size?: number;
   strokeWidth?: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function MapPinIcon({ size = 14, className }: IconProps) {
+export function MapPinIcon({ size = 14, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -23,10 +25,11 @@ export function MapPinIcon({ size = 14, className }: IconProps) {
   );
 }
 
-export function MailIcon({ size = 16, className }: IconProps) {
+export function MailIcon({ size = 16, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -42,10 +45,11 @@ export function MailIcon({ size = 16, className }: IconProps) {
   );
 }
 
-export function PhoneIcon({ size = 16, className }: IconProps) {
+export function PhoneIcon({ size = 16, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -60,10 +64,11 @@ export function PhoneIcon({ size = 16, className }: IconProps) {
   );
 }
 
-export function EditIcon({ size = 16, className }: IconProps) {
+export function EditIcon({ size = 16, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -79,10 +84,11 @@ export function EditIcon({ size = 16, className }: IconProps) {
   );
 }
 
-export function ChevronDownIcon({ size = 10, className }: IconProps) {
+export function ChevronDownIcon({ size = 10, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -97,10 +103,11 @@ export function ChevronDownIcon({ size = 10, className }: IconProps) {
   );
 }
 
-export function CheckIcon({ size = 12, className }: IconProps) {
+export function CheckIcon({ size = 12, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -115,10 +122,11 @@ export function CheckIcon({ size = 12, className }: IconProps) {
   );
 }
 
-export function SearchIcon({ size = 20, className }: IconProps) {
+export function SearchIcon({ size = 20, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -134,10 +142,11 @@ export function SearchIcon({ size = 20, className }: IconProps) {
   );
 }
 
-export function FilterIcon({ size = 18, className }: IconProps) {
+export function FilterIcon({ size = 18, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -152,10 +161,11 @@ export function FilterIcon({ size = 18, className }: IconProps) {
   );
 }
 
-export function PlusIcon({ size = 18, className }: IconProps) {
+export function PlusIcon({ size = 18, className, style }: IconProps) {
   return (
     <svg
       className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -171,47 +181,11 @@ export function PlusIcon({ size = 18, className }: IconProps) {
   );
 }
 
-export function EyeIcon({ size = 16, className }: IconProps) {
+export function PlusBoxIcon({ size = 16, className, style }: IconProps) {
   return (
     <svg
       className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-export function ChevronRightIcon({ size = 16, className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
-export function PlusBoxIcon({ size = 16, className }: IconProps) {
-  return (
-    <svg
-      className={className}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"

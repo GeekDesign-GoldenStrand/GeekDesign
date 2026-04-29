@@ -11,10 +11,10 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Clientes | Geek Design" };
 
 export default async function ClientesPage() {
-  // Validación de sesión y rol en el servidor (Mejor práctica del proyecto)
+  // Server-side session and role validation (Project best practice)
   const session = await getSession();
 
-  // Si no hay sesión o no es un rol administrativo (Direccion/Administrador), redirigir
+  // If no session or not an administrative role, redirect to login
   if (!session || !ADMIN_ROLES.includes(session.role)) {
     redirect("/login");
   }

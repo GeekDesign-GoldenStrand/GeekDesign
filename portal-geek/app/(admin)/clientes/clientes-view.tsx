@@ -5,20 +5,22 @@ import { useEffect, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { ClientesTable } from "@/components/ui/clientes";
+import { ClientesTable, type ClientCategory } from "@/components/ui/clientes";
 
 export function ClientesView() {
+  // State for data management, loading, errors, and search
   const [clientes, setClientes] = useState<Clientes[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  // Initial data loading from the API
   useEffect(() => {
     async function fetchClientes() {
       try {
         setLoading(true);
         const res = await fetch("/api/clientes?pageSize=100");
-        if (!res.ok) throw new Error("Falla al cargar clientes");
+        if (!res.ok) throw new Error("Failed to load clients");
         const json = await res.json();
         setClientes(json.data || []);
       } catch (err) {
@@ -32,6 +34,28 @@ export function ClientesView() {
     fetchClientes();
   }, []);
 
+  // Update client category
+  const handleUpdateCategory = async (id: number, category: ClientCategory) => {
+    try {
+      const res = await fetch(`/api/clientes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoria: category }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update category");
+
+      // Update local state
+      setClientes((prev) =>
+        prev.map((c) => (c.id_cliente === id ? { ...c, categoria: category } : c))
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error al actualizar la categoría del cliente.");
+    }
+  };
+
+  // Client-side filtering based on search term
   const filteredClientes = clientes.filter(
     (c) =>
       c.nombre_cliente.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,7 +82,7 @@ export function ClientesView() {
             </span>
           </div>
         ) : (
-          <ClientesTable items={filteredClientes} />
+          <ClientesTable items={filteredClientes} onUpdateCategory={handleUpdateCategory} />
         )}
       </main>
     </div>
