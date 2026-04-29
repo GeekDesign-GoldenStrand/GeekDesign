@@ -47,6 +47,14 @@ export class ValidationError extends AppError {
   }
 }
 
+// 409 helper for resources that cannot be modified because they are referenced.
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, 409);
+    this.name = "ConflictError";
+  }
+}
+
 // Zod is a schema validator; it checks input shape and returns detailed issues.
 export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
   if (err instanceof AppError) {
