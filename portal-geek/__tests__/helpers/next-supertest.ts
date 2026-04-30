@@ -17,6 +17,7 @@ interface RouteMap {
   POST?: NextRouteHandler;
   PUT?: NextRouteHandler;
   DELETE?: NextRouteHandler;
+  PATCH?: NextRouteHandler;
 }
 
 export function createApp(routes: RouteMap, paramExtractor?: (url: URL) => Record<string, string>) {
