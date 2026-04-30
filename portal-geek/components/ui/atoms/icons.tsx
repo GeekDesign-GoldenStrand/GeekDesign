@@ -1,4 +1,4 @@
-o interface IconProps {
+export interface IconProps {
   size?: number;
   strokeWidth?: number;
 }

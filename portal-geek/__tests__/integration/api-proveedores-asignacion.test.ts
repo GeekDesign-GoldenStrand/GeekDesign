@@ -1,8 +1,9 @@
 /**
  * @jest-environment node
  */
-import { createApp } from "../helpers/next-supertest";
 import * as proveedoresService from "@/lib/services/proveedores";
+
+import { createApp } from "../helpers/next-supertest";
 
 jest.mock("@/lib/services/proveedores", () => ({
   getProviderAssignments: jest.fn(),
