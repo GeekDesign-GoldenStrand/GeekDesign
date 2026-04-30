@@ -405,6 +405,7 @@ async function main() {
       create: data,
     });
   }
+}
 
   console.log(`Seeded ${instaladoresData.length} instaladores`);
 }
