@@ -1,34 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/admin/forms/atoms";
-
-// Type of service as returned by the backend. We can adjust this as needed based 
-// on the actual API response. It can be extracted from types/servicios.ts if used in multiple places.
-
-type Servicio = {
-  id_servicio: number;
-  nombre_servicio: string;
-  descripcion_servicio: string | null;
-  estatus_servicio: boolean;
-  id_estatus: number;
-};
-
-// Backend´s Answers for paginated endpoints. Adjust as needed based on actual API response structure.
-type PaginatedResponse = {
-  data: Servicio[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-};
+import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
+import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
+import type {
+  PaginatedResponse,
+  ServicioListadoItem,
+} from "@/types/servicios";
 
 export default function ServiciosPage() {
-  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [servicios, setServicios] = useState<ServicioListadoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +19,7 @@ export default function ServiciosPage() {
       try {
         const res = await fetch("/api/servicios");
         if (!res.ok) throw new Error("Error al cargar servicios");
-        const json: PaginatedResponse = await res.json();
+        const json: PaginatedResponse<ServicioListadoItem> = await res.json();
         setServicios(json.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
@@ -49,14 +31,24 @@ export default function ServiciosPage() {
     fetchServicios();
   }, []);
 
+  // Cuenta de servicios activos para el pill del toolbar.
+  const activosCount = servicios.filter((s) => s.estatus_servicio).length;
+
+  // Handlers de las acciones de cada card. Por ahora solo loguean
+  // (las HUs de "ver detalle" y "eliminar" llegan en el sprint 2).
+  const handleVerDetalle = (id: number) => {
+    console.log("TODO: Ver detalle del servicio", id);
+  };
+
+  const handleEliminar = (id: number) => {
+    console.log("TODO: Eliminar servicio", id);
+  };
+
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-[#1e1e1e]">Servicios</h1>
-        <Link href="/servicios/nuevo">
-          <Button variant="primary">+ Nuevo servicio</Button>
-        </Link>
-      </div>
+      <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">Servicios</h1>
+
+      <ServiciosToolbar activosCount={activosCount} />
 
       {loading && (
         <div className="text-center py-12 text-gray-500">
@@ -77,59 +69,15 @@ export default function ServiciosPage() {
       )}
 
       {!loading && !error && servicios.length > 0 && (
-        <div className="bg-white rounded-md shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">
-                  Nombre
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">
-                  Descripción
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">
-                  Estatus
-                </th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-700">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {servicios.map((servicio) => (
-                <tr
-                  key={servicio.id_servicio}
-                  className="border-b border-gray-100 hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3 text-sm text-[#1e1e1e]">
-                    {servicio.nombre_servicio}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {servicio.descripcion_servicio ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {servicio.estatus_servicio ? (
-                      <span className="inline-block px-2 py-1 rounded text-xs bg-green-100 text-green-700">
-                        Activo
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
-                        Inactivo
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/servicios/${servicio.id_servicio}`}
-                      className="text-[#e42200] hover:underline text-sm font-medium"
-                    >
-                      Editar
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {servicios.map((servicio) => (
+            <ServicioCard
+              key={servicio.id_servicio}
+              servicio={servicio}
+              onVerDetalle={handleVerDetalle}
+              onEliminar={handleEliminar}
+            />
+          ))}
         </div>
       )}
     </div>

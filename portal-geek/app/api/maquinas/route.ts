@@ -6,7 +6,7 @@ import { listMaquinas, createMaquina } from "@/lib/services/maquinas";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion"], async (req: NextRequest) => {
+export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
