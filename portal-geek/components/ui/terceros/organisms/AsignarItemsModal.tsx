@@ -111,7 +111,7 @@ export function AsignarItemsModal({
     }
 
     fetchData();
-  }, [isOpen, id_proveedor, isMaterial, endpoint]);
+  }, [isOpen, id_proveedor, isMaterial, endpoint, itemType]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
