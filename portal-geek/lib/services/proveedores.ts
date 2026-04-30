@@ -61,6 +61,7 @@ export async function deleteProveedor(id: number): Promise<void> {
 }
 
 export async function getProviderAssignments(id: number) {
+  await getProveedor(id);
   const assignments = await prisma.proveedorPrecios.findMany({
     where: { id_proveedor: id },
     select: { id_servicio: true, id_material: true },
@@ -77,6 +78,7 @@ export async function syncProviderAssignments(
   type: "servicio" | "material",
   ids: number[]
 ) {
+  await getProveedor(id);
   const isServicio = type === "servicio";
 
   const current = await prisma.proveedorPrecios.findMany({
