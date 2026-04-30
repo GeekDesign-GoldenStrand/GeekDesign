@@ -1,11 +1,9 @@
 "use client";
 
+import { Plus, Funnel, MagnifyingGlass } from "@phosphor-icons/react";
+import { useState, useEffect, useRef, useCallback } from "react";
+
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
-import { useState, useEffect } from "react";
-// Imported icons from phosphor-react
-import { Plus, Funnel, MagnifyingGlass  } from "@phosphor-icons/react";
-import { useRef } from "react";
 
 interface Pedido {
   id_pedido: number;
@@ -44,9 +42,8 @@ export default function PedidosPage() {
   const pageSize = 10;
 
   const filterRef = useRef<HTMLDivElement>(null);
- 
 
-  async function fetchPedidos() {
+  const fetchPedidos = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -59,7 +56,7 @@ export default function PedidosPage() {
       estatuses.forEach((e) => params.append("estatus", e));
       if (empresa) params.append("empresa", empresa);
       if (cliente) params.append("cliente", cliente);
-      
+
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
       setPedidos(json.data ?? []);
@@ -67,18 +64,19 @@ export default function PedidosPage() {
     } catch {
       setError("No se pudieron cargar los pedidos.");
     }
-  }
-
-  useEffect(() => {
-    fetchPedidos();
   }, [page, onlyActive, serviceIds, estatuses, empresa, cliente, search]);
 
   useEffect(() => {
+    const loadData = async () => {
+      await fetchPedidos();
+    };
+
+    loadData();
+  }, [fetchPedidos]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        filterRef.current &&
-        !filterRef.current.contains(event.target as Node)
-      ) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
         setShowFilter(false);
       }
     }
@@ -109,60 +107,59 @@ export default function PedidosPage() {
   }
 
   async function handleStatusChange(id: number, newStatus: string) {
-  try {
-    const res = await fetch(`/api/pedidos/${id}/estatus`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estatus: newStatus }),
-    });
-    if (res.ok) {
-      fetchPedidos(); // refresca la lista con el nuevo estatus
-    } else {
-      const json = await res.json().catch(() => null);
-      setError(json?.error ?? "Error al actualizar el estatus del pedido");
+    try {
+      const res = await fetch(`/api/pedidos/${id}/estatus`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estatus: newStatus }),
+      });
+      if (res.ok) {
+        fetchPedidos(); // refresca la lista con el nuevo estatus
+      } else {
+        const json = await res.json().catch(() => null);
+        setError(json?.error ?? "Error al actualizar el estatus del pedido");
+      }
+    } catch {
+      setError("No se pudo conectar con el servidor.");
     }
-  } catch {
-    setError("No se pudo conectar con el servidor.");
   }
-}
 
   return (
     <>
       <AdminHeader title="Pedidos" />
 
+      {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+
       {/* Grid de pedidos*/}
       <section className="space-y-3 pt-5 pb-8 max-w-[1350px] mx-auto">
-
         {/* Toolbar superior */}
         <div className="flex items-center gap-4 mb-4">
-
           {/* Buscador */}
           <div className="relative flex items-center border border-[#b9b8b8] rounded-sm h-[2.5rem] bg-white w-[28rem] max-w-full">
+            {/* Input */}
+            <input
+              type="text"
+              placeholder="Buscar"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 pl-3 pr-10 text-[14px] text-[#1e1e1e] placeholder:text-[#8e908f] outline-none"
+            />
 
-          {/* Input */}
-          <input
-            type="text"
-            placeholder="Buscar"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 pl-3 pr-10 text-[14px] text-[#1e1e1e] placeholder:text-[#8e908f] outline-none"
-          />
+            {/* Botón limpiar */}
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-8 text-gray-400 hover:text-black"
+              >
+                ✕
+              </button>
+            )}
 
-          {/* Botón limpiar */}
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-8 text-gray-400 hover:text-black"
-            >
-              ✕
-            </button>
-          )}
-
-          {/* Icono lupa */}
-          <div className="absolute right-2">
-            <MagnifyingGlass size={18} className="text-gray-400" />
+            {/* Icono lupa */}
+            <div className="absolute right-2">
+              <MagnifyingGlass size={18} className="text-gray-400" />
+            </div>
           </div>
-        </div>
 
           {/* Botones */}
           <div className="flex items-center gap-3 ml-auto">
@@ -183,111 +180,119 @@ export default function PedidosPage() {
               {showFilter && (
                 <div ref={filterRef} className="absolute right-0 mt-2 z-50">
                   <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ff7f7f] text-black">
-
                     {/* Modal de filtros */}
-                          <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
+                    <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
 
-                          {/* Activos */}
-                          <label className="flex items-center gap-2 mb-3 text-[13px] text-[#1e1e1e]">
-                            <input
-                              type="checkbox"
-                              checked={onlyActive}
-                              onChange={(e) => setOnlyActive(e.target.checked)}
-                              className="h-3.5 w-3.5 accent-[#ff7f7f]"
-                            />
-                            Mostrar solo activos
-                          </label>
+                    {/* Activos */}
+                    <label className="flex items-center gap-2 mb-3 text-[13px] text-[#1e1e1e]">
+                      <input
+                        type="checkbox"
+                        checked={onlyActive}
+                        onChange={(e) => setOnlyActive(e.target.checked)}
+                        className="h-3.5 w-3.5 accent-[#ff7f7f]"
+                      />
+                      Mostrar solo activos
+                    </label>
 
-                          {/* Servicio */}
-                          <section className="mb-3">
-                            <p className="font-semibold text-[14px] text-[#1e1e1e] mb-1">Servicio:</p>
-                            {[{ id: 1, nombre: "Corte Láser" }, { id: 2, nombre: "Grabado Láser" }].map((srv) => (
-                              <label key={srv.id} className="flex items-center gap-2 text-[13px] text-[#1e1e1e]">
-                                <input
-                                  type="checkbox"
-                                  checked={serviceIds.includes(srv.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setServiceIds([...serviceIds, srv.id]);
-                                    } else {
-                                      setServiceIds(serviceIds.filter((id) => id !== srv.id));
-                                    }
-                                  }}
-                                  className="h-3.5 w-3.5 accent-[#ff7f7f]"
-                                />
-                                {srv.nombre}
-                              </label>
-                            ))}
-                          </section>
+                    {/* Servicio */}
+                    <section className="mb-3">
+                      <p className="font-semibold text-[14px] text-[#1e1e1e] mb-1">Servicio:</p>
+                      {[
+                        { id: 1, nombre: "Corte Láser" },
+                        { id: 2, nombre: "Grabado Láser" },
+                      ].map((srv) => (
+                        <label
+                          key={srv.id}
+                          className="flex items-center gap-2 text-[13px] text-[#1e1e1e]"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={serviceIds.includes(srv.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setServiceIds([...serviceIds, srv.id]);
+                              } else {
+                                setServiceIds(serviceIds.filter((id) => id !== srv.id));
+                              }
+                            }}
+                            className="h-3.5 w-3.5 accent-[#ff7f7f]"
+                          />
+                          {srv.nombre}
+                        </label>
+                      ))}
+                    </section>
 
-                          {/* Estatus */}
-                          <section className="mb-3">
-                            <p className="font-semibold text-[14px] text-[#1e1e1e] mb-1">Estatus:</p>
-                            {["Cotizacion", "Pagado", "En_cola", "Aprobacion_diseno"].map((status) => (
-                              <label key={status} className="flex items-center gap-2 text-[13px] text-[#1e1e1e]">
-                                <input
-                                  type="checkbox"
-                                  checked={estatuses.includes(status)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setEstatuses([...estatuses, status]);
-                                    } else {
-                                      setEstatuses(estatuses.filter((s) => s !== status));
-                                    }
-                                  }}
-                                  className="h-3.5 w-3.5 accent-[#ff7f7f]"
-                                />
-                                {status}
-                              </label>
-                            ))}
-                          </section>
+                    {/* Estatus */}
+                    <section className="mb-3">
+                      <p className="font-semibold text-[14px] text-[#1e1e1e] mb-1">Estatus:</p>
+                      {["Cotizacion", "Pagado", "En_cola", "Aprobacion_diseno"].map((status) => (
+                        <label
+                          key={status}
+                          className="flex items-center gap-2 text-[13px] text-[#1e1e1e]"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={estatuses.includes(status)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEstatuses([...estatuses, status]);
+                              } else {
+                                setEstatuses(estatuses.filter((s) => s !== status));
+                              }
+                            }}
+                            className="h-3.5 w-3.5 accent-[#ff7f7f]"
+                          />
+                          {status}
+                        </label>
+                      ))}
+                    </section>
 
-                          {/* Cliente */}
-                          <label className="block mb-3 text-[13px] text-[#1e1e1e]">
-                            Cliente:
-                            <input
-                              type="text"
-                              value={cliente ?? ""}
-                              onChange={(e) => setCliente(e.target.value || null)}
-                              className="w-full border border-[#b9b8b8] rounded-[6px] p-2 text-black"
-                            />
-                          </label>
+                    {/* Cliente */}
+                    <label className="block mb-3 text-[13px] text-[#1e1e1e]">
+                      Cliente:
+                      <input
+                        type="text"
+                        value={cliente ?? ""}
+                        onChange={(e) => setCliente(e.target.value || null)}
+                        className="w-full border border-[#b9b8b8] rounded-[6px] p-2 text-black"
+                      />
+                    </label>
 
-                          {/* Empresa */}
-                          <label className="block mb-3 text-[13px] text-[#1e1e1e]">
-                            Empresa:
-                            <input
-                              type="text"
-                              value={empresa ?? ""}
-                              onChange={(e) => setEmpresa(e.target.value || null)}
-                              className="w-full border border-[#b9b8b8] rounded-[6px] p-2 text-black"
-                            />
-                          </label>
+                    {/* Empresa */}
+                    <label className="block mb-3 text-[13px] text-[#1e1e1e]">
+                      Empresa:
+                      <input
+                        type="text"
+                        value={empresa ?? ""}
+                        onChange={(e) => setEmpresa(e.target.value || null)}
+                        className="w-full border border-[#b9b8b8] rounded-[6px] p-2 text-black"
+                      />
+                    </label>
 
-                          {/* Botones */}
-                          <div className="mt-4 flex justify-center gap-3">
-                            <button
-                              onClick={() => {
-                                setOnlyActive(false);
-                                setServiceIds([]);
-                                setEstatuses([]);
-                                setEmpresa(null);
-                                setCliente(null);
-                              }}
-                              className="h-7 px-3 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
-                            >
-                              Restablecer
-                            </button>
-                            <button
-                              onClick={() => setShowFilter(false)}
-                              className="h-7 px-6 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Botones */}
+                    <div className="mt-4 flex justify-center gap-3">
+                      <button
+                        onClick={() => {
+                          setOnlyActive(false);
+                          setServiceIds([]);
+                          setEstatuses([]);
+                          setEmpresa(null);
+                          setCliente(null);
+                        }}
+                        className="h-7 px-3 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
+                      >
+                        Restablecer
+                      </button>
+                      <button
+                        onClick={() => setShowFilter(false)}
+                        className="h-7 px-6 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -314,14 +319,10 @@ export default function PedidosPage() {
         {/* Empty state */}
         {pedidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-[#8e908f] text-[16px]">
-              No se encontraron pedidos.
-            </p>
+            <p className="text-[#8e908f] text-[16px]">No se encontraron pedidos.</p>
           </div>
         ) : (
-
           <div className="space-y-2">
-
             {pedidos.map((p) => (
               <article
                 key={p.id_pedido}
@@ -337,9 +338,7 @@ export default function PedidosPage() {
 
                 {/* Fecha estimada */}
                 <p className="text-[14px] text-[#1e1e1e] text-center">
-                  {p.fecha_estimada
-                    ? new Date(p.fecha_estimada).toLocaleDateString("es-MX")
-                    : "—"}
+                  {p.fecha_estimada ? new Date(p.fecha_estimada).toLocaleDateString("es-MX") : "—"}
                 </p>
 
                 {/* Empresa */}
@@ -356,9 +355,7 @@ export default function PedidosPage() {
                 <div className="flex justify-center">
                   <select
                     value={p.estatus?.descripcion ?? ""}
-                    onChange={(e) =>
-                      handleStatusChange(p.id_pedido, e.target.value)
-                    }
+                    onChange={(e) => handleStatusChange(p.id_pedido, e.target.value)}
                     className="border border-[#b9b8b8] rounded-[6px] px-2 py-1 text-[13px] text-[#1e1e1e] bg-white"
                   >
                     <option value="Cotizacion">Cotización</option>
@@ -395,7 +392,6 @@ export default function PedidosPage() {
                 </div>
               </article>
             ))}
-
           </div>
         )}
 

@@ -39,12 +39,20 @@ export const GET = withRole(["Direccion", "Colaborador"], async (req: NextReques
     const onlyActive = searchParams.get("onlyActive") === "true";
 
     // Query the database with filters and return paginated result
-    const result = await listPedidos(page, pageSize, serviceIds, estatuses, onlyActive, empresa, cliente, search);
+    const result = await listPedidos(
+      page,
+      pageSize,
+      serviceIds,
+      estatuses,
+      onlyActive,
+      empresa,
+      cliente,
+      search
+    );
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {
     // Centralized error handling
     return handleError(err);
-    
   }
 });
 

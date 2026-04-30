@@ -6,7 +6,7 @@ const createJestConfig = nextJest({ dir: "./" });
 /** @type {import('jest').Config} */
 const customConfig = {
   coverageProvider: "v8",
-  testEnvironment: "node", 
+  testEnvironment: "node",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",

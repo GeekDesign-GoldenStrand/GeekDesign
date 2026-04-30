@@ -65,7 +65,10 @@ export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
   }
   if (err instanceof ConfigurationError) {
     console.error("Configuration issue:", err.message);
-    return NextResponse.json({ data: null, error: "Internal configuration error" }, { status: 500 });
+    return NextResponse.json(
+      { data: null, error: "Internal configuration error" },
+      { status: 500 }
+    );
   }
   console.error("[API Error]", err);
   return NextResponse.json({ data: null, error: "Error interno del servidor" }, { status: 500 });

@@ -160,14 +160,14 @@ async function main() {
   });
 
   const demoFile = await prisma.archivosDisenio.upsert({
-  where: { id_archivo: 1 },
-  update: {},
-  create: {
-    nombre_archivo: "demo.svg",
-    url_archivo: "/files/demo.svg",
-    formato: "svg",
-  },
-});
+    where: { id_archivo: 1 },
+    update: {},
+    create: {
+      nombre_archivo: "demo.svg",
+      url_archivo: "/files/demo.svg",
+      formato: "svg",
+    },
+  });
 
   const material = await prisma.materiales.upsert({
     where: { id_material: 1 },
@@ -307,7 +307,7 @@ async function main() {
   });
   console.log("Seeded test client");
 
-   for (let i = 1; i <= 25; i++) {
+  for (let i = 1; i <= 25; i++) {
     await prisma.pedidos.create({
       data: {
         fecha_creacion: new Date(2026, 3, 20 + i),
@@ -338,7 +338,7 @@ async function main() {
               responsable_recoleccion: "Demo Responsable",
               notas: "Detalle demo",
               precio_unitario: 150.0,
-              subtotal: (150.0 * ((i % 5) + 1)),
+              subtotal: 150.0 * ((i % 5) + 1),
             },
           ],
         },
@@ -346,49 +346,49 @@ async function main() {
     });
   }
 
-    // ── Demo Cotizaciones ──────────────────────────────────────────────────────
-    const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
-    const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
+  // ── Demo Cotizaciones ──────────────────────────────────────────────────────
+  const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
+  const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
 
-    if (clienteDemo && cotizacionStatuses.length > 0) {
-      const statusMap: Record<string, number> = {};
-      cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
+  if (clienteDemo && cotizacionStatuses.length > 0) {
+    const statusMap: Record<string, number> = {};
+    cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
 
-      const demoCotizaciones = [
-        {
-          monto_total: 1500,
-          notas: "Cotización pendiente para corte láser",
-          fecha_creacion: new Date("2026-04-13"),
-          id_cliente: clienteDemo.id_cliente,
-          id_estatus_cotizacion: statusMap["En_revision"],
-        },
-        {
-          monto_total: 2500,
-          notas: "Cotización aprobada para grabado",
-          fecha_creacion: new Date("2026-04-15"),
-          id_cliente: clienteDemo.id_cliente,
-          id_estatus_cotizacion: statusMap["Aprobada"],
-        },
-        {
-          monto_total: 1800,
-          notas: "Cliente rechazó la propuesta",
-          fecha_creacion: new Date("2026-04-17"),
-          id_cliente: clienteDemo.id_cliente,
-          id_estatus_cotizacion: statusMap["Rechazada"],
-        },
-        {
-          monto_total: 2200,
-          notas: "Cotización validada por cambios de requerimiento",
-          fecha_creacion: new Date("2026-04-20"),
-          id_cliente: clienteDemo.id_cliente,
-          id_estatus_cotizacion: statusMap["Validada"],
-        },
-      ];
+    const demoCotizaciones = [
+      {
+        monto_total: 1500,
+        notas: "Cotización pendiente para corte láser",
+        fecha_creacion: new Date("2026-04-13"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["En_revision"],
+      },
+      {
+        monto_total: 2500,
+        notas: "Cotización aprobada para grabado",
+        fecha_creacion: new Date("2026-04-15"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        monto_total: 1800,
+        notas: "Cliente rechazó la propuesta",
+        fecha_creacion: new Date("2026-04-17"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Rechazada"],
+      },
+      {
+        monto_total: 2200,
+        notas: "Cotización validada por cambios de requerimiento",
+        fecha_creacion: new Date("2026-04-20"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Validada"],
+      },
+    ];
 
-      await prisma.cotizaciones.createMany({ data: demoCotizaciones });
-      console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
-    }
+    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
+    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
+}
 
 main()
   .catch((e) => {

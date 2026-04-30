@@ -1,8 +1,9 @@
 /**
  * @jest-environment node
  */
+import type { NextRequest, NextResponse } from "next/server";
+
 import { createApp } from "../helpers/next-supertest";
-import { NextRequest } from "next/server";
 
 // We mock the session to simulate different authentication scenarios.
 // This allows us to test authorization logic without relying on real sessions.
@@ -12,14 +13,14 @@ jest.mock("@/lib/auth/session", () => ({
 }));
 
 describe("PATCH /api/cotizaciones/:id/estatus", () => {
-  let routes: any;
+  let routes: { PATCH: (req: NextRequest) => Promise<NextResponse> };
 
   beforeAll(async () => {
     // Import the route handler and inject params manually.
     // This ensures the test runs against the same code used in production.
     const mod = await import("@/app/api/cotizaciones/[id]/estatus/route");
     routes = {
-      PATCH: (req: any) => mod.PATCH(req, { params: Promise.resolve({ id: "1" }) }),
+      PATCH: (req: NextRequest) => mod.PATCH(req, { params: Promise.resolve({ id: "1" }) }),
     };
   });
 
@@ -36,7 +37,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Validada" });
 
-    console.log("Response body:", res.body);
+    console.error("Response body:", res.body);
     expect(res.status).toBe(401);
   });
 
@@ -48,7 +49,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Validada" });
 
-    console.log("Response body:", res.body);
+    console.error("Response body:", res.body);
     expect(res.status).toBe(403);
   });
 
@@ -60,7 +61,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Validada" });
 
-    console.log("Response body:", res.body);
+    console.error("Response body:", res.body);
     expect(res.status).toBe(200);
     // Why: We check the updated status ID to confirm the business rule was applied.
     expect(res.body.id_estatus_cotizacion).toBe(2);
@@ -74,7 +75,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Rechazada" });
 
-    console.log("Response body:", res.body);
+    console.error("Response body:", res.body);
     expect(res.status).toBe(200);
     // Why: We check the updated status ID to confirm rejection was applied correctly.
     expect(res.body.id_estatus_cotizacion).toBe(4);

@@ -1,11 +1,17 @@
+import type { NextRequest } from "next/server";
+
 import { GET } from "@/app/api/pedidos/route";
 import { listPedidos } from "@/lib/services/pedidos";
+
+type PedidoMock = {
+  estatus: string;
+};
 
 // We mock the auth guard to bypass authentication and authorization.
 // Why: This test focuses on request validation and handler behavior,
 // not on auth logic (which should be tested separately).
 jest.mock("@/lib/auth/guards", () => ({
-  withRole: (_roles: string[], handler: any) => handler,
+  withRole: (_roles: string[], handler: (...args: unknown[]) => unknown) => handler,
 }));
 
 // We mock the service layer to isolate the API route.
@@ -28,15 +34,14 @@ beforeEach(() => {
 // Minimal mock of NextRequest
 // Why: We only include the properties actually used by the handler,
 // keeping the test lightweight and focused.
-const createMockRequest = (url: string) => {
-  return {
+const createMockRequest = (url: string) =>
+  ({
     url,
     nextUrl: new URL(url),
     cookies: {
       get: jest.fn(),
     },
-  } as any;
-};
+  }) as unknown as NextRequest;
 
 describe("GET /api/pedidos", () => {
   it("retorna 200 con serviceId válido", async () => {
@@ -70,10 +75,7 @@ describe("GET /api/pedidos", () => {
     // Override the default mock for this specific scenario.
     // Why: We simulate a realistic response to verify filtering expectations.
     (listPedidos as jest.Mock).mockResolvedValue({
-      items: [
-        { estatus: "Activo" },
-        { estatus: "Activo" },
-      ],
+      items: [{ estatus: "Activo" }, { estatus: "Activo" }],
       total: 2,
     });
 
@@ -85,6 +87,6 @@ describe("GET /api/pedidos", () => {
 
     // Why: We validate that ALL returned items satisfy the "active" condition.
     // Using multiple items ensures this is not a trivial pass case.
-    expect(body.data.every((p: any) => p.estatus === "Activo")).toBe(true);
+    expect(body.data.every((p: PedidoMock) => p.estatus === "Activo")).toBe(true);
   });
 });

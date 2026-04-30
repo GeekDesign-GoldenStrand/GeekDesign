@@ -16,7 +16,7 @@ export const PEDIDO_STATUS = {
   FACTURADO: "Facturado",
 } as const;
 
-export type PedidoStatus = typeof PEDIDO_STATUS[keyof typeof PEDIDO_STATUS];
+export type PedidoStatus = (typeof PEDIDO_STATUS)[keyof typeof PEDIDO_STATUS];
 
 // Helper to resolve status IDs by description.
 // Avoids "magic strings" and ensures filters remain valid if catalog descriptions change.
@@ -30,7 +30,7 @@ export async function getPedidoStatusIds(descriptions: string[]): Promise<number
     throw new Error("One or more pedido statuses not found in catalog");
   }
 
-  return statuses.map(s => s.id_estatus);
+  return statuses.map((s) => s.id_estatus);
 }
 
 export async function listPedidos(
@@ -41,7 +41,7 @@ export async function listPedidos(
   onlyActive?: boolean,
   empresa?: string | null,
   cliente?: string | null,
-  search?: string | null,
+  search?: string | null
 ): Promise<{ items: Pedidos[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
@@ -73,33 +73,33 @@ export async function listPedidos(
   }
 
   if (search) {
-  where.OR = [
-    {
-      cliente: {
-        nombre_cliente: {
-          contains: search,
-          mode: "insensitive",
+    where.OR = [
+      {
+        cliente: {
+          nombre_cliente: {
+            contains: search,
+            mode: "insensitive",
+          },
         },
       },
-    },
-    {
-      cliente: {
-        empresa: {
-          contains: search,
-          mode: "insensitive",
+      {
+        cliente: {
+          empresa: {
+            contains: search,
+            mode: "insensitive",
+          },
         },
       },
-    },
-    {
-      estatus: {
-        descripcion: {
-          contains: search,
-          mode: "insensitive",
+      {
+        estatus: {
+          descripcion: {
+            contains: search,
+            mode: "insensitive",
+          },
         },
       },
-    },
-  ];
-}
+    ];
+  }
 
   // Execute two queries in parallel:
   // 1. Fetch the paginated list of orders with relations

@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     search,
   });
 
-  return Response.json({ data: items, total });
+  return paginated(items, total, page, pageSize);
 }
 
 // POST endpoint: creates a new cotizacion
