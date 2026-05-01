@@ -8,10 +8,23 @@
 
 */
 -- Update existing NULL values
-UPDATE "INSTALADORES" SET "telefono" = '0000000000' WHERE "telefono" IS NULL;
-UPDATE "INSTALADORES" SET "correo" = 'sin_correo@geekdesign.com' WHERE "correo" IS NULL;
-UPDATE "PROVEEDORES" SET "telefono" = '0000000000' WHERE "telefono" IS NULL;
-UPDATE "PROVEEDORES" SET "correo" = 'sin_correo@geekdesign.com' WHERE "correo" IS NULL;
+-- Validate existing data before enforcing NOT NULL to avoid contaminating records with dummy placeholders
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM "INSTALADORES" WHERE "telefono" IS NULL) THEN
+    RAISE EXCEPTION 'Migration aborted: INSTALADORES.telefono contains NULL values. Backfill with real data before applying NOT NULL.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM "INSTALADORES" WHERE "correo" IS NULL) THEN
+    RAISE EXCEPTION 'Migration aborted: INSTALADORES.correo contains NULL values. Backfill with real data before applying NOT NULL.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM "PROVEEDORES" WHERE "telefono" IS NULL) THEN
+    RAISE EXCEPTION 'Migration aborted: PROVEEDORES.telefono contains NULL values. Backfill with real data before applying NOT NULL.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM "PROVEEDORES" WHERE "correo" IS NULL) THEN
+    RAISE EXCEPTION 'Migration aborted: PROVEEDORES.correo contains NULL values. Backfill with real data before applying NOT NULL.';
+  END IF;
+END
+$$;
 
 -- AlterTable
 ALTER TABLE "INSTALADORES" ALTER COLUMN "telefono" SET NOT NULL,
