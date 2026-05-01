@@ -100,7 +100,7 @@ export function RegistrarTerceroForm({
   const [form, setForm] = useState({
     nombre_proveedor: "",
     apodo: "",
-    tipo_proveedor_selecion: "Material" as "Material" | "Servicio" | "Ambos",
+    tipo_proveedor_seleccion: "Material" as "Material" | "Servicio" | "Ambos",
     tipo_instalador: "Instalador" as CreateInstaladorInput["tipo"],
     telefono: "",
     correo: "",
@@ -183,9 +183,9 @@ export function RegistrarTerceroForm({
     try {
       if (terceroType === "Proveedor") {
         const selectedTypes =
-          form.tipo_proveedor_selecion === "Material"
+          form.tipo_proveedor_seleccion === "Material"
             ? ["Proveedor de material"]
-            : form.tipo_proveedor_selecion === "Servicio"
+            : form.tipo_proveedor_seleccion === "Servicio"
               ? ["Proveedor de servicio"]
               : ["Proveedor de material", "Proveedor de servicio"];
 
@@ -349,9 +349,9 @@ export function RegistrarTerceroForm({
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
               <select
-                value={form.tipo_proveedor_selecion}
-                onChange={(e) => setField("tipo_proveedor_selecion", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_proveedor_selecion")}`}
+                value={form.tipo_proveedor_seleccion}
+                onChange={(e) => setField("tipo_proveedor_seleccion", e.target.value)}
+                className={`${FIELD} ${getFieldClass("tipo_proveedor_seleccion")}`}
               >
                 <option value="Material">Material</option>
                 <option value="Servicio">Servicio</option>

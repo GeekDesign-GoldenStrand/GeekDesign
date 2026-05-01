@@ -8,9 +8,11 @@ interface AsignacionCardProps {
 
 export function AsignacionCard({ name, description, selected, onToggle }: AsignacionCardProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onToggle}
-      className={`group relative p-4 rounded-[12px] border transition-all duration-300 cursor-pointer flex flex-col gap-1.5 ${
+      aria-pressed={selected}
+      className={`group relative p-4 rounded-[12px] border transition-all duration-300 cursor-pointer flex flex-col gap-1.5 w-full text-left ${
         selected
           ? "bg-[rgba(0,106,255,0.04)] border-[#006aff] shadow-[0_2px_10px_rgba(0,106,255,0.08)]"
           : "bg-white border-[#e0e0e0] hover:border-[#b9b8b8] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
@@ -45,6 +47,6 @@ export function AsignacionCard({ name, description, selected, onToggle }: Asigna
       {description && (
         <p className="text-[13px] text-[#575757] line-clamp-2 leading-relaxed">{description}</p>
       )}
-    </div>
+    </button>
   );
 }
