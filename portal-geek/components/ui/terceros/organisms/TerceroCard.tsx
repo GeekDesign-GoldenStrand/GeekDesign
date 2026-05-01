@@ -107,33 +107,37 @@ export function TerceroCard({
         </button>
       </div>
 
-      <AsignarItemsModal
-        itemType="servicio"
-        id_proveedor={id}
-        companyName={companyName}
-        contactName={contactName}
-        email={email}
-        phone={phone}
-        role={role}
-        status={status}
-        isOpen={isServiciosOpen}
-        onClose={() => setIsServiciosOpen(false)}
-        onSaved={() => {}}
-      />
+      {role === "Proveedor" && isServiciosOpen && (
+        <AsignarItemsModal
+          itemType="servicio"
+          id_proveedor={id}
+          companyName={companyName}
+          contactName={contactName}
+          email={email}
+          phone={phone}
+          role={role}
+          status={status}
+          isOpen={isServiciosOpen}
+          onClose={() => setIsServiciosOpen(false)}
+          onSaved={() => {}}
+        />
+      )}
 
-      <AsignarItemsModal
-        itemType="material"
-        id_proveedor={id}
-        companyName={companyName}
-        contactName={contactName}
-        email={email}
-        phone={phone}
-        role={role}
-        status={status}
-        isOpen={isMaterialesOpen}
-        onClose={() => setIsMaterialesOpen(false)}
-        onSaved={() => {}}
-      />
+      {role === "Proveedor" && isMaterialesOpen && (
+        <AsignarItemsModal
+          itemType="material"
+          id_proveedor={id}
+          companyName={companyName}
+          contactName={contactName}
+          email={email}
+          phone={phone}
+          role={role}
+          status={status}
+          isOpen={isMaterialesOpen}
+          onClose={() => setIsMaterialesOpen(false)}
+          onSaved={() => {}}
+        />
+      )}
     </div>
   );
 }
