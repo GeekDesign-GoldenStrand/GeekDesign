@@ -38,6 +38,7 @@ export function AsignarItemsModal({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isMaterial = itemType === "material";
   const title = isMaterial ? "Asignar Materiales" : "Asignar Servicios";
@@ -50,7 +51,6 @@ export function AsignarItemsModal({
     async function fetchData() {
       setLoading(true);
       try {
-        // Fetch all catalog items sequentially to avoid silent cuts
         // Fetch all catalog items sequentially to avoid silent cuts
         type CatalogItem =
           | { id_material: number; nombre_material: string; descripcion_material: string | null }
@@ -101,8 +101,9 @@ export function AsignarItemsModal({
 
         setItems(mappedItems);
         setSelectedIds(currentData.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? []);
-      } catch (error) {
-        console.error("Error fetching items:", error);
+      } catch (err) {
+        console.error("Error fetching items:", err);
+        setError(`Hubo un error al cargar los ${itemType}s. Por favor, intenta de nuevo.`);
         setItems([]);
       } finally {
         setLoading(false);
@@ -205,7 +206,11 @@ export function AsignarItemsModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {loading ? (
+          {error ? (
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[14px] px-4 py-3 flex items-center justify-center text-center">
+              {error}
+            </div>
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
               <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemType}s...</p>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
+const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 
 export const CreateInstaladorSchema = z.object({
   nombre_instalador: z

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
+const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 
 export const CreateProveedorSchema = z.object({
   nombre_proveedor: z
@@ -13,7 +13,11 @@ export const CreateProveedorSchema = z.object({
     .max(30, "Máximo 30 caracteres.")
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
     .optional(),
-  tipo: z.string(),
+  tipo: z.string().refine((val) => {
+    const validTipos = ["Proveedor de material", "Proveedor de servicio"];
+    const parts = val.split(",").map((p) => p.trim());
+    return parts.length > 0 && parts.every((p) => validTipos.includes(p));
+  }, "Tipo inválido. Valores aceptados: Proveedor de material, Proveedor de servicio."),
   telefono: z
     .string()
     .min(1, "El teléfono es requerido.")
