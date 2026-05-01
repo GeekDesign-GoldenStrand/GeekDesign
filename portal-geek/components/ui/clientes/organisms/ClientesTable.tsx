@@ -4,6 +4,7 @@ import type { Clientes } from "@prisma/client";
 
 import { PlusBoxIcon } from "@/components/ui/atoms/icons";
 
+import { formatPhoneNumber } from "@/lib/utils/format";
 import { CategoryDropdown, type ClientCategory } from "../molecules/CategoryDropdown";
 
 interface ClientesTableProps {
@@ -102,7 +103,7 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
                   href={`tel:${cliente.numero_telefono}`}
                   className="hover:text-[#e42200] hover:underline transition-all"
                 >
-                  {cliente.numero_telefono}
+                  {formatPhoneNumber(cliente.numero_telefono)}
                 </a>
               </div>
             </div>
