@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 import { AsignacionCard } from "../molecules/AsignacionCard";
 
-interface AsignarServiciosModalProps {
+interface AsignarItemsModalProps {
   id_proveedor: number;
   companyName: string;
   contactName: string;
@@ -14,11 +14,12 @@ interface AsignarServiciosModalProps {
   role: string;
   status: string;
   isOpen: boolean;
+  itemType: "material" | "servicio";
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function AsignarServiciosModal({
+export function AsignarItemsModal({
   id_proveedor,
   companyName,
   contactName,
@@ -27,30 +28,44 @@ export function AsignarServiciosModal({
   role,
   status,
   isOpen,
+  itemType,
   onClose,
   onSaved,
-}: AsignarServiciosModalProps) {
+}: AsignarItemsModalProps) {
   const [items, setItems] = useState<
-    { id_servicio: number; nombre_servicio: string; descripcion_servicio: string | null }[]
+    { id: number; name: string; description: string | null }[]
   >([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const isMaterial = itemType === "material";
+  const title = isMaterial ? "Asignar Materiales" : "Asignar Servicios";
+  const typeLabel = isMaterial ? "Material" : "Servicio";
+  const endpoint = isMaterial ? "/api/materiales" : "/api/servicios";
 
   useEffect(() => {
     if (!isOpen) return;
 
     setLoading(true);
     Promise.all([
-      fetch("/api/servicios?pageSize=100").then((r) => r.json()),
+      fetch(`${endpoint}?activo=true&pageSize=100`).then((r) => r.json()),
       fetch(`/api/proveedores/${id_proveedor}/asignacion`).then((r) => r.json()),
     ])
       .then(([allRes, currentRes]) => {
-        setItems(allRes.data ?? []);
-        setSelectedIds(currentRes.data?.serviceIds ?? []);
+        const rawItems = allRes.data ?? [];
+        const mappedItems = rawItems.map((item: any) => ({
+          id: isMaterial ? item.id_material : item.id_servicio,
+          name: isMaterial ? item.nombre_material : item.nombre_servicio,
+          description: isMaterial ? item.descripcion_material : item.descripcion_servicio,
+        }));
+        setItems(mappedItems);
+        setSelectedIds(
+          currentRes.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? []
+        );
       })
       .finally(() => setLoading(false));
-  }, [isOpen, id_proveedor]);
+  }, [isOpen, id_proveedor, isMaterial, endpoint]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
@@ -62,10 +77,10 @@ export function AsignarServiciosModal({
       const res = await fetch(`/api/proveedores/${id_proveedor}/asignacion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "servicio", ids: selectedIds }),
+        body: JSON.stringify({ type: itemType, ids: selectedIds }),
       });
       if (res.ok) {
-        window.alert("Servicios asignados correctamente");
+        window.alert(`${title} correctamente`);
         onSaved();
         onClose();
       } else {
@@ -84,7 +99,7 @@ export function AsignarServiciosModal({
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <div className="flex flex-col gap-4 w-full">
             <div className="flex justify-between items-center">
-              <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar Servicios</h2>
+              <h2 className="text-[20px] font-medium text-[#1e1e1e]">{title}</h2>
             </div>
 
             <div className="h-px bg-[#e8e8e8] w-full" />
@@ -110,7 +125,7 @@ export function AsignarServiciosModal({
               >
                 {role}
               </span>
-              <TerceroTypeTag type="Servicio" />
+              <TerceroTypeTag type={typeLabel} />
               <span
                 className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
                   status === "Activo"
@@ -148,20 +163,20 @@ export function AsignarServiciosModal({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[14px] text-[#8e908f] font-medium">Cargando servicios...</p>
+              <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemType}s...</p>
             </div>
           ) : items.length === 0 ? (
-            <p className="text-center py-12 text-[#8e908f]">No hay servicios disponibles.</p>
+            <p className="text-center py-12 text-[#8e908f]">No hay {itemType}s disponibles.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {items.map((item) => (
                 <AsignacionCard
-                  key={item.id_servicio}
-                  id={item.id_servicio}
-                  name={item.nombre_servicio}
-                  description={item.descripcion_servicio ?? undefined}
-                  selected={selectedIds.includes(item.id_servicio)}
-                  onToggle={() => toggleId(item.id_servicio)}
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  description={item.description ?? undefined}
+                  selected={selectedIds.includes(item.id)}
+                  onToggle={() => toggleId(item.id)}
                 />
               ))}
             </div>

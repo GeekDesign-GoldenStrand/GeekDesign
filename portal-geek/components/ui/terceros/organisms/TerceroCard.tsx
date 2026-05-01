@@ -7,8 +7,7 @@ import { TerceroTypeTag } from "@/components/ui/terceros/atoms/TerceroTypeTag";
 import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import type { TerceroCardProps } from "@/types";
 
-import { AsignarMaterialesModal } from "./AsignarMaterialesModal";
-import { AsignarServiciosModal } from "./AsignarServiciosModal";
+import { AsignarItemsModal } from "./AsignarItemsModal";
 
 function formatPhone(phone: string) {
   if (/^(55|33|81)/.test(phone)) {
@@ -108,7 +107,8 @@ export function TerceroCard({
         </button>
       </div>
 
-      <AsignarServiciosModal
+      <AsignarItemsModal
+        itemType="servicio"
         id_proveedor={id}
         companyName={companyName}
         contactName={contactName}
@@ -121,7 +121,8 @@ export function TerceroCard({
         onSaved={() => {}}
       />
 
-      <AsignarMaterialesModal
+      <AsignarItemsModal
+        itemType="material"
         id_proveedor={id}
         companyName={companyName}
         contactName={contactName}
