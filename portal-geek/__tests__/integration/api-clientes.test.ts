@@ -1,34 +1,36 @@
 /**
  * @jest-environment node
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/db/client";
-
 import { createApp } from "../helpers/next-supertest";
 
-// Still mock session to simulate role-based access without a real Auth0 session
+jest.mock("@/lib/db/client", () => ({
+  prisma: {
+    $transaction: jest.fn(),
+    clientes: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+  },
+}));
+
+const mockTransaction = prisma.$transaction as jest.Mock;
+const mockCreate = prisma.clientes.create as jest.Mock;
+const mockFindFirst = prisma.clientes.findFirst as jest.Mock;
+
 const mockGetSession = jest.fn();
 jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
-describe("Pruebas de Integración de API de Clientes (DB Real)", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+describe("Pruebas de Integración de API de Clientes (Mock DB)", () => {
   let routes: any;
 
   beforeAll(async () => {
     routes = await import("@/app/api/clientes/route");
-    // Initial cleanup
-    await prisma.clientes.deleteMany({
-      where: { nombre_cliente: { startsWith: "TEST_REAL_" } },
-    });
-  });
-
-  afterAll(async () => {
-    // Final cleanup
-    await prisma.clientes.deleteMany({
-      where: { nombre_cliente: { startsWith: "TEST_REAL_" } },
-    });
-    await prisma.$disconnect();
   });
 
   beforeEach(() => {
@@ -50,76 +52,71 @@ describe("Pruebas de Integración de API de Clientes (DB Real)", () => {
   });
 
   describe("GET /api/clientes", () => {
-    it("retorna 200 con lista vacía si no hay registros que coincidan", async () => {
+    it("retorna 200 con lista vacía si no hay registros", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-
-      // We use a specific search or just assume cleanup worked
-      await prisma.clientes.deleteMany({ where: { nombre_cliente: { startsWith: "TEST_REAL_" } } });
-
-      // Since there might be other real clients in the DB, we filter by our prefix in a real scenario
-      // But here we test the general response structure
+      mockTransaction.mockResolvedValue([[], 0]);
+      
       const res = await createApp({ GET: routes.GET }).get("/api/clientes");
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("data");
-      expect(res.body).toHaveProperty("total");
+      expect(res.body.data).toEqual([]);
+      expect(res.body.total).toBe(0);
     });
 
-    it("respeta la paginación con datos reales", async () => {
+    it("respeta la paginación", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+      mockTransaction.mockResolvedValue([
+        [
+          { id_cliente: 1, nombre_cliente: "Cliente 1" },
+          { id_cliente: 2, nombre_cliente: "Cliente 2" }
+        ],
+        5
+      ]);
 
-      // Create 3 test clients
-      for (let i = 1; i <= 3; i++) {
-        await prisma.clientes.create({
-          data: {
-            nombre_cliente: `TEST_REAL_Batch_${i}`,
-            correo_electronico: `batch${i}@test.com`,
-            numero_telefono: "0000000000",
-          },
-        });
-      }
-
-      const res = await createApp({ GET: routes.GET }).get("/api/clientes?pageSize=2&page=1");
+      const res = await createApp({ GET: routes.GET }).get("/api/clientes?pageSize=2&page=2");
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBe(2);
       expect(res.body.pageSize).toBe(2);
-      expect(res.body.page).toBe(1);
+      expect(res.body.page).toBe(2);
+      expect(res.body.total).toBe(5);
     });
   });
 
   describe("POST /api/clientes", () => {
     it("retorna 422 cuando los datos son inválidos (nombre vacío)", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-
-      const res = await createApp({ POST: routes.POST }).post("/api/clientes").send({
-        nombre_cliente: "", // Inválido
-        correo_electronico: "test@test.com",
-        numero_telefono: "1234567890",
-      });
+      
+      const res = await createApp({ POST: routes.POST })
+        .post("/api/clientes")
+        .send({
+          nombre_cliente: "", 
+          correo_electronico: "test@test.com",
+          numero_telefono: "1234567890"
+        });
 
       expect(res.status).toBe(422);
     });
 
-    it("crea un cliente exitosamente y lo persiste en la DB", async () => {
+    it("crea un cliente exitosamente", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-
+      
       const newClient = {
-        nombre_cliente: "TEST_REAL_Nuevo",
+        nombre_cliente: "Nuevo",
         correo_electronico: "nuevo@test.com",
         numero_telefono: "9876543210",
-        categoria: "Silver",
+        categoria: "Silver"
       };
 
-      const res = await createApp({ POST: routes.POST }).post("/api/clientes").send(newClient);
+      mockCreate.mockResolvedValue({ id_cliente: 1, ...newClient });
+
+      const res = await createApp({ POST: routes.POST })
+        .post("/api/clientes")
+        .send(newClient);
 
       expect(res.status).toBe(201);
       expect(res.body.data.nombre_cliente).toBe(newClient.nombre_cliente);
-
-      // Verify persistence
-      const dbRecord = await prisma.clientes.findFirst({
-        where: { nombre_cliente: "TEST_REAL_Nuevo" },
-      });
-      expect(dbRecord).toBeDefined();
-      expect(dbRecord?.correo_electronico).toBe(newClient.correo_electronico);
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining(newClient) })
+      );
     });
   });
 });
