@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
+
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
 import { useFetch } from "@/lib/hooks/useFetch";
 import type {InstaladorOption,MaquinaOption,ProveedorOption,TipoVariableOption,} from "@/types/servicios";
@@ -14,12 +16,14 @@ import type {InstaladorOption,MaquinaOption,ProveedorOption,TipoVariableOption,}
 type FormState = {
   nombre_servicio: string;
   descripcion_servicio: string;
+  id_maquinas?: number[]; // To be: array of machine IDs
   // To be: id_maquinas, id_instalador, id_proveedor, formula, etc.
 };
 
 const initialState: FormState = {
   nombre_servicio: "",
   descripcion_servicio: "",
+  id_maquinas: [],
 };
 
 // ─── Main Component ─────────────────────────────────────────────
@@ -61,7 +65,8 @@ export default function NuevoServicioPage() {
           descripcion_servicio: form.descripcion_servicio || undefined,
           id_estatus: 1, 
           estatus_servicio: true,
-          // To be: id_maquinas, id_instalador, id_proveedor, formula
+          id_maquinas: form.id_maquinas,
+          // To be: id_instalador, id_proveedor, formula
         }),
       });
 
@@ -146,9 +151,14 @@ export default function NuevoServicioPage() {
 
         {/* Placeholder visible de las secciones que vienen después */}
         <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-200">
-          <div className="text-sm text-gray-400 italic">
-            Selector de máquinas falta
-          </div>
+
+          <MaquinasSelector
+            opciones={maquinas.data?.data ?? []}
+            selectedIds={form.id_maquinas ?? []}
+            onChange={(ids) => updateField("id_maquinas", ids)}
+          />
+
+
           <div className="text-sm text-gray-400 italic">
             Instalador falta
           </div>
