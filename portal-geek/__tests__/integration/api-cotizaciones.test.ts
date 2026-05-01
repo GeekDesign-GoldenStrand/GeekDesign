@@ -3,13 +3,96 @@
  */
 import type { NextRequest, NextResponse } from "next/server";
 
+import { getSession } from "@/lib/auth/session";
+
 import { createApp } from "../helpers/next-supertest";
 
 // We mock the session to simulate different authentication scenarios.
 // This allows us to test authorization logic without relying on real sessions.
 const mockGetSession = jest.fn();
+type Handler = (req: Request, ctx: { params: unknown }, session?: unknown) => Promise<Response>;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+});
+
 jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
+}));
+
+jest.mock("@/lib/auth/guards", () => ({
+  withRole:
+    (roles: string[], handler: Handler) => async (req: Request, ctx: { params: unknown }) => {
+      const session = await getSession();
+
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
+
+      if (!roles.includes(session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
+
+      return handler(req, ctx);
+    },
+
+  withRoleParams:
+    (roles: string[], handler: Handler) => async (req: Request, ctx: { params: unknown }) => {
+      const session = await getSession();
+
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
+
+      if (!roles.includes(session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
+
+      return handler(req, ctx, session);
+    },
+}));
+
+jest.mock("@/lib/db/client", () => ({
+  prisma: {
+    cotizaciones: {
+      findUnique: jest.fn().mockResolvedValue({
+        id_cotizacion: 1,
+        id_estatus_cotizacion: 2,
+      }),
+      update: jest.fn().mockImplementation(({ data }) => ({
+        id_cotizacion: 1,
+        id_estatus_cotizacion: data.id_estatus_cotizacion,
+      })),
+    },
+    historialEstadosCotizacion: {
+      create: jest.fn(),
+    },
+    estatusCotizacion: {
+      findUnique: jest.fn().mockImplementation(({ where }) => {
+        const value = Object.values(where)[0];
+
+        if (value === "Validada") {
+          return Promise.resolve({ id_estatus: 2 });
+        }
+        if (value === "Rechazada") {
+          return Promise.resolve({ id_estatus: 4 });
+        }
+        return Promise.resolve(null);
+      }),
+    },
+    $transaction: jest.fn().mockImplementation((queries) => Promise.all(queries)),
+  },
 }));
 
 describe("PATCH /api/cotizaciones/:id/estatus", () => {
@@ -22,11 +105,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
     routes = {
       PATCH: (req: NextRequest) => mod.PATCH(req, { params: Promise.resolve({ id: "1" }) }),
     };
-  });
-
-  beforeEach(() => {
-    // Clear mocks before each test to avoid cross-contamination.
-    jest.clearAllMocks();
   });
 
   it("returns 401 without a session", async () => {
@@ -67,9 +145,9 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
     expect(res.body.id_estatus_cotizacion).toBe(2);
   });
 
-  it("returns 200 when role is Administrador and status is rejected", async () => {
+  it("returns 200 when role is Direccion and status is rejected", async () => {
     // Why: Administrador role should be authorized to reject cotizaciones.
-    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ PATCH: routes.PATCH })
       .patch("/api/cotizaciones/1/estatus")

@@ -1,17 +1,121 @@
 import type { NextRequest } from "next/server";
 
 import { GET } from "@/app/api/pedidos/route";
+import { getSession } from "@/lib/auth/session";
 import { listPedidos } from "@/lib/services/pedidos";
 
 type PedidoMock = {
   estatus: string;
 };
 
+type Handler = (req: Request, ctx: { params: unknown }, session?: unknown) => Promise<Response>;
+
 // We mock the auth guard to bypass authentication and authorization.
 // Why: This test focuses on request validation and handler behavior,
 // not on auth logic (which should be tested separately).
+
+const mockGetSession = jest.fn();
+
+beforeEach(() => {
+  jest.clearAllMocks();
+
+  mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+  (listPedidos as jest.Mock).mockResolvedValue({
+    items: [],
+    total: 0,
+  });
+});
+
+jest.mock("@/lib/auth/session", () => ({
+  getSession: () => mockGetSession(),
+}));
+
 jest.mock("@/lib/auth/guards", () => ({
-  withRole: (_roles: string[], handler: (...args: unknown[]) => unknown) => handler,
+  withRole:
+    (roles: string[], handler: Handler) => async (req: Request, ctx: { params: unknown }) => {
+      const session = await getSession();
+
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
+
+      if (!roles.includes(session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
+
+      return handler(req, ctx);
+    },
+
+  withRoleParams:
+    (roles: string[], handler: Handler) => async (req: Request, ctx: { params: unknown }) => {
+      const session = await getSession();
+
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
+
+      if (!roles.includes(session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
+
+      return handler(req, ctx, session);
+    },
+}));
+
+jest.mock("@/lib/db/client", () => ({
+  prisma: {
+    pedidos: {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id_pedido: 1,
+          id_cliente: 1,
+          id_estatus_pedido: 2,
+          monto_total: "2500",
+          notas: "Pedido demo para pruebas",
+        },
+        {
+          id_pedido: 2,
+          id_cliente: 2,
+          id_estatus_pedido: 4,
+          monto_total: "1800",
+          notas: "Pedido rechazado para pruebas",
+        },
+      ]),
+      findUnique: jest.fn().mockResolvedValue({
+        id_pedido: 1,
+        id_cliente: 1,
+        id_estatus_pedido: 2,
+        monto_total: "2500",
+        notas: "Pedido demo para pruebas",
+      }),
+      update: jest.fn().mockResolvedValue({
+        id_pedido: 1,
+        id_cliente: 1,
+        id_estatus_pedido: 4,
+        monto_total: "2500",
+        notas: "Pedido actualizado para pruebas",
+      }),
+    },
+
+    estatusPedido: {
+      findUnique: jest.fn().mockResolvedValue({
+        id_estatus: 2,
+      }),
+    },
+
+    $transaction: jest.fn().mockImplementation((queries) => Promise.all(queries)),
+  },
 }));
 
 // We mock the service layer to isolate the API route.
@@ -20,16 +124,6 @@ jest.mock("@/lib/auth/guards", () => ({
 jest.mock("@/lib/services/pedidos", () => ({
   listPedidos: jest.fn(),
 }));
-
-beforeEach(() => {
-  // Provide a safe default response for all tests.
-  // Why: The route expects a consistent structure ({ items, total }).
-  // Without this, tests could fail due to undefined values rather than logic errors.
-  (listPedidos as jest.Mock).mockResolvedValue({
-    items: [],
-    total: 0,
-  });
-});
 
 // Minimal mock of NextRequest
 // Why: We only include the properties actually used by the handler,
