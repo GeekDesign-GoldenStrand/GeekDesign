@@ -3,8 +3,8 @@
 import type { Clientes } from "@prisma/client";
 
 import { PlusBoxIcon } from "@/components/ui/atoms/icons";
-
 import { formatPhoneNumber } from "@/lib/utils/format";
+
 import { CategoryDropdown, type ClientCategory } from "../molecules/CategoryDropdown";
 
 interface ClientesTableProps {

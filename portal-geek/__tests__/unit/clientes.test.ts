@@ -1,13 +1,14 @@
 /**
  * @jest-environment node
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/db/client";
-import { 
-  listClientes, 
-  getCliente, 
-  createCliente, 
-  updateCliente, 
-  deleteCliente 
+import {
+  listClientes,
+  getCliente,
+  createCliente,
+  updateCliente,
+  deleteCliente,
 } from "@/lib/services/clientes";
 import { NotFoundError } from "@/lib/utils/errors";
 
@@ -15,14 +16,14 @@ describe("Servicio de Clientes (DB Real)", () => {
   beforeAll(async () => {
     // Initial cleanup
     await prisma.clientes.deleteMany({
-      where: { nombre_cliente: { startsWith: "TEST_SVC_" } }
+      where: { nombre_cliente: { startsWith: "TEST_SVC_" } },
     });
   });
 
   afterAll(async () => {
     // Final cleanup
     await prisma.clientes.deleteMany({
-      where: { nombre_cliente: { startsWith: "TEST_SVC_" } }
+      where: { nombre_cliente: { startsWith: "TEST_SVC_" } },
     });
     await prisma.$disconnect();
   });
@@ -33,7 +34,7 @@ describe("Servicio de Clientes (DB Real)", () => {
         nombre_cliente: "TEST_SVC_Read",
         correo_electronico: "read@test.com",
         numero_telefono: "1112223333",
-        categoria: "Black"
+        categoria: "Black",
       };
 
       const created = await createCliente(data as any);
@@ -54,12 +55,12 @@ describe("Servicio de Clientes (DB Real)", () => {
       // Seed specific data
       const prefix = "TEST_SVC_List_";
       await prisma.clientes.deleteMany({ where: { nombre_cliente: { startsWith: prefix } } });
-      
+
       for (let i = 1; i <= 5; i++) {
         await createCliente({
           nombre_cliente: `${prefix}${i}`,
           correo_electronico: `list${i}@test.com`,
-          numero_telefono: "000"
+          numero_telefono: "000",
         } as any);
       }
 
@@ -79,12 +80,12 @@ describe("Servicio de Clientes (DB Real)", () => {
       const created = await createCliente({
         nombre_cliente: "TEST_SVC_Before",
         correo_electronico: "before@test.com",
-        numero_telefono: "000"
+        numero_telefono: "000",
       } as any);
 
-      const updated = await updateCliente(created.id_cliente, { 
+      const updated = await updateCliente(created.id_cliente, {
         nombre_cliente: "TEST_SVC_After",
-        categoria: "Baneado"
+        categoria: "Baneado",
       });
 
       expect(updated.nombre_cliente).toBe("TEST_SVC_After");
@@ -93,7 +94,9 @@ describe("Servicio de Clientes (DB Real)", () => {
     });
 
     it("debe lanzar NotFoundError al intentar actualizar uno inexistente", async () => {
-      await expect(updateCliente(999999, { nombre_cliente: "Fail" })).rejects.toThrow(NotFoundError);
+      await expect(updateCliente(999999, { nombre_cliente: "Fail" })).rejects.toThrow(
+        NotFoundError
+      );
     });
   });
 
@@ -102,7 +105,7 @@ describe("Servicio de Clientes (DB Real)", () => {
       const created = await createCliente({
         nombre_cliente: "TEST_SVC_Delete",
         correo_electronico: "delete@test.com",
-        numero_telefono: "000"
+        numero_telefono: "000",
       } as any);
 
       await deleteCliente(created.id_cliente);
