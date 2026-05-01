@@ -294,6 +294,8 @@ model ProveedorPrecios {
   material  Materiales?  @relation(fields: [id_material], references: [id_material])
   gastos    Gastos[]
 
+  @@unique([id_proveedor, id_servicio])
+  @@unique([id_proveedor, id_material])
   @@map("PROVEEDORPRECIOS")
 }
 

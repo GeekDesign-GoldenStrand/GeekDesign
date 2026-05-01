@@ -76,8 +76,9 @@ export async function getProviderAssignments(id: number) {
 export async function syncProviderAssignments(
   id: number,
   type: "servicio" | "material",
-  ids: number[]
+  rawIds: number[]
 ) {
+  const ids = Array.from(new Set(rawIds));
   await getProveedor(id);
   const isServicio = type === "servicio";
 
