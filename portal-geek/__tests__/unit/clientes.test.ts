@@ -72,23 +72,20 @@ describe("Servicio de Clientes (Mock DB)", () => {
     it("debe paginar correctamente y devolver el total", async () => {
       const mockItems = [
         { id_cliente: 1, nombre_cliente: "A" },
-        { id_cliente: 2, nombre_cliente: "B" }
+        { id_cliente: 2, nombre_cliente: "B" },
       ];
       mockTransaction.mockResolvedValue([mockItems, 10]);
 
       const pageSize = 2;
       const page = await listClientes(2, pageSize);
-      
+
       expect(page.items).toEqual(mockItems);
       expect(page.total).toBe(10);
       expect(mockTransaction).toHaveBeenCalled();
-      
+
       // Check that findMany was configured with skip and take inside the transaction array
       const transactionArgs = mockTransaction.mock.calls[0][0];
-      const findManyCall = transactionArgs.find((arg: any) => typeof arg === "object" && "skip" in arg);
-      
-      // We can't strictly test the inner contents of prisma.$transaction promises perfectly in mock without 
-      // mocking the return values of the individual methods first, but we can verify the transaction structure.
+
       expect(transactionArgs).toBeDefined();
     });
   });
@@ -107,7 +104,7 @@ describe("Servicio de Clientes (Mock DB)", () => {
       expect(updated.categoria).toBe("Baneado");
       expect(mockUpdate).toHaveBeenCalledWith({
         where: { id_cliente: 1 },
-        data: { nombre_cliente: "Actualizado", categoria: "Baneado" }
+        data: { nombre_cliente: "Actualizado", categoria: "Baneado" },
       });
     });
 

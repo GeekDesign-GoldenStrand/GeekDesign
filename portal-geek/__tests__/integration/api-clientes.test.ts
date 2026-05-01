@@ -3,6 +3,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "@/lib/db/client";
+
 import { createApp } from "../helpers/next-supertest";
 
 jest.mock("@/lib/db/client", () => ({
@@ -19,7 +20,6 @@ jest.mock("@/lib/db/client", () => ({
 
 const mockTransaction = prisma.$transaction as jest.Mock;
 const mockCreate = prisma.clientes.create as jest.Mock;
-const mockFindFirst = prisma.clientes.findFirst as jest.Mock;
 
 const mockGetSession = jest.fn();
 jest.mock("@/lib/auth/session", () => ({
@@ -55,7 +55,7 @@ describe("Pruebas de Integración de API de Clientes (Mock DB)", () => {
     it("retorna 200 con lista vacía si no hay registros", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
       mockTransaction.mockResolvedValue([[], 0]);
-      
+
       const res = await createApp({ GET: routes.GET }).get("/api/clientes");
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual([]);
@@ -67,9 +67,9 @@ describe("Pruebas de Integración de API de Clientes (Mock DB)", () => {
       mockTransaction.mockResolvedValue([
         [
           { id_cliente: 1, nombre_cliente: "Cliente 1" },
-          { id_cliente: 2, nombre_cliente: "Cliente 2" }
+          { id_cliente: 2, nombre_cliente: "Cliente 2" },
         ],
-        5
+        5,
       ]);
 
       const res = await createApp({ GET: routes.GET }).get("/api/clientes?pageSize=2&page=2");
@@ -84,33 +84,29 @@ describe("Pruebas de Integración de API de Clientes (Mock DB)", () => {
   describe("POST /api/clientes", () => {
     it("retorna 422 cuando los datos son inválidos (nombre vacío)", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-      
-      const res = await createApp({ POST: routes.POST })
-        .post("/api/clientes")
-        .send({
-          nombre_cliente: "", 
-          correo_electronico: "test@test.com",
-          numero_telefono: "1234567890"
-        });
+
+      const res = await createApp({ POST: routes.POST }).post("/api/clientes").send({
+        nombre_cliente: "",
+        correo_electronico: "test@test.com",
+        numero_telefono: "1234567890",
+      });
 
       expect(res.status).toBe(422);
     });
 
     it("crea un cliente exitosamente", async () => {
       mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-      
+
       const newClient = {
         nombre_cliente: "Nuevo",
         correo_electronico: "nuevo@test.com",
         numero_telefono: "9876543210",
-        categoria: "Silver"
+        categoria: "Silver",
       };
 
       mockCreate.mockResolvedValue({ id_cliente: 1, ...newClient });
 
-      const res = await createApp({ POST: routes.POST })
-        .post("/api/clientes")
-        .send(newClient);
+      const res = await createApp({ POST: routes.POST }).post("/api/clientes").send(newClient);
 
       expect(res.status).toBe(201);
       expect(res.body.data.nombre_cliente).toBe(newClient.nombre_cliente);
