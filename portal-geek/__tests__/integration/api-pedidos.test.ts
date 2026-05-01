@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { GET } from "@/app/api/pedidos/route";
+import { getSession } from "@/lib/auth/session";
 import { listPedidos } from "@/lib/services/pedidos";
 
 interface PedidoMock {
