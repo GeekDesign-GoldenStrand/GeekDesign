@@ -53,3 +53,32 @@ export async function deleteInstalador(id: number): Promise<void> {
     throw err;
   }
 }
+
+// Additional helper to the list dropdown in order to not show unactive instaladores.
+
+
+export async function getInstaladoresOptions(): Promise<
+  Array<{
+    id_instalador: number;
+    nombre_proveedor: string;
+    apodo: string | null;
+    costo_instalacion: string;
+  }>
+> {
+  const instaladores = await prisma.instaladores.findMany({
+    where: { estatus: "Activo" },
+    select: {
+      id_instalador: true,
+      nombre_proveedor: true,
+      apodo: true,
+      costo_instalacion: true,
+    },
+    orderBy: { costo_instalacion: "asc" },
+  });
+
+  // Prisma returns Decimal as a Decimal object; serialize to string for the client component.
+  return instaladores.map((i) => ({
+    ...i,
+    costo_instalacion: i.costo_instalacion.toString(),
+  }));
+}
