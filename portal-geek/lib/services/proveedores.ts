@@ -45,7 +45,10 @@ export async function updateProveedor(
 
 export async function deleteProveedor(id: number): Promise<void> {
   try {
-    await prisma.proveedores.delete({ where: { id_proveedor: id } });
+    await prisma.proveedores.update({
+      where: { id_proveedor: id },
+      data: { estatus: "Inactivo" },
+    });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Proveedor ${id} no encontrado`);

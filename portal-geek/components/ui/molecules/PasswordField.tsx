@@ -3,46 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-function EyeOpenIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeClosedIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  );
-}
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 export interface PasswordFieldProps {
   value: string;
@@ -107,8 +68,9 @@ export function PasswordField({
         disabled={disabled}
         className="absolute right-5 top-1/2 -translate-y-1/2 text-[#8e908f] hover:text-[#df2646] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#df2646] focus-visible:ring-offset-2 rounded disabled:pointer-events-none"
       >
-        {show ? <EyeOpenIcon /> : <EyeClosedIcon />}
+        {show ? <EyeSlash size={20} aria-hidden /> : <Eye size={20} aria-hidden />}
       </button>
+
       {error && (
         <p id={errorId} role="alert" className="mt-1 px-4 text-[13px] text-[#df2646]">
           {error}
