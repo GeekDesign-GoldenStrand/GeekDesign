@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import {
@@ -79,6 +79,7 @@ export default function TercerosPage() {
   const [editData, setEditData] = useState<ProveedorFormData | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const editControllerRef = useRef<AbortController | null>(null);
 
   // PROV-03 – delete
   const [deletingProveedor, setDeletingProveedor] = useState<{ id: number; name: string } | null>(
@@ -123,25 +124,35 @@ export default function TercerosPage() {
   // ── PROV-02 ──────────────────────────────────────────────────────────────
 
   async function openEditModal(id: number) {
+    editControllerRef.current?.abort();
+    const controller = new AbortController();
+    editControllerRef.current = controller;
+
     setEditingProveedorId(id);
     setEditData(null);
     setEditError(null);
-    const res = await fetch(`/api/proveedores/${id}`);
-    const payload = await res.json();
-    if (!res.ok) {
-      setEditError(payload?.error ?? `Error ${res.status}`);
-      return;
+    try {
+      const res = await fetch(`/api/proveedores/${id}`, { signal: controller.signal });
+      const payload = await res.json();
+      if (!res.ok) {
+        setEditError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      const d: DbProveedor = payload.data;
+      setEditData({
+        nombre_proveedor: d.nombre_proveedor,
+        tipo: d.tipo as ProveedorFormData["tipo"],
+        correo: d.correo ?? "",
+        telefono: d.telefono ?? "",
+        ubicacion: d.ubicacion ?? "",
+        descripcion_proveedor: d.descripcion_proveedor ?? "",
+        estatus: d.estatus,
+      });
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setEditError("Error inesperado al cargar el proveedor");
+      }
     }
-    const d: DbProveedor = payload.data;
-    setEditData({
-      nombre_proveedor: d.nombre_proveedor,
-      tipo: d.tipo as ProveedorFormData["tipo"],
-      correo: d.correo ?? "",
-      telefono: d.telefono ?? "",
-      ubicacion: d.ubicacion ?? "",
-      descripcion_proveedor: d.descripcion_proveedor ?? "",
-      estatus: d.estatus,
-    });
   }
 
   async function handleEditSubmit(data: UpdateProveedorInput) {
@@ -181,6 +192,7 @@ export default function TercerosPage() {
         )
       );
       setEditingProveedorId(null);
+      setEditData(null);
     } finally {
       setEditLoading(false);
     }
@@ -271,9 +283,14 @@ export default function TercerosPage() {
           initialData={editData}
           loading={editLoading}
           serverError={editError}
-          onClose={() => setEditingProveedorId(null)}
+          onClose={() => { setEditingProveedorId(null); setEditData(null); }}
           onSubmit={handleEditSubmit}
         />
+      )}
+      {editingProveedorId !== null && !editData && editError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-[8px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-5 py-3 shadow-lg">
+          {editError}
+        </div>
       )}
 
       <ConfirmarEliminarProveedorModal
