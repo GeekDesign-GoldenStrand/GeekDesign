@@ -1,8 +1,7 @@
 "use client";
 
+import { CaretRightIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
-
-import { CaretRight } from "@phosphor-icons/react";
 
 export type RoleName = "Administrador" | "Colaborador" | "Finanzas" | "Direccion" | (string & {});
 
@@ -22,7 +21,6 @@ const DEFAULT_CONFIG: RoleConfig = {
   color: "#8e908f",
   bg: "rgba(142,144,143,0.07)",
 };
-
 
 interface RoleTagProps {
   role: string;
@@ -66,7 +64,7 @@ export function RoleTag({ role, roles, currentRolId, onRolChange, saving }: Role
         >
           {saving ? "..." : role}
         </span>
-        {interactive && <CaretRight size={8} color={cfg.color} weight="bold" aria-hidden />}
+        {interactive && <CaretRightIcon size={8} color={cfg.color} weight="bold" aria-hidden />}
       </button>
 
       {open && roles && (

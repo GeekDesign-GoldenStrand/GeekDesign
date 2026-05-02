@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateProveedorInput } from "@/lib/schemas/proveedores";
@@ -20,7 +20,7 @@ function formatPhone(digits: string): string {
   return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
 }
 
-function validateFields(form: typeof EMPTY_FORM): Record<string, string> {
+function validateFields(form: ProveedorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
   if (!form.nombre_proveedor.trim()) errs.nombre_proveedor = "El nombre es requerido.";
   else if (form.nombre_proveedor.length > 30) errs.nombre_proveedor = "Máximo 30 caracteres.";
@@ -42,21 +42,19 @@ const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-const EMPTY_FORM = {
-  nombre_proveedor: "",
-  tipo: "Proveedor de material" as "Proveedor de material" | "Proveedor de servicio",
-  correo: "",
-  telefono: "",
-  ubicacion: "",
-  descripcion_proveedor: "",
-  estatus: "Activo",
+export type ProveedorFormData = {
+  nombre_proveedor: string;
+  tipo: "Proveedor de material" | "Proveedor de servicio";
+  correo: string;
+  telefono: string;
+  ubicacion: string;
+  descripcion_proveedor: string;
+  estatus: string;
 };
-
-export type ProveedorFormData = typeof EMPTY_FORM;
 
 interface EditarProveedorModalProps {
   isOpen: boolean;
-  initialData: ProveedorFormData | null;
+  initialData: ProveedorFormData;
   loading: boolean;
   serverError: string | null;
   onClose: () => void;
@@ -71,17 +69,9 @@ export function EditarProveedorModal({
   onClose,
   onSubmit,
 }: EditarProveedorModalProps) {
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<ProveedorFormData>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (isOpen && initialData) {
-      setForm(initialData);
-      setErrors({});
-      setTouched({});
-    }
-  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
@@ -122,129 +112,125 @@ export function EditarProveedorModal({
 
   return (
     <ModalShell title="Editar Proveedor" onClose={onClose}>
-      {!initialData ? (
-        <p className="text-[#8e908f] text-[14px]">Cargando datos...</p>
-      ) : (
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-          {serverError && (
-            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
-              {serverError}
-            </div>
-          )}
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {serverError && (
+          <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
+            {serverError}
+          </div>
+        )}
 
+        <div>
+          <label className={LABEL}>
+            Nombre del proveedor <span className="text-[#e42200]">*</span>
+          </label>
+          <input
+            type="text"
+            maxLength={30}
+            value={form.nombre_proveedor}
+            onChange={(e) => setField("nombre_proveedor", e.target.value)}
+            className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
+          />
+          {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
+        </div>
+
+        <div>
+          <label className={LABEL}>
+            Tipo <span className="text-[#e42200]">*</span>
+          </label>
+          <select
+            value={form.tipo}
+            onChange={(e) => setField("tipo", e.target.value)}
+            className={`${FIELD} ${getFieldClass("tipo")}`}
+          >
+            <option value="Proveedor de material">Proveedor de material</option>
+            <option value="Proveedor de servicio">Proveedor de servicio</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={LABEL}>
-              Nombre del proveedor <span className="text-[#e42200]">*</span>
+              Correo <span className="text-[#e42200]">*</span>
             </label>
             <input
-              type="text"
-              maxLength={30}
-              value={form.nombre_proveedor}
-              onChange={(e) => setField("nombre_proveedor", e.target.value)}
-              className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
+              type="email"
+              placeholder="correo@ejemplo.com"
+              value={form.correo}
+              onChange={(e) => setField("correo", e.target.value)}
+              className={`${FIELD} ${getFieldClass("correo")}`}
             />
-            {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
+            {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
           </div>
-
           <div>
-            <label className={LABEL}>
-              Tipo <span className="text-[#e42200]">*</span>
-            </label>
-            <select
-              value={form.tipo}
-              onChange={(e) => setField("tipo", e.target.value)}
-              className={`${FIELD} ${getFieldClass("tipo")}`}
-            >
-              <option value="Proveedor de material">Proveedor de material</option>
-              <option value="Proveedor de servicio">Proveedor de servicio</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={LABEL}>
-                Correo <span className="text-[#e42200]">*</span>
-              </label>
-              <input
-                type="email"
-                placeholder="correo@ejemplo.com"
-                value={form.correo}
-                onChange={(e) => setField("correo", e.target.value)}
-                className={`${FIELD} ${getFieldClass("correo")}`}
-              />
-              {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
-            </div>
-            <div>
-              <label className={LABEL}>Teléfono</label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                placeholder="442 123 4567"
-                value={formatPhone(form.telefono)}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setField("telefono", digits);
-                }}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
-              />
-              {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className={LABEL}>Ubicación</label>
+            <label className={LABEL}>Teléfono</label>
             <input
-              type="text"
-              placeholder="Querétaro, Querétaro"
-              value={form.ubicacion}
-              onChange={(e) => setField("ubicacion", e.target.value)}
-              className={`${FIELD} ${getFieldClass("ubicacion")}`}
+              type="tel"
+              inputMode="numeric"
+              placeholder="442 123 4567"
+              value={formatPhone(form.telefono)}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                setField("telefono", digits);
+              }}
+              className={`${FIELD} ${getFieldClass("telefono")}`}
             />
-            {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
+            {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
           </div>
+        </div>
 
-          <div>
-            <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
-          </div>
+        <div>
+          <label className={LABEL}>Ubicación</label>
+          <input
+            type="text"
+            placeholder="Querétaro, Querétaro"
+            value={form.ubicacion}
+            onChange={(e) => setField("ubicacion", e.target.value)}
+            className={`${FIELD} ${getFieldClass("ubicacion")}`}
+          />
+          {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
+        </div>
 
-          <div>
-            <label className={LABEL}>Descripción</label>
-            <textarea
-              rows={3}
-              placeholder="Detalles adicionales del proveedor..."
-              value={form.descripcion_proveedor}
-              onChange={(e) => setField("descripcion_proveedor", e.target.value)}
-              className={`${FIELD} ${getFieldClass("descripcion_proveedor")} resize-none`}
-            />
-          </div>
+        <div>
+          <label className={LABEL}>Estatus</label>
+          <select
+            value={form.estatus}
+            onChange={(e) => setField("estatus", e.target.value)}
+            className={`${FIELD} ${getFieldClass("estatus")}`}
+          >
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Baneado">Baneado</option>
+          </select>
+        </div>
 
-          <div className="flex justify-end gap-3 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-            >
-              {loading ? "Guardando..." : "Guardar cambios"}
-            </button>
-          </div>
-        </form>
-      )}
+        <div>
+          <label className={LABEL}>Descripción</label>
+          <textarea
+            rows={3}
+            placeholder="Detalles adicionales del proveedor..."
+            value={form.descripcion_proveedor}
+            onChange={(e) => setField("descripcion_proveedor", e.target.value)}
+            className={`${FIELD} ${getFieldClass("descripcion_proveedor")} resize-none`}
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 mt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+          >
+            {loading ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
+      </form>
     </ModalShell>
   );
 }

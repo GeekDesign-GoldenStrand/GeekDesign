@@ -26,8 +26,8 @@ export function ConfirmarEliminarProveedorModal({
       <div className="flex flex-col gap-4">
         <p className="text-[14px] text-[#575757]">
           ¿Está seguro de que desea eliminar a{" "}
-          <span className="font-medium text-[#1e1e1e]">{proveedorName}</span>? Su estatus cambiará
-          a <span className="font-medium">Inactivo</span>.
+          <span className="font-medium text-[#1e1e1e]">{proveedorName}</span>? Su estatus cambiará a{" "}
+          <span className="font-medium">Inactivo</span>.
         </p>
 
         {serverError && (

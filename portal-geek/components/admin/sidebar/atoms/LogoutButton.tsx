@@ -1,8 +1,7 @@
 "use client";
 
+import { SignOutIcon } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
-
-import { SignOut } from "@phosphor-icons/react";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -20,7 +19,7 @@ export function LogoutButton() {
       aria-label="Cerrar sesión"
       className="mt-2 text-[#1e1e1e] hover:opacity-70 transition-opacity shrink-0"
     >
-      <SignOut size={32} />
+      <SignOutIcon size={32} />
     </button>
   );
 }

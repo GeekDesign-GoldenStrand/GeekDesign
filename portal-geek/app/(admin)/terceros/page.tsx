@@ -264,14 +264,17 @@ export default function TercerosPage() {
         initialType={initialModalType}
       />
 
-      <EditarProveedorModal
-        isOpen={editingProveedorId !== null}
-        initialData={editData}
-        loading={editLoading}
-        serverError={editError}
-        onClose={() => setEditingProveedorId(null)}
-        onSubmit={handleEditSubmit}
-      />
+      {editData && (
+        <EditarProveedorModal
+          key={editingProveedorId ?? 0}
+          isOpen
+          initialData={editData}
+          loading={editLoading}
+          serverError={editError}
+          onClose={() => setEditingProveedorId(null)}
+          onSubmit={handleEditSubmit}
+        />
+      )}
 
       <ConfirmarEliminarProveedorModal
         isOpen={deletingProveedor !== null}

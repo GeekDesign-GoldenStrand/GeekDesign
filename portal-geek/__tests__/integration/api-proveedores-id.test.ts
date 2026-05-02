@@ -14,7 +14,6 @@ jest.mock("@/lib/db/client", () => ({
   },
 }));
 
-const mockFindUnique = prisma.proveedores.findUnique as jest.Mock;
 const mockUpdate = prisma.proveedores.update as jest.Mock;
 
 const mockGetSession = jest.fn();

@@ -1,9 +1,8 @@
 "use client";
 
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useState } from "react";
-
-import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 export interface PasswordFieldProps {
   value: string;
@@ -68,7 +67,7 @@ export function PasswordField({
         disabled={disabled}
         className="absolute right-5 top-1/2 -translate-y-1/2 text-[#8e908f] hover:text-[#df2646] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#df2646] focus-visible:ring-offset-2 rounded disabled:pointer-events-none"
       >
-        {show ? <EyeSlash size={20} aria-hidden /> : <Eye size={20} aria-hidden />}
+        {show ? <EyeSlashIcon size={20} aria-hidden /> : <EyeIcon size={20} aria-hidden />}
       </button>
 
       {error && (
