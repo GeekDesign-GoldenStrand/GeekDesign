@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
+import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
 
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
 import { useFetch } from "@/lib/hooks/useFetch";
 import type {InstaladorOption,MaquinaOption,ProveedorOption,TipoVariableOption,} from "@/types/servicios";
 
-// ─── Forms Status ────────────────────────────────────────────
+// ─── Forms Status ──────────
 // Focuses on all the form's fields in one object
 // Each section updates its portion of the form state.
 
@@ -17,6 +18,7 @@ type FormState = {
   nombre_servicio: string;
   descripcion_servicio: string;
   id_maquinas?: number[]; // To be: array of machine IDs
+  id_instalador?: number | null; // To be: installer ID
   // To be: id_maquinas, id_instalador, id_proveedor, formula, etc.
 };
 
@@ -24,9 +26,10 @@ const initialState: FormState = {
   nombre_servicio: "",
   descripcion_servicio: "",
   id_maquinas: [],
+  id_instalador: null,
 };
 
-// ─── Main Component ─────────────────────────────────────────────
+// ─── Main Component ─────
 
 export default function NuevoServicioPage() {
   const router = useRouter();
@@ -66,7 +69,8 @@ export default function NuevoServicioPage() {
           id_estatus: 1, 
           estatus_servicio: true,
           id_maquinas: form.id_maquinas,
-          // To be: id_instalador, id_proveedor, formula
+          id_instalador: form.id_instalador,
+          // To be: id_proveedor, formula
         }),
       });
 
@@ -158,10 +162,12 @@ export default function NuevoServicioPage() {
             onChange={(ids) => updateField("id_maquinas", ids)}
           />
 
-
-          <div className="text-sm text-gray-400 italic">
-            Instalador falta
-          </div>
+          <InstaladorToggle
+            opciones={instaladores.data?.data ?? []}
+            selectedId ={form.id_instalador ?? null}
+            onChange={(id) => updateField("id_instalador", id)}
+          />  
+          
           <div className="text-sm text-gray-400 italic">
             Proveedor 
           </div>
