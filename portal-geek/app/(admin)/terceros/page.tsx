@@ -283,7 +283,10 @@ export default function TercerosPage() {
           initialData={editData}
           loading={editLoading}
           serverError={editError}
-          onClose={() => { setEditingProveedorId(null); setEditData(null); }}
+          onClose={() => {
+            setEditingProveedorId(null);
+            setEditData(null);
+          }}
           onSubmit={handleEditSubmit}
         />
       )}
