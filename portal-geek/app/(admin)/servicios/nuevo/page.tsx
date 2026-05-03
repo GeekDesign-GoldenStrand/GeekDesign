@@ -6,6 +6,7 @@ import { useState } from "react";
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
+import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
 
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
 import { useFetch } from "@/lib/hooks/useFetch";
@@ -26,6 +27,9 @@ type FormState = {
   id_maquinas: number[];
   id_instalador: number | null;
   costo_instalador_override: number | null;
+  id_proveedor: number | null;
+  costo_proveedor_override: number | null;
+
   // To be: id_proveedor, formula, etc.
 };
 
@@ -36,6 +40,8 @@ const initialState: FormState = {
   id_maquinas: [],
   id_instalador: null,
   costo_instalador_override: null,
+  id_proveedor: null,
+  costo_proveedor_override: null,
 };
 
 // ─── Main Component ───────────────────────────────────
@@ -110,8 +116,10 @@ export default function NuevoServicioPage() {
           estatus_servicio: true,
           id_maquinas: form.id_maquinas,
           id_instalador: form.id_instalador,
-          costo_instalador_override: form.costo_instalador_override
-          // To be: id_proveedor, formula
+          costo_instalador_override: form.costo_instalador_override,
+          id_proveedor: form.id_proveedor,
+          costo_proveedor_override: form.costo_proveedor_override,
+          // To be: formula
         }),
       });
 
@@ -228,7 +236,22 @@ export default function NuevoServicioPage() {
             }
           />
 
-          <div className="text-sm text-gray-400 italic">Proveedor</div>
+          <ProveedorToggle
+            opciones={proveedores.data?.data ?? []}
+            value={{
+              id: form.id_proveedor,
+              costoOverride: form.costo_proveedor_override,
+            }}
+            onChange={(v) =>
+              setForm((prev) => ({
+                ...prev,
+                id_proveedor: v.id,
+                costo_proveedor_override: v.costoOverride,
+              }))
+            }
+          />
+
+        
           <div className="text-sm text-gray-400 italic">
             Variables y constantes
           </div>
