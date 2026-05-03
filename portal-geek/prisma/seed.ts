@@ -139,6 +139,7 @@ async function main() {
     update: {},
     create: {
       id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
       nombre_servicio: "Corte Láser",
       descripcion_servicio: "Corte con láser CO2",
       estatus_servicio: true,
