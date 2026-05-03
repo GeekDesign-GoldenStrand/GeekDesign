@@ -26,7 +26,7 @@ export function ServicioCard({
   const maquinasTexto =
     servicio.maquinas.length === 0
       ? "Sin máquinas asignadas"
-      : servicio.maquinas.map((m) => m.Maquina.apodo_maquina).join(", ");
+      : servicio.maquinas.map((m) => m.maquina.apodo_maquina).join(", ");
 
   return (
     <div className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-6 flex items-center justify-between">
