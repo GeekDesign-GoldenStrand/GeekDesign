@@ -25,6 +25,7 @@ type FormState = {
   id_sucursal: number | null;
   id_maquinas: number[];
   id_instalador: number | null;
+  costo_instalador_override: number | null;
   // To be: id_proveedor, formula, etc.
 };
 
@@ -34,6 +35,7 @@ const initialState: FormState = {
   id_sucursal: null,
   id_maquinas: [],
   id_instalador: null,
+  costo_instalador_override: null,
 };
 
 // ─── Main Component ───────────────────────────────────
@@ -108,7 +110,8 @@ export default function NuevoServicioPage() {
           estatus_servicio: true,
           id_maquinas: form.id_maquinas,
           id_instalador: form.id_instalador,
-          // To be: id_proveedor, costo_*_override, formula
+          costo_instalador_override: form.costo_instalador_override
+          // To be: id_proveedor, formula
         }),
       });
 
@@ -210,10 +213,19 @@ export default function NuevoServicioPage() {
             loading={maquinas.loading}
           />
 
-          <InstaladorToggle
+         <InstaladorToggle
             opciones={instaladores.data?.data ?? []}
-            selectedId={form.id_instalador ?? null}
-            onChange={(id) => updateField("id_instalador", id)}
+            value={{
+              id: form.id_instalador,
+              costoOverride: form.costo_instalador_override,
+            }}
+            onChange={(v) =>
+              setForm((prev) => ({
+                ...prev,
+                id_instalador: v.id,
+                costo_instalador_override: v.costoOverride,
+              }))
+            }
           />
 
           <div className="text-sm text-gray-400 italic">Proveedor</div>
