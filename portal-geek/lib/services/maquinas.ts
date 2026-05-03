@@ -3,11 +3,11 @@ import type { Maquinas } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreateMaquinaInput, UpdateMaquinaInput } from "@/lib/schemas/maquinas";
 
-/*
-Paged list of machines with total count for pagination controls.
-Sorted by id_maquina desc (most recently created first).
-*/
-export async function listMaquinas(page: number,pageSize: number): Promise<{ items: Maquinas[]; total: number }> {
+
+export async function listMaquinas(
+  page: number,
+  pageSize: number
+): Promise<{ items: Maquinas[]; total: number }> {
   const skip = (page - 1) * pageSize;
   const [items, total] = await Promise.all([
     prisma.maquinas.findMany({
@@ -42,3 +42,39 @@ export async function deleteMaquina(id: number): Promise<void> {
   throw new Error("Not implemented");
 }
 
+
+// Returns all active machines for dropdowns, 
+// After the admin choses a branch in the service form, we need 
+// to show only the machines linked to that branch and that are active.
+
+export async function getMaquinasOptionsBySucursal(
+  idSucursal: number
+): Promise <
+  Array<{
+    id_maquina: number;
+    nombre_maquina: string;
+    apodo_maquina: string;
+    tipo: string;
+  }>
+> {
+  const rows = await prisma.sucursalesMaquina.findMany({
+    where: {
+      id_sucursal: idSucursal,
+      maquina: { estatus: "Activa" },
+    },
+    select: {
+      maquina: {
+        select: {
+          id_maquina: true,
+          nombre_maquina: true,
+          apodo_maquina: true,
+          tipo: true,
+        },
+      },
+    },
+    orderBy: { maquina: { apodo_maquina: "asc" } },
+  });
+
+  // Flatten the nested shape from the pivot.
+  return rows.map((r) => r.maquina);
+}

@@ -53,3 +53,33 @@ export async function deleteProveedor(id: number): Promise<void> {
     throw err;
   }
 }
+
+// Returns the minimal payload needed to render the provider dropdown
+// in the service form. Only active service providers, ordered by cost asc.
+
+export async function getProveedoresOptions(): Promise<
+  Array<{
+    id_proveedor: number;
+    nombre_proveedor: string;
+    costo: string | null;
+  }>
+> {
+  const proveedores = await prisma.proveedores.findMany({
+    where: {
+      estatus: "Activo",
+      tipo: "Proveedor de servicio",
+    },
+    select: {
+      id_proveedor: true,
+      nombre_proveedor: true,
+      costo: true,
+    },
+    orderBy: { costo: "asc" },
+  });
+
+  // Prisma returns Decimal as a Decimal object; serialize to string for the client component.
+  return proveedores.map((p) => ({
+    ...p,
+    costo: p.costo ? p.costo.toString() : null,
+  }));
+}

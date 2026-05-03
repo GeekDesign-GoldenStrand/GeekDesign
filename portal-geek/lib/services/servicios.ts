@@ -9,19 +9,17 @@ import type {
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
-
 export type ServicioListado = Prisma.ServiciosGetPayload<{
   include: {
-    maquinas: {
-      include: { maquina: true };
-    };
+    sucursal: true;
+    maquinas: { include: { maquina: true } };
   };
 }>;
-
 
 export type ServicioCompleto = Prisma.ServiciosGetPayload<{
   include: {
     estatusServicio: true;
+    sucursal: true;
     maquinas: { include: { maquina: true } };
     instalador: true;
     proveedor: true;
@@ -30,7 +28,6 @@ export type ServicioCompleto = Prisma.ServiciosGetPayload<{
         variables: { include: { tipo: true } };
         constantes: {
           include: {
-            maquina: true;
             instalador: true;
             proveedor: true;
           };
@@ -40,15 +37,10 @@ export type ServicioCompleto = Prisma.ServiciosGetPayload<{
   };
 }>;
 
-
 type ServicioSimple = Prisma.ServiciosGetPayload<object>;
 
 // ─── Functions ─────────────────────────────────────────────────────────
 
-/*
-Servicios list paginated with total count for pagination controls.
-Sorted by fecha_modificacion desc (most recently updated first).
-*/
 export async function listServicios(
   page: number,
   pageSize: number
@@ -61,9 +53,8 @@ export async function listServicios(
       take: pageSize,
       orderBy: { fecha_modificacion: "desc" },
       include: {
-        maquinas: {
-          include: { maquina: true },
-        },
+        sucursal: true,
+        maquinas: { include: { maquina: true } },
       },
     }),
     prisma.servicios.count(),
@@ -72,15 +63,12 @@ export async function listServicios(
   return { items, total };
 }
 
-/*
-Get a single service by ID with all its relations.
-Throws NotFoundError if the service does not exist.
-*/
 export async function getServicio(id: number): Promise<ServicioCompleto> {
   const servicio = await prisma.servicios.findUnique({
     where: { id_servicio: id },
     include: {
       estatusServicio: true,
+      sucursal: true,
       maquinas: { include: { maquina: true } },
       instalador: true,
       proveedor: true,
@@ -90,7 +78,6 @@ export async function getServicio(id: number): Promise<ServicioCompleto> {
           variables: { include: { tipo: true } },
           constantes: {
             include: {
-              maquina: true,
               instalador: true,
               proveedor: true,
             },
@@ -106,10 +93,6 @@ export async function getServicio(id: number): Promise<ServicioCompleto> {
   return servicio;
 }
 
-/*
-Create a new service with optional machine vinculations and formula.
-All operations run in a transaction: if any step fails, nothing is persisted.
-*/
 export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
@@ -117,7 +100,7 @@ export async function createServicio(
   const { id_maquinas, formula, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
-    // 1. Create the service first.
+    // 1. Create the service. servicioData now includes id_sucursal and overrides.
     const servicio = await tx.servicios.create({ data: servicioData });
 
     // 2. Vinculate machines if provided.
@@ -130,7 +113,7 @@ export async function createServicio(
       });
     }
 
-    // 3. Create formula if provided, with its variables and constants.
+    // 3. Create formula with its variables and constants if provided.
     if (formula) {
       const formulaCreada = await tx.formulas.create({
         data: {
@@ -162,7 +145,6 @@ export async function createServicio(
             id_formula: formulaCreada.id_formula,
             nombre_constante: c.nombre_constante,
             origen: c.origen,
-            id_maquina: c.id_maquina ?? null,
             id_instalador: c.id_instalador ?? null,
             id_proveedor: c.id_proveedor ?? null,
             estatus: "Activo",
@@ -175,11 +157,6 @@ export async function createServicio(
   });
 }
 
-/*
-Updates a service and resyncs its machines and formula if new arrays are provided.
-Old formulas are deactivated (soft delete) instead of being removed,
-preserving historical data for past quotations.
-*/
 export async function updateServicio(
   id: number,
   data: UpdateServicioInput,
@@ -244,7 +221,6 @@ export async function updateServicio(
               id_formula: formulaCreada.id_formula,
               nombre_constante: c.nombre_constante,
               origen: c.origen,
-              id_maquina: c.id_maquina ?? null,
               id_instalador: c.id_instalador ?? null,
               id_proveedor: c.id_proveedor ?? null,
               estatus: "Activo",
@@ -266,9 +242,6 @@ export async function updateServicio(
   }
 }
 
-/*
-Changes estatus_servicio to false in order to preserve historical data
-*/
 export async function deleteServicio(id: number): Promise<void> {
   try {
     await prisma.servicios.update({
