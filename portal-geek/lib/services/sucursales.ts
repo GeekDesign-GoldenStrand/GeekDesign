@@ -38,3 +38,14 @@ export async function deleteSucursal(id: number): Promise<void> {
   void id;
   throw new Error("Not implemented");
 }
+
+
+// Additional helper to the list dropdown in order to not show unactive sucursales.
+export async function getSucursalesOptions(): Promise<Array<{ id_sucursal: number; nombre_sucursal: string }>> {
+  return prisma.sucursales.findMany({
+    where: { estatus: "Activo" },
+    select: { id_sucursal: true, nombre_sucursal: true },
+    orderBy: { nombre_sucursal: "asc" },
+  }); 
+
+}

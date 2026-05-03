@@ -6,7 +6,7 @@ const VariableSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(/^[a-zA-Z0-9_]+$/, "Solo minusculas, números y guiones bajos; "),
+    .regex(/^[a-zA-Z0-9_]+$/, "Solo minúsculas, números y guiones bajos"),
   etiqueta: z.string().min(1).max(100),
   valor_default: z.string().optional(),
   editable_por_cliente: z.boolean().default(false),
@@ -20,27 +20,19 @@ const ConstanteSchema = z
       .min(1)
       .max(100)
       .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido"),
-    origen: z.enum(["maquina", "instalador", "proveedor"]),
-    id_maquina: z.number().int().positive().optional(),
+    origen: z.enum(["instalador", "proveedor", "global", "manual"]),
     id_instalador: z.number().int().positive().optional(),
     id_proveedor: z.number().int().positive().optional(),
+    // Future-proof: when ConstantesGlobales is wired, add id_constante_global here.
   })
   .refine(
     (data) => {
-      if (data.origen === "maquina") {
-        return data.id_maquina !== undefined;
-      }
-      if (data.origen === "instalador") {
-        return data.id_instalador !== undefined;
-      }
-      if (data.origen === "proveedor") {
-        return data.id_proveedor !== undefined;
-      }
-      return false;
+      if (data.origen === "instalador") return data.id_instalador !== undefined;
+      if (data.origen === "proveedor") return data.id_proveedor !== undefined;
+      // 'global' and 'manual' don't require an FK; manual = admin types value directly
+      return true;
     },
-    {
-      message: "El campo de ID correspondiente al origen seleccionado es requerido",
-    }
+    { message: "El ID correspondiente al origen seleccionado es requerido" }
   );
 
 const FormulaSchema = z.object({
@@ -49,16 +41,26 @@ const FormulaSchema = z.object({
   constantes: z.array(ConstanteSchema).default([]),
 });
 
-/*-----Schema Principal del Servicio-----*/
+// ─── Main service schema ─────────────────────────────────────────────
+
 export const CreateServicioSchema = z.object({
   id_estatus: z.number().int().positive(),
+  id_sucursal: z.number().int().positive(),  // NEW: required
   nombre_servicio: z.string().min(1).max(100),
   descripcion_servicio: z.string().optional(),
   estatus_servicio: z.boolean().default(true),
-  // Array for entities to vinculate with this service
+
+  // Vinculations
   id_maquinas: z.array(z.number().int().positive()).optional().default([]),
   id_instalador: z.number().int().positive().nullable().optional(),
   id_proveedor: z.number().int().positive().nullable().optional(),
+
+  // NEW: per-service price overrides (null = use master price from Instaladores/Proveedores)
+  // These allow setting a custom price for this service that overrides the default cost 
+  // from the linked installer or provider.
+  costo_instalador_override: z.number().nonnegative().nullable().optional(),
+  costo_proveedor_override: z.number().nonnegative().nullable().optional(),
+
   formula: FormulaSchema.optional(),
 });
 
