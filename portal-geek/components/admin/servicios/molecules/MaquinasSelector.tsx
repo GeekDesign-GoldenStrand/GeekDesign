@@ -8,48 +8,60 @@ import { XIcon } from "@phosphor-icons/react";
 import type { MaquinaOption } from "@/types/servicios";
 
 type MaquinasSelectorProps = {
-  // Complete list of machines, coming directly from the main fetch.
+  // List of machines AVAILABLE for the currently selected branch.
+  // Empty array if no branch is selected or if the branch has no machines.
   opciones: MaquinaOption[];
-  // IDs from the already selected machines.
+  // IDs of the already selected machines.
   selectedIds: number[];
-  // Callback when the selection changes.
+  
   onChange: (ids: number[]) => void;
+  // Whether the parent has already selected a branch. Drives the disabled state.
+  hasSucursal: boolean;
+  // Whether machines are still being loaded for the selected branch.
+  loading?: boolean;
 };
 
 export function MaquinasSelector({
   opciones,
   selectedIds,
   onChange,
+  hasSucursal,
+  loading = false,
 }: MaquinasSelectorProps) {
-  // Dropdonw state
+  // Dropdown state
   const [open, setOpen] = useState(false);
 
-  // Selected Machines
-  const selected = opciones.filter((m) =>
-    selectedIds.includes(m.id_maquina)
-  );
+  const selected = opciones.filter((m) => selectedIds.includes(m.id_maquina));
 
-  // Available machines to select 
-  const available = opciones.filter(
-    (m) => !selectedIds.includes(m.id_maquina)
-  );
+  const available = opciones.filter((m) => !selectedIds.includes(m.id_maquina));
 
-  // With a handler you add a machine to the array of selected IDs and close the dropdown.
+  // Handler to add a machine to the selection.
   const handleAdd = (id: number) => {
     onChange([...selectedIds, id]);
     setOpen(false);
   };
 
-  
   const handleRemove = (id: number) => {
     onChange(selectedIds.filter((selectedId) => selectedId !== id));
   };
+
+  // The button is disabled if there's no branch, no available machines, or while loading.
+  const buttonDisabled = !hasSucursal || loading || available.length === 0;
+
+  // Helper to compute the button's hint text based on state.
+  const buttonHint = (() => {
+    if (!hasSucursal) return "Selecciona una sucursal primero";
+    if (loading) return "Cargando máquinas...";
+    if (opciones.length === 0) return "Esta sucursal no tiene máquinas asignadas";
+    if (available.length === 0) return "Todas las máquinas ya están agregadas";
+    return null;
+  })();
 
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium text-[#1e1e1e]">Máquina(s)</label>
 
-      {/* Selected Machines */}
+      {/* Selected machines as removable chips */}
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {selected.map((maquina) => (
@@ -71,12 +83,12 @@ export function MaquinasSelector({
         </div>
       )}
 
-      {/* Add machine button, with dropdown */}
+      {/* Add machine button or open dropdown */}
       {!open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          disabled={available.length === 0}
+          disabled={buttonDisabled}
           className="bg-[#e42200] text-white hover:bg-[#c41e00] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] h-10 px-5 rounded-full font-medium text-sm transition-all self-start disabled:opacity-50 disabled:cursor-not-allowed"
         >
           + Agregar Máquina
@@ -94,7 +106,7 @@ export function MaquinasSelector({
             <option value="">Selecciona una máquina...</option>
             {available.map((m) => (
               <option key={m.id_maquina} value={m.id_maquina}>
-                {m.apodo_maquina} 
+                {m.apodo_maquina} ({m.tipo})
               </option>
             ))}
           </select>
@@ -108,12 +120,8 @@ export function MaquinasSelector({
         </div>
       )}
 
-      {/* Informative message when all machines are already selected */}
-      {available.length === 0 && selected.length > 0 && (
-        <p className="text-xs text-gray-500">
-          Todas las máquinas disponibles ya están agregadas.
-        </p>
-      )}
+      {/* Single hint line that adapts to current state */}
+      {buttonHint && <p className="text-xs text-gray-500">{buttonHint}</p>}
     </div>
   );
 }
