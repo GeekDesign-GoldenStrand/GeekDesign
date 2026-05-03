@@ -157,16 +157,20 @@ model EstatusServicio {
 }
 
 model Servicios {
-  id_servicio          Int     @id @default(autoincrement())
-  id_estatus           Int
-  nombre_servicio      String  @db.VarChar(100)
-  descripcion_servicio String?
-  estatus_servicio     Boolean @default(true)
-  id_instalador        Int?
-  id_proveedor         Int?
-  fecha_modificacion DateTime @default(now()) @updatedAt   
+  id_servicio                Int      @id @default(autoincrement())
+  id_estatus                 Int
+  id_sucursal                Int
+  nombre_servicio            String   @db.VarChar(100)
+  descripcion_servicio       String?
+  estatus_servicio           Boolean  @default(true)
+  id_instalador              Int?
+  id_proveedor               Int?
+  costo_instalador_override  Decimal? @db.Decimal(10, 2)
+  costo_proveedor_override   Decimal? @db.Decimal(10, 2)
+  fecha_modificacion         DateTime @default(now()) @updatedAt
 
   estatusServicio EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  sucursal        Sucursales         @relation(fields: [id_sucursal], references: [id_sucursal])
   instalador      Instaladores?      @relation(fields: [id_instalador], references: [id_instalador])
   proveedor       Proveedores?       @relation(fields: [id_proveedor], references: [id_proveedor])
   opciones        OpcionesProducto[]
@@ -257,6 +261,7 @@ model Sucursales {
   maquinas      SucursalesMaquina[]
   colaboradores Colaboradores[]
   pedidos       Pedidos[]
+  servicios     Servicios[]
 
   @@map("SUCURSALES")
 }
@@ -267,14 +272,12 @@ model Maquinas {
   apodo_maquina    String   @db.VarChar(100)
   tipo             String   @db.VarChar(50)  // Láser CO2 / Láser Fibra / Bordadora
   descripcion      String?
-  costo_por_minuto Decimal? @db.Decimal(10, 4) // NUEVO: nullable hasta que Andrea defina la métrica
   estatus          String   @db.VarChar(30)  // Activa / Inactiva / En mantenimiento
   fecha_registro   DateTime @default(now())
 
   sucursales        SucursalesMaquina[]
   pedidoMaquina     PedidoMaquina[]
   servicios         ServicioMaquina[]
-  formulaConstantes FormulaConstantes[]
 
   @@map("MAQUINAS")
 }
@@ -568,18 +571,17 @@ model FormulaVariables {
 // Constantes: piezas HEREDADAS de máquina/instalador/proveedor.
 // El valor NO se guarda aquí, se resuelve en runtime consultando la entidad origen.
 // Origen válido: 'maquina' | 'instalador' | 'proveedor'
+
 model FormulaConstantes {
   id_constante     Int     @id @default(autoincrement())
   id_formula       Int
   nombre_constante String  @db.VarChar(100)  // identificador en la expresión: "costo_laser_co2"
   origen           String  @db.VarChar(20)
-  id_maquina       Int?
   id_instalador    Int?
   id_proveedor     Int?
   estatus          String  @db.VarChar(20)
 
   formula    Formulas      @relation(fields: [id_formula], references: [id_formula])
-  maquina    Maquinas?     @relation(fields: [id_maquina], references: [id_maquina])
   instalador Instaladores? @relation(fields: [id_instalador], references: [id_instalador])
   proveedor  Proveedores?  @relation(fields: [id_proveedor], references: [id_proveedor])
 
