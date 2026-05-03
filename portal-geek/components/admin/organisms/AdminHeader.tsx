@@ -1,23 +1,5 @@
+import { User } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-
-function UserIcon() {
-  return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
 
 interface AdminHeaderProps {
   title: string;
@@ -32,7 +14,7 @@ export function AdminHeader({ title }: AdminHeaderProps) {
         aria-label="Mi perfil"
         className="flex h-[56px] w-[56px] items-center justify-center rounded-full text-[#555] hover:bg-[#fff0f0] hover:text-[#e42200] transition-colors"
       >
-        <UserIcon />
+        <User size={32} aria-hidden />
       </Link>
     </header>
   );
