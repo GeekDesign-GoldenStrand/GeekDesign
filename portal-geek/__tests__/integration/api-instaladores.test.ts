@@ -149,6 +149,30 @@ describe("POST /api/instaladores", () => {
     expect(res.body.data.ubicacion).toBe("CDMX");
   });
 
+  it("retorna 201 con estatus Inactivo", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockCreate.mockResolvedValue({ ...CREATED_INSTALADOR, estatus: "Inactivo" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, estatus: "Inactivo" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.estatus).toBe("Inactivo");
+  });
+
+  it("retorna 201 con estatus Baneado", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockCreate.mockResolvedValue({ ...CREATED_INSTALADOR, estatus: "Baneado" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, estatus: "Baneado" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.estatus).toBe("Baneado");
+  });
+
   it("aplica estatus Activo por defecto cuando no se envía", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockCreate.mockResolvedValue(CREATED_INSTALADOR);
@@ -268,6 +292,76 @@ describe("POST /api/instaladores", () => {
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
       .send({ ...VALID_PAYLOAD, estatus: "Suspendido" });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando telefono tiene 11 dígitos", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, telefono: "55512345678" });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando correo supera 150 caracteres", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, correo: `${"a".repeat(140)}@example.com` });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando apodo supera 30 caracteres", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, apodo: "A".repeat(31) });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando apodo tiene caracteres inválidos", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, apodo: "Juanito@#$%" });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando notas supera 500 caracteres", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, notas: "A".repeat(501) });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando ubicacion supera 255 caracteres", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, ubicacion: "A".repeat(256) });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando nombre_instalador es cadena vacía", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, nombre_instalador: "" });
 
     expect(res.status).toBe(422);
   });
