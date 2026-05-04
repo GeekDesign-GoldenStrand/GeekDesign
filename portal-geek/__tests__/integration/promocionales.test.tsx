@@ -1,6 +1,6 @@
-import { listServicios } from "@/lib/services/servicios";
 import StorefrontLayout from "@/app/(storefront)/layout";
 import PromocionalesPage from "@/app/(storefront)/promocionales/page";
+import { listServicios } from "@/lib/services/servicios";
 
 // Mock listServicios
 jest.mock("@/lib/services/servicios", () => ({
@@ -22,10 +22,10 @@ describe("Promocionales Integration Tests", () => {
       });
 
       const result = await StorefrontLayout({ children: "content" });
-      
+
       // Verify listServicios was called with correct parameters
       expect(mockListServicios).toHaveBeenCalledWith(1, 20, true);
-      
+
       // Verify that the layout rendered (doesn't crash)
       expect(result).toBeDefined();
     });
@@ -36,7 +36,7 @@ describe("Promocionales Integration Tests", () => {
 
       // Should NOT throw
       const result = await StorefrontLayout({ children: "content" });
-      
+
       // Verify that it still renders despite the error
       expect(result).toBeDefined();
     });

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { ArrowLeft, ArrowClockwise } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function PromocionalesError({
   error,
@@ -23,10 +23,10 @@ export default function PromocionalesError({
           Algo no salió <br />
           <span className="italic font-serif">como esperábamos</span>
         </h2>
-        
+
         <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-          Lo sentimos, ha ocurrido un error al cargar la experiencia promocional. 
-          Estamos trabajando para solucionarlo.
+          Lo sentimos, ha ocurrido un error al cargar la experiencia promocional. Estamos trabajando
+          para solucionarlo.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -37,7 +37,7 @@ export default function PromocionalesError({
             <ArrowClockwise size={20} />
             Reintentar
           </button>
-          
+
           <Link
             href="/storefront"
             className="flex items-center gap-2 text-black font-bold text-sm hover:underline"
