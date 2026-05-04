@@ -2,7 +2,13 @@
  * @jest-environment node
  */
 import { prisma } from "@/lib/db/client";
-import { createInstalador, listInstaladores, getInstalador } from "@/lib/services/instaladores";
+import {
+  createInstalador,
+  listInstaladores,
+  getInstalador,
+  updateInstalador,
+  deleteInstalador,
+} from "@/lib/services/instaladores";
 import { NotFoundError } from "@/lib/utils/errors";
 
 jest.mock("@/lib/db/client", () => ({
@@ -13,6 +19,7 @@ jest.mock("@/lib/db/client", () => ({
       count: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
   },
 }));
@@ -22,6 +29,7 @@ const mockFindMany = prisma.instaladores.findMany as jest.Mock;
 const mockCount = prisma.instaladores.count as jest.Mock;
 const mockFindUnique = prisma.instaladores.findUnique as jest.Mock;
 const mockCreate = prisma.instaladores.create as jest.Mock;
+const mockUpdate = prisma.instaladores.update as jest.Mock;
 
 const INSTALADOR = {
   id_instalador: 1,
@@ -179,5 +187,82 @@ describe("getInstalador", () => {
     mockFindUnique.mockResolvedValue(null);
 
     await expect(getInstalador(42)).rejects.toThrow("42");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateInstalador — INST-02
+// ---------------------------------------------------------------------------
+describe("updateInstalador", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("retorna el registro actualizado", async () => {
+    const updated = { ...INSTALADOR, nombre_instalador: "Pedro López" };
+    mockUpdate.mockResolvedValue(updated);
+
+    const result = await updateInstalador(1, { nombre_instalador: "Pedro López" });
+
+    expect(result.nombre_instalador).toBe("Pedro López");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_instalador: 1 } })
+    );
+  });
+
+  it("actualiza solo los campos proporcionados", async () => {
+    const updated = { ...INSTALADOR, correo: "nuevo@example.com" };
+    mockUpdate.mockResolvedValue(updated);
+
+    const result = await updateInstalador(1, { correo: "nuevo@example.com" });
+
+    expect(result.correo).toBe("nuevo@example.com");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { correo: "nuevo@example.com" } })
+    );
+  });
+
+  it("lanza NotFoundError cuando el instalador no existe (P2025)", async () => {
+    mockUpdate.mockRejectedValue({ code: "P2025" });
+
+    await expect(updateInstalador(999, { nombre_instalador: "No existe" })).rejects.toThrow(
+      "Instalador 999 no encontrado"
+    );
+  });
+
+  it("propaga errores distintos a P2025", async () => {
+    mockUpdate.mockRejectedValue(new Error("Error de base de datos"));
+
+    await expect(updateInstalador(1, { nombre_instalador: "Test" })).rejects.toThrow(
+      "Error de base de datos"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deleteInstalador — INST-03
+// ---------------------------------------------------------------------------
+describe("deleteInstalador", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("hace soft delete: llama update con estatus Inactivo", async () => {
+    mockUpdate.mockResolvedValue({ ...INSTALADOR, estatus: "Inactivo" });
+
+    await deleteInstalador(1);
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id_instalador: 1 },
+      data: { estatus: "Inactivo" },
+    });
+  });
+
+  it("lanza NotFoundError cuando el instalador no existe (P2025)", async () => {
+    mockUpdate.mockRejectedValue({ code: "P2025" });
+
+    await expect(deleteInstalador(999)).rejects.toThrow("Instalador 999 no encontrado");
+  });
+
+  it("propaga errores distintos a P2025", async () => {
+    mockUpdate.mockRejectedValue(new Error("Error de base de datos"));
+
+    await expect(deleteInstalador(1)).rejects.toThrow("Error de base de datos");
   });
 });
