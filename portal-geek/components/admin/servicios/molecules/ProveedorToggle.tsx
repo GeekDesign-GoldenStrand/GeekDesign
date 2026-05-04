@@ -16,11 +16,7 @@ type ProveedorToggleProps = {
   onChange: (value: ProveedorSelection) => void;
 };
 
-export function ProveedorToggle({
-  opciones,
-  value,
-  onChange,
-}: ProveedorToggleProps) {
+export function ProveedorToggle({ opciones, value, onChange }: ProveedorToggleProps) {
   const requiereProveedor = value.id !== null;
   const [editingPrecio, setEditingPrecio] = useState(false);
   const [precioDraft, setPrecioDraft] = useState<string>("");
@@ -35,9 +31,7 @@ export function ProveedorToggle({
   const primerConCosto = ordenados.find((p) => p.costo !== null) ?? null;
 
   const proveedorSeleccionado =
-    value.id !== null
-      ? opciones.find((o) => o.id_proveedor === value.id) ?? null
-      : null;
+    value.id !== null ? (opciones.find((o) => o.id_proveedor === value.id) ?? null) : null;
 
   const costoMaestro =
     proveedorSeleccionado && proveedorSeleccionado.costo !== null
@@ -45,12 +39,9 @@ export function ProveedorToggle({
       : null;
 
   const tieneOverride =
-    value.costoOverride !== null &&
-    costoMaestro !== null &&
-    value.costoOverride !== costoMaestro;
+    value.costoOverride !== null && costoMaestro !== null && value.costoOverride !== costoMaestro;
 
-  const precioEfectivo =
-    value.costoOverride !== null ? value.costoOverride : costoMaestro;
+  const precioEfectivo = value.costoOverride !== null ? value.costoOverride : costoMaestro;
 
   useEffect(() => {
     if (requiereProveedor && value.id === null && primerConCosto !== null) {
@@ -60,18 +51,6 @@ export function ProveedorToggle({
       });
     }
   }, [requiereProveedor, value.id, primerConCosto, onChange]);
-
-  useEffect(() => {
-    if (!requiereProveedor) {
-      setEditingPrecio(false);
-      setPrecioDraft("");
-    }
-  }, [requiereProveedor]);
-
-  useEffect(() => {
-    setEditingPrecio(false);
-    setPrecioDraft("");
-  }, [value.id]);
 
   const handleToggle = (siRequiere: boolean) => {
     if (siRequiere) {
@@ -84,11 +63,15 @@ export function ProveedorToggle({
       }
     } else {
       onChange({ id: null, costoOverride: null });
+      setEditingPrecio(false);
+      setPrecioDraft("");
     }
   };
 
   const handleSelectProveedor = (newId: number) => {
     onChange({ id: newId, costoOverride: null });
+    setEditingPrecio(false);
+    setPrecioDraft("");
   };
 
   const handleStartEdit = () => {
@@ -96,8 +79,8 @@ export function ProveedorToggle({
       value.costoOverride !== null
         ? value.costoOverride.toString()
         : costoMaestro !== null
-        ? costoMaestro.toString()
-        : ""
+          ? costoMaestro.toString()
+          : ""
     );
     setEditingPrecio(true);
   };
@@ -148,22 +131,17 @@ export function ProveedorToggle({
             onChange={(e) => handleSelectProveedor(Number(e.target.value))}
             className="h-10 px-3 rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
           >
-            {ordenados.length === 0 && (
-              <option value="">No hay proveedores disponibles</option>
-            )}
+            {ordenados.length === 0 && <option value="">No hay proveedores disponibles</option>}
             {ordenados.map((p) => {
               const isSelected = p.id_proveedor === value.id;
               const masterCost = p.costo !== null ? parseFloat(p.costo) : null;
               const precioMostrado =
-                isSelected && precioEfectivo !== null
-                  ? precioEfectivo
-                  : masterCost;
+                isSelected && precioEfectivo !== null ? precioEfectivo : masterCost;
 
               return (
                 <option key={p.id_proveedor} value={p.id_proveedor}>
                   {p.nombre_proveedor}
-                  {precioMostrado !== null &&
-                    ` — ${formatCosto(precioMostrado)}`}
+                  {precioMostrado !== null && ` — ${formatCosto(precioMostrado)}`}
                   {isSelected && tieneOverride ? " (modificado)" : ""}
                 </option>
               );
@@ -217,9 +195,7 @@ export function ProveedorToggle({
               {editingPrecio && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600">
-                      Precio para este servicio:
-                    </span>
+                    <span className="text-xs text-gray-600">Precio para este servicio:</span>
                     <input
                       type="number"
                       min="0"

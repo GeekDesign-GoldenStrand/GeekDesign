@@ -1,12 +1,12 @@
 "use client";
 
+import { InfoIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-
-import { Icon } from "../atoms/Icon";
-import { TrashIcon, InfoIcon, XIcon } from "@phosphor-icons/react";
 
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { TipoVariableOption } from "@/types/servicios";
+
+import { Icon } from "../atoms/Icon";
 
 export type VariableDraft = {
   id_tipo_variable: number;
@@ -25,11 +25,7 @@ type VariablesSectionProps = {
 
 const MAX_NOMBRE_LEN = 30;
 
-export function VariablesSection({
-  tiposDisponibles,
-  variables,
-  onChange,
-}: VariablesSectionProps) {
+export function VariablesSection({ tiposDisponibles, variables, onChange }: VariablesSectionProps) {
   const [draft, setDraft] = useState({
     etiqueta: "",
     id_tipo_variable: tiposDisponibles[0]?.id_tipo_variable ?? 0,
@@ -57,9 +53,7 @@ export function VariablesSection({
       return;
     }
     if (variables.some((v) => v.nombre_variable === nombre)) {
-      setError(
-        `Ya existe una variable con el identificador "${nombre}". Usa un nombre distinto.`
-      );
+      setError(`Ya existe una variable con el identificador "${nombre}". Usa un nombre distinto.`);
       return;
     }
     if (draft.id_tipo_variable === 0) {
@@ -102,8 +96,7 @@ export function VariablesSection({
   };
 
   const tipoNombre = (id: number) =>
-    tiposDisponibles.find((t) => t.id_tipo_variable === id)?.nombre_tipo ??
-    "Desconocido";
+    tiposDisponibles.find((t) => t.id_tipo_variable === id)?.nombre_tipo ?? "Desconocido";
 
   // Build the chip's secondary text: tipo, valor, unidad, edit flag.
   const chipDescripcion = (v: VariableDraft) => {
@@ -120,8 +113,8 @@ export function VariablesSection({
       <div>
         <h3 className="text-sm font-semibold text-[#1e1e1e]">Variables:</h3>
         <p className="text-xs text-gray-600 mt-1">
-          Datos numéricos que cambian en cada cotización. El cliente o tú los
-          capturan al momento de cotizar.
+          Datos numéricos que cambian en cada cotización. El cliente o tú los capturan al momento de
+          cotizar.
         </p>
         <p className="text-xs text-gray-500 italic mt-1">
           Ejemplos: ancho, altura, cantidad de piezas, perímetro, etc.
@@ -156,17 +149,13 @@ export function VariablesSection({
         <div>
           <label className="text-xs font-medium text-gray-700 mb-1 block">
             Nombre de la variable{" "}
-            <span className="text-gray-400 font-normal">
-              (máx. {MAX_NOMBRE_LEN} caracteres)
-            </span>
+            <span className="text-gray-400 font-normal">(máx. {MAX_NOMBRE_LEN} caracteres)</span>
           </label>
           <input
             type="text"
             placeholder="Ej. Ancho de la pieza"
             value={draft.etiqueta}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, etiqueta: e.target.value }))
-            }
+            onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
             className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             maxLength={MAX_NOMBRE_LEN}
           />
@@ -175,9 +164,7 @@ export function VariablesSection({
               <Icon LibIcon={InfoIcon} size={12} weight="bold" />
               <span>
                 En la fórmula lo escribes:{" "}
-                <code className="bg-blue-50 px-1 rounded font-mono">
-                  {previewNombre}
-                </code>
+                <code className="bg-blue-50 px-1 rounded font-mono">{previewNombre}</code>
               </span>
             </div>
           )}
@@ -192,18 +179,14 @@ export function VariablesSection({
             step="any"
             placeholder="Ej. 50"
             value={draft.valor_default}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, valor_default: e.target.value }))
-            }
+            onChange={(e) => setDraft((d) => ({ ...d, valor_default: e.target.value }))}
             className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Tipo
-            </label>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Tipo</label>
             <select
               value={draft.id_tipo_variable}
               onChange={(e) =>
@@ -224,16 +207,12 @@ export function VariablesSection({
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Unidad
-            </label>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Unidad</label>
             <input
               type="text"
               placeholder="cm, pz, $"
               value={draft.unidad}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, unidad: e.target.value }))
-              }
+              onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
               className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
               maxLength={20}
             />
