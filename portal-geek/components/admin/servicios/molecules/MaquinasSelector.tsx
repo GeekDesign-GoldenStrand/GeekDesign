@@ -59,7 +59,7 @@ export function MaquinasSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-[#1e1e1e]">Máquina(s)</label>
+      <label className="text-sm font-medium text-[#1e1e1e]">Máquina(s):</label>
 
       {/* Selected machines as removable chips */}
       {selected.length > 0 && (
