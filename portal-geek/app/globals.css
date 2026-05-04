@@ -72,3 +72,12 @@ body {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+    overflow-x: auto;
+    width: 100%;
+    justify-content: space-around;
+  }
+}

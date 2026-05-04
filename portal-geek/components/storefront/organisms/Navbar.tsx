@@ -39,20 +39,20 @@ export function Navbar({ categories = [] }: NavbarProps) {
         <div className="flex items-center gap-3 md:gap-5 shrink-0">
           <Link
             href="/promocionales"
-            className="hidden lg:flex items-center gap-[6px] hover:opacity-70 transition-opacity"
+            className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
           >
             <Tag size={28} weight="light" className="text-[#1e1e1e]" />
-            <span className="text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
+            <span className="hidden lg:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Promocionales
             </span>
           </Link>
 
           <Link
             href="/ayuda"
-            className="hidden md:flex items-center gap-[6px] hover:opacity-70 transition-opacity"
+            className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
           >
             <Question size={28} weight="light" className="text-[#1e1e1e]" />
-            <span className="text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
+            <span className="hidden md:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Ayuda
             </span>
           </Link>
