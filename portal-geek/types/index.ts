@@ -51,3 +51,28 @@ export interface TerceroCardProps {
   onDelete?: () => void;
   onStatusChange?: (status: TerceroStatus) => void;
 }
+
+export interface MaterialCardProps {
+  id: number;
+  name: string;
+  unit: string;
+  color: string;
+  width: string;
+  height: string;
+  thickness: string;
+  description: string;
+  imageUrl: string;
+}
+
+export type MaterialSortOrder = "az" | "za";
+
+export interface MaterialesVisibleColumns {
+  name: boolean;
+  description: boolean;
+  unit: boolean;
+  width: boolean;
+  height: boolean;
+  thickness: boolean;
+  color: boolean;
+  image: boolean;
+}
