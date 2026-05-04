@@ -8,13 +8,15 @@ export async function listProveedores(
   page: number,
   pageSize: number
 ): Promise<{ items: Proveedores[]; total: number }> {
+  const where = { estatus: { not: "Inactivo" } };
   const [items, total] = await prisma.$transaction([
     prisma.proveedores.findMany({
+      where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { nombre_proveedor: "asc" },
     }),
-    prisma.proveedores.count(),
+    prisma.proveedores.count({ where }),
   ]);
   return { items, total };
 }
@@ -51,7 +53,10 @@ export async function updateProveedor(
 
 export async function deleteProveedor(id: number): Promise<void> {
   try {
-    await prisma.proveedores.delete({ where: { id_proveedor: id } });
+    await prisma.proveedores.update({
+      where: { id_proveedor: id },
+      data: { estatus: "Inactivo" },
+    });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Proveedor ${id} no encontrado`);
