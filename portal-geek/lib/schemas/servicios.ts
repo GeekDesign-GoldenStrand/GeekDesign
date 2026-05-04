@@ -45,7 +45,7 @@ const FormulaSchema = z.object({
 
 export const CreateServicioSchema = z.object({
   id_estatus: z.number().int().positive(),
-  id_sucursal: z.number().int().positive(),  // NEW: required
+  id_sucursal: z.number().int().positive(), // NEW: required
   nombre_servicio: z.string().min(1).max(100),
   descripcion_servicio: z.string().optional(),
   estatus_servicio: z.boolean().default(true),
@@ -56,7 +56,7 @@ export const CreateServicioSchema = z.object({
   id_proveedor: z.number().int().positive().nullable().optional(),
 
   // NEW: per-service price overrides (null = use master price from Instaladores/Proveedores)
-  // These allow setting a custom price for this service that overrides the default cost 
+  // These allow setting a custom price for this service that overrides the default cost
   // from the linked installer or provider.
   costo_instalador_override: z.number().nonnegative().nullable().optional(),
   costo_proveedor_override: z.number().nonnegative().nullable().optional(),

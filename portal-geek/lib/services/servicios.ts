@@ -1,11 +1,8 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
+import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
 import { NotFoundError } from "@/lib/utils/errors";
-import type {
-  CreateServicioInput,
-  UpdateServicioInput,
-} from "@/lib/schemas/servicios";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -232,10 +229,7 @@ export async function updateServicio(
       return servicio;
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
     throw error;
@@ -249,10 +243,7 @@ export async function deleteServicio(id: number): Promise<void> {
       data: { estatus_servicio: false },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
     throw error;

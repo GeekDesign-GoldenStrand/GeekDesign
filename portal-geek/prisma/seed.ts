@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Roles } from "@prisma/client";
+import type { Roles } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -37,15 +38,14 @@ async function main() {
 
   console.log(`Seeded ${roles.length} roles`);
 
-
   // ── Variable Types for Formulas Engine ───────────────────────────────────────────────────────────
   const tiposVariable = [
-  { nombre_tipo: "Dimensión", unidad_default: "cm", estatus: "Activo" },
-  { nombre_tipo: "Cantidad", unidad_default: "pz", estatus: "Activo" },
-  { nombre_tipo: "Costo adicional", unidad_default: "$", estatus: "Activo" },
-  { nombre_tipo: "Costo de material", unidad_default: "$", estatus: "Activo" },
-  { nombre_tipo: "Descuento", unidad_default: "%", estatus: "Activo" },
-  { nombre_tipo: "Tiempo", unidad_default: "min", estatus: "Activo" },
+    { nombre_tipo: "Dimensión", unidad_default: "cm", estatus: "Activo" },
+    { nombre_tipo: "Cantidad", unidad_default: "pz", estatus: "Activo" },
+    { nombre_tipo: "Costo adicional", unidad_default: "$", estatus: "Activo" },
+    { nombre_tipo: "Costo de material", unidad_default: "$", estatus: "Activo" },
+    { nombre_tipo: "Descuento", unidad_default: "%", estatus: "Activo" },
+    { nombre_tipo: "Tiempo", unidad_default: "min", estatus: "Activo" },
   ];
 
   for (const tipo of tiposVariable) {

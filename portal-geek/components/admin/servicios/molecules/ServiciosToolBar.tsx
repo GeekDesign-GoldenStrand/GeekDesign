@@ -1,20 +1,16 @@
 "use client";
 
+import { FunnelIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { Icon } from "../atoms/Icon";
-import { FunnelIcon } from "@phosphor-icons/react";
-
 
 type ServiciosToolbarProps = {
   activosCount: number;
   onFilterClick?: () => void;
 };
 
-export function ServiciosToolbar({
-  activosCount,
-  onFilterClick,
-}: ServiciosToolbarProps) {
+export function ServiciosToolbar({ activosCount, onFilterClick }: ServiciosToolbarProps) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">

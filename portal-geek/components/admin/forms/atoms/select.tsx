@@ -11,7 +11,15 @@ type SelectProps = {
   placeholder?: string;
 } & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children">;
 
-export function Select({ label, error, required, options, placeholder, className = "", ...props }: SelectProps) {
+export function Select({
+  label,
+  error,
+  required,
+  options,
+  placeholder,
+  className = "",
+  ...props
+}: SelectProps) {
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (

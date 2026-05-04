@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 
 import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
 import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
-import type {
-  PaginatedResponse,
-  ServicioListadoItem,
-} from "@/types/servicios";
+import type { PaginatedResponse, ServicioListadoItem } from "@/types/servicios";
 
 export default function ServiciosPage() {
   const [servicios, setServicios] = useState<ServicioListadoItem[]>([]);
@@ -50,22 +47,14 @@ export default function ServiciosPage() {
 
       <ServiciosToolbar activosCount={activosCount} />
 
-      {loading && (
-        <div className="text-center py-12 text-gray-500">
-          Cargando servicios...
-        </div>
-      )}
+      {loading && <div className="text-center py-12 text-gray-500">Cargando servicios...</div>}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-          {error}
-        </div>
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">{error}</div>
       )}
 
       {!loading && !error && servicios.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No hay servicios registrados todavía.
-        </div>
+        <div className="text-center py-12 text-gray-500">No hay servicios registrados todavía.</div>
       )}
 
       {!loading && !error && servicios.length > 0 && (
