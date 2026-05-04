@@ -1,11 +1,11 @@
 "use client";
 
+import { XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { Icon } from "../atoms/Icon";
-import { XIcon } from "@phosphor-icons/react";
-
 import type { MaquinaOption } from "@/types/servicios";
+
+import { Icon } from "../atoms/Icon";
 
 type MaquinasSelectorProps = {
   // List of machines AVAILABLE for the currently selected branch.
@@ -13,7 +13,7 @@ type MaquinasSelectorProps = {
   opciones: MaquinaOption[];
   // IDs of the already selected machines.
   selectedIds: number[];
-  
+
   onChange: (ids: number[]) => void;
   // Whether the parent has already selected a branch. Drives the disabled state.
   hasSucursal: boolean;
