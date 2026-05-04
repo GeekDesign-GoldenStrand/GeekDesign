@@ -1,7 +1,5 @@
-<<<<<<< feature/62-consultar-materiales
-import { CubeTransparentIcon } from "@phosphor-icons/react/dist/ssr";
-=======
 import {
+  CubeTransparentIcon,
   BuildingsIcon,
   CurrencyDollarIcon,
   GearIcon,
@@ -11,7 +9,6 @@ import {
   UserGearIcon,
   UsersIcon,
 } from "@phosphor-icons/react/dist/ssr";
->>>>>>> develop
 
 export type NavItem = {
   href: string;
