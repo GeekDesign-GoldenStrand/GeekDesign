@@ -5,12 +5,16 @@ import { useEffect, useRef, useState } from "react";
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import {
   AgregarTerceroModal,
+  ConfirmarEliminarInstaladorModal,
   ConfirmarEliminarProveedorModal,
+  EditarInstaladorModal,
   EditarProveedorModal,
   TercerosGrid,
   TercerosHeader,
 } from "@/components/ui/terceros";
+import type { InstaladorFormData } from "@/components/ui/terceros/organisms/EditarInstaladorModal";
 import type { ProveedorFormData } from "@/components/ui/terceros/organisms/EditarProveedorModal";
+import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
 import type { UpdateProveedorInput } from "@/lib/schemas/proveedores";
 import type { TerceroCardProps, TerceroStatus, TercerosTab as Tab } from "@/types";
 
@@ -20,10 +24,12 @@ type DbInstalador = {
   id_instalador: number;
   nombre_instalador: string;
   apodo: string | null;
+  tipo: string;
   ubicacion: string | null;
   estatus: string;
   correo: string;
   telefono: string;
+  notas: string | null;
 };
 
 type DbProveedor = {
@@ -89,6 +95,20 @@ export default function TercerosPage() {
   );
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // INST-02 – edit
+  const [editingInstaladorId, setEditingInstaladorId] = useState<number | null>(null);
+  const [editInstaladorData, setEditInstaladorData] = useState<InstaladorFormData | null>(null);
+  const [editInstaladorLoading, setEditInstaladorLoading] = useState(false);
+  const [editInstaladorError, setEditInstaladorError] = useState<string | null>(null);
+  const editInstaladorControllerRef = useRef<AbortController | null>(null);
+
+  // INST-03 – delete
+  const [deletingInstalador, setDeletingInstalador] = useState<{ id: number; name: string } | null>(
+    null
+  );
+  const [deleteInstaladorLoading, setDeleteInstaladorLoading] = useState(false);
+  const [deleteInstaladorError, setDeleteInstaladorError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -222,6 +242,106 @@ export default function TercerosPage() {
     }
   }
 
+  // ── INST-02 ──────────────────────────────────────────────────────────────
+
+  async function openEditInstaladorModal(id: number) {
+    editInstaladorControllerRef.current?.abort();
+    const controller = new AbortController();
+    editInstaladorControllerRef.current = controller;
+
+    setEditingInstaladorId(id);
+    setEditInstaladorData(null);
+    setEditInstaladorError(null);
+    try {
+      const res = await fetch(`/api/instaladores/${id}`, { signal: controller.signal });
+      const payload = await res.json();
+      if (!res.ok) {
+        setEditInstaladorError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      const d: DbInstalador = payload.data;
+      setEditInstaladorData({
+        nombre_instalador: d.nombre_instalador,
+        apodo: d.apodo ?? "",
+        tipo: d.tipo as InstaladorFormData["tipo"],
+        correo: d.correo,
+        telefono: d.telefono,
+        ubicacion: d.ubicacion ?? "",
+        notas: d.notas ?? "",
+        estatus: d.estatus,
+      });
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setEditInstaladorError("Error inesperado al cargar el instalador");
+      }
+    }
+  }
+
+  async function handleEditInstaladorSubmit(data: UpdateInstaladorInput) {
+    if (!editingInstaladorId) return;
+    setEditInstaladorLoading(true);
+    setEditInstaladorError(null);
+    try {
+      const res = await fetch(`/api/instaladores/${editingInstaladorId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        setEditInstaladorError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      const updated: DbInstalador = payload.data;
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === updated.id_instalador && r.role === "Instalador"
+            ? {
+                ...r,
+                companyName: updated.nombre_instalador,
+                contactName: updated.apodo ?? updated.nombre_instalador,
+                location: updated.ubicacion ?? "",
+                email: updated.correo,
+                phone: updated.telefono,
+                status:
+                  updated.estatus === "Activo"
+                    ? "Activo"
+                    : updated.estatus === "Baneado"
+                      ? "Baneado"
+                      : "Inactivo",
+              }
+            : r
+        )
+      );
+      setEditingInstaladorId(null);
+      setEditInstaladorData(null);
+    } finally {
+      setEditInstaladorLoading(false);
+    }
+  }
+
+  // ── INST-03 ──────────────────────────────────────────────────────────────
+
+  async function handleDeleteInstaladorConfirm() {
+    if (!deletingInstalador) return;
+    setDeleteInstaladorLoading(true);
+    setDeleteInstaladorError(null);
+    try {
+      const res = await fetch(`/api/instaladores/${deletingInstalador.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setDeleteInstaladorError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setRows((prev) =>
+        prev.filter((r) => !(r.id === deletingInstalador.id && r.role === "Instalador"))
+      );
+      setDeletingInstalador(null);
+    } finally {
+      setDeleteInstaladorLoading(false);
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
 
   const filtered = rows
@@ -246,6 +366,13 @@ export default function TercerosPage() {
         onDelete: () => {
           setDeletingProveedor({ id: r.id, name: r.companyName });
           setDeleteError(null);
+        },
+      }),
+      ...(r.role === "Instalador" && {
+        onEdit: () => openEditInstaladorModal(r.id),
+        onDelete: () => {
+          setDeletingInstalador({ id: r.id, name: r.companyName });
+          setDeleteInstaladorError(null);
         },
       }),
     }));
@@ -305,6 +432,35 @@ export default function TercerosPage() {
         serverError={deleteError}
         onClose={() => setDeletingProveedor(null)}
         onConfirm={handleDeleteConfirm}
+      />
+
+      {editInstaladorData && (
+        <EditarInstaladorModal
+          key={editingInstaladorId ?? 0}
+          isOpen
+          initialData={editInstaladorData}
+          loading={editInstaladorLoading}
+          serverError={editInstaladorError}
+          onClose={() => {
+            setEditingInstaladorId(null);
+            setEditInstaladorData(null);
+          }}
+          onSubmit={handleEditInstaladorSubmit}
+        />
+      )}
+      {editingInstaladorId !== null && !editInstaladorData && editInstaladorError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-[8px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-5 py-3 shadow-lg">
+          {editInstaladorError}
+        </div>
+      )}
+
+      <ConfirmarEliminarInstaladorModal
+        isOpen={deletingInstalador !== null}
+        instaladorName={deletingInstalador?.name ?? ""}
+        loading={deleteInstaladorLoading}
+        serverError={deleteInstaladorError}
+        onClose={() => setDeletingInstalador(null)}
+        onConfirm={handleDeleteInstaladorConfirm}
       />
     </div>
   );
