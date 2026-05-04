@@ -17,15 +17,18 @@ export const GET = withRoleParams<Params>(["Administrador"], async (req: NextReq
   }
 });
 
-export const PUT = withRoleParams<Params>(["Administrador"], async (req: NextRequest, ctx, session) => {
-  try {
-    const { id } = ServicioIdParams.parse(await ctx.params);
-    const body = UpdateServicioSchema.parse(await req.json());
-    return ok(await updateServicio(id, body, session.id));
-  } catch (err) {
-    return handleError(err);
+export const PUT = withRoleParams<Params>(
+  ["Administrador"],
+  async (req: NextRequest, ctx, session) => {
+    try {
+      const { id } = ServicioIdParams.parse(await ctx.params);
+      const body = UpdateServicioSchema.parse(await req.json());
+      return ok(await updateServicio(id, body, session.id));
+    } catch (err) {
+      return handleError(err);
+    }
   }
-});
+);
 
 export const DELETE = withRoleParams<Params>(["Administrador"], async (req: NextRequest, ctx) => {
   try {

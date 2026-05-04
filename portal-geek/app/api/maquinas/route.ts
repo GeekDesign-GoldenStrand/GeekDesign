@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateMaquinaSchema } from "@/lib/schemas/maquinas";
-import { listMaquinas, createMaquina, getMaquinasOptionsBySucursal} from "@/lib/services/maquinas";
+import { listMaquinas, createMaquina, getMaquinasOptionsBySucursal } from "@/lib/services/maquinas";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 

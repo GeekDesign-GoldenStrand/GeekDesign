@@ -2,11 +2,11 @@ import type { TiposVariable } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import { NotFoundError } from "@/lib/utils/errors";
 import type {
   CreateTipoVariableInput,
   UpdateTipoVariableInput,
 } from "@/lib/schemas/tipos-variable";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listTiposVariable(): Promise<TiposVariable[]> {
   return prisma.tiposVariable.findMany({
@@ -27,9 +27,7 @@ export async function getTipoVariable(id: number): Promise<TiposVariable> {
   return tipo;
 }
 
-export async function createTipoVariable(
-  data: CreateTipoVariableInput
-): Promise<TiposVariable> {
+export async function createTipoVariable(data: CreateTipoVariableInput): Promise<TiposVariable> {
   return prisma.tiposVariable.create({ data });
 }
 
@@ -43,10 +41,7 @@ export async function updateTipoVariable(
       data,
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       throw new NotFoundError(`Tipo de variable con id ${id} no encontrado`);
     }
     throw error;
@@ -64,10 +59,7 @@ export async function deleteTipoVariable(id: number): Promise<void> {
       data: { estatus: "Inactivo" },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       throw new NotFoundError(`Tipo de variable con id ${id} no encontrado`);
     }
     throw error;

@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateProveedorSchema } from "@/lib/schemas/proveedores";
-import {listProveedores,createProveedor,getProveedoresOptions} from "@/lib/services/proveedores";
+import {
+  listProveedores,
+  createProveedor,
+  getProveedoresOptions,
+} from "@/lib/services/proveedores";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 

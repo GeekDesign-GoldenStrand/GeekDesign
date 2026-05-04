@@ -56,7 +56,6 @@ export async function deleteInstalador(id: number): Promise<void> {
 
 // Additional helper to the list dropdown in order to not show unactive instaladores.
 
-
 export async function getInstaladoresOptions(): Promise<
   Array<{
     id_instalador: number;

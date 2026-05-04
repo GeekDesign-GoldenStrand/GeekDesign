@@ -1,7 +1,7 @@
 /**
  * Converts a human-readable label into a snake_case identifier suitable for
  * use in formula expressions. Strips accents, lowercases, replaces spaces with
- * underscores, and removes anything that's not a-z, 0-9, or underscore. I actually didn´t know 
+ * underscores, and removes anything that's not a-z, 0-9, or underscore. I actually didn´t know
  * how to do this. And had to search for a solution using google and A.I. tools
  *
  * Examples:

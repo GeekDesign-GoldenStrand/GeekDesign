@@ -8,7 +8,6 @@ type ToggleProps = {
   disabled?: boolean;
 };
 
-
 export function Toggle({ checked, onChange, label, disabled = false }: ToggleProps) {
   return (
     <label

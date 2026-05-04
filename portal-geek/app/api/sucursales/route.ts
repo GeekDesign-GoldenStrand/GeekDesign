@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateSucursalSchema } from "@/lib/schemas/sucursales";
-import {listSucursales,createSucursal,getSucursalesOptions} from "@/lib/services/sucursales";
+import { listSucursales, createSucursal, getSucursalesOptions } from "@/lib/services/sucursales";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 

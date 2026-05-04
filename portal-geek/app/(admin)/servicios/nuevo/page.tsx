@@ -3,15 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
+import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
+import {
+  ConstantesSection,
+  type ConstanteDraft,
+} from "@/components/admin/servicios/molecules/ConstantesSection";
+import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
+import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
-import {VariablesSection,type VariableDraft} from "@/components/admin/servicios/molecules/VariablesSection";
-import {ConstantesSection,type ConstanteDraft} from "@/components/admin/servicios/molecules/ConstantesSection";
-import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
-
-import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
+import {
+  VariablesSection,
+  type VariableDraft,
+} from "@/components/admin/servicios/molecules/VariablesSection";
 import { useFetch } from "@/lib/hooks/useFetch";
 import type {
   InstaladorOption,
@@ -67,24 +72,14 @@ export default function NuevoServicioPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Static option fetches (load once on mount).
-  const sucursales = useFetch<{ data: SucursalOption[] }>(
-    "/api/sucursales?mode=options"
-  );
-  const instaladores = useFetch<{ data: InstaladorOption[] }>(
-    "/api/instaladores"
-  );
-  const proveedores = useFetch<{ data: ProveedorOption[] }>(
-    "/api/proveedores?mode=options"
-  );
-  const tiposVariable = useFetch<{ data: TipoVariableOption[] }>(
-    "/api/tipos-variable"
-  );
+  const sucursales = useFetch<{ data: SucursalOption[] }>("/api/sucursales?mode=options");
+  const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores");
+  const proveedores = useFetch<{ data: ProveedorOption[] }>("/api/proveedores?mode=options");
+  const tiposVariable = useFetch<{ data: TipoVariableOption[] }>("/api/tipos-variable");
 
   // Branch-scoped fetch: only fires when a branch is chosen.
   const maquinasUrl =
-    form.id_sucursal !== null
-      ? `/api/maquinas?sucursal=${form.id_sucursal}`
-      : null;
+    form.id_sucursal !== null ? `/api/maquinas?sucursal=${form.id_sucursal}` : null;
   const maquinas = useFetch<{ data: MaquinaOption[] }>(maquinasUrl);
 
   // ─── Auto-sync constantes for instalador/proveedor toggles ──────
@@ -206,26 +201,18 @@ export default function NuevoServicioPage() {
   }
 
   const initialLoading =
-    sucursales.loading ||
-    instaladores.loading ||
-    proveedores.loading ||
-    tiposVariable.loading;
+    sucursales.loading || instaladores.loading || proveedores.loading || tiposVariable.loading;
 
   if (initialLoading) {
     return (
       <div className="p-8">
-        <div className="text-center py-12 text-gray-500">
-          Cargando datos del formulario...
-        </div>
+        <div className="text-center py-12 text-gray-500">Cargando datos del formulario...</div>
       </div>
     );
   }
 
   const fetchError =
-    sucursales.error ||
-    instaladores.error ||
-    proveedores.error ||
-    tiposVariable.error;
+    sucursales.error || instaladores.error || proveedores.error || tiposVariable.error;
 
   if (fetchError) {
     return (
@@ -237,14 +224,11 @@ export default function NuevoServicioPage() {
     );
   }
 
-  const canSubmit =
-    form.nombre_servicio.trim().length > 0 && form.id_sucursal !== null;
+  const canSubmit = form.nombre_servicio.trim().length > 0 && form.id_sucursal !== null;
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">
-        Registrar nuevo servicio
-      </h1>
+      <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">Registrar nuevo servicio</h1>
 
       <form
         onSubmit={handleSubmit}
@@ -277,7 +261,6 @@ export default function NuevoServicioPage() {
         />
 
         <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-200">
-          
           <MaquinasSelector
             opciones={maquinas.data?.data ?? []}
             selectedIds={form.id_maquinas}
@@ -352,11 +335,7 @@ export default function NuevoServicioPage() {
         )}
 
         <div className="flex gap-3 pt-4 border-t border-gray-200">
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={submitting || !canSubmit}
-          >
+          <Button type="submit" variant="primary" disabled={submitting || !canSubmit}>
             {submitting ? "Guardando..." : "Guardar servicio"}
           </Button>
           <Button

@@ -3,7 +3,6 @@ import type { Maquinas } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreateMaquinaInput, UpdateMaquinaInput } from "@/lib/schemas/maquinas";
 
-
 export async function listMaquinas(
   page: number,
   pageSize: number
@@ -42,14 +41,11 @@ export async function deleteMaquina(id: number): Promise<void> {
   throw new Error("Not implemented");
 }
 
-
-// Returns all active machines for dropdowns, 
-// After the admin choses a branch in the service form, we need 
+// Returns all active machines for dropdowns,
+// After the admin choses a branch in the service form, we need
 // to show only the machines linked to that branch and that are active.
 
-export async function getMaquinasOptionsBySucursal(
-  idSucursal: number
-): Promise <
+export async function getMaquinasOptionsBySucursal(idSucursal: number): Promise<
   Array<{
     id_maquina: number;
     nombre_maquina: string;

@@ -8,15 +8,9 @@ type ServicioCardProps = {
   onEliminar?: (id: number) => void;
 };
 
-export function ServicioCard({
-  servicio,
-  onVerDetalle,
-  onEliminar,
-}: ServicioCardProps) {
-  //Date Format to "D de MMMM de YYYY" 
-  const fechaFormateada = new Date(
-    servicio.fecha_modificacion
-  ).toLocaleDateString("es-MX", {
+export function ServicioCard({ servicio, onVerDetalle, onEliminar }: ServicioCardProps) {
+  //Date Format to "D de MMMM de YYYY"
+  const fechaFormateada = new Date(servicio.fecha_modificacion).toLocaleDateString("es-MX", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -31,9 +25,7 @@ export function ServicioCard({
   return (
     <div className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-6 flex items-center justify-between">
       <div className="flex-1">
-        <h3 className="text-xl font-bold text-[#1e1e1e] mb-2">
-          {servicio.nombre_servicio}
-        </h3>
+        <h3 className="text-xl font-bold text-[#1e1e1e] mb-2">{servicio.nombre_servicio}</h3>
         <div className="space-y-0.5 text-sm text-[#1e1e1e]">
           <p>
             <span className="font-medium">Descripción:</span>{" "}
@@ -43,8 +35,7 @@ export function ServicioCard({
             <span className="font-medium">Máquina:</span> {maquinasTexto}
           </p>
           <p>
-            <span className="font-medium">Última fecha de modificación:</span>{" "}
-            {fechaFormateada}
+            <span className="font-medium">Última fecha de modificación:</span> {fechaFormateada}
           </p>
         </div>
       </div>
