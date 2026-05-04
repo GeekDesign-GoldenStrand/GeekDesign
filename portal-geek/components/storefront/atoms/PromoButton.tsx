@@ -7,10 +7,15 @@ interface PromoButtonProps {
   variant?: "primary" | "outline";
 }
 
-export function PromoButton({ text, onClick, className = "", variant = "primary" }: PromoButtonProps) {
+export function PromoButton({
+  text,
+  onClick,
+  className = "",
+  variant = "primary",
+}: PromoButtonProps) {
   if (variant === "primary") {
     return (
-      <button 
+      <button
         onClick={onClick}
         className={`group relative bg-white text-black px-10 py-4 text-xs font-bold uppercase tracking-[0.2em] overflow-hidden transition-all duration-500 hover:text-white ${className}`}
       >
@@ -22,7 +27,10 @@ export function PromoButton({ text, onClick, className = "", variant = "primary"
 
   // Add more variants if needed
   return (
-    <button onClick={onClick} className={`text-sm font-bold uppercase tracking-[0.2em] border-b border-black text-black w-fit pb-1 hover:opacity-40 transition-all ${className}`}>
+    <button
+      onClick={onClick}
+      className={`text-sm font-bold uppercase tracking-[0.2em] border-b border-black text-black w-fit pb-1 hover:opacity-40 transition-all ${className}`}
+    >
       {text}
     </button>
   );

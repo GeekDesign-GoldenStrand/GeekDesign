@@ -2,7 +2,16 @@
 
 import { PromoLogoItem } from "../molecules/PromoLogoItem";
 
-const LOGOS = ["Productos", "Diseño", "Personalizado", "Llaveros", "Gorras", "Playeras", "Cajas", "Regalos"];
+const LOGOS = [
+  "Productos",
+  "Diseño",
+  "Personalizado",
+  "Llaveros",
+  "Gorras",
+  "Playeras",
+  "Cajas",
+  "Regalos",
+];
 
 export function PromoLogoMarquee() {
   return (

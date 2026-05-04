@@ -2,7 +2,8 @@ import { PromocionalesClient } from "@/components/storefront/organisms/Promocion
 
 export const metadata = {
   title: "Productos Promocionales | Geek Design",
-  description: "Explora nuestro catálogo de productos promocionales a través de nuestras tiendas aliadas.",
+  description:
+    "Explora nuestro catálogo de productos promocionales a través de nuestras tiendas aliadas.",
 };
 
 export default function PromocionalesPage() {

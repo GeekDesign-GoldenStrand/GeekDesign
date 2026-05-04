@@ -1,14 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
+
+import { PromoBentoGrid } from "./PromoBentoGrid";
 import { PromoHeroSection } from "./PromoHeroSection";
 import { PromoLogoMarquee } from "./PromoLogoMarquee";
-import { PromoBentoGrid } from "./PromoBentoGrid";
 
 export function PromocionalesClient() {
   return (
     <div className="w-full bg-white flex flex-col font-sans grainy-texture overflow-x-hidden">
-      
       {/* 1. Hero Section */}
       <PromoHeroSection />
 
@@ -20,7 +20,7 @@ export function PromocionalesClient() {
 
       {/* Footer Accentuator */}
       <section className="w-full py-32 flex flex-col items-center justify-center border-t border-gray-100">
-        <motion.p 
+        <motion.p
           whileInView={{ opacity: 1 }}
           initial={{ opacity: 0 }}
           transition={{ duration: 4 }}

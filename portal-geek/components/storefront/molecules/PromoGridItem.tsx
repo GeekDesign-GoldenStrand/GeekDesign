@@ -1,9 +1,9 @@
 "use client";
 
+import { ArrowRight } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowRight } from "@phosphor-icons/react";
 
 interface PromoGridItemProps {
   title: React.ReactNode;
@@ -15,44 +15,47 @@ interface PromoGridItemProps {
   type?: "image" | "text";
   bgClassName?: string;
   delay?: number;
+  priority?: boolean;
   ctaText?: string;
 }
 
-export function PromoGridItem({ 
-  title, 
+export function PromoGridItem({
+  title,
   alt,
-  description, 
-  imageUrl, 
-  href, 
-  className = "", 
+  description,
+  imageUrl,
+  href,
+  className = "",
   type = "image",
   bgClassName = "bg-gray-50",
   delay = 0,
-  ctaText = "Explorar"
+  priority = false,
+  ctaText = "Explorar",
 }: PromoGridItemProps) {
-  
   const imageAlt = alt || (typeof title === "string" ? title : "Producto Promocional");
-  
+
   const content = (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.8, delay }}
       className={`relative group overflow-hidden ${bgClassName} ${className}`}
     >
-      <Link 
-        href={href} 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className="block w-full h-full"
+      <Link
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative block w-full h-full"
       >
         {type === "image" && imageUrl ? (
           <>
-            <Image 
-              src={imageUrl} 
-              alt={imageAlt} 
-              fill 
+            <Image
+              src={imageUrl}
+              alt={imageAlt}
+              fill
+              priority={priority}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
               className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-500"></div>
@@ -67,8 +70,13 @@ export function PromoGridItem({
           </>
         ) : (
           <div className="flex flex-col justify-center p-12 h-full">
-            <span className="text-black text-xs font-bold tracking-widest uppercase mb-6">Creatividad</span>
-            <h3 className="text-3xl font-medium text-black mb-8 leading-tight" style={{ fontFamily: "var(--font-alexandria), sans-serif" }}>
+            <span className="text-black text-xs font-bold tracking-widest uppercase mb-6">
+              Creatividad
+            </span>
+            <h3
+              className="text-3xl font-medium text-black mb-8 leading-tight"
+              style={{ fontFamily: "var(--font-alexandria), sans-serif" }}
+            >
               {title}
             </h3>
             {description && (

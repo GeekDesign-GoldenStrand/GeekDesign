@@ -8,15 +8,15 @@ interface EditorialHeadingProps {
   dark?: boolean;
 }
 
-export function EditorialHeading({ 
-  level = "h1", 
-  mainText, 
-  italicText, 
-  className = "", 
-  dark = false 
+export function EditorialHeading({
+  level = "h1",
+  mainText,
+  italicText,
+  className = "",
+  dark = false,
 }: EditorialHeadingProps) {
   const Tag = level;
-  
+
   const baseStyles = {
     h1: "text-5xl md:text-8xl font-light tracking-tight leading-[0.9]",
     h2: "text-3xl md:text-5xl font-bold mb-4",
@@ -26,11 +26,11 @@ export function EditorialHeading({
   const colorStyles = dark ? "text-black" : "text-white";
 
   return (
-    <Tag 
+    <Tag
       className={`${baseStyles} ${colorStyles} ${className}`}
       style={{ fontFamily: "var(--font-alexandria), sans-serif" }}
     >
-      {mainText} 
+      {mainText}
       {italicText && (
         <>
           <br />
