@@ -1,12 +1,12 @@
 "use client";
 
+import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-
-import { Icon } from "../atoms/Icon";
-import { TrashIcon, InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
 
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { InstaladorOption, ProveedorOption } from "@/types/servicios";
+
+import { Icon } from "../atoms/Icon";
 
 // User-selectable origins in the manual add form. 'global' (used by the
 // auto-created IVA) is hidden — admins don't pick it manually.
@@ -46,12 +46,8 @@ export function ConstantesSection({
   // Track which origins are already covered by an auto constante so we can
   // hide them from the manual add dropdown — Andrea doesn't need to add
   // a "costo del instalador" manually if the toggle above already did it.
-  const yaHayInstaladorAuto = constantes.some(
-    (c) => c.auto && c.origen === "instalador"
-  );
-  const yaHayProveedorAuto = constantes.some(
-    (c) => c.auto && c.origen === "proveedor"
-  );
+  const yaHayInstaladorAuto = constantes.some((c) => c.auto && c.origen === "instalador");
+  const yaHayProveedorAuto = constantes.some((c) => c.auto && c.origen === "proveedor");
 
   // Build the available origin options dynamically.
   const origenesDisponibles: OrigenManual[] = [
@@ -95,20 +91,12 @@ export function ConstantesSection({
       return;
     }
     // Block manual add of names that collide with auto-managed ones.
-    if (
-      nombre === "costo_instalador" ||
-      nombre === "costo_proveedor" ||
-      nombre === "iva"
-    ) {
-      setError(
-        `"${nombre}" es un nombre reservado para constantes automáticas.`
-      );
+    if (nombre === "costo_instalador" || nombre === "costo_proveedor" || nombre === "iva") {
+      setError(`"${nombre}" es un nombre reservado para constantes automáticas.`);
       return;
     }
     if (constantes.some((c) => c.nombre_constante === nombre)) {
-      setError(
-        `Ya existe una constante con el identificador "${nombre}". Usa un nombre distinto.`
-      );
+      setError(`Ya existe una constante con el identificador "${nombre}". Usa un nombre distinto.`);
       return;
     }
     if (draft.origen === "instalador" && !draft.id_instalador) {
@@ -123,12 +111,8 @@ export function ConstantesSection({
     const cleaned: ConstanteDraft = {
       nombre_constante: nombre,
       origen: draft.origen,
-      ...(draft.origen === "instalador"
-        ? { id_instalador: draft.id_instalador }
-        : {}),
-      ...(draft.origen === "proveedor"
-        ? { id_proveedor: draft.id_proveedor }
-        : {}),
+      ...(draft.origen === "instalador" ? { id_instalador: draft.id_instalador } : {}),
+      ...(draft.origen === "proveedor" ? { id_proveedor: draft.id_proveedor } : {}),
     };
 
     onChange([...constantes, cleaned]);
@@ -142,15 +126,11 @@ export function ConstantesSection({
   const origenDescripcion = (c: ConstanteDraft): string => {
     switch (c.origen) {
       case "instalador": {
-        const inst = instaladoresDisponibles.find(
-          (i) => i.id_instalador === c.id_instalador
-        );
+        const inst = instaladoresDisponibles.find((i) => i.id_instalador === c.id_instalador);
         return `Costo de ${inst?.nombre_proveedor ?? "?"}`;
       }
       case "proveedor": {
-        const prov = proveedoresDisponibles.find(
-          (p) => p.id_proveedor === c.id_proveedor
-        );
+        const prov = proveedoresDisponibles.find((p) => p.id_proveedor === c.id_proveedor);
         return `Costo de ${prov?.nombre_proveedor ?? "?"}`;
       }
       case "global":
@@ -167,12 +147,10 @@ export function ConstantesSection({
       <div>
         <h3 className="text-sm font-semibold text-[#1e1e1e]">Constantes:</h3>
         <p className="text-xs text-gray-600 mt-1">
-          Valores fijos asociados al servicio. Las marcadas con candado se
-          gestionan automáticamente. (Ejemplos: costo del instalador, costo del proveedor)
+          Valores fijos asociados al servicio. Las marcadas con candado se gestionan
+          automáticamente. (Ejemplos: costo del instalador, costo del proveedor)
         </p>
-        <p className="text-xs text-gray-500 italic mt-1">
-          Ejemplos:markup, etc.
-        </p>
+        <p className="text-xs text-gray-500 italic mt-1">Ejemplos:markup, etc.</p>
       </div>
 
       {/* Chips list */}
@@ -188,13 +166,9 @@ export function ConstantesSection({
               }`}
               title={origenDescripcion(c)}
             >
-              {c.auto && (
-                <Icon LibIcon={LockKeyIcon} size={12} weight="bold" />
-              )}
+              {c.auto && <Icon LibIcon={LockKeyIcon} size={12} weight="bold" />}
               <span className="font-mono">{c.nombre_constante}</span>
-              <span className="text-xs opacity-70">
-                {origenDescripcion(c)}
-              </span>
+              <span className="text-xs opacity-70">{origenDescripcion(c)}</span>
               {!c.auto && (
                 <button
                   type="button"
@@ -215,17 +189,13 @@ export function ConstantesSection({
         <div>
           <label className="text-xs font-medium text-gray-700 mb-1 block">
             Nombre de la constante{" "}
-            <span className="text-gray-400 font-normal">
-              (máx. {MAX_NOMBRE_LEN} caracteres)
-            </span>
+            <span className="text-gray-400 font-normal">(máx. {MAX_NOMBRE_LEN} caracteres)</span>
           </label>
           <input
             type="text"
             placeholder="Ej. Markup de mostrador"
             value={draft.etiqueta}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, etiqueta: e.target.value }))
-            }
+            onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
             className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             maxLength={MAX_NOMBRE_LEN}
           />
@@ -234,9 +204,7 @@ export function ConstantesSection({
               <Icon LibIcon={InfoIcon} size={12} weight="bold" />
               <span>
                 En la fórmula lo escribes:{" "}
-                <code className="bg-blue-50 px-1 rounded font-mono">
-                  {previewNombre}
-                </code>
+                <code className="bg-blue-50 px-1 rounded font-mono">{previewNombre}</code>
               </span>
             </div>
           )}
@@ -266,9 +234,7 @@ export function ConstantesSection({
 
         {draft.origen === "instalador" && (
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Instalador
-            </label>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Instalador</label>
             <select
               value={draft.id_instalador ?? ""}
               onChange={(e) =>
@@ -291,9 +257,7 @@ export function ConstantesSection({
 
         {draft.origen === "proveedor" && (
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Proveedor
-            </label>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Proveedor</label>
             <select
               value={draft.id_proveedor ?? ""}
               onChange={(e) =>
@@ -318,8 +282,7 @@ export function ConstantesSection({
         {draft.origen === "manual" && (
           <p className="text-xs text-gray-500 italic">
             El valor lo escribes directamente en la fórmula. Ej:{" "}
-            <code className="bg-gray-100 px-1 rounded">* 1.4</code> para 40% de
-            comisión.
+            <code className="bg-gray-100 px-1 rounded">* 1.4</code> para 40% de comisión.
           </p>
         )}
 

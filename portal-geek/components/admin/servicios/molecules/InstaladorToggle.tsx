@@ -16,37 +16,27 @@ type InstaladorToggleProps = {
   onChange: (value: InstaladorSelection) => void;
 };
 
-export function InstaladorToggle({
-  opciones,
-  value,
-  onChange,
-}: InstaladorToggleProps) {
+export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggleProps) {
   const requiereInstalador = value.id !== null;
   const [editingPrecio, setEditingPrecio] = useState(false);
   const [precioDraft, setPrecioDraft] = useState<string>("");
 
   const ordenados = [...opciones].sort(
-    (a, b) =>
-      parseFloat(a.costo_instalacion) - parseFloat(b.costo_instalacion)
+    (a, b) => parseFloat(a.costo_instalacion) - parseFloat(b.costo_instalacion)
   );
 
   const instaladorSeleccionado =
-    value.id !== null
-      ? opciones.find((o) => o.id_instalador === value.id) ?? null
-      : null;
+    value.id !== null ? (opciones.find((o) => o.id_instalador === value.id) ?? null) : null;
 
   const costoMaestro = instaladorSeleccionado
     ? parseFloat(instaladorSeleccionado.costo_instalacion)
     : null;
 
   const tieneOverride =
-    value.costoOverride !== null &&
-    costoMaestro !== null &&
-    value.costoOverride !== costoMaestro;
+    value.costoOverride !== null && costoMaestro !== null && value.costoOverride !== costoMaestro;
 
   // Effective price: override if set, otherwise master.
-  const precioEfectivo =
-    value.costoOverride !== null ? value.costoOverride : costoMaestro;
+  const precioEfectivo = value.costoOverride !== null ? value.costoOverride : costoMaestro;
 
   useEffect(() => {
     if (requiereInstalador && value.id === null && ordenados.length > 0) {
@@ -56,18 +46,6 @@ export function InstaladorToggle({
       });
     }
   }, [requiereInstalador, value.id, ordenados, onChange]);
-
-  useEffect(() => {
-    if (!requiereInstalador) {
-      setEditingPrecio(false);
-      setPrecioDraft("");
-    }
-  }, [requiereInstalador]);
-
-  useEffect(() => {
-    setEditingPrecio(false);
-    setPrecioDraft("");
-  }, [value.id]);
 
   const handleToggle = (siRequiere: boolean) => {
     if (siRequiere) {
@@ -79,11 +57,15 @@ export function InstaladorToggle({
       }
     } else {
       onChange({ id: null, costoOverride: null });
+      setEditingPrecio(false);
+      setPrecioDraft("");
     }
   };
 
   const handleSelectInstalador = (newId: number) => {
     onChange({ id: newId, costoOverride: null });
+    setEditingPrecio(false);
+    setPrecioDraft("");
   };
 
   const handleStartEdit = () => {
@@ -91,8 +73,8 @@ export function InstaladorToggle({
       value.costoOverride !== null
         ? value.costoOverride.toString()
         : costoMaestro !== null
-        ? costoMaestro.toString()
-        : ""
+          ? costoMaestro.toString()
+          : ""
     );
     setEditingPrecio(true);
   };
@@ -144,9 +126,7 @@ export function InstaladorToggle({
             onChange={(e) => handleSelectInstalador(Number(e.target.value))}
             className="h-10 px-3 rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
           >
-            {ordenados.length === 0 && (
-              <option value="">No hay instaladores disponibles</option>
-            )}
+            {ordenados.length === 0 && <option value="">No hay instaladores disponibles</option>}
             {ordenados.map((i) => {
               // For the currently-selected installer, show the effective price
               // (override if any), so the dropdown reflects the active value.
@@ -212,9 +192,7 @@ export function InstaladorToggle({
               {editingPrecio && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600">
-                      Precio para este servicio:
-                    </span>
+                    <span className="text-xs text-gray-600">Precio para este servicio:</span>
                     <input
                       type="number"
                       min="0"
