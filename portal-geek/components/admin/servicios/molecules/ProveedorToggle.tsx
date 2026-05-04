@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { Toggle } from "@/components/admin/servicios/atoms/Toggle";
 import type { ProveedorOption } from "@/types/servicios";
 
-// Value object: id and per-service price override travel together.
 export type ProveedorSelection = {
   id: number | null;
   costoOverride: number | null;
@@ -21,21 +21,19 @@ export function ProveedorToggle({
   value,
   onChange,
 }: ProveedorToggleProps) {
-  // Derived: is the toggle on "Sí"?
   const requiereProveedor = value.id !== null;
+  const [editingPrecio, setEditingPrecio] = useState(false);
+  const [precioDraft, setPrecioDraft] = useState<string>("");
 
-  // Sort providers: those with cost asc first, then those without cost at the end.
   const ordenados = [...opciones].sort((a, b) => {
     if (a.costo === null && b.costo === null) return 0;
-    if (a.costo === null) return 1; // Send nulls to the end.
+    if (a.costo === null) return 1;
     if (b.costo === null) return -1;
     return parseFloat(a.costo) - parseFloat(b.costo);
   });
 
-  // First provider that has a cost — used for auto-preselect.
   const primerConCosto = ordenados.find((p) => p.costo !== null) ?? null;
 
-  // The currently selected provider's master record.
   const proveedorSeleccionado =
     value.id !== null
       ? opciones.find((o) => o.id_proveedor === value.id) ?? null
@@ -46,13 +44,14 @@ export function ProveedorToggle({
       ? parseFloat(proveedorSeleccionado.costo)
       : null;
 
-  // Whether the admin has set an override that's actually different from the master price.
   const tieneOverride =
     value.costoOverride !== null &&
     costoMaestro !== null &&
     value.costoOverride !== costoMaestro;
 
-  // Auto-preselect cheapest with cost when toggling "Sí" without a prior selection.
+  const precioEfectivo =
+    value.costoOverride !== null ? value.costoOverride : costoMaestro;
+
   useEffect(() => {
     if (requiereProveedor && value.id === null && primerConCosto !== null) {
       onChange({
@@ -62,10 +61,20 @@ export function ProveedorToggle({
     }
   }, [requiereProveedor, value.id, primerConCosto, onChange]);
 
-  // Toggle handler — clears override when switching off.
+  useEffect(() => {
+    if (!requiereProveedor) {
+      setEditingPrecio(false);
+      setPrecioDraft("");
+    }
+  }, [requiereProveedor]);
+
+  useEffect(() => {
+    setEditingPrecio(false);
+    setPrecioDraft("");
+  }, [value.id]);
+
   const handleToggle = (siRequiere: boolean) => {
     if (siRequiere) {
-      // Pick cheapest with cost; if none, pick the first available.
       const target = primerConCosto ?? ordenados[0];
       if (target) {
         onChange({
@@ -78,67 +87,60 @@ export function ProveedorToggle({
     }
   };
 
-  // Selecting a different provider resets the override.
   const handleSelectProveedor = (newId: number) => {
     onChange({ id: newId, costoOverride: null });
   };
 
-  // Override input handler.
-  const handleOverrideChange = (raw: string) => {
-    if (raw === "") {
-      onChange({ ...value, costoOverride: null });
+  const handleStartEdit = () => {
+    setPrecioDraft(
+      value.costoOverride !== null
+        ? value.costoOverride.toString()
+        : costoMaestro !== null
+        ? costoMaestro.toString()
+        : ""
+    );
+    setEditingPrecio(true);
+  };
+
+  const handleApplyPrecio = () => {
+    const parsed = parseFloat(precioDraft);
+    if (isNaN(parsed) || parsed < 0) {
+      setEditingPrecio(false);
       return;
     }
-    const parsed = parseFloat(raw);
-    if (!isNaN(parsed) && parsed >= 0) {
-      onChange({ ...value, costoOverride: parsed });
-    }
+    onChange({
+      ...value,
+      costoOverride: parsed === costoMaestro ? null : parsed,
+    });
+    setEditingPrecio(false);
   };
 
-  // Restore master price.
+  const handleCancelEdit = () => {
+    setEditingPrecio(false);
+    setPrecioDraft("");
+  };
+
   const handleRestore = () => {
     onChange({ ...value, costoOverride: null });
+    setEditingPrecio(false);
+    setPrecioDraft("");
   };
 
-  // Format MXN currency.
   const formatCosto = (costo: number) =>
     new Intl.NumberFormat("es-MX", {
       style: "currency",
       currency: "MXN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(costo);
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-[#1e1e1e]">Proveedor</label>
-
-      {/* Yes/No toggle */}
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="radio"
-            name="proveedor-toggle"
-            checked={requiereProveedor}
-            onChange={() => handleToggle(true)}
-            className="w-4 h-4 text-[#e42200] focus:ring-[#e42200]"
-          />
-          <span className="text-sm text-[#1e1e1e]">Sí</span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="radio"
-            name="proveedor-toggle"
-            checked={!requiereProveedor}
-            onChange={() => handleToggle(false)}
-            className="w-4 h-4 text-[#e42200] focus:ring-[#e42200]"
-          />
-          <span className="text-sm text-[#1e1e1e]">No</span>
-        </label>
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-[#1e1e1e]">Proveedor:</label>
+        <Toggle checked={requiereProveedor} onChange={handleToggle} />
       </div>
 
-      {/* Provider dropdown — only when toggle is "Sí" */}
       {requiereProveedor && (
         <>
           <select
@@ -149,51 +151,109 @@ export function ProveedorToggle({
             {ordenados.length === 0 && (
               <option value="">No hay proveedores disponibles</option>
             )}
-            {ordenados.map((p) => (
-              <option key={p.id_proveedor} value={p.id_proveedor}>
-                {p.nombre_proveedor}
-                {p.costo !== null && ` — ${formatCosto(parseFloat(p.costo))}`}
-              </option>
-            ))}
+            {ordenados.map((p) => {
+              const isSelected = p.id_proveedor === value.id;
+              const masterCost = p.costo !== null ? parseFloat(p.costo) : null;
+              const precioMostrado =
+                isSelected && precioEfectivo !== null
+                  ? precioEfectivo
+                  : masterCost;
+
+              return (
+                <option key={p.id_proveedor} value={p.id_proveedor}>
+                  {p.nombre_proveedor}
+                  {precioMostrado !== null &&
+                    ` — ${formatCosto(precioMostrado)}`}
+                  {isSelected && tieneOverride ? " (modificado)" : ""}
+                </option>
+              );
+            })}
           </select>
 
-          {/* Price override section — only if the selected provider has a master cost */}
           {proveedorSeleccionado && costoMaestro !== null && (
-            <div className="flex flex-col gap-1 pt-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-600">
-                  Precio para este servicio:
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={value.costoOverride ?? ""}
-                  placeholder={formatCosto(costoMaestro).replace("$", "")}
-                  onChange={(e) => handleOverrideChange(e.target.value)}
-                  className="h-8 px-2 w-24 rounded-md border border-gray-300 text-sm text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
-                />
-                {tieneOverride && (
-                  <button
-                    type="button"
-                    onClick={handleRestore}
-                    className="text-xs text-[#e42200] hover:underline"
-                  >
-                    Restaurar precio original
-                  </button>
-                )}
-              </div>
+            <div className="flex flex-col gap-2 pt-2">
+              {!editingPrecio && (
+                <>
+                  {tieneOverride ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs text-gray-700">
+                        Precio personalizado:{" "}
+                        <span className="font-semibold text-[#1e1e1e]">
+                          {formatCosto(value.costoOverride!)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Precio estándar: {formatCosto(costoMaestro)}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleStartEdit}
+                          className="text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium text-[#1e1e1e]"
+                        >
+                          Editar precio
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRestore}
+                          className="text-xs bg-white border border-[#e42200] text-[#e42200] hover:bg-red-50 px-3 py-1.5 rounded-md font-medium"
+                        >
+                          Restaurar precio original
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStartEdit}
+                      className="self-start text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium text-[#1e1e1e]"
+                    >
+                      Editar precio para este servicio
+                    </button>
+                  )}
+                </>
+              )}
 
-              {tieneOverride && (
-                <p className="text-xs text-gray-500">
-                  Precio estándar: {formatCosto(costoMaestro)} — Modificado a:{" "}
-                  {formatCosto(value.costoOverride!)}
-                </p>
+              {editingPrecio && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600">
+                      Precio para este servicio:
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={precioDraft}
+                      onChange={(e) => setPrecioDraft(e.target.value)}
+                      autoFocus
+                      className="h-8 px-2 w-28 rounded-md border border-gray-300 text-sm text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleApplyPrecio}
+                      className="text-xs bg-[#e42200] text-white hover:bg-[#c41e00] px-3 py-1.5 rounded-md font-medium"
+                    >
+                      Aplicar precio
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium text-[#1e1e1e]"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Precio estándar: {formatCosto(costoMaestro)}
+                  </p>
+                </div>
               )}
             </div>
           )}
 
-          {/* Edge case: provider has no master cost. Override doesn't apply. */}
           {proveedorSeleccionado && costoMaestro === null && (
             <p className="text-xs text-gray-500 pt-2">
               Este proveedor no tiene precio fijo. Se cotizará por proyecto.
