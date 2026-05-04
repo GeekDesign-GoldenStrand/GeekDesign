@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
-import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
+import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
+import {VariablesSection,type VariableDraft} from "@/components/admin/servicios/molecules/VariablesSection";
+import {ConstantesSection,type ConstanteDraft} from "@/components/admin/servicios/molecules/ConstantesSection";
+import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
 import { useFetch } from "@/lib/hooks/useFetch";
@@ -18,7 +21,11 @@ import type {
   TipoVariableOption,
 } from "@/types/servicios";
 
-// ─── Form State ──────────────────────
+// Reserved names for auto-managed constantes (synced with installer/provider toggles).
+const AUTO_INSTALADOR_NAME = "costo_instalador";
+const AUTO_PROVEEDOR_NAME = "costo_proveedor";
+
+// ─── Form State ──────────────────
 
 type FormState = {
   nombre_servicio: string;
@@ -29,8 +36,10 @@ type FormState = {
   costo_instalador_override: number | null;
   id_proveedor: number | null;
   costo_proveedor_override: number | null;
-
-  // To be: id_proveedor, formula, etc.
+  formulaEnabled: boolean;
+  expresion: string;
+  variables: VariableDraft[];
+  constantes: ConstanteDraft[];
 };
 
 const initialState: FormState = {
@@ -42,9 +51,13 @@ const initialState: FormState = {
   costo_instalador_override: null,
   id_proveedor: null,
   costo_proveedor_override: null,
+  formulaEnabled: false,
+  expresion: "",
+  variables: [],
+  constantes: [],
 };
 
-// ─── Main Component ───────────────────────────────────
+// ─── Main Component ──────────────────────────────
 
 export default function NuevoServicioPage() {
   const router = useRouter();
@@ -57,28 +70,63 @@ export default function NuevoServicioPage() {
   const sucursales = useFetch<{ data: SucursalOption[] }>(
     "/api/sucursales?mode=options"
   );
-  const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores");
+  const instaladores = useFetch<{ data: InstaladorOption[] }>(
+    "/api/instaladores"
+  );
   const proveedores = useFetch<{ data: ProveedorOption[] }>(
     "/api/proveedores?mode=options"
   );
-  const tiposVariable = useFetch<TipoVariableOption[]>("/api/tipos-variable");
+  const tiposVariable = useFetch<{ data: TipoVariableOption[] }>(
+    "/api/tipos-variable"
+  );
 
   // Branch-scoped fetch: only fires when a branch is chosen.
-  // The URL changes when id_sucursal changes, which triggers a refetch
-  // automatically (useFetch has [url] as effect dep).
   const maquinasUrl =
     form.id_sucursal !== null
       ? `/api/maquinas?sucursal=${form.id_sucursal}`
       : null;
   const maquinas = useFetch<{ data: MaquinaOption[] }>(maquinasUrl);
 
-  // Generic helper for simple field updates.
+  // ─── Auto-sync constantes for instalador/proveedor toggles ──────
+  // Whenever id_instalador changes, ensure there's an auto constante named
+  // 'costo_instalador' bound to that installer. When id_instalador is null,
+  // remove that constante. Same logic for proveedor.
+  useEffect(() => {
+    setForm((prev) => {
+      // Strip out any existing auto constantes — we'll re-add them fresh.
+      const userManaged = prev.constantes.filter((c) => !c.auto);
+
+      const autoConstantes: ConstanteDraft[] = [];
+
+      if (prev.id_instalador !== null) {
+        autoConstantes.push({
+          nombre_constante: AUTO_INSTALADOR_NAME,
+          origen: "instalador",
+          id_instalador: prev.id_instalador,
+          auto: true,
+        });
+      }
+
+      if (prev.id_proveedor !== null) {
+        autoConstantes.push({
+          nombre_constante: AUTO_PROVEEDOR_NAME,
+          origen: "proveedor",
+          id_proveedor: prev.id_proveedor,
+          auto: true,
+        });
+      }
+
+      return {
+        ...prev,
+        constantes: [...autoConstantes, ...userManaged],
+      };
+    });
+  }, [form.id_instalador, form.id_proveedor]);
+
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Special handler for branch changes: warn the admin if they have machines
-  // selected, since changing branch invalidates them.
   function handleSucursalChange(newId: number | null) {
     const hasSelectedMachines = form.id_maquinas.length > 0;
     const isActuallyChanging = newId !== form.id_sucursal;
@@ -93,18 +141,39 @@ export default function NuevoServicioPage() {
     setForm((prev) => ({
       ...prev,
       id_sucursal: newId,
-      // Clear machines whenever the branch changes.
       id_maquinas: [],
     }));
   }
 
-  // Submit handler.
+  // Handler for ConstantesSection. Filters out attempts to modify auto entries.
+  function handleConstantesChange(newConstantes: ConstanteDraft[]) {
+    // The section only sends back non-auto changes (it can't add auto ones).
+    // But it CAN mistakenly remove autos if user-managed list is rebuilt.
+    // We trust the section here because we already hide the delete button for autos.
+    updateField("constantes", newConstantes);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setSubmitError(null);
 
     try {
+      // Strip the `auto` flag before sending — it's UI-only metadata.
+      const constantesPayload = form.constantes.map((c) => {
+        const { auto: _auto, ...rest } = c;
+        return rest;
+      });
+
+      const formulaPayload =
+        form.formulaEnabled && form.expresion.trim().length > 0
+          ? {
+              expresion: form.expresion,
+              variables: form.variables,
+              constantes: constantesPayload,
+            }
+          : undefined;
+
       const res = await fetch("/api/servicios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,7 +188,7 @@ export default function NuevoServicioPage() {
           costo_instalador_override: form.costo_instalador_override,
           id_proveedor: form.id_proveedor,
           costo_proveedor_override: form.costo_proveedor_override,
-          // To be: formula
+          formula: formulaPayload,
         }),
       });
 
@@ -136,8 +205,6 @@ export default function NuevoServicioPage() {
     }
   }
 
-  // Initial load: wait for the always-required fetches.
-  // Machines are NOT in here — they only load after branch is picked.
   const initialLoading =
     sucursales.loading ||
     instaladores.loading ||
@@ -170,7 +237,6 @@ export default function NuevoServicioPage() {
     );
   }
 
-  // Submit is enabled only when required fields are present.
   const canSubmit =
     form.nombre_servicio.trim().length > 0 && form.id_sucursal !== null;
 
@@ -184,10 +250,9 @@ export default function NuevoServicioPage() {
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-8 space-y-6"
       >
-        {/* Basic data */}
         <div className="grid grid-cols-2 gap-6">
           <Input
-            label="Nombre del servicio"
+            label="Nombre del servicio:"
             required
             value={form.nombre_servicio}
             onChange={(e) => updateField("nombre_servicio", e.target.value)}
@@ -204,15 +269,15 @@ export default function NuevoServicioPage() {
         </div>
 
         <Textarea
-          label="Descripción"
+          label="Descripción:"
           value={form.descripcion_servicio}
           onChange={(e) => updateField("descripcion_servicio", e.target.value)}
           placeholder="Describe brevemente el servicio (opcional)"
           maxLength={500}
         />
 
-        {/* Branch-dependent and entity-linking sections */}
         <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-200">
+          
           <MaquinasSelector
             opciones={maquinas.data?.data ?? []}
             selectedIds={form.id_maquinas}
@@ -221,54 +286,71 @@ export default function NuevoServicioPage() {
             loading={maquinas.loading}
           />
 
-         <InstaladorToggle
-            opciones={instaladores.data?.data ?? []}
-            value={{
-              id: form.id_instalador,
-              costoOverride: form.costo_instalador_override,
-            }}
-            onChange={(v) =>
-              setForm((prev) => ({
-                ...prev,
-                id_instalador: v.id,
-                costo_instalador_override: v.costoOverride,
-              }))
-            }
-          />
+          <div className="flex flex-col gap-6">
+            <InstaladorToggle
+              opciones={instaladores.data?.data ?? []}
+              value={{
+                id: form.id_instalador,
+                costoOverride: form.costo_instalador_override,
+              }}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  id_instalador: v.id,
+                  costo_instalador_override: v.costoOverride,
+                }))
+              }
+            />
 
-          <ProveedorToggle
-            opciones={proveedores.data?.data ?? []}
-            value={{
-              id: form.id_proveedor,
-              costoOverride: form.costo_proveedor_override,
-            }}
-            onChange={(v) =>
-              setForm((prev) => ({
-                ...prev,
-                id_proveedor: v.id,
-                costo_proveedor_override: v.costoOverride,
-              }))
-            }
-          />
-
-        
-          <div className="text-sm text-gray-400 italic">
-            Variables y constantes
+            <ProveedorToggle
+              opciones={proveedores.data?.data ?? []}
+              value={{
+                id: form.id_proveedor,
+                costoOverride: form.costo_proveedor_override,
+              }}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  id_proveedor: v.id,
+                  costo_proveedor_override: v.costoOverride,
+                }))
+              }
+            />
           </div>
         </div>
 
-        <div className="text-sm text-gray-400 italic pt-4 border-t border-gray-200">
-          Constructor de fórmula
+        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-200">
+          <VariablesSection
+            tiposDisponibles={tiposVariable.data?.data ?? []}
+            variables={form.variables}
+            onChange={(variables) => updateField("variables", variables)}
+          />
+
+          <ConstantesSection
+            instaladoresDisponibles={instaladores.data?.data ?? []}
+            proveedoresDisponibles={proveedores.data?.data ?? []}
+            constantes={form.constantes}
+            onChange={handleConstantesChange}
+          />
         </div>
 
-        {/* Submit error */}
+        <div className="pt-4 border-t border-gray-200">
+          <FormulaSection
+            enabled={form.formulaEnabled}
+            onToggle={(enabled) => updateField("formulaEnabled", enabled)}
+            expresion={form.expresion}
+            onExpresionChange={(value) => updateField("expresion", value)}
+            variables={form.variables}
+            constantes={form.constantes}
+          />
+        </div>
+
         {submitError && (
           <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
             {submitError}
           </div>
         )}
 
-        {/* Buttons */}
         <div className="flex gap-3 pt-4 border-t border-gray-200">
           <Button
             type="submit"
