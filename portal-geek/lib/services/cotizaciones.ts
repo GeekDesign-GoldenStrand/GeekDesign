@@ -1,8 +1,8 @@
 import type { Cotizaciones } from "@prisma/client";
-import { NotFoundError } from "@/lib/utils/errors";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listCotizaciones(
   page: number,
@@ -13,6 +13,10 @@ export async function listCotizaciones(
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { fecha_creacion: "desc" },
+      include: {
+        cliente: true,
+        estatus: true,
+      },
     }),
     prisma.cotizaciones.count(),
   ]);
