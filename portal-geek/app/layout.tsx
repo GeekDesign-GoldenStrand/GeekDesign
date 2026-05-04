@@ -19,7 +19,7 @@ const alexandria = Alexandria({
 });
 
 const ibmPlexSansJP = IBM_Plex_Sans_JP({
-  variable: "--font-ibm-plex-sans-jp",
+  variable: "--font-ibm-plex",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
 });

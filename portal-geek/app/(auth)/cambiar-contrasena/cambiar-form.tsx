@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
 interface Props {
@@ -55,6 +56,7 @@ export function CambiarForm({ token }: Props) {
         placeholder="Nueva contraseña"
         autoComplete="new-password"
         name="password"
+        hasIcon
       />
 
       <PasswordField
@@ -64,6 +66,7 @@ export function CambiarForm({ token }: Props) {
         placeholder="Confirmar contraseña"
         autoComplete="new-password"
         name="confirmPassword"
+        hasIcon
       />
 
       {error && (
@@ -72,13 +75,9 @@ export function CambiarForm({ token }: Props) {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="mt-2 h-[63px] w-full rounded-full bg-[#8b434a] font-semibold text-[18px] tracking-[1px] text-white transition-colors hover:bg-[#7a3a41] focus:outline-none focus:ring-2 focus:ring-[#df2646] focus:ring-offset-2 disabled:opacity-60"
-      >
-        {isSubmitting ? "Guardando…" : "Actualizar contraseña"}
-      </button>
+      <PrimaryButton type="submit" variant="wine" disabled={isSubmitting} className="mt-2">
+        {isSubmitting ? "Guardando…" : "Aceptar"}
+      </PrimaryButton>
 
       <Link
         href="/login"

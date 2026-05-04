@@ -4,7 +4,7 @@ import { changePassword } from "@/lib/services/change-password";
 import { ok } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const POST = withAuth(async (req, session) => {
+export const PUT = withAuth(async (req, session) => {
   try {
     const body = ChangePasswordSchema.parse(await req.json());
     await changePassword(session.id, body.currentPassword, body.newPassword);

@@ -1,6 +1,6 @@
 "use client";
 
-import { EditIcon, MailIcon, MapPinIcon, PhoneIcon } from "@/components/ui/atoms/icons";
+import { EditIcon, MailIcon, MapPinIcon, PhoneIcon, TrashIcon } from "@/components/ui/atoms/icons";
 import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
 import type { TerceroCardProps } from "@/types";
 
@@ -20,6 +20,7 @@ export function TerceroCard({
   email,
   phone,
   onEdit,
+  onDelete,
   onStatusChange,
 }: TerceroCardProps) {
   return (
@@ -76,6 +77,15 @@ export function TerceroCard({
         >
           <EditIcon />
         </button>
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            aria-label="Eliminar"
+            className="flex items-center justify-center border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+          >
+            <TrashIcon />
+          </button>
+        )}
       </div>
     </div>
   );
