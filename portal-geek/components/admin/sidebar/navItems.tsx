@@ -1,3 +1,5 @@
+import { CubeTransparentIcon } from "@phosphor-icons/react/dist/ssr";
+
 export type NavItem = {
   href: string;
   label: string;
@@ -158,23 +160,7 @@ export const navItems: NavItem[] = [
   {
     href: "/materiales",
     label: "Materiales",
-    icon: (
-      <svg
-        width="44"
-        height="44"
-        viewBox="0 0 44 44"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="7" y="9" width="30" height="26" rx="3" />
-        <path d="M7 17h30" />
-        <path d="M15 25h14" />
-        <circle cx="13" cy="13" r="1.5" />
-      </svg>
-    ),
+    icon: <CubeTransparentIcon size={44} />,
   },
   {
     href: "/sucursales",
