@@ -1,3 +1,5 @@
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+
 export type StatusValue = "Activo" | "Inactivo" | (string & {});
 
 const STATUS_CONFIGS: Record<string, { color: string; bg: string }> = {
@@ -6,20 +8,6 @@ const STATUS_CONFIGS: Record<string, { color: string; bg: string }> = {
 };
 
 const DEFAULT = { color: "#8e908f", bg: "rgba(142,144,143,0.07)" };
-
-function ChevronRight({ color }: { color: string }) {
-  return (
-    <svg width="6" height="10" viewBox="0 0 6 10" fill="none" aria-hidden>
-      <path
-        d="M1 1l4 4-4 4"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 interface StatusTagProps {
   status: string;
@@ -39,7 +27,7 @@ export function StatusTag({ status }: StatusTagProps) {
       >
         {status}
       </span>
-      <ChevronRight color={cfg.color} />
+      <CaretRight size={8} color={cfg.color} weight="bold" aria-hidden />
     </div>
   );
 }
