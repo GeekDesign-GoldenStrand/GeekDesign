@@ -32,7 +32,7 @@ export default async function ServicioDetallePage({ params }: Props) {
       <div className="max-w-[1440px] mx-auto px-[42px] py-[25px] h-full">
         <div className="flex flex-col lg:flex-row gap-[40px] h-full">
           {/* ── LEFT COLUMN ── */}
-          <div className="flex flex-col lg:w-[601px] lg:shrink-0 h-full">
+          <div className="flex flex-col lg:w-[601px] lg:shrink-0 h-full lg:overflow-y-auto scrollbar-hide">
             <h1 className="font-bold text-[30px] text-[#1e1e1e] leading-tight">
               {servicio.nombre_servicio}
             </h1>
