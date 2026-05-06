@@ -160,8 +160,8 @@ describe("syncProviderAssignments", () => {
     mockFindMany.mockResolvedValue([]);
     mockTransaction.mockRejectedValue(new Error("Transaction failed"));
 
-    await expect(
-      syncProviderAssignments(1, "servicio", [{ id: 5, precio: 100 }])
-    ).rejects.toThrow("Transaction failed");
+    await expect(syncProviderAssignments(1, "servicio", [{ id: 5, precio: 100 }])).rejects.toThrow(
+      "Transaction failed"
+    );
   });
 });

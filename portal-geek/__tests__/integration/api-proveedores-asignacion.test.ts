@@ -102,15 +102,20 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "servicio", items: [{ id: 5, precio: 100 }, { id: 6, precio: 200 }] });
+      .send({
+        type: "servicio",
+        items: [
+          { id: 5, precio: 100 },
+          { id: 6, precio: 200 },
+        ],
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.data.success).toBe(true);
-    expect(mockSyncAssignments).toHaveBeenCalledWith(
-      1,
-      "servicio",
-      [{ id: 5, precio: 100 }, { id: 6, precio: 200 }]
-    );
+    expect(mockSyncAssignments).toHaveBeenCalledWith(1, "servicio", [
+      { id: 5, precio: 100 },
+      { id: 6, precio: 200 },
+    ]);
   });
 
   it("retorna 422 si el body es inválido", async () => {
