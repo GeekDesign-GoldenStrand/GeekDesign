@@ -1,6 +1,7 @@
 import { Question, ShoppingCart } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 
+import { CartBadge } from "../atoms/CartBadge";
 import { SearchBar } from "../molecules/SearchBar";
 
 interface NavbarProps {
@@ -44,13 +45,14 @@ export function Navbar({ categories = [] }: NavbarProps) {
             </span>
           </Link>
 
-          <Link href="/carrito" className="flex items-center gap-1">
+          <Link href="/carrito" className="relative flex items-center gap-1">
             <ShoppingCart
               size={32}
               weight="light"
               className="text-[#1e1e1e]"
               aria-label="Carrito"
             />
+            <CartBadge />
             <span className="hidden md:block text-[#1e1e1e] text-[16.742px] font-medium whitespace-nowrap">
               Carro
             </span>
