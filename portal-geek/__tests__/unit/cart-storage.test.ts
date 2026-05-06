@@ -5,6 +5,7 @@ import {
   getCarrito,
   addItem,
   removeItem,
+  updateQuantity,
   getSubtotal,
   getTotalItems,
   calcularPrecioUnitario,
@@ -99,6 +100,42 @@ describe("removeItem", () => {
     addItem(mockItem);
     const result = removeItem("id-inexistente");
     expect(result.items).toHaveLength(1);
+  });
+});
+
+describe("updateQuantity", () => {
+  it("actualiza la cantidad de un item por id", () => {
+    const { items } = addItem(mockItem);
+    const result = updateQuantity(items[0].id, 5);
+    expect(result.items[0].cantidad).toBe(5);
+  });
+
+  it("clampea a mínimo 1 si el valor es menor que 1", () => {
+    const { items } = addItem(mockItem);
+    const result = updateQuantity(items[0].id, 0);
+    expect(result.items[0].cantidad).toBe(1);
+  });
+
+  it("normaliza NaN a 1", () => {
+    const { items } = addItem(mockItem);
+    const result = updateQuantity(items[0].id, NaN);
+    expect(result.items[0].cantidad).toBe(1);
+  });
+
+  it("persiste el cambio en localStorage", () => {
+    const { items } = addItem(mockItem);
+    updateQuantity(items[0].id, 7);
+    const raw = localStorage.getItem("geekdesign_carrito");
+    expect(JSON.parse(raw!).items[0].cantidad).toBe(7);
+  });
+
+  it("no modifica otros items al actualizar uno", () => {
+    addItem(mockItem);
+    const { items } = addItem({ ...mockItem, servicioId: 2 });
+    const idToUpdate = items[1].id;
+    const result = updateQuantity(idToUpdate, 10);
+    expect(result.items[0].cantidad).toBe(mockItem.cantidad);
+    expect(result.items[1].cantidad).toBe(10);
   });
 });
 
