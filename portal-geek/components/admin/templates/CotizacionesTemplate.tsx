@@ -100,15 +100,11 @@ export function CotizacionesTemplate({
           {showFilter && (
             <div ref={filterRef} className="absolute right-0 mt-2 z-50">
               <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-2 border-rose-200 text-black">
-                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">
-                  Filtros
-                </h2>
+                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
 
                 {/* Client filter */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">
-                    Cliente
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Cliente</p>
                   <input
                     value={filterCliente}
                     onChange={(e) => setFilterCliente(e.target.value)}
@@ -118,9 +114,7 @@ export function CotizacionesTemplate({
 
                 {/* Company filter */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">
-                    Empresa
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Empresa</p>
                   <input
                     value={filterEmpresa}
                     onChange={(e) => setFilterEmpresa(e.target.value)}
@@ -130,15 +124,10 @@ export function CotizacionesTemplate({
 
                 {/* Status filter */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">
-                    Estatus
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
                   <div className="space-y-2">
                     {STATUS_OPTIONS.map((status) => (
-                      <label
-                        key={status.value}
-                        className="flex items-center gap-2 text-[13px]"
-                      >
+                      <label key={status.value} className="flex items-center gap-2 text-[13px]">
                         <input
                           type="checkbox"
                           checked={filterEstatus.includes(status.value)}
@@ -146,9 +135,7 @@ export function CotizacionesTemplate({
                             if (e.target.checked) {
                               setFilterEstatus([...filterEstatus, status.value]);
                             } else {
-                              setFilterEstatus(
-                                filterEstatus.filter((s) => s !== status.value)
-                              );
+                              setFilterEstatus(filterEstatus.filter((s) => s !== status.value));
                             }
                           }}
                           className="accent-rose-400"

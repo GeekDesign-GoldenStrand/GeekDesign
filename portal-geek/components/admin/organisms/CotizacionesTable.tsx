@@ -1,19 +1,19 @@
 "use client";
 
-import { PencilSimple } from "phosphor-react";
+import { PencilSimple } from "@phosphor-icons/react";
 
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
   "En revisión": "En_revision",
-  "Aprobada": "Aprobada",
-  "Rechazada": "Rechazada",
-  "Validada": "Validada",
+  Aprobada: "Aprobada",
+  Rechazada: "Rechazada",
+  Validada: "Validada",
 };
 
 const STATUS_MAP_API_TO_UI: Record<string, string> = {
-  "En_revision": "En revisión",
-  "Aprobada": "Aprobada",
-  "Rechazada": "Rechazada",
-  "Validada": "Validada",
+  En_revision: "En revisión",
+  Aprobada: "Aprobada",
+  Rechazada: "Rechazada",
+  Validada: "Validada",
 };
 
 type Cotizacion = {
@@ -52,9 +52,7 @@ function getStatusStyle(status: string) {
 export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
   if (cotizaciones.length === 0) {
     return (
-      <div className="flex justify-center py-16 text-gray-500">
-        No se encontraron cotizaciones.
-      </div>
+      <div className="flex justify-center py-16 text-gray-500">No se encontraron cotizaciones.</div>
     );
   }
 
@@ -86,21 +84,15 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         >
           {/* Fecha */}
           <span>
-            {c.fecha_creacion
-              ? new Date(c.fecha_creacion).toLocaleDateString("es-MX")
-              : "—"}
+            {c.fecha_creacion ? new Date(c.fecha_creacion).toLocaleDateString("es-MX") : "—"}
           </span>
 
           {/* Monto */}
-          <span>
-            ${c.monto_total.toLocaleString("es-MX")} MXN
-          </span>
+          <span>${c.monto_total.toLocaleString("es-MX")} MXN</span>
 
           {/* Entrega */}
           <span>
-            {c.fecha_estimada
-              ? new Date(c.fecha_estimada).toLocaleDateString("es-MX")
-              : "—"}
+            {c.fecha_estimada ? new Date(c.fecha_estimada).toLocaleDateString("es-MX") : "—"}
           </span>
 
           {/* Empresa */}

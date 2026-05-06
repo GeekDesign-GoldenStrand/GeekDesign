@@ -350,145 +350,48 @@ async function main() {
 
   console.log(`Seeded ${proveedoresData.length} proveedores`);
 
-  // ── Instaladores ───────────────────────────────────────────────────────────
-  const instaladoresData = [
-    {
-      id_instalador: 1,
-      nombre_instalador: "Carlos Ramírez",
-      apodo: "El Rápido",
-      tipo: "Instalador",
-      telefono: "8113456789",
-      correo: "carlos.ramirez@instalaciones.mx",
-      notas: "Especialista en viniles y rotulación.",
-      ubicacion: "Monterrey, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 2,
-      nombre_instalador: "Grupo Instalaciones NL",
-      apodo: null,
-      tipo: "Contratista",
-      telefono: "8129876543",
-      correo: "contacto@grupoinstala.mx",
-      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
-      ubicacion: "San Nicolás de los Garza, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 3,
-      nombre_instalador: "Luis Mendoza",
-      apodo: "Lucho",
-      tipo: "Instalador",
-      telefono: "4423219876",
-      correo: "luis.mendoza@correo.mx",
-      notas: null,
-      ubicacion: "Querétaro, Querétaro",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 4,
-      nombre_instalador: "Patricia Solís",
-      apodo: "Paty",
-      tipo: "Instalador",
-      telefono: "5551234567",
-      correo: "paty.solis@instala.mx",
-      notas: "Instalación de lonas y toldos.",
-      ubicacion: "Ciudad de México, CDMX",
-      estatus: "Inactivo",
-    },
-  ];
+  // ── Demo Cotizaciones ──────────────────────────────────────────────────────
+  const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
+  const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
 
-  for (const data of instaladoresData) {
-    await prisma.instaladores.upsert({
-      where: { id_instalador: data.id_instalador },
-      update: {},
-      create: data,
-    });
-  }
-}
+  if (clienteDemo && cotizacionStatuses.length > 0) {
+    const statusMap: Record<string, number> = {};
+    cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
 
-  console.log(`Seeded ${instaladoresData.length} instaladores`);
-
-for (let i = 1; i <= 25; i++) {
-  await prisma.pedidos.create({
-    data: {
-      fecha_creacion: new Date(2026, 3, 20 + i),
-      fecha_estimada: new Date(2026, 3, 25 + i),
-
-      cliente: { connect: { id_cliente: 1 } },
-      sucursal: { connect: { id_sucursal: 1 } },
-      estatus: { connect: { id_estatus: (i % 7) + 1 } }, // usa tus 7 estatus
-
-      factura: i % 2 === 0,
-      facturado: i % 3 === 0,
-      numero_factura: i % 2 === 0 ? `FAC-${1000 + i}` : null,
-      notas: `Pedido demo con monto simulado: $${1000 + i * 50} MXN`,
-
-      // 👇 Aquí agregamos al menos un detalle
-      detalles: {
-        create: [
-          {
-            id_servicio: i % 2 === 0 ? servicioCorte.id_servicio : servicioGrabado.id_servicio,
-            id_material: material.id_material,
-            id_archivo: demoFile.id_archivo,
-            opciones_seleccionadas: { ejemplo: "Opción A" },
-            cantidad: (i % 5) + 1,
-            ancho_cm: 10.5,
-            alto_cm: 20.0,
-            grosor_cm: 0.3,
-            color: "Rojo",
-            responsable_recoleccion: "Demo Responsable",
-            notas: "Detalle demo",
-            precio_unitario: 150.0,
-            subtotal: 150.0 * ((i % 5) + 1),
-          },
-        ],
+    const demoCotizaciones = [
+      {
+        monto_total: 1500,
+        notas: "Cotización pendiente para corte láser",
+        fecha_creacion: new Date("2026-04-13"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["En_revision"],
       },
-    },
-  });
-}
+      {
+        monto_total: 2500,
+        notas: "Cotización aprobada para grabado",
+        fecha_creacion: new Date("2026-04-15"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        monto_total: 1800,
+        notas: "Cliente rechazó la propuesta",
+        fecha_creacion: new Date("2026-04-17"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Rechazada"],
+      },
+      {
+        monto_total: 2200,
+        notas: "Cotización validada por cambios de requerimiento",
+        fecha_creacion: new Date("2026-04-20"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Validada"],
+      },
+    ];
 
-// ── Demo Cotizaciones ──────────────────────────────────────────────────────
-const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
-const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
-
-if (clienteDemo && cotizacionStatuses.length > 0) {
-  const statusMap: Record<string, number> = {};
-  cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
-
-  const demoCotizaciones = [
-    {
-      monto_total: 1500,
-      notas: "Cotización pendiente para corte láser",
-      fecha_creacion: new Date("2026-04-13"),
-      id_cliente: clienteDemo.id_cliente,
-      id_estatus_cotizacion: statusMap["En_revision"],
-    },
-    {
-      monto_total: 2500,
-      notas: "Cotización aprobada para grabado",
-      fecha_creacion: new Date("2026-04-15"),
-      id_cliente: clienteDemo.id_cliente,
-      id_estatus_cotizacion: statusMap["Aprobada"],
-    },
-    {
-      monto_total: 1800,
-      notas: "Cliente rechazó la propuesta",
-      fecha_creacion: new Date("2026-04-17"),
-      id_cliente: clienteDemo.id_cliente,
-      id_estatus_cotizacion: statusMap["Rechazada"],
-    },
-    {
-      monto_total: 2200,
-      notas: "Cotización validada por cambios de requerimiento",
-      fecha_creacion: new Date("2026-04-20"),
-      id_cliente: clienteDemo.id_cliente,
-      id_estatus_cotizacion: statusMap["Validada"],
-    },
-  ];
-
-  await prisma.cotizaciones.createMany({ data: demoCotizaciones });
-  console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
+    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
+    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
+  }
 }
 
 main()

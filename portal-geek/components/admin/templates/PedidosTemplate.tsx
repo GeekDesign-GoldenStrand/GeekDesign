@@ -125,9 +125,7 @@ export function PedidosTemplate({
           {showFilter && (
             <div ref={filterRef} className="absolute right-0 mt-2 z-50">
               <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ffc1c1] text-black">
-                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">
-                  Filtros
-                </h2>
+                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
 
                 {/* Active filter */}
                 <label className="flex items-center gap-2 mb-4 text-[13px]">
@@ -142,9 +140,7 @@ export function PedidosTemplate({
 
                 {/* Cliente */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">
-                    Cliente
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Cliente</p>
                   <input
                     value={cliente ?? ""}
                     onChange={(e) => setCliente(e.target.value || null)}
@@ -154,9 +150,7 @@ export function PedidosTemplate({
 
                 {/* Empresa */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">
-                    Empresa
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Empresa</p>
                   <input
                     value={empresa ?? ""}
                     onChange={(e) => setEmpresa(e.target.value || null)}
@@ -166,15 +160,10 @@ export function PedidosTemplate({
 
                 {/* Estatus */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">
-                    Estatus
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
                   <div className="space-y-2">
                     {STATUS_OPTIONS.map((s) => (
-                      <label
-                        key={s.value}
-                        className="flex items-center gap-2 text-[13px]"
-                      >
+                      <label key={s.value} className="flex items-center gap-2 text-[13px]">
                         <input
                           type="checkbox"
                           checked={estatuses.includes(s.value)}
@@ -182,9 +171,7 @@ export function PedidosTemplate({
                             if (e.target.checked) {
                               setEstatuses([...estatuses, s.value]);
                             } else {
-                              setEstatuses(
-                                estatuses.filter((x) => x !== s.value)
-                              );
+                              setEstatuses(estatuses.filter((x) => x !== s.value));
                             }
                           }}
                           className="accent-[#ff6b6b]"
@@ -197,18 +184,13 @@ export function PedidosTemplate({
 
                 {/* Servicios */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">
-                    Servicio
-                  </p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Servicio</p>
                   <div className="space-y-2">
                     {[
                       { id: 1, name: "Corte Láser" },
                       { id: 2, name: "Grabado Láser" },
                     ].map((service) => (
-                      <label
-                        key={service.id}
-                        className="flex items-center gap-2 text-[13px]"
-                      >
+                      <label key={service.id} className="flex items-center gap-2 text-[13px]">
                         <input
                           type="checkbox"
                           checked={serviceIds.includes(service.id)}
@@ -216,9 +198,7 @@ export function PedidosTemplate({
                             if (e.target.checked) {
                               setServiceIds([...serviceIds, service.id]);
                             } else {
-                              setServiceIds(
-                                serviceIds.filter((id) => id !== service.id)
-                              );
+                              setServiceIds(serviceIds.filter((id) => id !== service.id));
                             }
                           }}
                           className="accent-[#ff6b6b]"
@@ -257,11 +237,7 @@ export function PedidosTemplate({
         </div>
 
         {/* Table */}
-        <PedidosTable
-          pedidos={pedidos}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
+        <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
 
         {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">

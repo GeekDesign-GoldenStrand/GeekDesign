@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateCotizacionSchema } from "@/lib/schemas/cotizaciones";

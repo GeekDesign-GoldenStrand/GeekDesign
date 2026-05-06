@@ -1,7 +1,6 @@
 "use client";
 
-import { Plus, Funnel, MagnifyingGlass } from "@phosphor-icons/react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
 

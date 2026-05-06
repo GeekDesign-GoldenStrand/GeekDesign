@@ -1,27 +1,27 @@
 "use client";
 
-import { PencilSimple } from "phosphor-react";
+import { PencilSimple } from "@phosphor-icons/react";
 
 // UI → API
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
-  "Cotización": "Cotizacion",
-  "Pagado": "Pagado",
+  Cotización: "Cotizacion",
+  Pagado: "Pagado",
   "En cola": "En_cola",
   "Aprobación diseño": "Aprobacion_diseno",
   "En producción": "En_produccion",
-  "Entregado": "Entregado",
-  "Facturado": "Facturado",
+  Entregado: "Entregado",
+  Facturado: "Facturado",
 };
 
 // API → UI
 const STATUS_MAP_API_TO_UI: Record<string, string> = {
-  "Cotizacion": "Cotización",
-  "Pagado": "Pagado",
-  "En_cola": "En cola",
-  "Aprobacion_diseno": "Aprobación diseño",
-  "En_produccion": "En producción",
-  "Entregado": "Entregado",
-  "Facturado": "Facturado",
+  Cotizacion: "Cotización",
+  Pagado: "Pagado",
+  En_cola: "En cola",
+  Aprobacion_diseno: "Aprobación diseño",
+  En_produccion: "En producción",
+  Entregado: "Entregado",
+  Facturado: "Facturado",
 };
 
 // Status color styles (pastel + readable)
@@ -69,9 +69,7 @@ interface Props {
 export function PedidosTable({ pedidos, onStatusChange }: Props) {
   if (pedidos.length === 0) {
     return (
-      <div className="flex justify-center py-16 text-[#8e908f]">
-        No se encontraron pedidos.
-      </div>
+      <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron pedidos.</div>
     );
   }
 
@@ -97,14 +95,10 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
           className="grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
           style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 0.5fr" }}
         >
-          <span>
-            {new Date(p.fecha_creacion).toLocaleDateString("es-MX")}
-          </span>
+          <span>{new Date(p.fecha_creacion).toLocaleDateString("es-MX")}</span>
 
           <span>
-            {p.fecha_estimada
-              ? new Date(p.fecha_estimada).toLocaleDateString("es-MX")
-              : "—"}
+            {p.fecha_estimada ? new Date(p.fecha_estimada).toLocaleDateString("es-MX") : "—"}
           </span>
 
           <span>{p.cliente?.empresa ?? "—"}</span>
@@ -113,10 +107,7 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
           {/* STATUS SELECT */}
           <div className="flex justify-center">
             <select
-              value={
-                STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ??
-                p.estatus?.descripcion
-              }
+              value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
               onChange={(e) => {
                 const uiValue = e.target.value;
                 const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
