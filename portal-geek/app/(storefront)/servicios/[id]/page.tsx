@@ -50,6 +50,11 @@ export default async function ServicioDetallePage({ params }: Props) {
               </p>
             )}
 
+            {/*
+              Pricing matrix is sent as props for client-side calculation (<200ms NF requirement).
+              TODO ADMIN-04/05: when the formula system is live, remove the `matriz` mapping
+              below and point AddToCartForm to POST /api/servicios/[id]/calcular-precio instead.
+            */}
             <AddToCartForm
               servicioId={servicio.id_servicio}
               nombreServicio={servicio.nombre_servicio}
