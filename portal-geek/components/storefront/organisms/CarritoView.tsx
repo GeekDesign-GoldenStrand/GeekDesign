@@ -124,7 +124,7 @@ export function CarritoView({ relatedServices }: Props) {
       {/* Announcement banner */}
       <div className="bg-black h-[67px] flex items-center justify-center px-[42px]">
         <p className="text-[#fffcfc] text-[16.742px] font-medium text-center">
-          Noticias importantes de ofetas, por ejemplo: 30% de descuento en carteles 3D | Termina el
+          Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el
           10 de abril | <span className="underline cursor-pointer">Comprar ahora</span>
         </p>
       </div>
