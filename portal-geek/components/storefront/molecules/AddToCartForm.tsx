@@ -83,8 +83,14 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-[16px] mt-[24px]">
       {opciones.map((opcion) => (
         <div key={opcion.id_opcion} className="flex flex-col gap-[6px]">
-          <label className="text-[14px] font-semibold text-[#1e1e1e]">{opcion.nombre_opcion}</label>
+          <label
+            htmlFor={`opcion-${opcion.id_opcion}`}
+            className="text-[14px] font-semibold text-[#1e1e1e]"
+          >
+            {opcion.nombre_opcion}
+          </label>
           <select
+            id={`opcion-${opcion.id_opcion}`}
             value={selecciones.find((s) => s.opcionId === opcion.id_opcion)?.valorId ?? ""}
             onChange={(e) => setValor(opcion.id_opcion, Number(e.target.value))}
             className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
@@ -99,13 +105,19 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones }: Props) {
       ))}
 
       <div className="flex flex-col gap-[6px]">
-        <label className="text-[14px] font-semibold text-[#1e1e1e]">Cantidad</label>
+        <label htmlFor="cantidad" className="text-[14px] font-semibold text-[#1e1e1e]">
+          Cantidad
+        </label>
         <input
+          id="cantidad"
           type="number"
           min={1}
           max={9999}
           value={cantidad}
-          onChange={(e) => setCantidad(Math.max(1, Number(e.target.value)))}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setCantidad(Number.isFinite(val) ? Math.max(1, Math.floor(val)) : 1);
+          }}
           className="h-[44px] w-[120px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
         />
       </div>
