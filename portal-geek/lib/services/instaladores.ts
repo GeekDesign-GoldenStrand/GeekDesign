@@ -56,7 +56,10 @@ export async function updateInstalador(
 
 export async function deleteInstalador(id: number): Promise<void> {
   try {
-    await prisma.instaladores.delete({ where: { id_instalador: id } });
+    await prisma.instaladores.update({
+      where: { id_instalador: id },
+      data: { estatus: "Inactivo" },
+    });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Instalador ${id} no encontrado`);

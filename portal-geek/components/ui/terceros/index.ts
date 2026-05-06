@@ -8,3 +8,5 @@ export { RegistrarTerceroForm } from "./organisms/RegistrarTerceroForm";
 export { TerceroTypeTag } from "./atoms/TerceroTypeTag";
 export { EditarProveedorModal } from "./organisms/EditarProveedorModal";
 export { ConfirmarEliminarProveedorModal } from "./organisms/ConfirmarEliminarProveedorModal";
+export { EditarInstaladorModal } from "./organisms/EditarInstaladorModal";
+export { ConfirmarEliminarInstaladorModal } from "./organisms/ConfirmarEliminarInstaladorModal";
