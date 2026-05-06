@@ -38,6 +38,7 @@ export function AsignarItemsModal({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [prices, setPrices] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [priceErrors, setPriceErrors] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +122,7 @@ export function AsignarItemsModal({
     }
 
     fetchData();
-  }, [isOpen, id_proveedor, isMaterial, endpoint]);
+  }, [isOpen, id_proveedor, isMaterial, itemType, endpoint]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
@@ -129,6 +130,13 @@ export function AsignarItemsModal({
 
   function setPrice(id: number, val: string) {
     setPrices((prev) => ({ ...prev, [id]: val }));
+    if (parseFloat(val) > 0) {
+      setPriceErrors((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   function setNote(id: number, val: string) {
@@ -136,6 +144,11 @@ export function AsignarItemsModal({
   }
 
   async function handleSave() {
+    const invalid = new Set(selectedIds.filter((id) => !(parseFloat(prices[id] ?? "0") > 0)));
+    if (invalid.size > 0) {
+      setPriceErrors(invalid);
+      return;
+    }
     setSaving(true);
     try {
       const itemsPayload = selectedIds.map((id) => ({
@@ -251,6 +264,7 @@ export function AsignarItemsModal({
                   selected={selectedIds.includes(item.id)}
                   price={prices[item.id] ?? ""}
                   notes={notes[item.id] ?? ""}
+                  priceError={priceErrors.has(item.id)}
                   onToggle={() => toggleId(item.id)}
                   onPriceChange={(val) => setPrice(item.id, val)}
                   onNotesChange={(val) => setNote(item.id, val)}

@@ -5,6 +5,7 @@ interface AsignacionCardProps {
   selected: boolean;
   price: string;
   notes: string;
+  priceError?: boolean;
   onToggle: () => void;
   onPriceChange: (val: string) => void;
   onNotesChange: (val: string) => void;
@@ -16,6 +17,7 @@ export function AsignacionCard({
   selected,
   price,
   notes,
+  priceError,
   onToggle,
   onPriceChange,
   onNotesChange,
@@ -65,49 +67,60 @@ export function AsignacionCard({
       )}
 
       {selected && (
-        <div className="mt-2 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <label className="text-[13px] text-[#1e1e1e] font-medium whitespace-nowrap">
-              Precio:
-            </label>
-            <div className="relative flex-1">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] text-[#575757]">
-                $
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "" || /^\d{0,6}(\.\d{0,2})?$/.test(raw)) onPriceChange(raw);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="0.00"
-                className="w-full pl-6 pr-3 py-1.5 text-[13px] text-[#1e1e1e] border border-[#c8d8ff] rounded-[7px] bg-white focus:outline-none focus:ring-2 focus:ring-[#006aff]/20 focus:border-[#006aff] transition-colors placeholder:text-[#b9b8b8]"
-              />
+        <div className="mt-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <label
+                className={`text-[13px] font-medium whitespace-nowrap ${priceError ? "text-[#e42200]" : "text-[#1e1e1e]"}`}
+              >
+                Precio:
+              </label>
+              <div className="relative flex-1">
+                <span
+                  className={`absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] ${priceError ? "text-[#e42200]" : "text-[#575757]"}`}
+                >
+                  $
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "" || /^\d{0,6}(\.\d{0,2})?$/.test(raw)) onPriceChange(raw);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="0.00"
+                  className={`w-full pl-6 pr-3 py-1.5 text-[13px] text-[#1e1e1e] border rounded-[7px] bg-white focus:outline-none focus:ring-2 transition-colors placeholder:text-[#b9b8b8] ${
+                    priceError
+                      ? "border-[#e42200] focus:ring-[#e42200]/20 focus:border-[#e42200]"
+                      : "border-[#c8d8ff] focus:ring-[#006aff]/20 focus:border-[#006aff]"
+                  }`}
+                />
+              </div>
             </div>
+            {priceError && (
+              <p className="text-[11px] text-[#e42200] pl-[52px]">Ingresa un precio mayor a $0</p>
+            )}
           </div>
 
-          <div className="flex items-start gap-2">
-            <label className="text-[13px] text-[#1e1e1e] font-medium whitespace-nowrap pt-1.5">
-              Notas:
-            </label>
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <label className="text-[13px] text-[#1e1e1e] font-medium whitespace-nowrap">
+                Notas:
+              </label>
               <input
                 type="text"
                 value={notes}
                 maxLength={50}
                 onChange={(e) => onNotesChange(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
-                placeholder="Observaciones sobre el precio..."
-                className="w-full px-3 py-1.5 text-[13px] text-[#1e1e1e] border border-[#c8d8ff] rounded-[7px] bg-white focus:outline-none focus:ring-2 focus:ring-[#006aff]/20 focus:border-[#006aff] transition-colors placeholder:text-[#b9b8b8]"
+                placeholder="Notas..."
+                className="flex-1 px-3 py-1.5 text-[13px] text-[#1e1e1e] border border-[#c8d8ff] rounded-[7px] bg-white focus:outline-none focus:ring-2 focus:ring-[#006aff]/20 focus:border-[#006aff] transition-colors placeholder:text-[#b9b8b8]"
               />
-              <span className="absolute right-2 bottom-[-16px] text-[11px] text-[#b9b8b8]">
-                {notes.length}/50
-              </span>
             </div>
+            <p className="text-[11px] text-[#b9b8b8] text-right">{notes.length}/50</p>
           </div>
         </div>
       )}
