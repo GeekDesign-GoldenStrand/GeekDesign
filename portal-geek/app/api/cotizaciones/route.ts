@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateCotizacionSchema } from "@/lib/schemas/cotizaciones";
@@ -6,8 +6,19 @@ import { listCotizaciones, createCotizacion } from "@/lib/services/cotizaciones"
 import { created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
+// Helper para respuesta paginada
+export function paginated<T>(items: T[], total: number, page: number, pageSize: number) {
+  return {
+    data: items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
 // GET endpoint: lists cotizaciones with filters and pagination
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   // Pagination parameters: default page=1, pageSize=13
@@ -20,15 +31,18 @@ export async function GET(req: Request) {
   const estatus = searchParams.getAll("estatus"); // can appear multiple times
   const search = searchParams.get("search") ?? undefined;
 
-  // Query the database with filters and return paginated result
-  const { items, total } = await listCotizaciones(page, pageSize, {
-    cliente,
-    empresa,
-    estatus: estatus.length > 0 ? estatus : undefined,
-    search,
-  });
+  try {
+    const { items, total } = await listCotizaciones(page, pageSize, {
+      cliente,
+      empresa,
+      estatus: estatus.length > 0 ? estatus : undefined,
+      search,
+    });
 
-  return paginated(items, total, page, pageSize);
+    return NextResponse.json(paginated(items, total, page, pageSize));
+  } catch (err) {
+    return handleError(err);
+  }
 }
 
 // POST endpoint: creates a new cotizacion

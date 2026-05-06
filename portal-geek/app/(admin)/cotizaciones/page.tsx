@@ -26,7 +26,7 @@ type CotizacionApi = {
   estatus?: { descripcion?: string };
   fecha_fin?: string | null;
   fecha_aprobacion?: string | null;
-}
+};
 
 export default function CotizacionesPage() {
   // Local state for quotations list and pagination/search controls

@@ -408,7 +408,7 @@ async function main() {
 }
 
   console.log(`Seeded ${instaladoresData.length} instaladores`);
-}
+
 for (let i = 1; i <= 25; i++) {
   await prisma.pedidos.create({
     data: {
