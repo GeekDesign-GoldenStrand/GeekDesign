@@ -36,6 +36,9 @@ export function AsignarItemsModal({
     []
   );
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [prices, setPrices] = useState<Record<number, string>>({});
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [priceErrors, setPriceErrors] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +103,15 @@ export function AsignarItemsModal({
         });
 
         setItems(mappedItems);
-        setSelectedIds(currentData.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? []);
+        const assignedIds: number[] =
+          currentData.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? [];
+        const assignedPrices: Record<number, number> = currentData.data?.prices ?? {};
+        const assignedNotes: Record<number, string> = currentData.data?.notes ?? {};
+        setSelectedIds(assignedIds);
+        setPrices(
+          Object.fromEntries(assignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
+        );
+        setNotes(Object.fromEntries(assignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
       } catch (err) {
         console.error("Error fetching items:", err);
         setError(`Hubo un error al cargar los ${itemType}s. Por favor, intenta de nuevo.`);
@@ -111,19 +122,44 @@ export function AsignarItemsModal({
     }
 
     fetchData();
-  }, [isOpen, id_proveedor, isMaterial, endpoint]);
+  }, [isOpen, id_proveedor, isMaterial, itemType, endpoint]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   }
 
+  function setPrice(id: number, val: string) {
+    setPrices((prev) => ({ ...prev, [id]: val }));
+    if (parseFloat(val) > 0) {
+      setPriceErrors((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  function setNote(id: number, val: string) {
+    setNotes((prev) => ({ ...prev, [id]: val }));
+  }
+
   async function handleSave() {
+    const invalid = new Set(selectedIds.filter((id) => !(parseFloat(prices[id] ?? "0") > 0)));
+    if (invalid.size > 0) {
+      setPriceErrors(invalid);
+      return;
+    }
     setSaving(true);
     try {
+      const itemsPayload = selectedIds.map((id) => ({
+        id,
+        precio: parseFloat(prices[id] ?? "0") || 0,
+        notas: notes[id] ?? "",
+      }));
       const res = await fetch(`/api/proveedores/${id_proveedor}/asignacion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: itemType, ids: selectedIds }),
+        body: JSON.stringify({ type: itemType, items: itemsPayload }),
       });
       if (res.ok) {
         window.alert(`${title} correctamente`);
@@ -226,7 +262,12 @@ export function AsignarItemsModal({
                   name={item.name}
                   description={item.description ?? undefined}
                   selected={selectedIds.includes(item.id)}
+                  price={prices[item.id] ?? ""}
+                  notes={notes[item.id] ?? ""}
+                  priceError={priceErrors.has(item.id)}
                   onToggle={() => toggleId(item.id)}
+                  onPriceChange={(val) => setPrice(item.id, val)}
+                  onNotesChange={(val) => setNote(item.id, val)}
                 />
               ))}
             </div>
