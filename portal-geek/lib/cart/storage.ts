@@ -23,7 +23,16 @@ export function getCarrito(): { items: CarritoItem[] } {
   if (typeof window === "undefined") return { items: [] };
   try {
     const raw = localStorage.getItem(CART_KEY);
-    return raw ? (JSON.parse(raw) as { items: CarritoItem[] }) : { items: [] };
+    if (!raw) return { items: [] };
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      Array.isArray((parsed as { items?: unknown }).items)
+    ) {
+      return parsed as { items: CarritoItem[] };
+    }
+    return { items: [] };
   } catch {
     return { items: [] };
   }
@@ -51,11 +60,10 @@ export function removeItem(itemId: string): { items: CarritoItem[] } {
 }
 
 export function updateQuantity(itemId: string, cantidad: number): { items: CarritoItem[] } {
+  const safe = Number.isFinite(cantidad) ? Math.max(1, Math.floor(cantidad)) : 1;
   const carrito = getCarrito();
   const updated = {
-    items: carrito.items.map((i) =>
-      i.id === itemId ? { ...i, cantidad: Math.max(1, cantidad) } : i
-    ),
+    items: carrito.items.map((i) => (i.id === itemId ? { ...i, cantidad: safe } : i)),
   };
   saveCarrito(updated);
   return updated;
