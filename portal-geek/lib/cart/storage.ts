@@ -89,11 +89,12 @@ export function calcularPrecioUnitario(
   }[],
   cantidad: number
 ): number {
-  const primera = selecciones[0];
-
-  if (primera) {
-    const opcion = opcionesConMatriz.find((o) => o.id_opcion === primera.opcionId);
-    const valor = opcion?.valores.find((v) => v.id_valor === primera.valorId);
+  // Try each selected option in order; return the price from the first one
+  // that has a matrix entry covering this quantity. This handles services where
+  // only some options carry pricing (e.g. material does, finish does not).
+  for (const sel of selecciones) {
+    const opcion = opcionesConMatriz.find((o) => o.id_opcion === sel.opcionId);
+    const valor = opcion?.valores.find((v) => v.id_valor === sel.valorId);
 
     if (valor) {
       const entry = valor.matriz
