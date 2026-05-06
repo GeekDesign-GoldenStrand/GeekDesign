@@ -83,10 +83,13 @@ async function main() {
 
   // ── Dirección user ──────────────────────────────────────────────────────────
   const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
-  const direccionPasswordHash = await bcrypt.hash(
-    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123",
-    12
-  );
+  const pwd = process.env.SEED_DIRECCION_PASSWORD;
+
+  if (!pwd && process.env.NODE_ENV === "production") {
+    throw new Error("SEED_DIRECCION_PASSWORD requerido en producción");
+  }
+
+  const direccionPasswordHash = await bcrypt.hash(pwd ?? "direccion123", 12);
 
   const direccionUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "direccion@geekdesign.mx" },
@@ -134,7 +137,7 @@ async function main() {
   });
 
   // ── Service + Product + Material + Pricing ─────────────────────────────────
-  const servicio = await prisma.servicios.upsert({
+  const servicioCorte = await prisma.servicios.upsert({
     where: { id_servicio: 1 },
     update: {},
     create: {
@@ -160,7 +163,7 @@ async function main() {
     where: { id_opcion: 1 },
     update: {},
     create: {
-      id_servicio: servicio.id_servicio,
+      id_servicio: servicioCorte.id_servicio,
       id_material: material.id_material,
       nombre_opcion: "Tamaño",
       afecta_precio: true,
@@ -347,63 +350,48 @@ async function main() {
 
   console.log(`Seeded ${proveedoresData.length} proveedores`);
 
-  // ── Instaladores ───────────────────────────────────────────────────────────
-  const instaladoresData = [
-    {
-      id_instalador: 1,
-      nombre_instalador: "Carlos Ramírez",
-      apodo: "El Rápido",
-      tipo: "Instalador",
-      telefono: "8113456789",
-      correo: "carlos.ramirez@instalaciones.mx",
-      notas: "Especialista en viniles y rotulación.",
-      ubicacion: "Monterrey, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 2,
-      nombre_instalador: "Grupo Instalaciones NL",
-      apodo: null,
-      tipo: "Contratista",
-      telefono: "8129876543",
-      correo: "contacto@grupoinstala.mx",
-      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
-      ubicacion: "San Nicolás de los Garza, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 3,
-      nombre_instalador: "Luis Mendoza",
-      apodo: "Lucho",
-      tipo: "Instalador",
-      telefono: "4423219876",
-      correo: "luis.mendoza@correo.mx",
-      notas: null,
-      ubicacion: "Querétaro, Querétaro",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 4,
-      nombre_instalador: "Patricia Solís",
-      apodo: "Paty",
-      tipo: "Instalador",
-      telefono: "5551234567",
-      correo: "paty.solis@instala.mx",
-      notas: "Instalación de lonas y toldos.",
-      ubicacion: "Ciudad de México, CDMX",
-      estatus: "Inactivo",
-    },
-  ];
+  // ── Demo Cotizaciones ──────────────────────────────────────────────────────
+  const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
+  const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
 
-  for (const data of instaladoresData) {
-    await prisma.instaladores.upsert({
-      where: { id_instalador: data.id_instalador },
-      update: {},
-      create: data,
-    });
+  if (clienteDemo && cotizacionStatuses.length > 0) {
+    const statusMap: Record<string, number> = {};
+    cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
+
+    const demoCotizaciones = [
+      {
+        monto_total: 1500,
+        notas: "Cotización pendiente para corte láser",
+        fecha_creacion: new Date("2026-04-13"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["En_revision"],
+      },
+      {
+        monto_total: 2500,
+        notas: "Cotización aprobada para grabado",
+        fecha_creacion: new Date("2026-04-15"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        monto_total: 1800,
+        notas: "Cliente rechazó la propuesta",
+        fecha_creacion: new Date("2026-04-17"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Rechazada"],
+      },
+      {
+        monto_total: 2200,
+        notas: "Cotización validada por cambios de requerimiento",
+        fecha_creacion: new Date("2026-04-20"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Validada"],
+      },
+    ];
+
+    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
+    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
-
-  console.log(`Seeded ${instaladoresData.length} instaladores`);
 }
 
 main()
