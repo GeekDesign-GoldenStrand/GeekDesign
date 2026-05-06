@@ -69,21 +69,39 @@ export async function getProviderAssignments(id: number) {
   await getProveedor(id);
   const assignments = await prisma.proveedorPrecios.findMany({
     where: { id_proveedor: id },
-    select: { id_servicio: true, id_material: true },
+    select: { id_servicio: true, id_material: true, precio: true, notas: true },
   });
+
+  const prices: Record<number, number> = {};
+  const notes: Record<number, string> = {};
+  for (const a of assignments) {
+    const itemId = a.id_servicio ?? a.id_material;
+    if (itemId !== null) {
+      prices[itemId] = Number(a.precio ?? 0);
+      notes[itemId] = a.notas ?? "";
+    }
+  }
 
   return {
     serviceIds: assignments.map((a) => a.id_servicio).filter((id): id is number => id !== null),
     materialIds: assignments.map((a) => a.id_material).filter((id): id is number => id !== null),
+    prices,
+    notes,
   };
 }
 
 export async function syncProviderAssignments(
   id: number,
   type: "servicio" | "material",
-  rawIds: number[]
+  rawItems: { id: number; precio: number; notas?: string }[]
 ) {
-  const ids = Array.from(new Set(rawIds));
+  const seen = new Set<number>();
+  const items = rawItems.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+
   await getProveedor(id);
   const isServicio = type === "servicio";
 
@@ -95,32 +113,52 @@ export async function syncProviderAssignments(
     },
   });
 
+  const incomingIds = items.map((i) => i.id);
+  const priceMap = new Map(items.map((i) => [i.id, i.precio]));
+  const notesMap = new Map(items.map((i) => [i.id, i.notas ?? ""]));
+
+  const toRemove = current
+    .filter((c) => {
+      const cid = isServicio ? c.id_servicio : c.id_material;
+      return cid !== null && !incomingIds.includes(cid);
+    })
+    .map((c) => c.id_proveedor_precio);
+
   const currentIds = current
     .map((c) => (isServicio ? c.id_servicio : c.id_material))
     .filter((v): v is number => v !== null);
 
-  const toAdd = ids.filter((id) => !currentIds.includes(id));
-  const toRemove = current
-    .filter((c) => {
-      const cid = isServicio ? c.id_servicio : c.id_material;
-      return cid !== null && !ids.includes(cid);
-    })
-    .map((c) => c.id_proveedor_precio);
+  const toAdd = items.filter((item) => !currentIds.includes(item.id));
+  const toUpdate = current.filter((c) => {
+    const cid = isServicio ? c.id_servicio : c.id_material;
+    return cid !== null && incomingIds.includes(cid);
+  });
 
   const operations = [
     prisma.proveedorPrecios.deleteMany({
       where: { id_proveedor_precio: { in: toRemove } },
     }),
-    ...toAdd.map((targetId) =>
+    ...toAdd.map((item) =>
       prisma.proveedorPrecios.create({
         data: {
           id_proveedor: id,
-          id_servicio: isServicio ? targetId : null,
-          id_material: !isServicio ? targetId : null,
-          precio: 0,
+          id_servicio: isServicio ? item.id : null,
+          id_material: !isServicio ? item.id : null,
+          precio: item.precio,
+          notas: item.notas ?? "",
         },
       })
     ),
+    ...toUpdate.map((row) => {
+      const cid = (isServicio ? row.id_servicio : row.id_material) as number;
+      return prisma.proveedorPrecios.update({
+        where: { id_proveedor_precio: row.id_proveedor_precio },
+        data: {
+          precio: priceMap.get(cid) ?? row.precio,
+          notas: notesMap.get(cid) ?? row.notas ?? "",
+        },
+      });
+    }),
   ];
 
   await prisma.$transaction(operations);
