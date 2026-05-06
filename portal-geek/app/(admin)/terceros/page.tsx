@@ -22,13 +22,14 @@ type DbInstalador = {
   apodo: string | null;
   ubicacion: string | null;
   estatus: string;
-  correo: string | null;
-  telefono: string | null;
+  correo: string;
+  telefono: string;
 };
 
 type DbProveedor = {
   id_proveedor: number;
   nombre_proveedor: string;
+  apodo: string | null;
   tipo: string;
   ubicacion: string | null;
   estatus: string;
@@ -55,13 +56,14 @@ function mapProveedor(item: DbProveedor): TerceroRow {
   return {
     id: item.id_proveedor,
     companyName: item.nombre_proveedor,
-    contactName: item.nombre_proveedor,
+    contactName: item.apodo ?? item.nombre_proveedor,
     location: item.ubicacion ?? "",
     role: "Proveedor",
     status:
       item.estatus === "Activo" ? "Activo" : item.estatus === "Baneado" ? "Baneado" : "Inactivo",
     email: item.correo ?? "",
     phone: item.telefono ?? "",
+    tipo: item.tipo,
   };
 }
 
@@ -253,7 +255,7 @@ export default function TercerosPage() {
   return (
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-white">
       <TercerosHeader />
-      <main className="p-8">
+      <main className="p-4 md:p-8">
         <AdminToolbar
           tabs={TABS}
           activeTab={activeTab}

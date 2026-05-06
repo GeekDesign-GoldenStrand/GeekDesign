@@ -4,7 +4,6 @@ import { useState } from "react";
 import { z } from "zod";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
-import type { CreateProveedorInput } from "@/lib/schemas/proveedores";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -28,20 +27,28 @@ const proveedorSchema = z.object({
     .min(1, "El nombre es requerido.")
     .max(30, "Máximo 30 caracteres.")
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+  apodo: z
+    .string()
+    .refine((v) => !v || v.length <= 30, "Máximo 30 caracteres.")
+    .refine(
+      (v) => !v || NOMBRE_REGEX.test(v),
+      "Solo letras, números, puntos, guiones y apóstrofes."
+    ),
   correo: z
     .string()
     .min(1, "El correo es requerido.")
     .refine((v) => EMAIL_REGEX.test(v), "Correo electrónico inválido."),
   telefono: z
     .string()
-    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos."),
+    .min(1, "El teléfono es requerido.")
+    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   ubicacion: z
     .string()
     .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
 });
 
 const instaladorSchema = z.object({
-  nombre_proveedor: z
+  nombre_instalador: z
     .string()
     .min(1, "El nombre es requerido.")
     .max(30, "Máximo 30 caracteres.")
@@ -59,12 +66,8 @@ const instaladorSchema = z.object({
     .refine((v) => EMAIL_REGEX.test(v), "Correo electrónico inválido."),
   telefono: z
     .string()
-    .refine((v) => !v || /^\d{10}$/.test(v), "Debe tener exactamente 10 dígitos."),
-  costo_instalacion: z
-    .number()
-    .positive("El costo debe ser mayor a 0.")
-    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 10, "Máximo 10 dígitos enteros.")
-    .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
+    .min(1, "El teléfono es requerido.")
+    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   notas: z.string().max(500, "Máximo 500 caracteres."),
   ubicacion: z
     .string()
@@ -97,14 +100,13 @@ export function RegistrarTerceroForm({
   const [form, setForm] = useState({
     nombre_proveedor: "",
     apodo: "",
-    tipo_proveedor: "Proveedor de material" as CreateProveedorInput["tipo"],
+    tipo_proveedor_seleccion: "Material" as "Material" | "Servicio" | "Ambos",
     tipo_instalador: "Instalador" as CreateInstaladorInput["tipo"],
     telefono: "",
     correo: "",
     ubicacion: "",
     notas: "",
     descripcion_proveedor: "",
-    costo_instalacion: 0,
     estatus: "Activo",
   });
 
@@ -113,7 +115,7 @@ export function RegistrarTerceroForm({
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  function setField(key: string, value: string | number) {
+  function setField(key: string, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
     setTouched((prev) => ({ ...prev, [key]: true }));
@@ -139,6 +141,7 @@ export function RegistrarTerceroForm({
     if (terceroType === "Proveedor") {
       const result = proveedorSchema.safeParse({
         nombre_proveedor: form.nombre_proveedor,
+        apodo: form.apodo,
         correo: form.correo,
         telefono: form.telefono,
         ubicacion: form.ubicacion,
@@ -151,11 +154,10 @@ export function RegistrarTerceroForm({
       }
     } else {
       const result = instaladorSchema.safeParse({
-        nombre_proveedor: form.nombre_proveedor,
+        nombre_instalador: form.nombre_proveedor,
         apodo: form.apodo,
         correo: form.correo,
         telefono: form.telefono,
-        costo_instalacion: form.costo_instalacion,
         notas: form.notas,
         ubicacion: form.ubicacion,
       });
@@ -180,11 +182,19 @@ export function RegistrarTerceroForm({
 
     try {
       if (terceroType === "Proveedor") {
+        const selectedTypes =
+          form.tipo_proveedor_seleccion === "Material"
+            ? ["Proveedor de material"]
+            : form.tipo_proveedor_seleccion === "Servicio"
+              ? ["Proveedor de servicio"]
+              : ["Proveedor de material", "Proveedor de servicio"];
+
         const body = {
           nombre_proveedor: form.nombre_proveedor,
-          tipo: form.tipo_proveedor,
-          telefono: form.telefono || undefined,
-          correo: form.correo || undefined,
+          apodo: form.apodo || undefined,
+          tipo: selectedTypes.join(", "),
+          telefono: form.telefono,
+          correo: form.correo,
           descripcion_proveedor: form.descripcion_proveedor || undefined,
           ubicacion: form.ubicacion || undefined,
           estatus: form.estatus,
@@ -208,21 +218,21 @@ export function RegistrarTerceroForm({
         onCreated({
           id: data.id_proveedor,
           companyName: data.nombre_proveedor,
-          contactName: data.nombre_proveedor,
+          contactName: data.apodo || data.nombre_proveedor,
           location: data.ubicacion ?? "",
           role: "Proveedor",
           status: data.estatus as TerceroStatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
+          tipo: data.tipo,
         });
       } else {
         const body = {
-          nombre_proveedor: form.nombre_proveedor,
+          nombre_instalador: form.nombre_proveedor,
           apodo: form.apodo || undefined,
           tipo: form.tipo_instalador,
-          telefono: form.telefono || undefined,
-          correo: form.correo || undefined,
-          costo_instalacion: form.costo_instalacion,
+          telefono: form.telefono,
+          correo: form.correo,
           notas: form.notas || undefined,
           ubicacion: form.ubicacion || undefined,
           estatus: form.estatus,
@@ -245,8 +255,8 @@ export function RegistrarTerceroForm({
 
         onCreated({
           id: data.id_instalador,
-          companyName: data.nombre_proveedor,
-          contactName: data.apodo ?? data.nombre_proveedor,
+          companyName: data.nombre_instalador,
+          contactName: data.apodo ?? data.nombre_instalador,
           location: data.ubicacion ?? "",
           role: "Instalador",
           status: data.estatus as TerceroStatus,
@@ -304,7 +314,7 @@ export function RegistrarTerceroForm({
 
       {terceroType === "Proveedor" ? (
         <>
-          <div className="grid gap-4 grid-cols-1">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>
                 Nombre del proveedor <span className="text-[#e42200]">*</span>
@@ -319,6 +329,18 @@ export function RegistrarTerceroForm({
               />
               {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
             </div>
+            <div>
+              <label className={LABEL}>Apodo</label>
+              <input
+                type="text"
+                placeholder="Ej. Mi apodo"
+                maxLength={30}
+                value={form.apodo}
+                onChange={(e) => setField("apodo", e.target.value)}
+                className={`${FIELD} ${getFieldClass("apodo")}`}
+              />
+              {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
+            </div>
           </div>
 
           <div className="grid gap-4 grid-cols-1">
@@ -327,12 +349,13 @@ export function RegistrarTerceroForm({
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
               <select
-                value={form.tipo_proveedor}
-                onChange={(e) => setField("tipo_proveedor", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_proveedor")}`}
+                value={form.tipo_proveedor_seleccion}
+                onChange={(e) => setField("tipo_proveedor_seleccion", e.target.value)}
+                className={`${FIELD} ${getFieldClass("tipo_proveedor_seleccion")}`}
               >
-                <option value="Proveedor de material">Proveedor de material</option>
-                <option value="Proveedor de servicio">Proveedor de servicio</option>
+                <option value="Material">Material</option>
+                <option value="Servicio">Servicio</option>
+                <option value="Ambos">Ambos</option>
               </select>
             </div>
           </div>
@@ -352,7 +375,9 @@ export function RegistrarTerceroForm({
               {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
             </div>
             <div>
-              <label className={LABEL}>Teléfono</label>
+              <label className={LABEL}>
+                Teléfono <span className="text-[#e42200]">*</span>
+              </label>
               <input
                 type="tel"
                 placeholder="442 123 4567"
@@ -435,7 +460,7 @@ export function RegistrarTerceroForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 grid-cols-1">
             <div>
               <label className={LABEL}>
                 Tipo <span className="text-[#e42200]">*</span>
@@ -448,36 +473,6 @@ export function RegistrarTerceroForm({
                 <option value="Instalador">Instalador</option>
                 <option value="Contratista">Contratista</option>
               </select>
-            </div>
-            <div>
-              <label className={LABEL}>
-                Costo de instalación <span className="text-[#e42200]">*</span>
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                placeholder="0.00"
-                value={form.costo_instalacion || ""}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (!raw) {
-                    setField("costo_instalacion", 0);
-                    return;
-                  }
-                  const dotIdx = raw.indexOf(".");
-                  if (dotIdx !== -1 && raw.length - dotIdx - 1 > 2) return;
-                  const intPart = dotIdx !== -1 ? raw.slice(0, dotIdx) : raw;
-                  if (intPart.replace(/^0+/, "").length > 10) return;
-                  const num = parseFloat(raw);
-                  if (!isNaN(num)) setField("costo_instalacion", num);
-                }}
-                className={`${FIELD} ${getFieldClass("costo_instalacion")}`}
-              />
-              {errors.costo_instalacion && <p className={ERROR_MSG}>{errors.costo_instalacion}</p>}
             </div>
           </div>
 
@@ -496,7 +491,9 @@ export function RegistrarTerceroForm({
               {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
             </div>
             <div>
-              <label className={LABEL}>Teléfono</label>
+              <label className={LABEL}>
+                Teléfono <span className="text-[#e42200]">*</span>
+              </label>
               <input
                 type="tel"
                 placeholder="442 123 4567"

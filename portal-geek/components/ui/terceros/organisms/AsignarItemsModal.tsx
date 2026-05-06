@@ -1,0 +1,254 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
+import { AsignacionCard } from "../molecules/AsignacionCard";
+
+interface AsignarItemsModalProps {
+  id_proveedor: number;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  isOpen: boolean;
+  itemType: "material" | "servicio";
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+export function AsignarItemsModal({
+  id_proveedor,
+  companyName,
+  contactName,
+  email,
+  phone,
+  role,
+  status,
+  isOpen,
+  itemType,
+  onClose,
+  onSaved,
+}: AsignarItemsModalProps) {
+  const [items, setItems] = useState<{ id: number; name: string; description: string | null }[]>(
+    []
+  );
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isMaterial = itemType === "material";
+  const title = isMaterial ? "Asignar Materiales" : "Asignar Servicios";
+  const typeLabel = isMaterial ? "Material" : "Servicio";
+  const endpoint = isMaterial ? "/api/materiales" : "/api/servicios";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    async function fetchData() {
+      setLoading(true);
+      try {
+        // Fetch all catalog items sequentially to avoid silent cuts
+        type CatalogItem =
+          | { id_material: number; nombre_material: string; descripcion_material: string | null }
+          | { id_servicio: number; nombre_servicio: string; descripcion_servicio: string | null };
+
+        const allCatalogItems: CatalogItem[] = [];
+        let page = 1;
+        let totalItems = 0;
+        let fetchedItems = 0;
+
+        do {
+          const res = await fetch(`${endpoint}?activo=true&pageSize=100&page=${page}`);
+          if (!res.ok) throw new Error("Error fetching catalog");
+
+          const json = await res.json();
+          const pageItems: CatalogItem[] = json.data ?? [];
+          allCatalogItems.push(...pageItems);
+
+          totalItems = json.total ?? 0;
+          fetchedItems += pageItems.length;
+          page++;
+
+          // Failsafe to prevent infinite loops if API is misbehaving
+          if (pageItems.length === 0) break;
+        } while (fetchedItems < totalItems);
+
+        // Fetch current assignments
+        const assignmentsRes = await fetch(`/api/proveedores/${id_proveedor}/asignacion`);
+        if (!assignmentsRes.ok) throw new Error("Error fetching assignments");
+        const currentData = await assignmentsRes.json();
+
+        // Map data
+        const mappedItems = allCatalogItems.map((item) => {
+          if ("id_material" in item) {
+            return {
+              id: item.id_material,
+              name: item.nombre_material,
+              description: item.descripcion_material,
+            };
+          } else {
+            return {
+              id: item.id_servicio,
+              name: item.nombre_servicio,
+              description: item.descripcion_servicio,
+            };
+          }
+        });
+
+        setItems(mappedItems);
+        setSelectedIds(currentData.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? []);
+      } catch (err) {
+        console.error("Error fetching items:", err);
+        setError(`Hubo un error al cargar los ${itemType}s. Por favor, intenta de nuevo.`);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [isOpen, id_proveedor, isMaterial, endpoint]);
+
+  function toggleId(id: number) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/proveedores/${id_proveedor}/asignacion`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: itemType, ids: selectedIds }),
+      });
+      if (res.ok) {
+        window.alert(`${title} correctamente`);
+        onSaved();
+        onClose();
+      } else {
+        window.alert("Hubo un error al guardar la asignación");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-[550px] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
+          <div className="flex flex-col gap-4 w-full">
+            <div className="flex justify-between items-center">
+              <h2 className="text-[20px] font-medium text-[#1e1e1e]">{title}</h2>
+            </div>
+
+            <div className="h-px bg-[#e8e8e8] w-full" />
+
+            <div className="space-y-1">
+              <h3 className="text-[22px] font-semibold text-[#1e1e1e] leading-tight">
+                {companyName}
+              </h3>
+              <p className="text-[18px] font-medium text-[#1e1e1e]">{contactName}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[17px] font-medium text-[#575757]">
+                <span className="underline decoration-gray-300">{email}</span>
+                <span>{phone}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+                  role === "Proveedor"
+                    ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
+                    : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+                }`}
+              >
+                {role}
+              </span>
+              <TerceroTypeTag type={typeLabel} />
+              <span
+                className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+                  status === "Activo"
+                    ? "bg-[rgba(0,200,83,0.07)] border-[#00c853] text-[#00c853]"
+                    : status === "Inactivo"
+                      ? "bg-[rgba(255,179,0,0.07)] border-[#ffb300] text-[#ffb300]"
+                      : "bg-[rgba(255,23,68,0.07)] border-[#ff1744] text-[#ff1744]"
+                }`}
+              >
+                {status}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[#8e908f] hover:text-[#e42200] transition-colors pt-1"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {error ? (
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[14px] px-4 py-3 flex items-center justify-center text-center">
+              {error}
+            </div>
+          ) : loading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
+              <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemType}s...</p>
+            </div>
+          ) : items.length === 0 ? (
+            <p className="text-center py-12 text-[#8e908f]">No hay {itemType}s disponibles.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {items.map((item) => (
+                <AsignacionCard
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  description={item.description ?? undefined}
+                  selected={selectedIds.includes(item.id)}
+                  onToggle={() => toggleId(item.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3 bg-gray-50/30">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="px-5 py-2 text-[14px] font-medium text-white bg-[#006aff] hover:bg-[#0056ce] rounded-[7px] transition-all shadow-[0_4px_12px_rgba(0,106,255,0.15)] disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {saving ? "Guardando..." : "Asignar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

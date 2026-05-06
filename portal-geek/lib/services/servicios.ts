@@ -24,7 +24,7 @@ export async function listServicios(
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: { id_servicio: "asc" },
+      orderBy: { nombre_servicio: "asc" },
     }),
     prisma.servicios.count({ where }),
   ]);
