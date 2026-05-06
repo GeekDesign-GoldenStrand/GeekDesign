@@ -6,7 +6,7 @@ import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { CotizacionesTable } from "@/components/admin/organisms/CotizacionesTable";
 
-// Frontend type for a quotation entry
+// Frontend type
 type Cotizacion = {
   id_cotizacion: number;
   fecha_creacion: string;
@@ -17,22 +17,22 @@ type Cotizacion = {
   fecha_estimada: string | null;
 };
 
-// Props define the data and callbacks passed into the template
+// Component props
 type CotizacionesTemplateProps = {
-  cotizaciones: Cotizacion[]; // list of quotations to display
-  search: string; // current search value
-  setSearch: (value: string) => void; // callback to update search
-  onDelete: (id: number) => void; // callback to delete a quotation
-  onStatusChange: (id: number, status: string) => void; // callback to update status
-  page: number; // current page number
-  setPage: (page: number) => void; // callback to update page
-  total: number; // total number of quotations
+  cotizaciones: Cotizacion[];
+  search: string;
+  setSearch: (value: string) => void;
+  onDelete: (id: number) => void;
+  onStatusChange: (id: number, status: string) => void;
+  page: number;
+  setPage: (page: number) => void;
+  total: number;
 
-  filterCliente: string; // filter by client name
+  filterCliente: string;
   setFilterCliente: (value: string) => void;
-  filterEmpresa: string; // filter by company name
+  filterEmpresa: string;
   setFilterEmpresa: (value: string) => void;
-  filterEstatus: string[]; // filter by status values
+  filterEstatus: string[];
   setFilterEstatus: (value: string[]) => void;
 };
 
@@ -54,9 +54,16 @@ export function CotizacionesTemplate({
 }: CotizacionesTemplateProps) {
   const pageSize = 13;
 
-  // State for showing/hiding the filter dropdown
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+
+  // Mapping between UI labels and API values
+  const STATUS_OPTIONS = [
+    { label: "Validada", value: "Validada" },
+    { label: "Aprobada", value: "Aprobada" },
+    { label: "Rechazada", value: "Rechazada" },
+    { label: "En revisión", value: "En_revision" },
+  ];
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -77,73 +84,82 @@ export function CotizacionesTemplate({
 
   return (
     <>
-      {/* Page header */}
       <AdminHeader title="Cotizaciones" />
 
-      <section className="max-w-[1350px] mx-auto pt-5 space-y-4">
-        {/* Toolbar with search, add, and filter actions */}
+      <section className="max-w-[1350px] mx-auto px-6 pt-5 space-y-4">
+        {/* Toolbar section */}
         <div className="relative">
           <AdminToolbar
             search={search}
             onSearchChange={setSearch}
-            onAgregar={() => {
-              // Placeholder for "add quotation" logic
-              // Left empty to avoid console.log warnings
-            }}
+            onAgregar={() => {}}
             onFiltrar={() => setShowFilter((prev) => !prev)}
           />
 
-          {/* Filter dropdown (visible when showFilter is true) */}
+          {/* Filter dropdown */}
           {showFilter && (
             <div ref={filterRef} className="absolute right-0 mt-2 z-50">
-              <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ff7f7f] text-black">
-                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
+              <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-2 border-rose-200 text-black">
+                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">
+                  Filtros
+                </h2>
 
                 {/* Client filter */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Cliente</p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-1">
+                    Cliente
+                  </p>
                   <input
                     value={filterCliente}
                     onChange={(e) => setFilterCliente(e.target.value)}
-                    className="w-full border border-[#b9b8b8] rounded-[6px] p-2"
+                    className="w-full border border-rose-200 bg-rose-50 rounded-[6px] p-2 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
                   />
                 </div>
 
                 {/* Company filter */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Empresa</p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-1">
+                    Empresa
+                  </p>
                   <input
                     value={filterEmpresa}
                     onChange={(e) => setFilterEmpresa(e.target.value)}
-                    className="w-full border border-[#b9b8b8] rounded-[6px] p-2"
+                    className="w-full border border-rose-200 bg-rose-50 rounded-[6px] p-2 focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
                   />
                 </div>
 
-                {/* Status filter (multi-select checkboxes) */}
+                {/* Status filter */}
                 <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
+                  <p className="text-[13px] font-semibold text-[#575757] mb-2">
+                    Estatus
+                  </p>
                   <div className="space-y-2">
-                    {["Validada", "Aprobada", "Rechazada", "En_revision"].map((status) => (
-                      <label key={status} className="flex items-center gap-2 text-[13px]">
+                    {STATUS_OPTIONS.map((status) => (
+                      <label
+                        key={status.value}
+                        className="flex items-center gap-2 text-[13px]"
+                      >
                         <input
                           type="checkbox"
-                          checked={filterEstatus.includes(status)}
+                          checked={filterEstatus.includes(status.value)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setFilterEstatus([...filterEstatus, status]);
+                              setFilterEstatus([...filterEstatus, status.value]);
                             } else {
-                              setFilterEstatus(filterEstatus.filter((s) => s !== status));
+                              setFilterEstatus(
+                                filterEstatus.filter((s) => s !== status.value)
+                              );
                             }
                           }}
-                          className="accent-[#ff7f7f]"
+                          className="accent-rose-400"
                         />
-                        {status}
+                        {status.label}
                       </label>
                     ))}
                   </div>
                 </div>
 
-                {/* Filter action buttons */}
+                {/* Filter actions */}
                 <div className="mt-4 flex justify-center gap-3">
                   <button
                     onClick={() => {
@@ -151,16 +167,16 @@ export function CotizacionesTemplate({
                       setFilterEmpresa("");
                       setFilterEstatus([]);
                     }}
-                    className="h-7 px-3 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
+                    className="h-8 px-4 rounded-[6px] bg-rose-200 text-rose-800 text-[13px] font-semibold hover:bg-rose-300 transition"
                   >
                     Reset
                   </button>
 
                   <button
                     onClick={() => setShowFilter(false)}
-                    className="h-7 px-6 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
+                    className="h-8 px-6 rounded-[6px] bg-rose-300 text-white text-[13px] font-semibold hover:bg-rose-400 transition"
                   >
-                    Cancel
+                    Apply
                   </button>
                 </div>
               </div>
@@ -168,38 +184,52 @@ export function CotizacionesTemplate({
           )}
         </div>
 
-        {/* Quotations table */}
+        {/* Table section */}
         <CotizacionesTable
           cotizaciones={cotizaciones}
           onDelete={onDelete}
           onStatusChange={onStatusChange}
         />
 
-        {/* Pagination controls */}
-        <div className="flex items-center justify-center gap-4 mt-8 mb-6">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="px-4 py-2 text-[14px] font-medium text-[#575757] 
-                        border border-[#b9b8b8] rounded-[7px] 
-                        hover:bg-[#f5f5f5] disabled:opacity-40"
-          >
-            ← Previous
-          </button>
+        {/* Pagination (Figma-style) */}
+        <div className="flex justify-end mt-8 mb-6 pr-4">
+          <div className="flex items-center gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
+            >
+              {"<"}
+            </button>
 
-          <span className="text-[14px] text-[#575757]">
-            Page {page} of {Math.ceil(total / pageSize)}
-          </span>
+            {Array.from({ length: Math.ceil(total / pageSize) }, (_, i) => {
+              const pageNumber = i + 1;
+              const isActive = pageNumber === page;
 
-          <button
-            disabled={page === Math.ceil(total / pageSize)}
-            onClick={() => setPage(page + 1)}
-            className="px-4 py-2 text-[14px] font-medium text-[#575757] 
-                        border border-[#b9b8b8] rounded-[7px] 
-                        hover:bg-[#f5f5f5] disabled:opacity-40"
-          >
-            Next →
-          </button>
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => setPage(pageNumber)}
+                  className={`w-[36px] h-[36px] rounded-[4px] font-bold text-[15px]
+                  ${
+                    isActive
+                      ? "bg-[#e42200] text-white"
+                      : "bg-gray-100 text-[#1e1e1e] hover:bg-gray-200"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              disabled={page === Math.ceil(total / pageSize)}
+              onClick={() => setPage(page + 1)}
+              className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
+            >
+              {">"}
+            </button>
+          </div>
         </div>
       </section>
     </>
