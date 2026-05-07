@@ -158,6 +158,17 @@ describe("listInstaladores", () => {
     expect(result.items).toHaveLength(0);
     expect(result.total).toBe(0);
   });
+
+  it("excluye instaladores con estatus Inactivo (soft delete)", async () => {
+    mockFindMany.mockResolvedValue([INSTALADOR]);
+    mockCount.mockResolvedValue(1);
+
+    await listInstaladores(1, 20);
+
+    const expectedWhere = { estatus: { not: "Inactivo" } };
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+    expect(mockCount).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+  });
 });
 
 // ---------------------------------------------------------------------------

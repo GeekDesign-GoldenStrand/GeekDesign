@@ -8,13 +8,15 @@ export async function listInstaladores(
   page: number,
   pageSize: number
 ): Promise<{ items: Instaladores[]; total: number }> {
+  const where = { estatus: { not: "Inactivo" } };
   const [items, total] = await prisma.$transaction([
     prisma.instaladores.findMany({
+      where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { nombre_instalador: "asc" },
     }),
-    prisma.instaladores.count(),
+    prisma.instaladores.count({ where }),
   ]);
   return { items, total };
 }
