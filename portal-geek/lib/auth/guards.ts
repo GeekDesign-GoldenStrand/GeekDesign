@@ -16,17 +16,19 @@ type ParamHandler<P> = (
   session: SessionPayload
 ) => Promise<NextResponse>;
 
-const DEV_SESSION: SessionPayload = { id: 0, email: "dev@local", role: "Administrador" };
+// Roles that share full administrative access and are treated interchangeably.
+export const ADMIN_ROLES: UserRole[] = ["Direccion", "Administrador"];
 
 // Reads the current session and checks role access when needed.
+// Any route that allows a role in ADMIN_ROLES implicitly allows all of them.
 async function resolveSession(roles?: UserRole[]): Promise<SessionPayload> {
-  if (process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development") {
-    return DEV_SESSION;
-  }
   const session = await getSession();
   if (!session) throw new UnauthorizedError();
-  if (roles && roles.length > 0 && !roles.includes(session.role as UserRole)) {
-    throw new ForbiddenError();
+  if (roles && roles.length > 0) {
+    const effective = roles.some((r) => ADMIN_ROLES.includes(r as UserRole))
+      ? [...new Set([...roles, ...ADMIN_ROLES])]
+      : roles;
+    if (!effective.includes(session.role as UserRole)) throw new ForbiddenError();
   }
   return session;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+
+import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 
 import { RecuperarForm } from "./recuperar-form";
 
@@ -10,21 +11,19 @@ export const metadata: Metadata = {
 export default function RecuperarContrasenaPage() {
   return (
     <div className="flex w-full max-w-[519px] flex-col items-center">
-      <div className="flex items-center gap-3">
-        <Image src="/images/login/logo.png" alt="Geek Design" width={46} height={46} priority />
-        <span className="font-semibold text-[20px] tracking-[1px] text-[#df2646]">GEEK DESIGN</span>
-      </div>
+      <BrandLogo />
 
-      <div className="mt-20 flex flex-col items-center text-center">
-        <h1 className="bg-gradient-to-l from-[#eb696b] to-[#ff6388] to-[93.269%] bg-clip-text font-semibold text-[40px] tracking-[2px] text-transparent">
-          Recuperar contraseña
+      <div className="mt-16 flex flex-col items-center text-center">
+        <h1 className="font-ibm-plex font-semibold text-[48px] tracking-[2.4px] bg-gradient-to-l from-[#eb696b] to-[#ff6388] to-[93%] bg-clip-text text-transparent">
+          ¿Olvidaste tu contraseña?
         </h1>
-        <p className="mt-3 font-light text-[16px] tracking-[0.5px] text-[#888]">
-          Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
+        <p className="font-ibm-plex mt-4 font-normal text-[18px] tracking-[0.9px] text-[#5b5b5b] max-w-[480px]">
+          Introduce tu dirección de correo electrónico para que se te envíe un link con el que
+          podrás restablecer tu contraseña
         </p>
       </div>
 
-      <div className="mt-14 w-full">
+      <div className="mt-10 w-full">
         <RecuperarForm />
       </div>
     </div>

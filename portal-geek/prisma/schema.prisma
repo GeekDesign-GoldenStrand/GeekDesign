@@ -144,10 +144,12 @@ model Servicios {
   descripcion_servicio String?
   estatus_servicio  Boolean @default(true)
 
-  estatusServicio  EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  opciones         OpcionesProducto[]
-  formulaVariables FormulaVariables[]
-  detallesPedido   DetallePedido[]
+  estatusServicio      EstatusServicio      @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  opciones             OpcionesProducto[]
+  formulaVariables     FormulaVariables[]
+  detallesPedido       DetallePedido[]
+  instaladorServicios  InstaladorServicios[]
+  proveedorPrecios     ProveedorPrecios[]
 
   @@map("SERVICIOS")
 }
@@ -163,9 +165,10 @@ model Materiales {
   color               String?  @db.VarChar(50)
   imagen_url          String?  @db.VarChar(500)
 
-  opciones       OpcionesProducto[]
-  detallesPedido DetallePedido[]
-  pedidoMaquinas PedidoMaquina[]
+  opciones         OpcionesProducto[]
+  detallesPedido   DetallePedido[]
+  pedidoMaquinas   PedidoMaquina[]
+  proveedorPrecios ProveedorPrecios[]
 
   @@map("MATERIALES")
 }
@@ -263,32 +266,46 @@ model SucursalesMaquina {
 }
 
 model Proveedores {
-  id_proveedor        Int     @id @default(autoincrement())
-  nombre_proveedor    String  @db.VarChar(100)
-  tipo                String  @db.VarChar(50)  // Proveedor de material / Proveedor de servicio
-  telefono            String? @db.VarChar(20)
-  correo              String? @db.VarChar(150)
+  id_proveedor          Int     @id @default(autoincrement())
+  nombre_proveedor      String  @db.VarChar(100)
+  tipo                  String  @db.VarChar(50)  // Proveedor de material / Proveedor de servicio
+  telefono              String  @db.VarChar(20)
+  correo                String  @db.VarChar(150)
   descripcion_proveedor String?
-  costo               Float?
-  ubicacion           String? @db.VarChar(255)
-  estatus             String  @db.VarChar(20)  // Activo / Inactivo / Baneado
+  ubicacion             String? @db.VarChar(255)
+  estatus               String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
-  gastos Gastos[]
+  precios ProveedorPrecios[]
 
   @@map("PROVEEDORES")
 }
 
+model ProveedorPrecios {
+  id_proveedor_precio Int     @id @default(autoincrement())
+  id_proveedor        Int
+  id_servicio         Int?
+  id_material         Int?
+  precio              Decimal @db.Decimal(10, 2)
+  notas               String? @db.VarChar(500)
+
+  proveedor Proveedores  @relation(fields: [id_proveedor], references: [id_proveedor])
+  servicio  Servicios?   @relation(fields: [id_servicio], references: [id_servicio])
+  material  Materiales?  @relation(fields: [id_material], references: [id_material])
+  gastos    Gastos[]
+
+  @@map("PROVEEDORPRECIOS")
+}
+
 model Instaladores {
-  id_instalador     Int     @id @default(autoincrement())
-  nombre_proveedor  String  @db.VarChar(100)
-  apodo             String? @db.VarChar(100)
-  tipo              String  @db.VarChar(50)  // Instalador / Contratista
-  telefono          String? @db.VarChar(20)
-  correo            String? @db.VarChar(150)
-  costo_instalacion Float
-  notas             String? @db.VarChar(500)
-  ubicacion         String? @db.VarChar(255)
-  estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
+  id_instalador    Int     @id @default(autoincrement())
+  nombre_instalador String  @db.VarChar(100)
+  apodo            String? @db.VarChar(100)
+  tipo             String  @db.VarChar(50)  // Instalador / Contratista
+  telefono         String  @db.VarChar(20)
+  correo           String  @db.VarChar(150)
+  notas            String? @db.VarChar(500)
+  ubicacion        String? @db.VarChar(255)
+  estatus          String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   servicios InstaladorServicios[]
 
@@ -296,11 +313,15 @@ model Instaladores {
 }
 
 model InstaladorServicios {
-  id_instalador_servicio Int    @id @default(autoincrement())
+  id_instalador_servicio Int     @id @default(autoincrement())
   id_instalador          Int
-  servicio               String @db.VarChar(100)
+  id_servicio            Int
+  precio                 Decimal @db.Decimal(10, 2)
+  notas                  String? @db.VarChar(500)
 
   instalador Instaladores @relation(fields: [id_instalador], references: [id_instalador])
+  servicio   Servicios    @relation(fields: [id_servicio], references: [id_servicio])
+  gastos     Gastos[]
 
   @@map("INSTALADORSERVICIOS")
 }
@@ -521,16 +542,18 @@ model Pagos {
 }
 
 model Gastos {
-  id_costo       Int      @id @default(autoincrement())
-  id_pedido      Int
-  tipo_costo     Int      // 1 = Proveedor, 2 = Instalador, 3 = Mano de obra
-  id_proveedor   Int?
-  monto          Decimal  @db.Decimal(10, 2)
-  descripcion    String?
-  fecha_registro DateTime @default(now())
+  id_costo               Int      @id @default(autoincrement())
+  id_pedido              Int
+  tipo_costo             Int      // 1 = Proveedor, 2 = Instalador, 3 = Mano de obra
+  id_proveedor_precio    Int?
+  id_instalador_servicio Int?
+  monto                  Decimal  @db.Decimal(10, 2)
+  descripcion            String?
+  fecha_registro         DateTime @default(now())
 
-  pedido    Pedidos      @relation(fields: [id_pedido], references: [id_pedido])
-  proveedor Proveedores? @relation(fields: [id_proveedor], references: [id_proveedor])
+  pedido              Pedidos              @relation(fields: [id_pedido], references: [id_pedido])
+  proveedorPrecio     ProveedorPrecios?    @relation(fields: [id_proveedor_precio], references: [id_proveedor_precio])
+  instaladorServicio  InstaladorServicios? @relation(fields: [id_instalador_servicio], references: [id_instalador_servicio])
 
   @@map("GASTOS")
 }

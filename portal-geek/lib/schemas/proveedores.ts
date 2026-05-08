@@ -9,13 +9,9 @@ export const CreateProveedorSchema = z.object({
     .max(30, "Máximo 30 caracteres.")
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
   tipo: z.enum(["Proveedor de material", "Proveedor de servicio"]),
-  telefono: z
-    .string()
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos.")
-    .optional(),
+  telefono: z.string().regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   correo: z.email().max(150),
   descripcion_proveedor: z.string().optional(),
-  costo: z.number().nonnegative().optional(),
   ubicacion: z.string().max(255).optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
 });

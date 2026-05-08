@@ -81,6 +81,27 @@ async function main() {
     },
   });
 
+  // ── Dirección user ──────────────────────────────────────────────────────────
+  const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
+  const direccionPasswordHash = await bcrypt.hash(
+    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123",
+    12
+  );
+
+  const direccionUser = await prisma.usuarios.upsert({
+    where: { correo_electronico: "direccion@geekdesign.mx" },
+    update: { contrasena_hash: direccionPasswordHash },
+    create: {
+      nombre_completo: "Usuario Dirección",
+      correo_electronico: "direccion@geekdesign.mx",
+      contrasena_hash: direccionPasswordHash,
+      id_rol: direccionRole.id_rol,
+      estatus: "Activo",
+    },
+  });
+
+  console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
+
   console.log("Seeded admin colaborador");
 
   // ── Machine ────────────────────────────────────────────────────────────────
@@ -261,6 +282,128 @@ async function main() {
     },
   });
   console.log("Seeded test client");
+
+  // ── Proveedores ────────────────────────────────────────────────────────────
+  const proveedoresData = [
+    {
+      id_proveedor: 1,
+      nombre_proveedor: "Maderas del Norte SA",
+      tipo: "Proveedor de material",
+      telefono: "8112345678",
+      correo: "ventas@maderasnorte.mx",
+      descripcion_proveedor: "Proveedor de MDF, triplay y madera sólida.",
+      ubicacion: "Monterrey, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_proveedor: 2,
+      nombre_proveedor: "Acrilatos Querétaro",
+      tipo: "Proveedor de material",
+      telefono: "4421234567",
+      correo: "contacto@acrilatosqro.mx",
+      descripcion_proveedor: "Acrílicos de colores, transparentes y espejados.",
+      ubicacion: "Querétaro, Querétaro",
+      estatus: "Activo",
+    },
+    {
+      id_proveedor: 3,
+      nombre_proveedor: "Vinilos Express",
+      tipo: "Proveedor de material",
+      telefono: "5598765432",
+      correo: "pedidos@vinilosexpress.mx",
+      descripcion_proveedor: "Viniles de corte, impresión y laminado.",
+      ubicacion: "Ciudad de México, CDMX",
+      estatus: "Activo",
+    },
+    {
+      id_proveedor: 4,
+      nombre_proveedor: "Grabados Industriales MX",
+      tipo: "Proveedor de servicio",
+      telefono: "8187654321",
+      correo: "info@grabadosindustriales.mx",
+      descripcion_proveedor: "Servicio externo de grabado en metal y vidrio.",
+      ubicacion: "San Pedro Garza García, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_proveedor: 5,
+      nombre_proveedor: "Foil & Print CDMX",
+      tipo: "Proveedor de servicio",
+      telefono: "5512349876",
+      correo: "hola@foilprint.mx",
+      descripcion_proveedor: null,
+      ubicacion: "Naucalpan, Estado de México",
+      estatus: "Inactivo",
+    },
+  ];
+
+  for (const data of proveedoresData) {
+    await prisma.proveedores.upsert({
+      where: { id_proveedor: data.id_proveedor },
+      update: {},
+      create: data,
+    });
+  }
+
+  console.log(`Seeded ${proveedoresData.length} proveedores`);
+
+  // ── Instaladores ───────────────────────────────────────────────────────────
+  const instaladoresData = [
+    {
+      id_instalador: 1,
+      nombre_instalador: "Carlos Ramírez",
+      apodo: "El Rápido",
+      tipo: "Instalador",
+      telefono: "8113456789",
+      correo: "carlos.ramirez@instalaciones.mx",
+      notas: "Especialista en viniles y rotulación.",
+      ubicacion: "Monterrey, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 2,
+      nombre_instalador: "Grupo Instalaciones NL",
+      apodo: null,
+      tipo: "Contratista",
+      telefono: "8129876543",
+      correo: "contacto@grupoinstala.mx",
+      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
+      ubicacion: "San Nicolás de los Garza, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 3,
+      nombre_instalador: "Luis Mendoza",
+      apodo: "Lucho",
+      tipo: "Instalador",
+      telefono: "4423219876",
+      correo: "luis.mendoza@correo.mx",
+      notas: null,
+      ubicacion: "Querétaro, Querétaro",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 4,
+      nombre_instalador: "Patricia Solís",
+      apodo: "Paty",
+      tipo: "Instalador",
+      telefono: "5551234567",
+      correo: "paty.solis@instala.mx",
+      notas: "Instalación de lonas y toldos.",
+      ubicacion: "Ciudad de México, CDMX",
+      estatus: "Inactivo",
+    },
+  ];
+
+  for (const data of instaladoresData) {
+    await prisma.instaladores.upsert({
+      where: { id_instalador: data.id_instalador },
+      update: {},
+      create: data,
+    });
+  }
+
+  console.log(`Seeded ${instaladoresData.length} instaladores`);
 }
 
 main()

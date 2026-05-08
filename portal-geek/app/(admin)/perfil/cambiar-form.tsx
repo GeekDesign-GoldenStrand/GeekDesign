@@ -1,21 +1,31 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
+import { ChangePasswordSchema } from "@/lib/schemas/auth";
+
+interface FieldErrors {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
+const EMPTY_FIELDS = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
 export function CambiarContrasenaForm() {
-  const [fields, setFields] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const router = useRouter();
+  const [fields, setFields] = useState(EMPTY_FIELDS);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function handleChange(name: string, value: string) {
     setFields((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -23,18 +33,31 @@ export function CambiarContrasenaForm() {
     setError(null);
     setSuccess(false);
 
-    if (fields.newPassword !== fields.confirmPassword) {
-      setError("Las contraseñas nuevas no coinciden");
+    const result = ChangePasswordSchema.safeParse(fields);
+    if (!result.success) {
+      const errors: FieldErrors = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof FieldErrors;
+        if (!errors[field]) errors[field] = issue.message;
+      }
+      setFieldErrors(errors);
       return;
     }
 
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/auth/change-password", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
+        body: JSON.stringify(result.data),
       });
+
+      if (res.status === 401) {
+        await fetch("/api/auth/logout", { method: "POST" });
+        router.push("/login");
+        return;
+      }
 
       const json = (await res.json().catch(() => null)) as { error?: string } | null;
 
@@ -43,8 +66,10 @@ export function CambiarContrasenaForm() {
         return;
       }
 
+      setFields(EMPTY_FIELDS);
       setSuccess(true);
-      setFields({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      await fetch("/api/auth/logout", { method: "POST" });
+      setTimeout(() => router.push("/login"), 1500);
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {
@@ -53,7 +78,7 @@ export function CambiarContrasenaForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-4" noValidate>
       <PasswordField
         value={fields.currentPassword}
         onChange={(v) => handleChange("currentPassword", v)}
@@ -61,6 +86,8 @@ export function CambiarContrasenaForm() {
         placeholder="Contraseña actual"
         autoComplete="current-password"
         name="currentPassword"
+        hasIcon
+        error={fieldErrors.currentPassword}
       />
       <PasswordField
         value={fields.newPassword}
@@ -69,6 +96,8 @@ export function CambiarContrasenaForm() {
         placeholder="Nueva contraseña"
         autoComplete="new-password"
         name="newPassword"
+        hasIcon
+        error={fieldErrors.newPassword}
       />
       <PasswordField
         value={fields.confirmPassword}
@@ -77,26 +106,29 @@ export function CambiarContrasenaForm() {
         placeholder="Confirmar nueva contraseña"
         autoComplete="new-password"
         name="confirmPassword"
+        hasIcon
+        error={fieldErrors.confirmPassword}
       />
 
       {error && (
-        <p role="alert" className="px-2 text-[14px] tracking-[0.5px] text-[#df2646]">
+        <p role="alert" className="text-[14px] tracking-[0.5px] text-[#df2646]">
           {error}
         </p>
       )}
       {success && (
-        <p role="status" className="px-2 text-[14px] tracking-[0.5px] text-green-600">
-          Contraseña actualizada correctamente.
+        <p role="status" className="text-[14px] tracking-[0.5px] text-green-600">
+          Contraseña actualizada. Redirigiendo…
         </p>
       )}
 
-      <button
+      <PrimaryButton
         type="submit"
-        disabled={isSubmitting}
-        className="mt-2 h-[63px] w-full rounded-full bg-[#8b434a] font-semibold text-[18px] tracking-[1px] text-white transition-colors hover:bg-[#7a3a41] focus:outline-none focus:ring-2 focus:ring-[#df2646] focus:ring-offset-2 disabled:opacity-60"
+        variant="red"
+        disabled={isSubmitting || success}
+        className="mt-2"
       >
         {isSubmitting ? "Guardando…" : "Cambiar contraseña"}
-      </button>
+      </PrimaryButton>
     </form>
   );
 }

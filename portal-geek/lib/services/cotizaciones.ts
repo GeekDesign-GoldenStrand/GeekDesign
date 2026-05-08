@@ -42,3 +42,13 @@ export async function deleteCotizacion(id: number): Promise<void> {
   void id;
   throw new Error("Not implemented");
 }
+
+export async function getQuotationStatusId(description: string) {
+  const status = await prisma.estatusCotizacion.findUnique({
+    where: { descripcion: description },
+  });
+  if (!status) {
+    throw new Error(`Estatus de cotización '${description}' no encontrado`);
+  }
+  return status.id_estatus;
+}

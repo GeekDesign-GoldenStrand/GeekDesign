@@ -1,17 +1,57 @@
 import type { Pedidos } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
 
 export async function listPedidos(
   page: number,
-  pageSize: number
+  pageSize: number,
+  serviceId?: number,
+  onlyActive?: boolean
 ): Promise<{ items: Pedidos[]; total: number }> {
-  // TODO: implement — consider including cliente and estatus relations
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const skip = (page - 1) * pageSize;
+
+  // Build dynamic filter conditions
+  const where: Prisma.PedidosWhereInput = {};
+  if (serviceId) {
+    // Include only orders that have at least one detail with the given serviceId
+    where.detalles = { some: { id_servicio: serviceId } };
+  }
+  if (onlyActive) {
+    // Exclude orders whose status is "Entregado" or "Cancelado"
+    where.estatus = {
+      descripcion: { notIn: ["Entregado", "Cancelado"] },
+    };
+  }
+
+  // Execute two queries in parallel:
+  // 1. Fetch the paginated list of orders with relations
+  // 2. Count the total number of matching orders (for pagination metadata)
+  const [items, total] = await Promise.all([
+    prisma.pedidos.findMany({
+      where, // apply filters
+      skip,
+      take: pageSize,
+      include: {
+        // include related entities for richer response
+        cliente: true,
+        sucursal: true,
+        estatus: true,
+        detalles: {
+          include: {
+            servicio: true,
+            material: true,
+            archivo: true,
+          },
+        },
+      },
+      orderBy: { fecha_creacion: "desc" },
+    }),
+    prisma.pedidos.count({ where }),
+  ]);
+
+  return { items, total };
 }
 
 export async function getPedido(id: number): Promise<Pedidos> {
