@@ -63,7 +63,7 @@ function normalizeNumericInput(raw: string): string {
   if (!raw) return "";
   const sanitized = raw.replace(/[^\d.]/g, "");
   const [intPartRaw = "", ...rest] = sanitized.split(".");
-  const intPart = intPartRaw.slice(0, 10);
+  const intPart = intPartRaw.slice(0, 8);
   if (rest.length === 0) return intPart;
   const decimalPart = rest.join("").slice(0, 2);
   return `${intPart}.${decimalPart}`;

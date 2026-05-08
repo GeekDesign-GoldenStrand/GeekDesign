@@ -86,6 +86,7 @@ export function MaterialesView() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    const abortController = new AbortController();
     const sort = sortOrder === "az" ? "asc" : "desc";
     const params = new URLSearchParams({
       page: String(page),
@@ -94,19 +95,29 @@ export function MaterialesView() {
     });
     if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
 
-    fetch(`/api/materiales?${params}`)
+    fetch(`/api/materiales?${params}`, { signal: abortController.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         return res.json();
       })
       .then((payload) => {
+        if (abortController.signal.aborted) return;
         const items = ((payload?.data ?? []) as DbMaterial[]).map(mapMaterial);
         setRows(items);
         const total = payload?.total ?? 0;
         setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
       })
-      .catch(() => setError("No se pudieron cargar los materiales"))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (abortController.signal.aborted) return;
+        setError("No se pudieron cargar los materiales");
+      })
+      .finally(() => {
+        if (!abortController.signal.aborted) setLoading(false);
+      });
+
+    return () => {
+      abortController.abort();
+    };
   }, [page, sortOrder, debouncedSearch, retryAttempt]);
 
   function handlePageChange(nextPage: number) {

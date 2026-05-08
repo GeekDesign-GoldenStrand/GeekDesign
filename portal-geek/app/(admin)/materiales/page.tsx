@@ -10,11 +10,12 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Materiales — Geek Design" };
 
-const ALLOWED_ROLES: UserRole[] = ["Direccion", "Colaborador"];
+const ALLOWED_ROLES: UserRole[] = ["Direccion", "Administrador", "Colaborador"];
 
 export default async function MaterialesPage() {
   const session = await getSession();
-  if (!session || !ALLOWED_ROLES.includes(session.role)) redirect("/login");
+  if (!session) redirect("/login");
+  if (!ALLOWED_ROLES.includes(session.role)) redirect("/dashboard");
 
   return <MaterialesView />;
 }

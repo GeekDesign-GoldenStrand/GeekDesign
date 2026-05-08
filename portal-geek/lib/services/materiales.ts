@@ -1,7 +1,7 @@
 import type { Materiales } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import type { CreateMaterialInput } from "@/lib/schemas/materiales";
+import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/materiales";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 export async function listMateriales(
@@ -50,7 +50,7 @@ export async function createMaterial(data: CreateMaterialInput): Promise<Materia
   return prisma.materiales.create({ data });
 }
 
-export async function updateMaterial(id: number, data: CreateMaterialInput): Promise<Materiales> {
+export async function updateMaterial(id: number, data: UpdateMaterialInput): Promise<Materiales> {
   try {
     const updated = await prisma.materiales.update({
       where: { id_material: id },

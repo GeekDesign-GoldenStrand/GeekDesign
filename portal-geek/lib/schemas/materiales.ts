@@ -19,23 +19,26 @@ export const CreateMaterialSchema = z.object({
   ancho: z
     .number({ message: "Campo requerido" })
     .positive("El ancho debe ser mayor a 0.")
-    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 10, "Máximo 10 dígitos enteros.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
     .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
   alto: z
     .number({ message: "Campo requerido" })
     .positive("El alto debe ser mayor a 0.")
-    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 10, "Máximo 10 dígitos enteros.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
     .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
   grosor: z
     .number({ message: "Campo requerido" })
     .positive("El grosor debe ser mayor a 0.")
-    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 10, "Máximo 10 dígitos enteros.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
     .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
   color: z.string().min(1, "El color es requerido.").max(50, "Máximo 50 caracteres."),
   imagen_url: z
     .string()
     .min(1, "La URL de imagen es requerida.")
-    .url("Debe ser una URL válida.")
+    .refine(
+      (value) => { try { new URL(value); return true; } catch { return false; } },
+      "Debe ser una URL válida."
+    )
     .refine(
       (value) => value.toLowerCase().startsWith("https://"),
       "La URL de imagen debe iniciar con https://"
@@ -43,8 +46,11 @@ export const CreateMaterialSchema = z.object({
     .max(500, "Máximo 500 caracteres."),
 });
 
+export const UpdateMaterialSchema = CreateMaterialSchema.partial();
+
 export const MaterialIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
 export type CreateMaterialInput = z.infer<typeof CreateMaterialSchema>;
+export type UpdateMaterialInput = z.infer<typeof UpdateMaterialSchema>;
