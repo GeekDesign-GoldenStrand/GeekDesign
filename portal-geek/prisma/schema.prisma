@@ -446,28 +446,6 @@ model HistorialEstadosPedidos {
   @@map("HISTORIALESTADOSPEDIDOS")
 }
 
-const operations: [
-  Prisma.PrismaPromise<Cotizaciones>,
-  Prisma.PrismaPromise<HistorialEstadosCotizacion>,
-  ...(Prisma.PrismaPromise<CotizacionesRechazadas> | Prisma.PrismaPromise<Prisma.BatchPayload>)[]
-] = [
-  prisma.cotizaciones.update({
-    where: { id_cotizacion: quotationId },
-    data: { id_estatus_cotizacion: newStatusId },
-  }),
-
-  prisma.historialEstadosCotizacion.create({
-    data: {
-      id_cotizacion: quotationId,
-      id_usuario: userId,
-      id_estado_anterior: currentQuotation.id_estatus_cotizacion,
-      id_estado_nuevo: newStatusId,
-      fecha_cambio: new Date(),
-    },
-  }),
-];
-
-
 model HistorialEstadosCotizacion {
   id_historial        Int      @id @default(autoincrement())
   id_cotizacion       Int
