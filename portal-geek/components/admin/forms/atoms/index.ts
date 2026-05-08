@@ -1,5 +1,5 @@
-export { Input } from "./Input";
+export { Input } from "./input";
 export { Textarea } from "./Textarea";
-export { Select } from "./Select";
-export { Checkbox } from "./Checkbox";
-export { Button } from "./Button";
+export { Select } from "./select";
+export { Checkbox } from "./checkbox";
+export { Button } from "./button";
