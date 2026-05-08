@@ -4,27 +4,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
-import {
-  ConstantesSection,
-  type ConstanteDraft,
-} from "@/components/admin/servicios/molecules/ConstantesSection";
+import {ConstantesSection,type ConstanteDraft} from "@/components/admin/servicios/molecules/ConstantesSection";
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
-import {
-  VariablesSection,
-  type VariableDraft,
-} from "@/components/admin/servicios/molecules/VariablesSection";
+import {VariablesSection,type VariableDraft} from "@/components/admin/servicios/molecules/VariablesSection";
 import { useFetch } from "@/lib/hooks/useFetch";
-import type {
-  InstaladorOption,
-  MaquinaOption,
-  ProveedorOption,
-  SucursalOption,
-  TipoVariableOption,
-} from "@/types/servicios";
+import type {InstaladorOption,MaquinaOption,ProveedorOption,SucursalOption,TipoVariableOption,} from "@/types/servicios";
 
 // Reserved names for auto-managed constantes (synced with installer/provider toggles).
 const AUTO_INSTALADOR_NAME = "costo_instalador";

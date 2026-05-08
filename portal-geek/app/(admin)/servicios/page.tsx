@@ -28,7 +28,7 @@ export default function ServiciosPage() {
     fetchServicios();
   }, []);
 
-  // It counts how many services are active (estatus_servicio = true) to show in the toolbar.
+  // It counts how many services are active (estatus_servicio = true) to show in the toolbar. 
   // This is a simple count based on the fetched data.
   const activosCount = servicios.filter((s) => s.estatus_servicio).length;
 
