@@ -446,6 +446,56 @@ model HistorialEstadosPedidos {
   @@map("HISTORIALESTADOSPEDIDOS")
 }
 
+// ─────────────────────────────────────────────
+// QUOTATIONS
+// ─────────────────────────────────────────────
+
+model EstatusCotizacion {
+  id_estatus  Int    @id @default(autoincrement())
+  descripcion String @unique @db.VarChar(50)
+
+  cotizaciones Cotizaciones[]
+
+  @@map("ESTATUSCOTIZACION")
+}
+
+model Cotizaciones {
+  id_cotizacion         Int       @id @default(autoincrement())
+  id_pedido             Int? // NULL for special quotations before order creation
+  id_cliente            Int
+  id_estatus_cotizacion Int
+  folio                 String?   @unique @db.VarChar(50)
+  monto_total           Decimal   @db.Decimal(10, 2)
+  empresa_cliente       String?   @db.VarChar(100)
+  fecha_creacion        DateTime  @default(now())
+  fecha_fin             DateTime?
+  fecha_validacion      DateTime?
+  fecha_aprobacion      DateTime?
+  pdf_url               String?   @db.VarChar(500)
+  notas                 String?
+
+  pedido  Pedidos?          @relation(fields: [id_pedido], references: [id_pedido])
+  cliente Clientes          @relation(fields: [id_cliente], references: [id_cliente])
+  estatus EstatusCotizacion @relation(fields: [id_estatus_cotizacion], references: [id_estatus])
+
+  historial           HistorialEstadosCotizacion[]
+  variablesCotizacion VariablesCotizacion[]
+
+  rechazada CotizacionesRechazadas?
+
+  @@map("COTIZACIONES")
+}
+
+model CotizacionesRechazadas {
+  id_cotizacion Int @id
+
+  fecha_rechazo DateTime @default(now())
+
+  cotizacion Cotizaciones @relation(fields: [id_cotizacion], references: [id_cotizacion], onDelete: Cascade)
+
+  @@map("COTIZACIONESRECHAZADAS")
+}
+
 model HistorialEstadosCotizacion {
   id_historial        Int      @id @default(autoincrement())
   id_cotizacion       Int
