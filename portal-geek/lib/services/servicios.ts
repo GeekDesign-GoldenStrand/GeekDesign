@@ -36,28 +36,94 @@ export type ServicioCompleto = Prisma.ServiciosGetPayload<{
 
 type ServicioSimple = Prisma.ServiciosGetPayload<object>;
 
+export type ServicioConDetalles = Prisma.ServiciosGetPayload<{
+  include: {
+    opciones: {
+      include: {
+        material: true;
+        valores: {
+          include: {
+            matriz: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
 // ─── Functions ─────────────────────────────────────────────────────────
 
 export async function listServicios(
   page: number,
-  pageSize: number
+  pageSize: number,
+  soloActivos?: boolean,
+  query?: string
 ): Promise<{ items: ServicioListado[]; total: number }> {
   const skip = (page - 1) * pageSize;
+
+  const where: Prisma.ServiciosWhereInput = {};
+  if (soloActivos) where.estatus_servicio = true;
+  if (query) {
+    where.OR = [
+      { nombre_servicio: { contains: query, mode: "insensitive" } },
+      { descripcion_servicio: { contains: query, mode: "insensitive" } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.servicios.findMany({
       skip,
       take: pageSize,
       orderBy: { fecha_modificacion: "desc" },
+      where,
       include: {
         sucursal: true,
         maquinas: { include: { maquina: true } },
       },
     }),
-    prisma.servicios.count(),
+    prisma.servicios.count({ where }),
   ]);
 
   return { items, total };
+}
+
+export async function getServicioWithDetails(
+  id: number
+): Promise<{ servicio: ServicioConDetalles; precioBase: number | null }> {
+  const servicio = await prisma.servicios.findFirst({
+    where: { id_servicio: id, estatus_servicio: true },
+    include: {
+      opciones: {
+        include: {
+          material: true,
+          valores: {
+            orderBy: { es_default: "desc" },
+            include: {
+              matriz: { orderBy: { precio_unitario: "asc" } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!servicio) {
+    throw new NotFoundError(`Servicio con id ${id} no encontrado`);
+  }
+
+  let precioBase: number | null = null;
+  for (const opcion of servicio.opciones) {
+    for (const valor of opcion.valores) {
+      for (const precio of valor.matriz) {
+        const p = Number(precio.precio_unitario);
+        if (precioBase === null || p < precioBase) {
+          precioBase = p;
+        }
+      }
+    }
+  }
+
+  return { servicio, precioBase };
 }
 
 export async function getServicio(id: number): Promise<ServicioCompleto> {
