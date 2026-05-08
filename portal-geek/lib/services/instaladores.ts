@@ -26,7 +26,18 @@ export async function getInstalador(id: number): Promise<Instaladores> {
 }
 
 export async function createInstalador(data: CreateInstaladorInput): Promise<Instaladores> {
-  return prisma.instaladores.create({ data });
+  return prisma.instaladores.create({
+    data: {
+      nombre_instalador: data.nombre_instalador,
+      apodo: data.apodo || null,
+      tipo: data.tipo,
+      telefono: data.telefono,
+      correo: data.correo,
+      notas: data.notas || null,
+      ubicacion: data.ubicacion || null,
+      estatus: data.estatus,
+    },
+  });
 }
 
 export async function updateInstalador(
@@ -34,7 +45,7 @@ export async function updateInstalador(
   data: UpdateInstaladorInput
 ): Promise<Instaladores> {
   try {
-    return await prisma.instaladores.update({ where: { id_instalador: id }, data });
+    return await prisma.instaladores.update({ where: { id_instalador: id }, data: data });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Instalador ${id} no encontrado`);
