@@ -1,7 +1,7 @@
 "use client";
 
 import type { Clientes } from "@prisma/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
@@ -13,26 +13,46 @@ export function ClientesView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 10;
 
-  // Initial data loading from the API
+  // Debounce search input
   useEffect(() => {
-    async function fetchClientes() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/clientes?pageSize=100");
-        if (!res.ok) throw new Error("Failed to load clients");
-        const json = await res.json();
-        setClientes(json.data || []);
-      } catch (err) {
-        console.error(err);
-        setError("Error al cargar la lista de clientes. Por favor, intente de nuevo.");
-      } finally {
-        setLoading(false);
-      }
-    }
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
 
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // Data loading from the API
+  const fetchClientes = useCallback(async () => {
+    try {
+      setLoading(true);
+      const query = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        search: debouncedSearch,
+      });
+      const res = await fetch(`/api/clientes?${query.toString()}`);
+      if (!res.ok) throw new Error("Failed to load clients");
+      const json = await res.json();
+      setClientes(json.data || []);
+      setTotal(json.total || 0);
+    } catch (err) {
+      console.error(err);
+      setError("Error al cargar la lista de clientes. Por favor, intente de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch]);
+
+  useEffect(() => {
     fetchClientes();
-  }, []);
+  }, [fetchClientes]);
 
   // Update client category
   const handleUpdateCategory = async (id: number, category: ClientCategory) => {
@@ -55,14 +75,6 @@ export function ClientesView() {
     }
   };
 
-  // Client-side filtering based on search term
-  const filteredClientes = clientes.filter(
-    (c) =>
-      c.nombre_cliente.toLowerCase().includes(search.toLowerCase()) ||
-      (c.empresa?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      c.correo_electronico.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       <AdminHeader title="Clientes" />
@@ -74,15 +86,16 @@ export function ClientesView() {
           <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md font-ibm-plex">
             {error}
           </div>
-        ) : loading ? (
-          <div className="flex items-center justify-center p-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e42200]"></div>
-            <span className="ml-4 text-[#8e908f] font-medium font-ibm-plex">
-              Cargando clientes...
-            </span>
-          </div>
         ) : (
-          <ClientesTable items={filteredClientes} onUpdateCategory={handleUpdateCategory} />
+          <ClientesTable
+            items={clientes}
+            loading={loading}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onUpdateCategory={handleUpdateCategory}
+          />
         )}
       </main>
     </div>

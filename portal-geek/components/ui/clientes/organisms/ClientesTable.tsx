@@ -2,17 +2,38 @@
 
 import type { Clientes } from "@prisma/client";
 
-import { PlusBoxIcon } from "@/components/ui/atoms/icons";
 import { formatPhoneNumber } from "@/lib/utils/format";
 
 import { CategoryDropdown, type ClientCategory } from "../molecules/CategoryDropdown";
 
 interface ClientesTableProps {
   items: Clientes[];
+  loading?: boolean;
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
   onUpdateCategory?: (id: number, category: ClientCategory) => void;
 }
 
-export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
+export function ClientesTable({
+  items,
+  loading,
+  total = 0,
+  page = 1,
+  pageSize = 10,
+  onPageChange,
+  onUpdateCategory,
+}: ClientesTableProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e42200]"></div>
+        <span className="ml-4 text-[#8e908f] font-medium font-ibm-plex">Cargando clientes...</span>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-20 bg-white rounded-[15px] border border-dashed border-[#b9b8b8]">
@@ -26,6 +47,20 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
     );
   }
 
+  const totalPages = Math.ceil(total / pageSize);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+        pages.push(i);
+      } else if (pages[pages.length - 1] !== "...") {
+        pages.push("...");
+      }
+    }
+    return pages;
+  };
+
   return (
     <div className="w-full">
       {/* Table Header - Hidden on mobile */}
@@ -38,7 +73,6 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
         <div className="flex-1 font-bold text-[18px] text-black text-center font-ibm-plex">
           Categoría
         </div>
-        <div className="w-[60px]"></div>
       </div>
 
       {/* Table Rows / Cards */}
@@ -120,39 +154,45 @@ export function ClientesTable({ items, onUpdateCategory }: ClientesTableProps) {
                 />
               </div>
             </div>
-
-            {/* Acción */}
-            <div className="w-full lg:w-[60px] flex justify-end items-center border-t lg:border-none pt-4 lg:pt-0">
-              <button
-                className="flex items-center gap-2 lg:block text-black hover:text-[#e42200] transition-colors p-2"
-                title="Ver más información"
-              >
-                <span className="lg:hidden font-semibold text-[14px]">Ver Detalles</span>
-                <PlusBoxIcon size={24} />
-              </button>
-            </div>
           </div>
         ))}
       </div>
 
       {/* Contenedor de Paginación */}
-      <div className="flex justify-center lg:justify-end mt-8 gap-2">
-        <button className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#d1d1d1] hover:bg-gray-50 transition-colors text-[15px]">
-          {"<"}
-        </button>
-        <button className="w-[36px] h-[36px] bg-[#e42200] text-white rounded-[4px] font-bold text-[15px] font-ibm-plex">
-          1
-        </button>
-        <button className="w-[36px] h-[36px] bg-[#f0f0f0] text-[#1e1e1e] rounded-[4px] font-bold text-[15px] font-ibm-plex hover:bg-gray-200 transition-colors">
-          2
-        </button>
-        <button className="w-[36px] h-[36px] bg-[#f0f0f0] text-[#d1d1d1] rounded-[4px] font-bold text-[15px] font-ibm-plex cursor-default">
-          ...
-        </button>
-        <button className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 transition-colors text-[15px]">
-          {">"}
-        </button>
-      </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center lg:justify-end mt-8 gap-2">
+          <button
+            onClick={() => onPageChange?.(page - 1)}
+            disabled={page === 1}
+            className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#1e1e1e] disabled:text-[#d1d1d1] hover:bg-gray-50 transition-colors text-[15px]"
+          >
+            {"<"}
+          </button>
+          {getPageNumbers().map((p, idx) => (
+            <button
+              key={idx}
+              onClick={() => typeof p === "number" && onPageChange?.(p)}
+              disabled={p === "..." || p === page}
+              className={`w-[36px] h-[36px] rounded-[4px] font-bold text-[15px] font-ibm-plex transition-colors ${
+                p === page
+                  ? "bg-[#e42200] text-white"
+                  : p === "..."
+                    ? "text-[#d1d1d1] cursor-default"
+                    : "bg-[#f0f0f0] text-[#1e1e1e] hover:bg-gray-200"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            onClick={() => onPageChange?.(page + 1)}
+            disabled={page === totalPages}
+            className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center text-[#1e1e1e] disabled:text-[#d1d1d1] hover:bg-gray-50 transition-colors text-[15px]"
+          >
+            {">"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
