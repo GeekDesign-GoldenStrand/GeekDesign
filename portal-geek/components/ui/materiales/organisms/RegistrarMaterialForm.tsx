@@ -4,18 +4,12 @@ import { useState } from "react";
 
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import type { MaterialCardProps } from "@/types";
-
-type CreatedMaterialResponse = {
-  id_material: number;
-  nombre_material: string;
-  descripcion_material: string | null;
-  unidad_medida: string;
-  ancho: string | number | null;
-  alto: string | number | null;
-  grosor: string | number | null;
-  color: string | null;
-  imagen_url: string | null;
-};
+import {
+  mapMaterialRow,
+  parseOptionalNumber,
+  normalizeNumericInput,
+  type MaterialApiRow,
+} from "@/lib/utils/materiales";
 
 interface RegistrarMaterialFormProps {
   onCreated: (row: MaterialCardProps) => void;
@@ -30,44 +24,6 @@ const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
-
-function normalizeDecimal(value: string | number | null): string {
-  if (value === null || value === undefined || value === "") return "-";
-  return String(value);
-}
-
-function mapCreatedMaterial(item: CreatedMaterialResponse): MaterialCardProps {
-  // Convert API payload to the table row shape used by the UI module.
-  return {
-    id: item.id_material,
-    name: item.nombre_material,
-    unit: item.unidad_medida,
-    color: item.color ?? "-",
-    width: normalizeDecimal(item.ancho),
-    height: normalizeDecimal(item.alto),
-    thickness: normalizeDecimal(item.grosor),
-    description: item.descripcion_material ?? "",
-    imageUrl: item.imagen_url ?? "",
-  };
-}
-
-function parseOptionalNumber(value: string): number | undefined {
-  // Keep empty numeric fields optional so they pass schema validation.
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return undefined;
-  return parsed;
-}
-
-function normalizeNumericInput(raw: string): string {
-  if (!raw) return "";
-  const sanitized = raw.replace(/[^\d.]/g, "");
-  const [intPartRaw = "", ...rest] = sanitized.split(".");
-  const intPart = intPartRaw.slice(0, 8);
-  if (rest.length === 0) return intPart;
-  const decimalPart = rest.join("").slice(0, 2);
-  return `${intPart}.${decimalPart}`;
-}
 
 export function RegistrarMaterialForm({ onCreated, onClose }: RegistrarMaterialFormProps) {
   const [form, setForm] = useState({
@@ -160,8 +116,7 @@ export function RegistrarMaterialForm({ onCreated, onClose }: RegistrarMaterialF
         return;
       }
 
-      onCreated(mapCreatedMaterial(responsePayload.data as CreatedMaterialResponse));
-      // Close modal only after successful creation and local list update.
+      onCreated(mapMaterialRow(responsePayload.data as MaterialApiRow));
       onClose();
     } catch {
       setServerError("Error de red. Intenta de nuevo.");

@@ -10,40 +10,10 @@ import {
   MaterialesToolbar,
 } from "@/components/ui/materiales";
 import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
+import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
-
-type DbMaterial = {
-  id_material: number;
-  nombre_material: string;
-  descripcion_material: string | null;
-  unidad_medida: string;
-  ancho: string | number | null;
-  alto: string | number | null;
-  grosor: string | number | null;
-  color: string | null;
-  imagen_url: string | null;
-};
-
-function normalizeDecimal(value: string | number | null): string {
-  if (value === null || value === undefined || value === "") return "-";
-  return String(value);
-}
-
-function mapMaterial(item: DbMaterial): MaterialCardProps {
-  return {
-    id: item.id_material,
-    name: item.nombre_material,
-    unit: item.unidad_medida,
-    color: item.color ?? "-",
-    width: normalizeDecimal(item.ancho),
-    height: normalizeDecimal(item.alto),
-    thickness: normalizeDecimal(item.grosor),
-    description: item.descripcion_material ?? "",
-    imageUrl: item.imagen_url ?? "",
-  };
-}
 
 const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
   name: true,
@@ -102,7 +72,7 @@ export function MaterialesView() {
       })
       .then((payload) => {
         if (abortController.signal.aborted) return;
-        const items = ((payload?.data ?? []) as DbMaterial[]).map(mapMaterial);
+        const items = ((payload?.data ?? []) as MaterialApiRow[]).map(mapMaterialRow);
         setRows(items);
         const total = payload?.total ?? 0;
         setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));

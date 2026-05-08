@@ -4,18 +4,12 @@ import { useState } from "react";
 
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import type { MaterialCardProps } from "@/types";
-
-type UpdateMaterialResponse = {
-  id_material: number;
-  nombre_material: string;
-  descripcion_material: string | null;
-  unidad_medida: string;
-  ancho: string | number | null;
-  alto: string | number | null;
-  grosor: string | number | null;
-  color: string | null;
-  imagen_url: string | null;
-};
+import {
+  mapMaterialRow,
+  parseOptionalNumber,
+  normalizeNumericInput,
+  type MaterialApiRow,
+} from "@/lib/utils/materiales";
 
 interface EditarMaterialFormProps {
   material: MaterialCardProps;
@@ -33,41 +27,7 @@ const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-function normalizeDecimal(value: string | number | null): string {
-  if (value === null || value === undefined || value === "") return "-";
-  return String(value);
-}
-
-function mapUpdatedMaterial(item: UpdateMaterialResponse): MaterialCardProps {
-  return {
-    id: item.id_material,
-    name: item.nombre_material,
-    unit: item.unidad_medida,
-    color: item.color ?? "-",
-    width: normalizeDecimal(item.ancho),
-    height: normalizeDecimal(item.alto),
-    thickness: normalizeDecimal(item.grosor),
-    description: item.descripcion_material ?? "",
-    imageUrl: item.imagen_url ?? "",
-  };
-}
-
-function parseOptionalNumber(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return undefined;
-  return parsed;
-}
-
-function normalizeNumericInput(raw: string): string {
-  if (!raw) return "";
-  const sanitized = raw.replace(/[^\d.]/g, "");
-  const [intPartRaw = "", ...rest] = sanitized.split(".");
-  const intPart = intPartRaw.slice(0, 8);
-  if (rest.length === 0) return intPart;
-  const decimalPart = rest.join("").slice(0, 2);
-  return `${intPart}.${decimalPart}`;
-}
+const REQUIRED_NUMERIC = ["ancho", "alto", "grosor"] as const;
 
 export function EditarMaterialForm({
   material,
@@ -105,7 +65,7 @@ export function EditarMaterialForm({
       const value = form[key];
       if (key === "imagen_url") {
         if (!value.trim()) return "";
-        return /^https?:\/\//i.test(value.trim()) ? FIELD_SUCCESS : "";
+        return /^https:\/\//i.test(value.trim()) ? FIELD_SUCCESS : "";
       }
       if (["ancho", "alto", "grosor"].includes(key)) {
         const parsed = parseOptionalNumber(value);
@@ -120,6 +80,17 @@ export function EditarMaterialForm({
   }
 
   function validate() {
+    // Guard empty numeric fields explicitly so undefined values are never
+    // silently dropped by JSON.stringify before reaching the API.
+    const numericErrors: Record<string, string> = {};
+    for (const key of REQUIRED_NUMERIC) {
+      if (!form[key].trim()) numericErrors[key] = "Campo requerido";
+    }
+    if (Object.keys(numericErrors).length > 0) {
+      setErrors(numericErrors);
+      return null;
+    }
+
     const payload = {
       nombre_material: form.nombre_material.trim(),
       descripcion_material: form.descripcion_material.trim(),
@@ -167,7 +138,7 @@ export function EditarMaterialForm({
         return;
       }
 
-      onUpdated(mapUpdatedMaterial(responsePayload.data as UpdateMaterialResponse));
+      onUpdated(mapMaterialRow(responsePayload.data as MaterialApiRow));
       onClose();
     } catch {
       setServerError("Error de red. Intenta de nuevo.");
@@ -192,7 +163,6 @@ export function EditarMaterialForm({
         return;
       }
 
-      // Material deleted successfully, notify parent and close modal
       onDeleted(material.id);
       onClose();
     } catch {

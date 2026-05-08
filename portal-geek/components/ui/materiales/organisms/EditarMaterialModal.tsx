@@ -4,34 +4,7 @@ import { useEffect, useState } from "react";
 
 import { EditarMaterialForm } from "@/components/ui/materiales/organisms/EditarMaterialForm";
 import type { MaterialCardProps } from "@/types";
-
-// Raw shape returned by GET /api/materiales/:id
-type FreshMaterial = {
-  id_material: number;
-  nombre_material: string;
-  descripcion_material: string | null;
-  unidad_medida: string;
-  ancho: string | number | null;
-  alto: string | number | null;
-  grosor: string | number | null;
-  color: string | null;
-  imagen_url: string | null;
-};
-
-function mapFreshMaterial(item: FreshMaterial): MaterialCardProps {
-  const normalize = (v: string | number | null) => (v == null || v === "" ? "-" : String(v));
-  return {
-    id: item.id_material,
-    name: item.nombre_material,
-    unit: item.unidad_medida,
-    color: item.color ?? "-",
-    width: normalize(item.ancho),
-    height: normalize(item.alto),
-    thickness: normalize(item.grosor),
-    description: item.descripcion_material ?? "",
-    imageUrl: item.imagen_url ?? "",
-  };
-}
+import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
 
 interface EditarMaterialModalProps {
   isOpen: boolean;
@@ -68,7 +41,7 @@ export function EditarMaterialModal({
       })
       .then((payload) => {
         if (abortController.signal.aborted) return;
-        setFreshMaterial(mapFreshMaterial(payload.data as FreshMaterial));
+        setFreshMaterial(mapMaterialRow(payload.data as MaterialApiRow));
       })
       .catch(() => {
         if (abortController.signal.aborted) return;
@@ -85,12 +58,25 @@ export function EditarMaterialModal({
   const isLoading = !freshMaterial && !fetchError;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      aria-hidden="true"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="editar-material-title"
+        className="bg-white rounded-[12px] shadow-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <h2 className="text-[20px] font-medium text-[#1e1e1e]">Editar Material</h2>
+          <h2 id="editar-material-title" className="text-[20px] font-medium text-[#1e1e1e]">
+            Editar Material
+          </h2>
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             className="text-[#8e908f] hover:text-[#e42200] transition-colors"
           >
             <svg
@@ -102,6 +88,7 @@ export function EditarMaterialModal({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
