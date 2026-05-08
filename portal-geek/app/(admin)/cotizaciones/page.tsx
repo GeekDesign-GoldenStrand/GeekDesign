@@ -11,6 +11,7 @@ type Cotizacion = {
   monto_total: number;
   empresa: string | null;
   cliente: string;
+  folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
 };
@@ -22,6 +23,7 @@ type CotizacionApi = {
   monto_total: string | number;
   empresa_cliente?: string | null;
   cliente?: { empresa?: string | null; nombre_cliente?: string };
+  folio?: string | null;
   estatus?: { descripcion?: string };
   fecha_fin?: string | null;
   fecha_aprobacion?: string | null;
@@ -63,6 +65,7 @@ export default function CotizacionesPage() {
         monto_total: Number(c.monto_total),
         empresa: c.empresa_cliente ?? c.cliente?.empresa ?? null,
         cliente: c.cliente?.nombre_cliente ?? "",
+        folio: c.folio ?? null,
         estatus: c.estatus?.descripcion ?? "",
         fecha_estimada: c.fecha_fin ?? c.fecha_aprobacion ?? null,
       }));

@@ -245,7 +245,20 @@ async function main() {
   console.log(`Seeded option "${opcion.nombre_opcion}" with pricing matrix`);
 
   // ── Order statuses ─────────────────────────────────────────────────────────
-  const orderStatuses = [
+  const orderStatuses = ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
+
+  for (const descripcion of orderStatuses) {
+    await prisma.estatusPedidos.upsert({
+      where: { descripcion },
+      update: {},
+      create: { descripcion },
+    });
+  }
+
+  console.log(`Seeded ${orderStatuses.length} order statuses`);
+
+  // ── Invoice statuses ─────────────────────────────────────────
+  const invoiceStatuses = [
     "Cotizacion",
     "Pagado",
     "En_cola",
@@ -254,17 +267,18 @@ async function main() {
     "Entregado",
     "Facturado",
   ];
-  for (const descripcion of orderStatuses) {
-    await prisma.estatusPedidos.upsert({
+
+  for (const descripcion of invoiceStatuses) {
+    await prisma.estadoFacturaPedido.upsert({
       where: { descripcion },
       update: {},
       create: { descripcion },
     });
   }
-  console.log(`Seeded ${orderStatuses.length} order statuses`);
 
   // ── Quotation statuses ─────────────────────────────────────────────────────
-  const quotationStatuses = ["En_revision", "Validada", "Aprobada", "Rechazada"];
+  const quotationStatuses = ["Pendiente", "Validada", "Rechazada", "Aprobada", "Cancelada"];
+
   for (const descripcion of quotationStatuses) {
     await prisma.estatusCotizacion.upsert({
       where: { descripcion },
@@ -272,6 +286,7 @@ async function main() {
       create: { descripcion },
     });
   }
+
   console.log(`Seeded ${quotationStatuses.length} quotation statuses`);
 
   // ── Test client ────────────────────────────────────────────────────────────
@@ -360,20 +375,23 @@ async function main() {
 
     const demoCotizaciones = [
       {
+        id_pedido: 1,
         monto_total: 1500,
         notas: "Cotización pendiente para corte láser",
         fecha_creacion: new Date("2026-04-13"),
         id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["En_revision"],
+        id_estatus_cotizacion: statusMap["Pendiente"],
       },
       {
+        id_pedido: 2,
         monto_total: 2500,
         notas: "Cotización aprobada para grabado",
         fecha_creacion: new Date("2026-04-15"),
         id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Aprobada"],
+        id_estatus_cotizacion: statusMap["Validada"],
       },
       {
+        id_pedido: 3,
         monto_total: 1800,
         notas: "Cliente rechazó la propuesta",
         fecha_creacion: new Date("2026-04-17"),
@@ -381,13 +399,108 @@ async function main() {
         id_estatus_cotizacion: statusMap["Rechazada"],
       },
       {
+        id_pedido: 4,
         monto_total: 2200,
         notas: "Cotización validada por cambios de requerimiento",
         fecha_creacion: new Date("2026-04-20"),
         id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Validada"],
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        id_pedido: 5,
+        monto_total: 3000,
+        notas: "Cotización cancelada",
+        fecha_creacion: new Date("2026-06-20"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Cancelada"],
       },
     ];
+
+    // ── Invoice status map ─────────────────────────────────────────
+    const invoiceStatuses = await prisma.estadoFacturaPedido.findMany();
+
+    const invoiceStatusMap: Record<string, number> = {};
+
+    invoiceStatuses.forEach((s) => {
+      invoiceStatusMap[s.descripcion] = s.id_estado_factura;
+    });
+
+    // ── Demo Pedidos ───────────────────────────────────────────────
+    const demoPedidos = [
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-13"),
+        fecha_estimada: new Date("2026-04-18"),
+        notas: "Pedido demo pendiente",
+      },
+
+      {
+        status: "En producción",
+        estado_factura: "Pagado",
+        fecha_creacion: new Date("2026-04-15"),
+        fecha_estimada: new Date("2026-04-22"),
+        notas: "Pedido demo en producción",
+      },
+
+      {
+        status: "Finalizado",
+        estado_factura: "Aprobacion_diseno",
+        fecha_creacion: new Date("2026-04-17"),
+        fecha_estimada: new Date("2026-04-24"),
+        notas: "Pedido demo finalizado",
+      },
+
+      {
+        status: "Entregado",
+        estado_factura: "Entregado",
+        fecha_creacion: new Date("2026-04-20"),
+        fecha_estimada: new Date("2026-04-27"),
+        notas: "Pedido demo entregado",
+      },
+
+      {
+        status: "Cancelado",
+        estado_factura: "Facturado",
+        fecha_creacion: new Date("2026-04-25"),
+        fecha_estimada: new Date("2026-05-01"),
+        notas: "Pedido demo cancelado",
+      },
+    ];
+
+    for (const pedido of demoPedidos) {
+      await prisma.pedidos.create({
+        data: {
+          cliente: {
+            connect: {
+              id_cliente: 1,
+            },
+          },
+
+          estatus: {
+            connect: {
+              descripcion: pedido.status,
+            },
+          },
+
+          estado_factura: {
+            connect: {
+              id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+            },
+          },
+
+          sucursal: {
+            connect: {
+              id_sucursal: 1,
+            },
+          },
+
+          fecha_creacion: pedido.fecha_creacion,
+          fecha_estimada: pedido.fecha_estimada,
+          notas: pedido.notas,
+        },
+      });
+    }
 
     await prisma.cotizaciones.createMany({ data: demoCotizaciones });
     console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);

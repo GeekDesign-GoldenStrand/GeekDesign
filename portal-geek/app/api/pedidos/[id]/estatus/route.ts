@@ -1,25 +1,36 @@
-import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { withRoleParams } from "@/lib/auth/guards";
 import { PedidoIdParams } from "@/lib/schemas/pedidos";
 import { changePedidoStatus, PEDIDO_STATUS } from "@/lib/services/pedidos";
+import { ok } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const PATCH = withRoleParams<{ id: string }>(["Direccion"], async (req, ctx, session) => {
-  try {
-    const { id: pedidoId } = PedidoIdParams.parse(await ctx.params);
+type Params = { id: string };
 
-    const body = await req.json();
-    const newStatus = body.estatus;
-
-    // Validate against catalog
-    if (!Object.values(PEDIDO_STATUS).includes(newStatus)) {
-      return handleError(new Error("Invalid pedido status"));
-    }
-
-    const updated = await changePedidoStatus(pedidoId, newStatus, session.id);
-    return NextResponse.json(updated);
-  } catch (err) {
-    return handleError(err);
-  }
+const ChangePedidoStatusSchema = z.object({
+  estatus: z.enum([
+    PEDIDO_STATUS.PENDIENTE,
+    PEDIDO_STATUS.EN_PRODUCCION,
+    PEDIDO_STATUS.FINALIZADO,
+    PEDIDO_STATUS.ENTREGADO,
+    PEDIDO_STATUS.CANCELADO,
+  ]),
 });
+
+export const PATCH = withRoleParams<Params>(
+  ["Direccion", "Colaborador"],
+  async (req, ctx, session) => {
+    try {
+      const { id } = PedidoIdParams.parse(await ctx.params);
+
+      const body = ChangePedidoStatusSchema.parse(await req.json());
+
+      const pedido = await changePedidoStatus(id, body.estatus, session.id);
+
+      return ok(pedido);
+    } catch (err) {
+      return handleError(err);
+    }
+  }
+);

@@ -6,13 +6,13 @@ import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { CotizacionesTable } from "@/components/admin/organisms/CotizacionesTable";
 
-// Frontend type
-type Cotizacion = {
+export type Cotizacion = {
   id_cotizacion: number;
   fecha_creacion: string;
   monto_total: number;
   empresa: string | null;
   cliente: string;
+  folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
 };
@@ -93,7 +93,8 @@ export function CotizacionesTemplate({
             search={search}
             onSearchChange={setSearch}
             onAgregar={() => {}}
-            onFiltrar={() => setShowFilter((prev) => !prev)}
+            // Filter button for quotations, uncomment if you want to implement it
+            // onFiltrar={() => setShowFilter((prev) => !prev)}
           />
 
           {/* Filter dropdown */}

@@ -117,8 +117,10 @@ export function PedidosTemplate({
           <AdminToolbar
             search={search}
             onSearchChange={setSearch}
-            onAgregar={() => {}}
-            onFiltrar={() => setShowFilter((prev) => !prev)}
+            // Button for adding a new order. Backend not implemented yet.
+            // onAgregar={() => {}}
+            // Filter button for orders, uncomment if you want to implement it
+            // onFiltrar={() => setShowFilter((prev) => !prev)}
           />
 
           {/* Filter dropdown */}
@@ -239,13 +241,13 @@ export function PedidosTemplate({
         {/* Table */}
         <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
 
-        {/* Pagination */}
+        {/* Pagination (Figma-style) */}
         <div className="flex justify-end mt-8 mb-6 pr-4">
           <div className="flex items-center gap-2">
             <button
               disabled={page === 1}
               onClick={() => setPage(page - 1)}
-              className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center hover:bg-gray-50 disabled:opacity-40"
+              className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
             >
               {"<"}
             </button>
@@ -262,7 +264,7 @@ export function PedidosTemplate({
                   ${
                     isActive
                       ? "bg-[#e42200] text-white"
-                      : "bg-[#f0f0f0] text-[#1e1e1e] hover:bg-gray-200"
+                      : "bg-gray-100 text-[#1e1e1e] hover:bg-gray-200"
                   }`}
                 >
                   {pageNumber}
@@ -273,7 +275,7 @@ export function PedidosTemplate({
             <button
               disabled={page === Math.ceil(total / pageSize)}
               onClick={() => setPage(page + 1)}
-              className="w-[36px] h-[36px] border border-[#d1d1d1] rounded-[4px] flex items-center justify-center hover:bg-gray-50 disabled:opacity-40"
+              className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
             >
               {">"}
             </button>

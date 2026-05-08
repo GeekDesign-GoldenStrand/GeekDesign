@@ -1,20 +1,6 @@
 "use client";
 
-import { PencilSimple } from "@phosphor-icons/react";
-
-const STATUS_MAP_UI_TO_API: Record<string, string> = {
-  "En revisión": "En_revision",
-  Aprobada: "Aprobada",
-  Rechazada: "Rechazada",
-  Validada: "Validada",
-};
-
-const STATUS_MAP_API_TO_UI: Record<string, string> = {
-  En_revision: "En revisión",
-  Aprobada: "Aprobada",
-  Rechazada: "Rechazada",
-  Validada: "Validada",
-};
+import { PencilSimple, CaretDown } from "@phosphor-icons/react";
 
 type Cotizacion = {
   id_cotizacion: number;
@@ -22,6 +8,7 @@ type Cotizacion = {
   monto_total: number;
   empresa: string | null;
   cliente: string;
+  folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
 };
@@ -32,18 +19,24 @@ type Props = {
   onStatusChange: (id: number, status: string) => void;
 };
 
-// 🎨 Helper para estilos de estatus tipo Figma
+// Helper para estilos de estatus tipo Figma
 function getStatusStyle(status: string) {
   switch (status) {
-    case "Aprobada":
-      return "bg-green-100 text-green-800";
-    case "Rechazada":
-      return "bg-gray-200 text-black";
-    case "En revisión":
-    case "En_revision":
-      return "bg-purple-100 text-purple-800";
+    case "Pendiente":
+      return "bg-[#F7B9FF]/70 text-[#D83CFF]";
+
     case "Validada":
-      return "bg-blue-100 text-blue-800";
+      return "bg-[#B9EAFF] text-[#0D7794]";
+
+    case "Rechazada":
+      return "bg-[#FFA5A5]/60 text-[#FF3030]";
+
+    case "Aprobada":
+      return "bg-[#CCFFA5]/60 text-[#26AF00]";
+
+    case "Cancelada":
+      return "bg-[#B1B1B1] text-black";
+
     default:
       return "bg-gray-100 text-gray-600";
   }
@@ -57,81 +50,94 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
   }
 
   return (
-    <div className="space-y-2">
-      {/* Header */}
-      <div
-        className="grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-        style={{
-          gridTemplateColumns: "1.2fr 1fr 1fr 1.2fr 1.2fr 1fr 0.6fr",
-        }}
-      >
-        <span>Fecha</span>
-        <span>Monto</span>
-        <span>Entrega</span>
-        <span>Empresa</span>
-        <span>Cliente</span>
-        <span>Estatus</span>
-        <span>Acciones</span>
-      </div>
-
-      {cotizaciones.map((c) => (
+    <div className="overflow-x-auto bg-white rounded">
+      <div className="space-y-2 min-w-[1100px]">
+        {/* Header */}
         <div
-          key={c.id_cotizacion}
-          className="grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
+          className="grid px-2 md:px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-xs md:text-sm text-center"
           style={{
-            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 0.5fr",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
           }}
         >
-          {/* Fecha */}
-          <span>
-            {c.fecha_creacion ? new Date(c.fecha_creacion).toLocaleDateString("es-MX") : "—"}
-          </span>
-
-          {/* Monto */}
-          <span>${c.monto_total.toLocaleString("es-MX")} MXN</span>
-
-          {/* Entrega */}
-          <span>
-            {c.fecha_estimada ? new Date(c.fecha_estimada).toLocaleDateString("es-MX") : "—"}
-          </span>
-
-          {/* Empresa */}
-          <span>{c.empresa || "—"}</span>
-
-          {/* Cliente */}
-          <span>{c.cliente}</span>
-
-          {/* Estatus */}
-          <div className="flex justify-center">
-            <select
-              value={STATUS_MAP_API_TO_UI[c.estatus] ?? c.estatus}
-              onChange={(e) => {
-                const uiValue = e.target.value;
-                const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-                onStatusChange(c.id_cotizacion, apiValue);
-              }}
-              className={`px-4 py-1 rounded-full text-sm font-medium outline-none cursor-pointer ${getStatusStyle(
-                c.estatus
-              )}`}
-            >
-              <option value="En revisión">En revisión</option>
-              <option value="Aprobada">Aprobada</option>
-              <option value="Rechazada">Rechazada</option>
-              <option value="Validada">Validada</option>
-            </select>
-          </div>
-
-          {/* Acciones */}
-          <div className="flex justify-center">
-            <button
-              className="text-black hover:text-[#e42200] transition-colors p-2"
-              title="Editar cotización"
-            >
-              <PencilSimple size={20} />
-            </button>
-          </div>
+          <span className="whitespace-nowrap">Fecha</span>
+          <span className="whitespace-nowrap">Monto</span>
+          <span className="whitespace-nowrap">Entrega</span>
+          <span className="whitespace-nowrap">Empresa</span>
+          <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Folio</span>
+          <span className="whitespace-nowrap">Estatus</span>
+          <span className="whitespace-nowrap">Acciones</span>
         </div>
-      ))}
+
+        {cotizaciones.map((c) => (
+          <div
+            key={c.id_cotizacion}
+            className="grid px-2 md:px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-xs md:text-sm items-center text-center"
+            style={{
+              gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
+            }}
+          >
+            {/* Fecha */}
+            <span className="whitespace-nowrap">
+              {c.fecha_creacion ? new Date(c.fecha_creacion).toLocaleDateString("es-MX") : "—"}
+            </span>
+
+            {/* Monto */}
+            <span className="whitespace-nowrap">${c.monto_total.toLocaleString("es-MX")} MXN</span>
+
+            {/* Entrega */}
+            <span className="whitespace-nowrap">
+              {c.fecha_estimada ? new Date(c.fecha_estimada).toLocaleDateString("es-MX") : "—"}
+            </span>
+
+            {/* Empresa */}
+            <span className="whitespace-nowrap">{c.empresa || "—"}</span>
+
+            {/* Cliente */}
+            <span className="whitespace-nowrap">{c.cliente}</span>
+
+            {/* Folio */}
+            <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
+
+            {/* Estatus */}
+            <div className="flex justify-center">
+              <div
+                className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
+              >
+                <select
+                  value={c.estatus}
+                  onChange={(e) => {
+                    onStatusChange(c.id_cotizacion, e.target.value);
+                  }}
+                  className="pl-3 md:pl-4 pr-7 md:pr-8 py-1 rounded-full text-xs md:text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                >
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Validada">Validada</option>
+                  <option value="Rechazada">Rechazada</option>
+                  <option value="Aprobada">Aprobada</option>
+                  <option value="Cancelada">Cancelada</option>
+                </select>
+
+                <CaretDown
+                  size={14}
+                  weight="bold"
+                  className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                />
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="flex justify-center">
+              <button
+                className="text-black hover:text-[#e42200] transition-colors p-2"
+                title="Editar cotización"
+              >
+                <PencilSimple size={18} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

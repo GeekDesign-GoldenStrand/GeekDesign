@@ -1,33 +1,33 @@
-import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { withRoleParams } from "@/lib/auth/guards";
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
 import { changeQuotationStatus, QUOTATION_STATUS } from "@/lib/services/cotizaciones";
+import { ok } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const PATCH = withRoleParams<{ id: string }>(
-  ["Direccion", "Administrador"],
-  async (req, ctx, session) => {
-    try {
-      // Renaming 'id' to 'quotationId' for semantic clarity
-      const { id: quotationId } = CotizacionIdParams.parse(await ctx.params);
+type Params = { id: string };
 
-      const body = await req.json();
-      const newStatus = body.estatus;
+const ChangeQuotationStatusSchema = z.object({
+  estatus: z.enum([
+    QUOTATION_STATUS.PENDIENTE,
+    QUOTATION_STATUS.VALIDADA,
+    QUOTATION_STATUS.RECHAZADA,
+    QUOTATION_STATUS.APROBADA,
+    QUOTATION_STATUS.CANCELADA,
+  ]),
+});
 
-      // Validate against centralized QUOTATION_STATUS catalog.
-      // This prevents "magic strings" and ensures consistency if the catalog changes.
-      if (!Object.values(QUOTATION_STATUS).includes(newStatus)) {
-        return handleError(new Error("Invalid quotation status"));
-      }
+export const PATCH = withRoleParams<Params>(["Direccion"], async (req, ctx, session) => {
+  try {
+    const { id } = CotizacionIdParams.parse(await ctx.params);
 
-      // Delegate to service function that handles transaction + history logging.
-      // Keeping this logic in the service avoids duplication across multiple routes.
-      const updated = await changeQuotationStatus(quotationId, newStatus, session.id);
+    const body = ChangeQuotationStatusSchema.parse(await req.json());
 
-      return NextResponse.json(updated);
-    } catch (err) {
-      return handleError(err);
-    }
+    const cotizacion = await changeQuotationStatus(id, body.estatus, session.id);
+
+    return ok(cotizacion);
+  } catch (err) {
+    return handleError(err);
   }
-);
+});

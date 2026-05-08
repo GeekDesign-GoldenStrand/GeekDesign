@@ -4,16 +4,35 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
 
+// Type for pedidos including frontend-required relations
+type PedidoWithRelations = Prisma.PedidosGetPayload<{
+  include: {
+    cliente: true;
+    sucursal: true;
+    estatus: true;
+    cotizaciones: {
+      select: {
+        monto_total: true;
+      };
+    };
+    detalles: {
+      include: {
+        servicio: true;
+        material: true;
+        archivo: true;
+      };
+    };
+  };
+}>;
+
 // Centralized catalog of order statuses.
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
 export const PEDIDO_STATUS = {
-  COTIZACION: "Cotizacion",
-  PAGADO: "Pagado",
-  EN_COLA: "En_cola",
-  APROBACION_DISENO: "Aprobacion_diseno",
+  PENDIENTE: "Pendiente",
   EN_PRODUCCION: "En_produccion",
+  FINALIZADO: "Finalizado",
   ENTREGADO: "Entregado",
-  FACTURADO: "Facturado",
+  CANCELADO: "Cancelado",
 } as const;
 
 export type PedidoStatus = (typeof PEDIDO_STATUS)[keyof typeof PEDIDO_STATUS];
@@ -42,7 +61,7 @@ export async function listPedidos(
   empresa?: string | null,
   cliente?: string | null,
   search?: string | null
-): Promise<{ items: Pedidos[]; total: number }> {
+): Promise<{ items: PedidoWithRelations[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
   // Build dynamic filter conditions
@@ -64,11 +83,19 @@ export async function listPedidos(
 
   if (empresa || cliente) {
     where.cliente = {};
+
     if (empresa) {
-      where.cliente.empresa = { contains: empresa, mode: "insensitive" };
+      where.cliente.empresa = {
+        contains: empresa,
+        mode: "insensitive",
+      };
     }
+
     if (cliente) {
-      where.cliente.nombre_cliente = { contains: cliente, mode: "insensitive" };
+      where.cliente.nombre_cliente = {
+        contains: cliente,
+        mode: "insensitive",
+      };
     }
   }
 
@@ -106,13 +133,27 @@ export async function listPedidos(
   // 2. Count the total number of matching orders (for pagination metadata)
   const [items, total] = await Promise.all([
     prisma.pedidos.findMany({
-      where, // apply filters
+      where,
       skip,
       take: pageSize,
+
       include: {
         cliente: true,
         sucursal: true,
         estatus: true,
+        estado_factura: true,
+
+        // Pull latest quotation amount for frontend "Monto" column
+        cotizaciones: {
+          select: {
+            monto_total: true,
+          },
+          orderBy: {
+            fecha_creacion: "desc",
+          },
+          take: 1,
+        },
+
         detalles: {
           include: {
             servicio: true,
@@ -121,8 +162,12 @@ export async function listPedidos(
           },
         },
       },
-      orderBy: { fecha_creacion: "desc" },
+
+      orderBy: {
+        fecha_creacion: "desc",
+      },
     }),
+
     prisma.pedidos.count({ where }),
   ]);
 
@@ -157,9 +202,11 @@ export async function getPedidoStatusId(description: string) {
   const status = await prisma.estatusPedidos.findUnique({
     where: { descripcion: description },
   });
+
   if (!status) {
     throw new Error(`Pedido status '${description}' not found`);
   }
+
   return status.id_estatus;
 }
 
@@ -172,6 +219,7 @@ export async function changePedidoStatus(
   const currentPedido = await prisma.pedidos.findUnique({
     where: { id_pedido: pedidoId },
   });
+
   if (!currentPedido) {
     throw new Error("Pedido not found");
   }
@@ -185,6 +233,7 @@ export async function changePedidoStatus(
       where: { id_pedido: pedidoId },
       data: { id_estatus: newStatusId },
     }),
+
     prisma.historialEstadosPedidos.create({
       data: {
         id_pedido: pedidoId,

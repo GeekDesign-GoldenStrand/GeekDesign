@@ -1,63 +1,122 @@
 "use client";
 
-import { PencilSimple } from "@phosphor-icons/react";
+import {
+  PencilSimple,
+  CheckCircle,
+  WarningCircle,
+  StopCircle,
+  CurrencyDollar,
+} from "@phosphor-icons/react";
 
 // UI → API
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
-  Cotización: "Cotizacion",
-  Pagado: "Pagado",
-  "En cola": "En_cola",
-  "Aprobación diseño": "Aprobacion_diseno",
+  Pendiente: "Pendiente",
   "En producción": "En_produccion",
+  Finalizado: "Finalizado",
   Entregado: "Entregado",
-  Facturado: "Facturado",
+  Cancelado: "Cancelado",
 };
 
 // API → UI
 const STATUS_MAP_API_TO_UI: Record<string, string> = {
-  Cotizacion: "Cotización",
-  Pagado: "Pagado",
-  En_cola: "En cola",
-  Aprobacion_diseno: "Aprobación diseño",
+  Pendiente: "Pendiente",
   En_produccion: "En producción",
+  Finalizado: "Finalizado",
   Entregado: "Entregado",
-  Facturado: "Facturado",
+  Cancelado: "Cancelado",
 };
+
+const INVOICE_STATUS_ORDER = [
+  "Cotizacion",
+  "Pagado",
+  "En_cola",
+  "Aprobacion_diseno",
+  "En_produccion",
+  "Entregado",
+  "Facturado",
+];
 
 // Status color styles (pastel + readable)
 function getStatusStyle(status: string) {
   switch (status) {
-    case "Cotizacion":
-      return "bg-red-100 text-red-700";
-    case "Pagado":
-      return "bg-orange-100 text-orange-700";
-    case "En_cola":
-      return "bg-yellow-100 text-yellow-800";
-    case "Aprobacion_diseno":
-      return "bg-blue-100 text-blue-700";
-    case "En_produccion":
-      return "bg-purple-100 text-purple-700";
+    case "Pendiente":
+      return "bg-[#F7B9FF] text-[#700188]";
+
+    case "En producción":
+      return "bg-[#FFE4A5] text-[#8A6F02]";
+
+    case "Finalizado":
+      return "bg-[#CCFFA5] text-[#2A940D]";
+
     case "Entregado":
-      return "bg-green-100 text-green-700";
-    case "Facturado":
-      return "bg-green-200 text-green-900";
+      return "bg-[#B9EAFF] text-[#0D7794]";
+
+    case "Cancelado":
+      return "bg-[#B1B1B1] text-black";
+
     default:
       return "bg-gray-100 text-gray-600";
   }
 }
 
+function getInvoiceProgress(status?: string | null) {
+  if (!status) return 0;
+
+  const index = INVOICE_STATUS_ORDER.indexOf(status);
+
+  if (index === -1) return 0;
+
+  return ((index + 1) / INVOICE_STATUS_ORDER.length) * 100;
+}
+
+function getInvoiceProgressColor(status?: string | null) {
+  if (!status) return "#FFFFFF";
+
+  if (status === "Facturado") {
+    return "#6ACE0D";
+  }
+
+  const index = INVOICE_STATUS_ORDER.indexOf(status);
+
+  if (index <= 1) {
+    return "#E42200";
+  }
+
+  return "#FFD631";
+}
+
+function renderInvoiceStatusIcon(status?: string | null) {
+  if (!status) {
+    return <StopCircle size={18} className="text-gray-400" weight="fill" />;
+  }
+
+  if (status === "Facturado") {
+    return <CheckCircle size={18} className="text-[#6ACE0D]" weight="fill" />;
+  }
+
+  return <WarningCircle size={18} className="text-[#E42200]" weight="fill" />;
+}
+
 interface Pedido {
   id_pedido: number;
   fecha_creacion: string;
+
   fecha_estimada?: string | null;
+
+  monto_total?: number | null;
+
   cliente: {
     nombre_cliente: string;
     empresa?: string | null;
   };
+
   estatus: {
     descripcion: string;
   };
-  factura: boolean;
+
+  estado_factura?: {
+    descripcion: string;
+  } | null;
 }
 
 interface Props {
@@ -74,72 +133,111 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
   }
 
   return (
-    <div className="space-y-2">
-      {/* Header */}
-      <div
-        className="grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-        style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 0.5fr" }}
-      >
-        <span>Fecha</span>
-        <span>Entrega</span>
-        <span>Empresa</span>
-        <span>Cliente</span>
-        <span>Estatus</span>
-        <span>Factura</span>
-        <span>Acciones</span>
-      </div>
-
-      {pedidos.map((p) => (
+    <div className="overflow-x-auto bg-white rounded">
+      <div className="space-y-2 min-w-max">
+        {/* Header */}
         <div
-          key={p.id_pedido}
-          className="grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
-          style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 0.5fr" }}
+          className="grid px-2 md:px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-xs md:text-sm text-center"
+          style={{
+            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
+          }}
         >
-          <span>{new Date(p.fecha_creacion).toLocaleDateString("es-MX")}</span>
-
-          <span>
-            {p.fecha_estimada ? new Date(p.fecha_estimada).toLocaleDateString("es-MX") : "—"}
-          </span>
-
-          <span>{p.cliente?.empresa ?? "—"}</span>
-          <span>{p.cliente?.nombre_cliente}</span>
-
-          {/* STATUS SELECT */}
-          <div className="flex justify-center">
-            <select
-              value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
-              onChange={(e) => {
-                const uiValue = e.target.value;
-                const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-                onStatusChange(p.id_pedido, apiValue);
-              }}
-              className={`px-4 py-1 rounded-full text-sm font-medium outline-none cursor-pointer ${getStatusStyle(
-                p.estatus?.descripcion
-              )}`}
-            >
-              <option>Cotización</option>
-              <option>Pagado</option>
-              <option>En cola</option>
-              <option>Aprobación diseño</option>
-              <option>En producción</option>
-              <option>Entregado</option>
-              <option>Facturado</option>
-            </select>
-          </div>
-
-          <span>{p.factura ? "Sí" : "No"}</span>
-
-          {/* Actions */}
-          <div className="flex justify-center">
-            <a
-              href={`/admin/pedidos/${p.id_pedido}`}
-              className="text-black hover:text-[#e42200] p-2"
-            >
-              <PencilSimple size={20} />
-            </a>
-          </div>
+          <span className="whitespace-nowrap">Fecha</span>
+          <span className="whitespace-nowrap">Monto</span>
+          <span className="whitespace-nowrap">Entrega</span>
+          <span className="whitespace-nowrap">Empresa</span>
+          <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Estatus</span>
+          <span className="whitespace-nowrap">Estado factura</span>
+          <span className="whitespace-nowrap">Acciones</span>
         </div>
-      ))}
+
+        {pedidos.map((p) => (
+          <div
+            key={p.id_pedido}
+            className="grid px-2 md:px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-xs md:text-sm items-center text-center"
+            style={{
+              gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
+            }}
+          >
+            {/* Fecha */}
+            <span className="whitespace-nowrap">
+              {new Date(p.fecha_creacion).toLocaleDateString("es-MX")}
+            </span>
+
+            {/* Monto */}
+            <span className="whitespace-nowrap">
+              {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
+            </span>
+
+            {/* Entrega */}
+            <span className="whitespace-nowrap">
+              {p.fecha_estimada ? new Date(p.fecha_estimada).toLocaleDateString("es-MX") : "—"}
+            </span>
+
+            {/* Empresa */}
+            <span className="whitespace-nowrap">{p.cliente?.empresa ?? "—"}</span>
+
+            {/* Cliente */}
+            <span className="whitespace-nowrap">{p.cliente?.nombre_cliente}</span>
+
+            {/* STATUS SELECT */}
+            <div className="flex justify-center">
+              <select
+                value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
+                onChange={(e) => {
+                  const uiValue = e.target.value;
+                  const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
+
+                  onStatusChange(p.id_pedido, apiValue);
+                }}
+                className={`px-2 md:px-4 py-1 rounded-full text-xs md:text-sm font-medium outline-none cursor-pointer whitespace-nowrap ${getStatusStyle(
+                  p.estatus?.descripcion
+                )}`}
+              >
+                <option>Pendiente</option>
+                <option>En producción</option>
+                <option>Finalizado</option>
+                <option>Entregado</option>
+                <option>Cancelado</option>
+              </select>
+            </div>
+
+            {/* Estado Factura */}
+            <div className="flex flex-col items-center px-1 md:px-2 min-w-[180px]">
+              <div className="flex items-center gap-2 w-full">
+                <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
+
+                <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                      backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 mt-1 text-[11px] md:text-[12px] whitespace-nowrap">
+                <span className="text-[#6f6f6f]">Factura:</span>
+
+                {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-center">
+              <a
+                href={`/admin/pedidos/${p.id_pedido}`}
+                className="text-black hover:text-[#e42200] p-2"
+              >
+                <PencilSimple size={18} />
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
