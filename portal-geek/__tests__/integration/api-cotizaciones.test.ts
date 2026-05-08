@@ -75,9 +75,17 @@ jest.mock("@/lib/db/client", () => ({
         id_estatus_cotizacion: data.id_estatus_cotizacion,
       })),
     },
+
     historialEstadosCotizacion: {
       create: jest.fn(),
     },
+
+    cotizacionesRechazadas: {
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+      upsert: jest.fn(),
+    },
+
     estatusCotizacion: {
       findUnique: jest.fn().mockImplementation(({ where }) => {
         const value = Object.values(where)[0];
@@ -85,12 +93,15 @@ jest.mock("@/lib/db/client", () => ({
         if (value === "Validada") {
           return Promise.resolve({ id_estatus: 2 });
         }
+
         if (value === "Rechazada") {
           return Promise.resolve({ id_estatus: 4 });
         }
+
         return Promise.resolve(null);
       }),
     },
+
     $transaction: jest.fn().mockImplementation((queries) => Promise.all(queries)),
   },
 }));
@@ -133,7 +144,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns 200 when role is Dirección and status is validated", async () => {
+  it("returns 200 when role is Direccion and status is validated", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ PATCH: routes.PATCH })
@@ -142,7 +153,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
 
     console.error("Response body:", res.body);
     expect(res.status).toBe(200);
-    expect(res.body.id_estatus_cotizacion).toBe(2);
+    expect(res.body.data.id_estatus_cotizacion).toBe(2);
   });
 
   it("returns 200 when role is Administrador and status is rejected", async () => {
@@ -154,6 +165,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
 
     console.error("Response body:", res.body);
     expect(res.status).toBe(200);
-    expect(res.body.id_estatus_cotizacion).toBe(4);
+    expect(res.body.data.id_estatus_cotizacion).toBe(4);
   });
 });
