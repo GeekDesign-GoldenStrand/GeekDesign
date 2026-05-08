@@ -351,7 +351,7 @@ describe("PUT /api/materiales/[id] — MAT-04 Modificar material", () => {
 
   it("retorna 404 cuando el material no existe (P2025)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockUpdate.mockRejectedValue(new Error("P2025 Record not found"));
+    mockUpdate.mockRejectedValue(Object.assign(new Error("Record not found"), { code: "P2025" }));
 
     const res = await makeAppById({ PUT: routes.PUT })
       .put("/api/materiales/999")

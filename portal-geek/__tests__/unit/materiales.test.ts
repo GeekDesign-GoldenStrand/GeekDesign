@@ -172,7 +172,7 @@ describe("updateMaterial", () => {
   });
 
   it("lanza NotFoundError cuando el material no existe (P2025)", async () => {
-    mockUpdate.mockRejectedValue(new Error("P2025 Record not found"));
+    mockUpdate.mockRejectedValue(Object.assign(new Error("Record not found"), { code: "P2025" }));
     await expect(updateMaterial(999, { nombre_material: "No existe" })).rejects.toThrow(
       NotFoundError
     );
