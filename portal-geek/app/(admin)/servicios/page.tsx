@@ -28,17 +28,17 @@ export default function ServiciosPage() {
     fetchServicios();
   }, []);
 
-  // Cuenta de servicios activos para el pill del toolbar.
+  // It counts how many services are active (estatus_servicio = true) to show in the toolbar.
+  // This is a simple count based on the fetched data.
   const activosCount = servicios.filter((s) => s.estatus_servicio).length;
 
-  // Handlers de las acciones de cada card. Por ahora solo loguean
-  // (las HUs de "ver detalle" y "eliminar" llegan en el sprint 2).
+  // Handlers for each card action (view details, delete). For now, they just log to console.
   const handleVerDetalle = (id: number) => {
-    console.log("TODO: Ver detalle del servicio", id);
+    console.warn("TODO: Ver detalle del servicio", id);
   };
 
   const handleEliminar = (id: number) => {
-    console.log("TODO: Eliminar servicio", id);
+    console.warn("TODO: Eliminar servicio", id);
   };
 
   return (
