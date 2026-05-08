@@ -8,7 +8,11 @@ export function PromoBentoGrid() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 auto-rows-auto">
         {/* Top Left: Wide Block - PromoGeek Express */}
         <PromoGridItem
-          title={"PromoGeek\nEntrega Express"}
+          title={
+            <>
+              PromoGeek <br /> Entrega Express
+            </>
+          }
           alt="Almacén de logística y distribución"
           description="Soluciones rápidas para tus necesidades inmediatas. Calidad y velocidad en cada pedido."
           imageUrl="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2370&auto=format&fit=crop"
