@@ -3,13 +3,13 @@
 import { useState } from "react";
 
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
-import type { MaterialCardProps } from "@/types";
 import {
   mapMaterialRow,
   parseOptionalNumber,
   normalizeNumericInput,
   type MaterialApiRow,
 } from "@/lib/utils/materiales";
+import type { MaterialCardProps } from "@/types";
 
 interface RegistrarMaterialFormProps {
   onCreated: (row: MaterialCardProps) => void;

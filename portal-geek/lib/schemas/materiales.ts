@@ -35,10 +35,14 @@ export const CreateMaterialSchema = z.object({
   imagen_url: z
     .string()
     .min(1, "La URL de imagen es requerida.")
-    .refine(
-      (value) => { try { new URL(value); return true; } catch { return false; } },
-      "Debe ser una URL válida."
-    )
+    .refine((value) => {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Debe ser una URL válida.")
     .refine(
       (value) => value.toLowerCase().startsWith("https://"),
       "La URL de imagen debe iniciar con https://"

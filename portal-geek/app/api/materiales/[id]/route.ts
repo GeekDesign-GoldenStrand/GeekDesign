@@ -6,14 +6,17 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Direccion", "Administrador", "Colaborador"], async (_req, ctx) => {
-  try {
-    const { id } = MaterialIdParams.parse(await ctx.params);
-    return ok(await getMaterial(id));
-  } catch (err) {
-    return handleError(err);
+export const GET = withRoleParams<Params>(
+  ["Direccion", "Administrador", "Colaborador"],
+  async (_req, ctx) => {
+    try {
+      const { id } = MaterialIdParams.parse(await ctx.params);
+      return ok(await getMaterial(id));
+    } catch (err) {
+      return handleError(err);
+    }
   }
-});
+);
 
 export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   try {

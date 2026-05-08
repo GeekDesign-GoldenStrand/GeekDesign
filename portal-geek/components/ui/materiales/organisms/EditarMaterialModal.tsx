@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { EditarMaterialForm } from "@/components/ui/materiales/organisms/EditarMaterialForm";
-import type { MaterialCardProps } from "@/types";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
+import type { MaterialCardProps } from "@/types";
 
 interface EditarMaterialModalProps {
   isOpen: boolean;

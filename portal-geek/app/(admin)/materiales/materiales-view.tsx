@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 
 import {
   AgregarMaterialModal,
@@ -9,8 +9,8 @@ import {
   MaterialesHeader,
   MaterialesToolbar,
 } from "@/components/ui/materiales";
-import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
+import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -26,10 +26,46 @@ const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
   image: true,
 };
 
+type FetchState = {
+  loading: boolean;
+  error: string | null;
+  rows: MaterialCardProps[];
+  totalPages: number;
+};
+
+type FetchAction =
+  | { type: "start" }
+  | { type: "success"; rows: MaterialCardProps[]; totalPages: number }
+  | { type: "error" }
+  | { type: "add"; row: MaterialCardProps }
+  | { type: "update"; row: MaterialCardProps }
+  | { type: "remove"; id: number };
+
+function fetchReducer(state: FetchState, action: FetchAction): FetchState {
+  switch (action.type) {
+    case "start":
+      return { ...state, loading: true, error: null };
+    case "success":
+      return { loading: false, error: null, rows: action.rows, totalPages: action.totalPages };
+    case "error":
+      return { ...state, loading: false, error: "No se pudieron cargar los materiales" };
+    case "add":
+      return { ...state, rows: [action.row, ...state.rows] };
+    case "update":
+      return { ...state, rows: state.rows.map((r) => (r.id === action.row.id ? action.row : r)) };
+    case "remove":
+      return { ...state, rows: state.rows.filter((r) => r.id !== action.id) };
+  }
+}
+
 export function MaterialesView() {
-  const [rows, setRows] = useState<MaterialCardProps[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [{ loading, error, rows, totalPages }, dispatch] = useReducer(fetchReducer, {
+    loading: true,
+    error: null,
+    rows: [],
+    totalPages: 1,
+  });
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -40,22 +76,19 @@ export function MaterialesView() {
   const [visibleColumns, setVisibleColumns] =
     useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
+  // Debounce search and reset page together so only one fetch fires.
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    const id = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [search]);
 
-  // Reset to page 1 when search or sort changes.
   useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, sortOrder]);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
+    dispatch({ type: "start" });
     const abortController = new AbortController();
     const sort = sortOrder === "az" ? "asc" : "desc";
     const params = new URLSearchParams({
@@ -73,16 +106,16 @@ export function MaterialesView() {
       .then((payload) => {
         if (abortController.signal.aborted) return;
         const items = ((payload?.data ?? []) as MaterialApiRow[]).map(mapMaterialRow);
-        setRows(items);
         const total = payload?.total ?? 0;
-        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+        dispatch({
+          type: "success",
+          rows: items,
+          totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+        });
       })
       .catch(() => {
         if (abortController.signal.aborted) return;
-        setError("No se pudieron cargar los materiales");
-      })
-      .finally(() => {
-        if (!abortController.signal.aborted) setLoading(false);
+        dispatch({ type: "error" });
       });
 
     return () => {
@@ -112,8 +145,13 @@ export function MaterialesView() {
     setSearch("");
   }
 
+  function handleSortChange(order: MaterialSortOrder) {
+    setSortOrder(order);
+    setPage(1);
+  }
+
   function handleCreated(row: MaterialCardProps) {
-    setRows((prev) => [row, ...prev]);
+    dispatch({ type: "add", row });
   }
 
   function handleEditClick(material: MaterialCardProps) {
@@ -127,11 +165,11 @@ export function MaterialesView() {
   }
 
   function handleUpdated(row: MaterialCardProps) {
-    setRows((prev) => prev.map((item) => (item.id === row.id ? row : item)));
+    dispatch({ type: "update", row });
   }
 
   function handleDeleted(materialId: number) {
-    setRows((prev) => prev.filter((item) => item.id !== materialId));
+    dispatch({ type: "remove", id: materialId });
   }
 
   return (
@@ -145,7 +183,7 @@ export function MaterialesView() {
           visibleColumns={visibleColumns}
           sortOrder={sortOrder}
           onToggleColumn={handleToggleColumn}
-          onSortChange={setSortOrder}
+          onSortChange={handleSortChange}
           onResetFilters={handleResetFilters}
           onAddClick={() => setShowAddModal(true)}
           onFilterClick={() => setShowFilters((state) => !state)}
