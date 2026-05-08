@@ -18,16 +18,19 @@ const ChangeQuotationStatusSchema = z.object({
   ]),
 });
 
-export const PATCH = withRoleParams<Params>(["Direccion"], async (req, ctx, session) => {
-  try {
-    const { id } = CotizacionIdParams.parse(await ctx.params);
+export const PATCH = withRoleParams<Params>(
+  ["Direccion", "Administrador"],
+  async (req, ctx, session) => {
+    try {
+      const { id } = CotizacionIdParams.parse(await ctx.params);
 
-    const body = ChangeQuotationStatusSchema.parse(await req.json());
+      const body = ChangeQuotationStatusSchema.parse(await req.json());
 
-    const cotizacion = await changeQuotationStatus(id, body.estatus, session.id);
+      const cotizacion = await changeQuotationStatus(id, body.estatus, session.id);
 
-    return ok(cotizacion);
-  } catch (err) {
-    return handleError(err);
+      return ok(cotizacion);
+    } catch (err) {
+      return handleError(err);
+    }
   }
-});
+);
