@@ -6,16 +6,29 @@ import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 export async function listMateriales(
   page: number,
-  pageSize: number
+  pageSize: number,
+  q?: string,
+  sort: "asc" | "desc" = "asc"
 ): Promise<{ items: Materiales[]; total: number }> {
-  // Pagination.
+  const where = q
+    ? {
+        OR: [
+          { nombre_material: { contains: q, mode: "insensitive" as const } },
+          { descripcion_material: { contains: q, mode: "insensitive" as const } },
+          { unidad_medida: { contains: q, mode: "insensitive" as const } },
+          { color: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : undefined;
+
   const [items, total] = await prisma.$transaction([
     prisma.materiales.findMany({
+      where,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: { nombre_material: "asc" },
+      orderBy: { nombre_material: sort },
     }),
-    prisma.materiales.count(),
+    prisma.materiales.count({ where }),
   ]);
 
   return { items, total };

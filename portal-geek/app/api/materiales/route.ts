@@ -11,7 +11,9 @@ export const GET = withRole(["Direccion", "Colaborador"], async (req: NextReques
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
-    const result = await listMateriales(page, pageSize);
+    const q = searchParams.get("q")?.trim() || undefined;
+    const sort = searchParams.get("sort") === "desc" ? "desc" : "asc";
+    const result = await listMateriales(page, pageSize, q, sort);
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {
     return handleError(err);
