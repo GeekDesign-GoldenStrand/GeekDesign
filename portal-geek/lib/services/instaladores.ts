@@ -59,7 +59,7 @@ export async function deleteInstalador(id: number): Promise<void> {
 export async function getInstaladoresOptions(): Promise<
   Array<{
     id_instalador: number;
-    nombre_proveedor: string;
+    nombre_instalador: string;
     apodo: string | null;
     costo_instalacion: string;
   }>
@@ -68,7 +68,7 @@ export async function getInstaladoresOptions(): Promise<
     where: { estatus: "Activo" },
     select: {
       id_instalador: true,
-      nombre_proveedor: true,
+      nombre_instalador: true,
       apodo: true,
       costo_instalacion: true,
     },
