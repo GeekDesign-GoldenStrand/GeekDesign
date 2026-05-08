@@ -58,8 +58,7 @@ export async function updateMaterial(id: number, data: UpdateMaterialInput): Pro
     });
     return updated;
   } catch (err) {
-    // Prisma throws P2025 when record not found
-    if (err instanceof Error && err.message.includes("P2025")) {
+    if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Material ${id} no encontrado`);
     }
     throw err;
