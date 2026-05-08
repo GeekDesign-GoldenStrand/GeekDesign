@@ -40,8 +40,9 @@ export function Navbar({ categories = [] }: NavbarProps) {
           <Link
             href="/promocionales"
             className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
+            aria-label="Promocionales"
           >
-            <Tag size={28} weight="light" className="text-[#1e1e1e]" />
+            <Tag size={28} weight="light" className="text-[#1e1e1e]" aria-hidden="true" />
             <span className="hidden lg:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Promocionales
             </span>
@@ -50,8 +51,9 @@ export function Navbar({ categories = [] }: NavbarProps) {
           <Link
             href="/ayuda"
             className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
+            aria-label="Ayuda"
           >
-            <Question size={28} weight="light" className="text-[#1e1e1e]" />
+            <Question size={28} weight="light" className="text-[#1e1e1e]" aria-hidden="true" />
             <span className="hidden md:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Ayuda
             </span>
@@ -60,12 +62,13 @@ export function Navbar({ categories = [] }: NavbarProps) {
           <Link
             href="/carrito"
             className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+            aria-label="Carrito"
           >
             <ShoppingCart
               size={28}
               weight="light"
               className="text-[#1e1e1e]"
-              aria-label="Carrito"
+              aria-hidden="true"
             />
             <span className="hidden md:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Carro
