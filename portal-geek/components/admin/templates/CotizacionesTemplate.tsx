@@ -157,14 +157,14 @@ export function CotizacionesTemplate({
                     }}
                     className="h-8 px-4 rounded-[6px] bg-rose-200 text-rose-800 text-[13px] font-semibold hover:bg-rose-300 transition"
                   >
-                    Reset
+                    Restablecer
                   </button>
 
                   <button
                     onClick={() => setShowFilter(false)}
                     className="h-8 px-6 rounded-[6px] bg-rose-300 text-white text-[13px] font-semibold hover:bg-rose-400 transition"
                   >
-                    Apply
+                    Aplicar
                   </button>
                 </div>
               </div>

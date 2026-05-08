@@ -229,14 +229,14 @@ export function PedidosTemplate({
                     }}
                     className="h-8 px-4 rounded-[6px] bg-[#ffc1c1] text-white text-[13px] font-semibold hover:bg-[#ff9e9e]"
                   >
-                    Reset
+                    Restablecer
                   </button>
 
                   <button
                     onClick={() => setShowFilter(false)}
                     className="h-8 px-6 rounded-[6px] bg-[#ff9e9e] text-white text-[13px] font-semibold hover:bg-[#ff7f7f]"
                   >
-                    Apply
+                    Aplicar
                   </button>
                 </div>
               </div>
