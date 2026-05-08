@@ -9,6 +9,8 @@ import {
   CaretDown,
 } from "@phosphor-icons/react";
 
+import { formatDate } from "@/lib/utils/date";
+
 // UI → API
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
   Pendiente: "Pendiente",
@@ -162,9 +164,7 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
             }}
           >
             {/* Fecha */}
-            <span className="whitespace-nowrap">
-              {new Date(p.fecha_creacion).toLocaleDateString("es-MX")}
-            </span>
+            <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
 
             {/* Monto */}
             <span className="whitespace-nowrap">
@@ -173,7 +173,7 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
 
             {/* Entrega */}
             <span className="whitespace-nowrap">
-              {p.fecha_estimada ? new Date(p.fecha_estimada).toLocaleDateString("es-MX") : "—"}
+              {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
             </span>
 
             {/* Empresa */}

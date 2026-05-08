@@ -2,6 +2,8 @@
 
 import { PencilSimple, CaretDown } from "@phosphor-icons/react";
 
+import { formatDate } from "@/lib/utils/date";
+
 type Cotizacion = {
   id_cotizacion: number;
   fecha_creacion: string;
@@ -79,7 +81,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
           >
             {/* Fecha */}
             <span className="whitespace-nowrap">
-              {c.fecha_creacion ? new Date(c.fecha_creacion).toLocaleDateString("es-MX") : "—"}
+              {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
             </span>
 
             {/* Monto */}
@@ -87,7 +89,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
 
             {/* Entrega */}
             <span className="whitespace-nowrap">
-              {c.fecha_estimada ? new Date(c.fecha_estimada).toLocaleDateString("es-MX") : "—"}
+              {c.fecha_estimada ? formatDate(c.fecha_estimada) : "—"}
             </span>
 
             {/* Empresa */}
