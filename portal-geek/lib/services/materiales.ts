@@ -83,24 +83,12 @@ export async function deleteMaterial(id: number): Promise<void> {
         throw new NotFoundError(`Material ${id} no encontrado`);
       }
 
-      if (material.detallesPedido.length > 0 || material.pedidoMaquinas.length > 0) {
+      if (
+        material.detallesPedido.length > 0 ||
+        material.pedidoMaquinas.length > 0 ||
+        material.opciones.length > 0
+      ) {
         throw new ConflictError(`Material ${id} no se puede eliminar porque ya está en uso`);
-      }
-
-      const optionIds = material.opciones.map((opcion) => opcion.id_opcion);
-
-      if (optionIds.length > 0) {
-        await tx.matrizDePrecios.deleteMany({
-          where: { id_opcion: { in: optionIds } },
-        });
-
-        await tx.valoresOpcion.deleteMany({
-          where: { id_opcion: { in: optionIds } },
-        });
-
-        await tx.opcionesProducto.deleteMany({
-          where: { id_material: id },
-        });
       }
 
       await tx.materiales.delete({

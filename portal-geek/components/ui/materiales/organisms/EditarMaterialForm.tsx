@@ -339,7 +339,8 @@ export function EditarMaterialForm({
             <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">¿Eliminar material?</h3>
             <p className="text-[14px] text-[#575757] mb-6">
               Esta acción no se puede deshacer. El material &quot;{material.name}&quot; será
-              eliminado permanentemente.
+              eliminado permanentemente. Si está asociado a opciones de producto, la eliminación
+              será bloqueada.
             </p>
             <div className="flex justify-end gap-3">
               <button
