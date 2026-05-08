@@ -7,11 +7,15 @@ export async function listMateriales(
   page: number,
   pageSize: number
 ): Promise<{ items: Materiales[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await prisma.$transaction([
+    prisma.materiales.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { nombre_material: "asc" },
+    }),
+    prisma.materiales.count(),
+  ]);
+  return { items, total };
 }
 
 export async function getMaterial(id: number): Promise<Materiales> {

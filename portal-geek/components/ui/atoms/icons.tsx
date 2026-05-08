@@ -11,7 +11,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 
-interface IconProps {
+export interface IconProps {
   size?: number;
 }
 
