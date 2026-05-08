@@ -92,7 +92,7 @@ export function CotizacionesTemplate({
           <AdminToolbar
             search={search}
             onSearchChange={setSearch}
-            onAgregar={() => {}}
+            // onAgregar={() => {}}
             // Filter button for quotations, uncomment if you want to implement it
             // onFiltrar={() => setShowFilter((prev) => !prev)}
           />
