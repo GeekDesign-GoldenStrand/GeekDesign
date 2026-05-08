@@ -6,6 +6,7 @@ import {
   WarningCircle,
   StopCircle,
   CurrencyDollar,
+  CaretDown,
 } from "@phosphor-icons/react";
 
 // UI → API
@@ -183,24 +184,34 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
 
             {/* STATUS SELECT */}
             <div className="flex justify-center">
-              <select
-                value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
-                onChange={(e) => {
-                  const uiValue = e.target.value;
-                  const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-
-                  onStatusChange(p.id_pedido, apiValue);
-                }}
-                className={`px-2 md:px-4 py-1 rounded-full text-xs md:text-sm font-medium outline-none cursor-pointer whitespace-nowrap ${getStatusStyle(
+              <div
+                className={`relative flex items-center rounded-full ${getStatusStyle(
                   p.estatus?.descripcion
                 )}`}
               >
-                <option>Pendiente</option>
-                <option>En producción</option>
-                <option>Finalizado</option>
-                <option>Entregado</option>
-                <option>Cancelado</option>
-              </select>
+                <select
+                  value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
+                  onChange={(e) => {
+                    const uiValue = e.target.value;
+                    const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
+
+                    onStatusChange(p.id_pedido, apiValue);
+                  }}
+                  className="pl-3 md:pl-4 pr-7 md:pr-7 py-1 rounded-full text-xs md:text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                >
+                  <option>Pendiente</option>
+                  <option>En producción</option>
+                  <option>Finalizado</option>
+                  <option>Entregado</option>
+                  <option>Cancelado</option>
+                </select>
+
+                <CaretDown
+                  size={14}
+                  weight="bold"
+                  className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                />
+              </div>
             </div>
 
             {/* Estado Factura */}

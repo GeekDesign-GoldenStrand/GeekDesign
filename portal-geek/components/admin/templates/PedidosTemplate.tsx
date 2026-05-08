@@ -11,14 +11,20 @@ type Pedido = {
   id_pedido: number;
   fecha_creacion: string;
   fecha_estimada?: string | null;
+  monto_total?: number | null;
+
   cliente: {
     nombre_cliente: string;
     empresa?: string | null;
   };
+
   estatus: {
     descripcion: string;
   };
-  factura: boolean;
+
+  estado_factura?: {
+    descripcion: string;
+  } | null;
 };
 
 // Props
