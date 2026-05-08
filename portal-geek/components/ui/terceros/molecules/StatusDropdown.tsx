@@ -36,12 +36,12 @@ export function StatusDropdown({ status, onChange }: StatusDropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+        className={`flex items-center gap-1 px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] transition-all ${
           status === "Activo"
-            ? "bg-[rgba(255,0,0,0.07)] border-red-500 text-red-500"
-            : status === "Baneado"
-              ? "bg-[rgba(255,0,0, 0.07)] border-[rgb(115,0,255)] text-[rgb(115,0,255)]"
-              : "bg-[rgba(0,0,0,0.07)] border-[#090909] text-[#090909]"
+            ? "bg-[rgba(0,200,83,0.07)] border-[#00c853] text-[#00c853]"
+            : status === "Inactivo"
+              ? "bg-[rgba(255,179,0,0.07)] border-[#ffb300] text-[#ffb300]"
+              : "bg-[rgba(255,23,68,0.07)] border-[#ff1744] text-[#ff1744]"
         }`}
       >
         {status}
@@ -58,7 +58,13 @@ export function StatusDropdown({ status, onChange }: StatusDropdownProps) {
               onClick={() => handleSelect(opt)}
               className={`w-full text-left px-3 py-2 text-[14px] font-medium hover:bg-gray-50 flex items-center gap-2 ${
                 opt === status ? "opacity-50 cursor-default" : ""
-              } ${opt === "Activo" ? "text-red-500" : "text-[#090909]"}`}
+              } ${
+                opt === "Activo"
+                  ? "text-[#00c853]"
+                  : opt === "Inactivo"
+                    ? "text-[#ffb300]"
+                    : "text-[#ff1744]"
+              }`}
             >
               {opt}
               {opt === status && <CheckIcon />}
