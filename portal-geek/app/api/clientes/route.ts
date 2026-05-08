@@ -12,7 +12,7 @@ export const GET = withRole(["Direccion"], async (req: NextRequest) => {
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 10)));
     const search = searchParams.get("search") ?? undefined;
-    
+
     const result = await listClientes(page, pageSize, search);
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {
