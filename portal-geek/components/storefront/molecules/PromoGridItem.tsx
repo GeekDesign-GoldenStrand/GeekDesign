@@ -32,7 +32,7 @@ export function PromoGridItem({
   priority = false,
   ctaText = "Explorar",
 }: PromoGridItemProps) {
-  const imageAlt = alt || (typeof title === "string" ? title : "Producto Promocional");
+  const imageAlt = alt ?? "";
 
   const content = (
     <motion.div

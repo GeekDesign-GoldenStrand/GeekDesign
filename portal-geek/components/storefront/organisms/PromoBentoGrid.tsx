@@ -9,6 +9,7 @@ export function PromoBentoGrid() {
         {/* Top Left: Wide Block - PromoGeek Express */}
         <PromoGridItem
           title={"PromoGeek\nEntrega Express"}
+          alt="Almacén de logística y distribución"
           description="Soluciones rápidas para tus necesidades inmediatas. Calidad y velocidad en cada pedido."
           imageUrl="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2370&auto=format&fit=crop"
           href="https://promogeek.mx/"
@@ -41,6 +42,7 @@ export function PromoBentoGrid() {
               <span className="italic">Exclusiva</span> GeekDesign
             </>
           }
+          alt="Concepto de compras en línea premium"
           description="Una experiencia de compra premium diseñada para encontrar el promocional perfecto para tu marca."
           imageUrl="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2370&auto=format&fit=crop"
           href="https://tienda.promocionalesweb.com/geekdesign"
