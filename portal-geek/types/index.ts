@@ -52,3 +52,16 @@ export interface TerceroCardProps {
   onDelete?: () => void;
   onStatusChange?: (status: TerceroStatus) => void;
 }
+
+export type MachineStatus = "Activa" | "Inactiva" | "En mantenimiento";
+
+export interface MaquinaCardProps {
+  nickname: string;
+  model: string;
+  store: string;
+  description?: string;
+  services?: string[];
+  creation_date: string;
+  onDelete: () => void;
+  onEdit: () => void;
+}
