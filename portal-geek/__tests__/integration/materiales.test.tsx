@@ -19,6 +19,13 @@ jest.mock("@/lib/db/client", () => ({
   },
 }));
 
+jest.mock("@/lib/services/storage", () => ({
+  resolveImageUrl: jest.fn(async (key: string | null) =>
+    key ? `https://signed.example/${key}` : null
+  ),
+  deleteObject: jest.fn(async () => undefined),
+}));
+
 const mockFindMany = prisma.materiales.findMany as jest.Mock;
 const mockCount = prisma.materiales.count as jest.Mock;
 const mockFindUnique = prisma.materiales.findUnique as jest.Mock;
@@ -40,6 +47,8 @@ function makeAppById(routes: Record<string, any>) {
   });
 }
 
+const KEY = "materiales/2026/05/00000000-0000-4000-8000-000000000001.jpg";
+
 const BASE_MATERIAL = {
   id_material: 1,
   nombre_material: "Acrílico espejo",
@@ -49,7 +58,7 @@ const BASE_MATERIAL = {
   alto: 2400,
   grosor: 3,
   color: "Plata",
-  imagen_url: "https://example.com/acrilico.jpg",
+  imagen_url: KEY,
 };
 
 const VALID_PAYLOAD = {
@@ -60,7 +69,7 @@ const VALID_PAYLOAD = {
   alto: 2400,
   grosor: 3,
   color: "Plata",
-  imagen_url: "https://example.com/acrilico.jpg",
+  imagen_url: KEY,
 };
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -212,12 +221,12 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando imagen_url no inicia con https://", async () => {
+  it("retorna 422 cuando imagen_url no es una clave de almacenamiento válida", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/materiales")
-      .send({ ...VALID_PAYLOAD, imagen_url: "http://example.com/img.jpg" });
+      .send({ ...VALID_PAYLOAD, imagen_url: "https://example.com/img.jpg" });
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("imagen_url");
   });

@@ -143,6 +143,7 @@ model Servicios {
   nombre_servicio   String  @db.VarChar(100)
   descripcion_servicio String?
   estatus_servicio  Boolean @default(true)
+  imagen_url        String? @db.VarChar(500)
 
   estatusServicio      EstatusServicio      @relation(fields: [id_estatus], references: [id_estatus_servicio])
   opciones             OpcionesProducto[]
