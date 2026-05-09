@@ -1,14 +1,14 @@
 /**
  * @jest-environment node
  */
-import type { NextRequest, NextResponse } from "next/server";
+
+import type { NextRequest } from "next/server";
 
 import { getSession } from "@/lib/auth/session";
 
 import { createApp } from "../helpers/next-supertest";
 
-// We mock the session to simulate different authentication scenarios.
-// This allows us to test authorization logic without relying on real sessions.
+// Mock de sesión para simular distintos escenarios de autenticación
 const mockGetSession = jest.fn();
 type Handler = (req: Request, ctx: { params: unknown }, session?: unknown) => Promise<Response>;
 
@@ -75,9 +75,17 @@ jest.mock("@/lib/db/client", () => ({
         id_estatus_cotizacion: data.id_estatus_cotizacion,
       })),
     },
+
     historialEstadosCotizacion: {
       create: jest.fn(),
     },
+
+    cotizacionesRechazadas: {
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+      upsert: jest.fn(),
+    },
+
     estatusCotizacion: {
       findUnique: jest.fn().mockImplementation(({ where }) => {
         const value = Object.values(where)[0];
@@ -85,30 +93,36 @@ jest.mock("@/lib/db/client", () => ({
         if (value === "Validada") {
           return Promise.resolve({ id_estatus: 2 });
         }
+
         if (value === "Rechazada") {
           return Promise.resolve({ id_estatus: 4 });
         }
+
         return Promise.resolve(null);
       }),
     },
+
     $transaction: jest.fn().mockImplementation((queries) => Promise.all(queries)),
   },
 }));
 
 describe("PATCH /api/cotizaciones/:id/estatus", () => {
-  let routes: { PATCH: (req: NextRequest) => Promise<NextResponse> };
+  let routes: { PATCH: (req: unknown) => Promise<Response> };
 
   beforeAll(async () => {
-    // Import the route handler and inject params manually.
-    // This ensures the test runs against the same code used in production.
+    // Importamos el handler real y le inyectamos params
     const mod = await import("@/app/api/cotizaciones/[id]/estatus/route");
     routes = {
-      PATCH: (req: NextRequest) => mod.PATCH(req, { params: Promise.resolve({ id: "1" }) }),
+      PATCH: (req: unknown) =>
+        mod.PATCH(req as NextRequest, { params: Promise.resolve({ id: "1" }) }),
     };
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("returns 401 without a session", async () => {
-    // Why: We want to confirm that unauthenticated users are blocked.
     mockGetSession.mockResolvedValue(null);
 
     const res = await createApp({ PATCH: routes.PATCH })
@@ -120,7 +134,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
   });
 
   it("returns 403 when role is Colaborador", async () => {
-    // Why: Even authenticated users should be denied if their role lacks permission.
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
 
     const res = await createApp({ PATCH: routes.PATCH })
@@ -131,8 +144,7 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns 200 when role is Dirección and status is validated", async () => {
-    // Why: Dirección role should be authorized to validate cotizaciones.
+  it("returns 200 when role is Direccion and status is validated", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ PATCH: routes.PATCH })
@@ -141,13 +153,11 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
 
     console.error("Response body:", res.body);
     expect(res.status).toBe(200);
-    // Why: We check the updated status ID to confirm the business rule was applied.
-    expect(res.body.id_estatus_cotizacion).toBe(2);
+    expect(res.body.data.id_estatus_cotizacion).toBe(2);
   });
 
-  it("returns 200 when role is Direccion and status is rejected", async () => {
-    // Why: Administrador role should be authorized to reject cotizaciones.
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+  it("returns 200 when role is Administrador and status is rejected", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
 
     const res = await createApp({ PATCH: routes.PATCH })
       .patch("/api/cotizaciones/1/estatus")
@@ -155,7 +165,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
 
     console.error("Response body:", res.body);
     expect(res.status).toBe(200);
-    // Why: We check the updated status ID to confirm rejection was applied correctly.
-    expect(res.body.id_estatus_cotizacion).toBe(4);
+    expect(res.body.data.id_estatus_cotizacion).toBe(4);
   });
 });

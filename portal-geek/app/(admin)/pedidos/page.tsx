@@ -9,14 +9,44 @@ interface Pedido {
   id_pedido: number;
   fecha_creacion: string;
   fecha_estimada?: string | null;
+  monto_total?: number | null;
+
   cliente: {
     nombre_cliente: string;
     empresa?: string | null;
   };
+
   estatus: {
     descripcion: string;
   };
-  factura: boolean;
+
+  estado_factura?: {
+    descripcion: string;
+  } | null;
+}
+
+// Raw API response type
+interface PedidoApi {
+  id_pedido: number;
+  fecha_creacion: string;
+  fecha_estimada?: string | null;
+
+  cotizaciones?: {
+    monto_total: string | number;
+  }[];
+
+  cliente: {
+    nombre_cliente: string;
+    empresa?: string | null;
+  };
+
+  estatus: {
+    descripcion: string;
+  };
+
+  estado_factura?: {
+    descripcion: string;
+  } | null;
 }
 
 export default function PedidosPage() {
@@ -44,16 +74,33 @@ export default function PedidosPage() {
       params.set("onlyActive", onlyActive ? "true" : "false");
 
       if (search) params.set("search", search);
+
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
       estatuses.forEach((e) => params.append("estatus", e));
+
       if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
 
-      // Store API response in local state
-      setPedidos(json.data ?? []);
+      // Map API response into frontend-friendly structure
+      const mapped: Pedido[] = (json.data ?? []).map((p: PedidoApi) => ({
+        id_pedido: p.id_pedido,
+        fecha_creacion: p.fecha_creacion,
+        fecha_estimada: p.fecha_estimada ?? null,
+
+        // Take latest quotation amount if it exists
+        monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
+
+        cliente: p.cliente,
+
+        estatus: p.estatus,
+
+        estado_factura: p.estado_factura ?? null,
+      }));
+
+      setPedidos(mapped);
       setTotal(json.total ?? 0);
     } catch {
       console.error("Error loading orders");

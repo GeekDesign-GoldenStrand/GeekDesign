@@ -6,15 +6,27 @@ import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listClientes(
   page: number,
-  pageSize: number
+  pageSize: number,
+  search?: string
 ): Promise<{ items: Clientes[]; total: number }> {
+  const where = search
+    ? {
+        OR: [
+          { nombre_cliente: { contains: search, mode: "insensitive" as const } },
+          { empresa: { contains: search, mode: "insensitive" as const } },
+          { correo_electronico: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
   const [items, total] = await prisma.$transaction([
     prisma.clientes.findMany({
+      where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { nombre_cliente: "asc" },
     }),
-    prisma.clientes.count(),
+    prisma.clientes.count({ where }),
   ]);
   return { items, total };
 }

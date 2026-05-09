@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
 
+<<<<<<< HEAD
 // Centralized catalog of order statuses.
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
 export const PEDIDO_STATUS = {
@@ -14,6 +15,37 @@ export const PEDIDO_STATUS = {
   EN_PRODUCCION: "En_produccion",
   ENTREGADO: "Entregado",
   FACTURADO: "Facturado",
+=======
+// Type for pedidos including frontend-required relations
+type PedidoWithRelations = Prisma.PedidosGetPayload<{
+  include: {
+    cliente: true;
+    sucursal: true;
+    estatus: true;
+    cotizaciones: {
+      select: {
+        monto_total: true;
+      };
+    };
+    detalles: {
+      include: {
+        servicio: true;
+        material: true;
+        archivo: true;
+      };
+    };
+  };
+}>;
+
+// Centralized catalog of order statuses.
+// Using constants avoids scattered "magic strings" and makes refactoring safer.
+export const PEDIDO_STATUS = {
+  PENDIENTE: "Pendiente",
+  EN_PRODUCCION: "En_produccion",
+  FINALIZADO: "Finalizado",
+  ENTREGADO: "Entregado",
+  CANCELADO: "Cancelado",
+>>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
 } as const;
 
 export type PedidoStatus = (typeof PEDIDO_STATUS)[keyof typeof PEDIDO_STATUS];
@@ -42,7 +74,11 @@ export async function listPedidos(
   empresa?: string | null,
   cliente?: string | null,
   search?: string | null
+<<<<<<< HEAD
 ): Promise<{ items: Pedidos[]; total: number }> {
+=======
+): Promise<{ items: PedidoWithRelations[]; total: number }> {
+>>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
   const skip = (page - 1) * pageSize;
 
   // Build dynamic filter conditions
@@ -64,11 +100,27 @@ export async function listPedidos(
 
   if (empresa || cliente) {
     where.cliente = {};
+<<<<<<< HEAD
     if (empresa) {
       where.cliente.empresa = { contains: empresa, mode: "insensitive" };
     }
     if (cliente) {
       where.cliente.nombre_cliente = { contains: cliente, mode: "insensitive" };
+=======
+
+    if (empresa) {
+      where.cliente.empresa = {
+        contains: empresa,
+        mode: "insensitive",
+      };
+    }
+
+    if (cliente) {
+      where.cliente.nombre_cliente = {
+        contains: cliente,
+        mode: "insensitive",
+      };
+>>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
     }
   }
 
@@ -106,13 +158,27 @@ export async function listPedidos(
   // 2. Count the total number of matching orders (for pagination metadata)
   const [items, total] = await Promise.all([
     prisma.pedidos.findMany({
-      where, // apply filters
+      where,
       skip,
       take: pageSize,
+
       include: {
         cliente: true,
         sucursal: true,
         estatus: true,
+        estado_factura: true,
+
+        // Pull latest quotation amount for frontend "Monto" column
+        cotizaciones: {
+          select: {
+            monto_total: true,
+          },
+          orderBy: {
+            fecha_creacion: "desc",
+          },
+          take: 1,
+        },
+
         detalles: {
           include: {
             servicio: true,
@@ -121,8 +187,12 @@ export async function listPedidos(
           },
         },
       },
-      orderBy: { fecha_creacion: "desc" },
+
+      orderBy: {
+        fecha_creacion: "desc",
+      },
     }),
+
     prisma.pedidos.count({ where }),
   ]);
 
@@ -157,9 +227,17 @@ export async function getPedidoStatusId(description: string) {
   const status = await prisma.estatusPedidos.findUnique({
     where: { descripcion: description },
   });
+<<<<<<< HEAD
   if (!status) {
     throw new Error(`Pedido status '${description}' not found`);
   }
+=======
+
+  if (!status) {
+    throw new Error(`Pedido status '${description}' not found`);
+  }
+
+>>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
   return status.id_estatus;
 }
 
@@ -172,6 +250,10 @@ export async function changePedidoStatus(
   const currentPedido = await prisma.pedidos.findUnique({
     where: { id_pedido: pedidoId },
   });
+<<<<<<< HEAD
+=======
+
+>>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
   if (!currentPedido) {
     throw new Error("Pedido not found");
   }
@@ -185,6 +267,10 @@ export async function changePedidoStatus(
       where: { id_pedido: pedidoId },
       data: { id_estatus: newStatusId },
     }),
+<<<<<<< HEAD
+=======
+
+>>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
     prisma.historialEstadosPedidos.create({
       data: {
         id_pedido: pedidoId,
