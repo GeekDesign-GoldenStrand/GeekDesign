@@ -3,15 +3,21 @@ import type { Sucursales } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreateSucursalInput, UpdateSucursalInput } from "@/lib/schemas/sucursales";
 
-export async function listSucursales(
-  page: number,
-  pageSize: number
-): Promise<{ items: Sucursales[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+export type SucursalWithRelations = Sucursales;
+
+export async function listSucursales(page: number, pageSize: number) {
+  const skip = (page - 1) * pageSize;
+
+  const [items, total] = await Promise.all([
+    prisma.sucursales.findMany({
+      skip,
+      take: pageSize,
+      orderBy: { id_sucursal: "asc" },
+    }),
+    prisma.sucursales.count(),
+  ]);
+
+  return { items, total };
 }
 
 export async function getSucursal(id: number): Promise<Sucursales> {
