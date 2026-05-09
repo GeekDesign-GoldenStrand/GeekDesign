@@ -26,6 +26,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
+    "framer-motion": "^12.38.0",
     "jose": "^6.2.2",
     "next": "16.2.3",
     "pg": "^8.20.0",

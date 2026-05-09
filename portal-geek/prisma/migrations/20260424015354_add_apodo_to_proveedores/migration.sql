@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "PROVEEDORES" ADD COLUMN     "apodo" VARCHAR(100);
