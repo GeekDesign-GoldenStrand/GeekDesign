@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AddToCartForm } from "@/components/storefront/molecules/AddToCartForm";
 import { getServicioWithDetails, listServicios } from "@/lib/services/servicios";
 
 interface Props {
@@ -31,7 +32,7 @@ export default async function ServicioDetallePage({ params }: Props) {
       <div className="max-w-[1440px] mx-auto px-[42px] py-[25px] h-full">
         <div className="flex flex-col lg:flex-row gap-[40px] h-full">
           {/* ── LEFT COLUMN ── */}
-          <div className="flex flex-col lg:w-[601px] lg:shrink-0 h-full">
+          <div className="flex flex-col lg:w-[601px] lg:shrink-0 h-full lg:overflow-y-auto scrollbar-hide">
             <h1 className="font-bold text-[30px] text-[#1e1e1e] leading-tight">
               {servicio.nombre_servicio}
             </h1>
@@ -49,12 +50,29 @@ export default async function ServicioDetallePage({ params }: Props) {
               </p>
             )}
 
-            <Link
-              href={`/cotizacion?servicio=${servicio.id_servicio}`}
-              className="mt-[24px] shrink-0 bg-[#8b434a] rounded-[10px] h-[63px] w-full flex items-center justify-center text-white font-semibold text-[20px] tracking-[1px] hover:bg-[#7a3a41] active:scale-[0.99] transition-all duration-150"
-            >
-              ¡Quiero contratar este servicio!
-            </Link>
+            {/*
+              Pricing matrix is sent as props for client-side calculation (<200ms NF requirement).
+              TODO ADMIN-04/05: when the formula system is live, remove the `matriz` mapping
+              below and point AddToCartForm to POST /api/servicios/[id]/calcular-precio instead.
+            */}
+            <AddToCartForm
+              servicioId={servicio.id_servicio}
+              nombreServicio={servicio.nombre_servicio}
+              opciones={servicio.opciones.map((o) => ({
+                id_opcion: o.id_opcion,
+                nombre_opcion: o.nombre_opcion,
+                valores: o.valores.map((v) => ({
+                  id_valor: v.id_valor,
+                  valor: v.valor,
+                  es_default: v.es_default,
+                  matriz: v.matriz.map((m) => ({
+                    cantidad_minima: m.cantidad_minima,
+                    cantidad_maxima: m.cantidad_maxima ?? null,
+                    precio_unitario: Number(m.precio_unitario),
+                  })),
+                })),
+              }))}
+            />
 
             {/* Otros Servicios */}
             {otros.length > 0 && (
