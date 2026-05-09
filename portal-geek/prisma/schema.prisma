@@ -150,6 +150,7 @@ model Servicios {
   detallesPedido       DetallePedido[]
   instaladorServicios  InstaladorServicios[]
   proveedorPrecios     ProveedorPrecios[]
+  servicios            ServiciosMaquina[]
 
   @@map("SERVICIOS")
 }
@@ -250,6 +251,7 @@ model Maquinas {
 
   sucursales    SucursalesMaquina[]
   pedidoMaquina PedidoMaquina[]
+  servicios     ServiciosMaquina[]
 
   @@map("MAQUINAS")
 }
@@ -263,6 +265,17 @@ model SucursalesMaquina {
   maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
 
   @@map("SUCURSALESMAQUINA")
+}
+
+model ServiciosMaquina {
+  id_servicio_maquina Int @id @default(autoincrement())
+  id_servicio         Int
+  id_maquina          Int
+
+  servicio Servicios @relation(fields: [id_servicio], references: [id_servicio])
+  maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
+
+  @@map("SERVICIOSMAQUINA")
 }
 
 model Proveedores {
