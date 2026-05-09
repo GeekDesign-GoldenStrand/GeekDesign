@@ -2,16 +2,36 @@ import type { Maquinas } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateMaquinaInput, UpdateMaquinaInput } from "@/lib/schemas/maquinas";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listMaquinas(
   page: number,
   pageSize: number
 ): Promise<{ items: Maquinas[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await prisma.$transaction([
+    prisma.maquinas.findMany({
+      where: {
+        estatus: { not: "Inactiva" },
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { fecha_registro: "asc" },
+      include: {
+        sucursales: {
+          include: {
+            sucursal: true,
+          },
+        },
+        servicios: {
+          include: {
+            servicio: true,
+          },
+        },
+      },
+    }),
+    prisma.maquinas.count(),
+  ]);
+  return { items, total };
 }
 
 export async function getMaquina(id: number): Promise<Maquinas> {
@@ -34,7 +54,15 @@ export async function updateMaquina(id: number, data: UpdateMaquinaInput): Promi
 }
 
 export async function deleteMaquina(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.maquinas.update({
+      where: { id_maquina: id },
+      data: { estatus: "Inactiva" },
+    });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025") {
+      throw new NotFoundError(`Maquina ${id} no encontrada`);
+    }
+    throw err;
+  }
 }
