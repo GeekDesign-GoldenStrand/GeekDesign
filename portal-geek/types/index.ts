@@ -62,6 +62,7 @@ export interface MaquinaCardProps {
   description?: string;
   services?: string[];
   creation_date: string;
+  status: string;
   onDelete: () => void;
   onEdit: () => void;
 }
