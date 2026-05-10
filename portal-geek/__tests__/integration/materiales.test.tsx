@@ -221,12 +221,12 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando imagen_url no es una clave de almacenamiento válida", async () => {
+  it("retorna 422 cuando imagen_url no es una clave ni una URL https", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/materiales")
-      .send({ ...VALID_PAYLOAD, imagen_url: "https://example.com/img.jpg" });
+      .send({ ...VALID_PAYLOAD, imagen_url: "not-a-key-and-not-a-url" });
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("imagen_url");
   });

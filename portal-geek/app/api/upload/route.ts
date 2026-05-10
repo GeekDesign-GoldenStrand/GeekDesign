@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/auth/guards";
 import { PresignUploadSchema, UPLOAD_LIMITS } from "@/lib/schemas/upload";
-import { presignPut } from "@/lib/services/storage";
+import { DEFAULT_TTL_SECONDS, presignPut } from "@/lib/services/storage";
 import { buildKey, extFromFilename, extFromMime } from "@/lib/storage/keys";
 import { ok } from "@/lib/utils/api";
 import { ForbiddenError, handleError, ValidationError } from "@/lib/utils/errors";
@@ -19,7 +19,10 @@ export const POST = withAuth(async (req: NextRequest) => {
       throw new ForbiddenError("La categoría de cotizaciones se genera del lado del servidor.");
     }
 
-    if (!limits.allowedMime.includes(body.contentType)) {
+    // Browsers may send "image/svg+xml; charset=utf-8" — strip parameters before matching.
+    const contentType = body.contentType.split(";")[0].trim().toLowerCase();
+
+    if (!limits.allowedMime.includes(contentType)) {
       throw new ValidationError("Tipo de archivo no permitido para esta categoría.");
     }
     if (body.size > limits.maxBytes) {
@@ -40,14 +43,14 @@ export const POST = withAuth(async (req: NextRequest) => {
       }
       ext = fromName;
     } else {
-      ext = extFromMime(body.contentType);
+      ext = extFromMime(contentType);
       if (!ext) throw new ValidationError("Tipo de archivo no soportado.");
     }
 
     const key = buildKey(body.category, ext);
-    const url = await presignPut(key, body.contentType);
+    const url = await presignPut(key, contentType);
 
-    return ok({ key, url, expiresIn: 5 * 60 });
+    return ok({ key, url, expiresIn: DEFAULT_TTL_SECONDS });
   } catch (err) {
     return handleError(err);
   }

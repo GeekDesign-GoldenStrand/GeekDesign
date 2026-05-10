@@ -34,13 +34,17 @@ export const CreateMaterialSchema = z.object({
     .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
     .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
   color: z.string().min(1, "El color es requerido.").max(50, "Máximo 50 caracteres."),
-  // Storage key returned by POST /api/upload (category=materiales).
-  // Field name kept for column compatibility; semantically holds a key, not a URL.
+  // Accepts a storage key returned by POST /api/upload (preferred) or a legacy
+  // https URL. Transitional until the UI ships <UploadInput>; remove the URL
+  // branch once all forms post storage keys.
   imagen_url: z
     .string()
     .min(1, "La imagen es requerida.")
     .max(500, "Máximo 500 caracteres.")
-    .refine((v) => isValidKey(v, "materiales"), "Imagen inválida."),
+    .refine(
+      (v) => isValidKey(v, "materiales") || /^https:\/\//i.test(v),
+      "Debe ser una clave de almacenamiento válida o una URL https."
+    ),
 });
 
 export const UpdateMaterialSchema = CreateMaterialSchema.partial();

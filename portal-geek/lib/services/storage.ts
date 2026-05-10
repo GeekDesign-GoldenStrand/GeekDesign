@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { getBucket, getPublicBaseUrl, getStorage } from "@/lib/storage/client";
 
-const DEFAULT_TTL_SECONDS = 5 * 60;
+export const DEFAULT_TTL_SECONDS = 5 * 60;
 const MAX_TTL_SECONDS = 15 * 60;
 
 function clampTtl(ttl: number | undefined): number {
@@ -81,5 +81,7 @@ export function publicUrl(key: string): string | null {
 // presigned GET. Use on read paths to translate DB-stored keys into URLs.
 export async function resolveImageUrl(key: string | null): Promise<string | null> {
   if (!key) return null;
+  // Legacy rows may still hold absolute URLs from before keys were introduced.
+  if (/^https?:\/\//i.test(key)) return key;
   return publicUrl(key) ?? presignGet(key);
 }
