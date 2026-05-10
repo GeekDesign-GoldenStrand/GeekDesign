@@ -33,9 +33,30 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   else if (!EMAIL_REGEX.test(form.correo)) errs.correo = "Correo electrónico inválido.";
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
   else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
-  if (form.ubicacion && !/^[^,]+,[^,]+$/.test(form.ubicacion.trim()))
-    errs.ubicacion = "Formato requerido: Municipio, Estado";
+  if (!["Instalador", "Contratista"].includes(form.tipo)) errs.tipo = "Seleccione un tipo válido.";
+  if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+  if (form.notas && form.notas.length > 500) errs.notas = "Máximo 500 caracteres.";
   return errs;
+}
+
+function parseServerFieldErrors(serverError: string | null): Record<string, string> {
+  if (!serverError) return {};
+  const fields: (keyof InstaladorFormData)[] = [
+    "nombre_instalador",
+    "apodo",
+    "tipo",
+    "correo",
+    "telefono",
+    "ubicacion",
+    "notas",
+    "estatus",
+  ];
+  const parsed: Record<string, string> = {};
+  for (const field of fields) {
+    const match = serverError.match(new RegExp(`\\b${field}:\\s*([^,]+)`));
+    if (match) parsed[field] = match[1].trim();
+  }
+  return parsed;
 }
 
 const FIELD =
@@ -77,6 +98,10 @@ export function EditarInstaladorModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Server field errors are overridden by local errors: touching a field clears
+  // errors[key] to "", which takes precedence over the server error for that key.
+  const allErrors = { ...parseServerFieldErrors(serverError), ...errors };
+
   if (!isOpen) return null;
 
   function setField(key: string, value: string) {
@@ -86,7 +111,7 @@ export function EditarInstaladorModal({
   }
 
   function getFieldClass(key: string) {
-    if (errors[key]) return FIELD_ERROR;
+    if (allErrors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const val = form[key as keyof typeof form];
       if (key === "correo") return EMAIL_REGEX.test(val) ? FIELD_SUCCESS : "";
@@ -135,7 +160,9 @@ export function EditarInstaladorModal({
             onChange={(e) => setField("nombre_instalador", e.target.value)}
             className={`${FIELD} ${getFieldClass("nombre_instalador")}`}
           />
-          {errors.nombre_instalador && <p className={ERROR_MSG}>{errors.nombre_instalador}</p>}
+          {allErrors.nombre_instalador && (
+            <p className={ERROR_MSG}>{allErrors.nombre_instalador}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -149,7 +176,7 @@ export function EditarInstaladorModal({
               onChange={(e) => setField("apodo", e.target.value)}
               className={`${FIELD} ${getFieldClass("apodo")}`}
             />
-            {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
+            {allErrors.apodo && <p className={ERROR_MSG}>{allErrors.apodo}</p>}
           </div>
 
           <div>
@@ -164,6 +191,7 @@ export function EditarInstaladorModal({
               <option value="Instalador">Instalador</option>
               <option value="Contratista">Contratista</option>
             </select>
+            {allErrors.tipo && <p className={ERROR_MSG}>{allErrors.tipo}</p>}
           </div>
         </div>
 
@@ -179,7 +207,7 @@ export function EditarInstaladorModal({
               onChange={(e) => setField("correo", e.target.value)}
               className={`${FIELD} ${getFieldClass("correo")}`}
             />
-            {errors.correo && <p className={ERROR_MSG}>{errors.correo}</p>}
+            {allErrors.correo && <p className={ERROR_MSG}>{allErrors.correo}</p>}
           </div>
           <div>
             <label className={LABEL}>
@@ -196,7 +224,7 @@ export function EditarInstaladorModal({
               }}
               className={`${FIELD} ${getFieldClass("telefono")}`}
             />
-            {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+            {allErrors.telefono && <p className={ERROR_MSG}>{allErrors.telefono}</p>}
           </div>
         </div>
 
@@ -210,7 +238,7 @@ export function EditarInstaladorModal({
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
             />
-            {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
+            {allErrors.ubicacion && <p className={ERROR_MSG}>{allErrors.ubicacion}</p>}
           </div>
 
           <div>
@@ -236,13 +264,15 @@ export function EditarInstaladorModal({
             onChange={(e) => setField("notas", e.target.value)}
             className={`${FIELD} ${getFieldClass("notas")} resize-none`}
           />
+          {allErrors.notas && <p className={ERROR_MSG}>{allErrors.notas}</p>}
         </div>
 
         <div className="flex justify-end gap-3 mt-2">
           <button
             type="button"
+            disabled={loading}
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
           >
             Cancelar
           </button>

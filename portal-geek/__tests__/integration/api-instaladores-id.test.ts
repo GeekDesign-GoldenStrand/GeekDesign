@@ -8,7 +8,6 @@ import { createApp } from "../helpers/next-supertest";
 jest.mock("@/lib/db/client", () => ({
   prisma: {
     instaladores: {
-      findUnique: jest.fn(),
       update: jest.fn(),
     },
   },
