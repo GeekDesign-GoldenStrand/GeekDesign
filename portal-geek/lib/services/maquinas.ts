@@ -41,14 +41,20 @@ export async function getMaquina(id: number): Promise<Maquinas> {
 }
 
 export async function createMaquina(data: CreateMaquinaInput): Promise<Maquinas> {
-  // TODO: implement
-  void data;
-  throw new Error("Not implemented");
+  return prisma.maquinas.create({
+    data: {
+      nombre_maquina: data.nombre_maquina,
+      apodo_maquina: data.apodo_maquina,
+      tipo: data.tipo,
+      descripcion: data.descripcion || null,
+      estatus: "Activa",
+    },
+  });
 }
 
 export async function updateMaquina(id: number, data: UpdateMaquinaInput): Promise<Maquinas> {
   try {
-    return await prisma.instaladores.update({ where: { id_maquina: id }, data: data });
+    return await prisma.maquinas.update({ where: { id_maquina: id }, data: data });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Máquina ${id} no encontrada`);
