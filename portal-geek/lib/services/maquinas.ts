@@ -47,10 +47,14 @@ export async function createMaquina(data: CreateMaquinaInput): Promise<Maquinas>
 }
 
 export async function updateMaquina(id: number, data: UpdateMaquinaInput): Promise<Maquinas> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  try {
+    return await prisma.instaladores.update({ where: { id_maquina: id }, data: data });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025") {
+      throw new NotFoundError(`Máquina ${id} no encontrada`);
+    }
+    throw err;
+  }
 }
 
 export async function deleteMaquina(id: number): Promise<void> {
