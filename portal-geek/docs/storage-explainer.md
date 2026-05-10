@@ -233,7 +233,7 @@ The same logic applies to presigned GET URLs we hand out on read paths — they'
 ## What can go wrong (and how the code handles it)
 
 - **The upload to the bucket fails after the user got a presigned URL.** No row is created, the URL expires, nothing is leaked. The user retries and gets a new URL with a new key. The dead key is just an unused presigned URL — it doesn't reserve anything in the bucket.
-- **The upload succeeds but the form submission fails.** Now the bucket has a real object, but no DB row references it. This is an **orphan**. It's the cost of the presigned pattern. Mitigations: a periodic GC job listing keys with no FK references (TODO — see storage-todo.md §5), or accept some orphan growth as the price of the architecture.
+- **The upload succeeds but the form submission fails.** Now the bucket has a real object, but no DB row references it. This is an **orphan**. It's the cost of the presigned pattern. Mitigations: a periodic GC job listing keys with no FK references (TODO), or accept some orphan growth as the price of the architecture.
 - **The user replaces an image.** `updateMaterial` notices `imagen_url` changed, takes the previous key from the DB, and `safeDelete`s the old object after the row update succeeds. Best-effort: a failed object delete logs the error but doesn't fail the request — the orphan can be cleaned up later, but a 500 to the user is worse.
 - **The user deletes a material.** `deleteMaterial` reads the key inside the transaction, deletes the row, then `safeDelete`s the object. Same best-effort policy.
 - **A user passes a forged key in the form** (e.g., someone else's key). The Zod validator checks the key shape and category prefix. They can't pass a key from the wrong category. They _could_ pass a real key that they happened to know belongs to another material — but they'd just be pointing their own row at someone else's image, which doesn't leak data they didn't already have access to (the image is theirs to view either way). If we ever store sensitive content this way, we'd add an ownership check; for catalog images it's fine.
@@ -258,4 +258,4 @@ The same logic applies to presigned GET URLs we hand out on read paths — they'
 - File goes browser → bucket directly. Server is only consulted to get a 5-min "you may upload to this exact path" URL.
 - We store the **key** (path inside the bucket), not the URL. URLs are generated fresh on read.
 - Switching from GCS to AWS S3 to Oracle is an env-only change — code is provider-agnostic.
-- Materiales is wired and is the template. Servicios, NotasCliente, ArchivosDisenio replicate the same pattern (see `storage-todo.md`).
+- Materiales is wired and is the template. Servicios, NotasCliente, ArchivosDisenio replicate the same pattern.
