@@ -242,7 +242,7 @@ model Sucursales {
 
 model Maquinas {
   id_maquina    Int      @id @default(autoincrement())
-  nombre_maquina String  @db.VarChar(100)
+  modelo_maquina String  @db.VarChar(100)
   apodo_maquina  String  @db.VarChar(100)
   tipo           String  @db.VarChar(50)  // Láser CO2 / Láser Fibra / Bordadora
   descripcion    String?
