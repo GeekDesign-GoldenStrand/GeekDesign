@@ -142,6 +142,7 @@ async function withResolvedImagen(material: Materiales): Promise<Materiales> {
 ```
 
 `resolveImageUrl` returns either:
+
 - A public URL (if `STORAGE_PUBLIC_BASE_URL` is set and the bucket is public-read), or
 - A short-lived presigned GET URL.
 
@@ -186,12 +187,12 @@ So the frontend always sees a fetchable URL. It never sees the raw key. The key 
 
 ## The four moving parts in code
 
-| Part | File | What it does |
-|---|---|---|
-| Client | `lib/storage/client.ts` | Singleton S3 SDK client pointed at GCS/S3/Oracle. Lazy-init so tests don't crash. |
-| Keys | `lib/storage/keys.ts` | `buildKey`, `isValidKey`, `extFromMime`, `extFromFilename`, the `STORAGE_CATEGORIES` list. |
+| Part    | File                      | What it does                                                                                                |
+| ------- | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Client  | `lib/storage/client.ts`   | Singleton S3 SDK client pointed at GCS/S3/Oracle. Lazy-init so tests don't crash.                           |
+| Keys    | `lib/storage/keys.ts`     | `buildKey`, `isValidKey`, `extFromMime`, `extFromFilename`, the `STORAGE_CATEGORIES` list.                  |
 | Service | `lib/services/storage.ts` | The verbs you actually call: `presignPut`, `presignGet`, `resolveImageUrl`, `deleteObject`, `uploadBuffer`. |
-| Route | `app/api/upload/route.ts` | The one HTTP endpoint clients call to get a presigned PUT. |
+| Route   | `app/api/upload/route.ts` | The one HTTP endpoint clients call to get a presigned PUT.                                                  |
 
 If you're wiring a new entity, you don't touch `client.ts` or `keys.ts`. You just call `resolveImageUrl` on read paths and `deleteObject` on delete paths in your service file. See `lib/services/materiales.ts` for the full pattern.
 
@@ -202,7 +203,7 @@ If you're wiring a new entity, you don't touch `client.ts` or `keys.ts`. You jus
 `STORAGE_CATEGORIES` (in `lib/storage/keys.ts`) is the canonical list:
 
 ```ts
-["materiales", "servicios", "disenios", "notas", "cotizaciones"]
+["materiales", "servicios", "disenios", "notas", "cotizaciones"];
 ```
 
 Each one maps to a real domain concept and has its own rules in `UPLOAD_LIMITS`:
