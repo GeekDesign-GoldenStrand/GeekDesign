@@ -242,7 +242,7 @@ model Sucursales {
 
 model Maquinas {
   id_maquina    Int      @id @default(autoincrement())
-  modelo_maquina String  @db.VarChar(100) // CO2 100 Watts / Fibra 100 Watts / Happy 15 hilos 1 cabeza
+  nombre_maquina String  @db.VarChar(100) // CO2 100 Watts / Fibra 100 Watts / Happy 15 hilos 1 cabeza
   apodo_maquina  String  @db.VarChar(100)
   tipo           String  @db.VarChar(50)  // Láser CO2 / Láser Fibra / Bordadora
   descripcion    String?
