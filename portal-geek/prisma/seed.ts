@@ -4,9 +4,12 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 
+const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, "\n");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
-  ssl: { rejectUnauthorized: false }, // required for Cloud SQL
+  ssl: ca
+    ? { ca, rejectUnauthorized: true, checkServerIdentity: () => undefined }
+    : undefined,
 });
 
 const adapter = new PrismaPg(pool);

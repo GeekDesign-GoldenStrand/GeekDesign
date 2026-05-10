@@ -1,6 +1,6 @@
 # How Uploads Work — Team Explainer
 
-A walkthrough of the upload mechanism in plain language. If you're going to touch storage code, or wire a new entity to it, read this first. Companion to [`storage.md`](./storage.md) (setup) and [`storage-todo.md`](./storage-todo.md) (what's left).
+A walkthrough of the upload mechanism in plain language. If you're going to touch storage code, or wire a new entity to it, read this first.
 
 ---
 

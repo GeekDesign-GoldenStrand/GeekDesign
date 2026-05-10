@@ -2,12 +2,17 @@
 // Prisma 7 requires a driver adapter; we use @prisma/adapter-pg for PostgreSQL.
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
 
 function createPrismaClient() {
-  const adapter = new PrismaPg({
+  const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, "\n");
+  const pool = new Pool({
     connectionString: process.env.DATABASE_URL!,
-    ssl: { rejectUnauthorized: false },
+    ssl: ca
+      ? { ca, rejectUnauthorized: true, checkServerIdentity: () => undefined }
+      : undefined,
   });
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
