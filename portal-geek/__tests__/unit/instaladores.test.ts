@@ -48,6 +48,7 @@ const CREATE_INPUT = {
   tipo: "Instalador" as const,
   telefono: "5551234567",
   correo: "juan@example.com",
+  costo_instalacion: 350,
   estatus: "Activo" as const,
 };
 
