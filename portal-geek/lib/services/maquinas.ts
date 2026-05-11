@@ -66,14 +66,18 @@ export async function createMaquina(data: CreateMaquinaInput): Promise<Maquinas>
 
 export async function updateMaquina(id: number, data: UpdateMaquinaInput): Promise<Maquinas> {
   try {
-    return await prisma.maquinas.update({ where: { id_maquina: id }, data: data, include: {
-      sucursales: {
-        include: { sucursal: true },
+    return await prisma.maquinas.update({
+      where: { id_maquina: id },
+      data: data,
+      include: {
+        sucursales: {
+          include: { sucursal: true },
+        },
+        servicios: {
+          include: { servicio: true },
+        },
       },
-      servicios: {
-        include: { servicio: true },
-      },
-    }, });
+    });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Máquina ${id} no encontrada`);
@@ -94,4 +98,35 @@ export async function deleteMaquina(id: number): Promise<void> {
     }
     throw err;
   }
+}
+
+export async function asignarSucursales(id: number, sucursales: number[]): Promise<Maquinas> {
+  const id_sucursal = sucursales[0];
+
+  const existing = await prisma.sucursalesMaquina.findFirst({
+    where: { id_maquina: id },
+  });
+
+  if (existing) {
+    await prisma.sucursalesMaquina.update({
+      where: { id_sucursal_maquina: existing.id_sucursal_maquina },
+      data: { id_sucursal },
+    });
+  } else {
+    await prisma.sucursalesMaquina.create({
+      data: { id_maquina: id, id_sucursal },
+    });
+  }
+
+  const maquina = await prisma.maquinas.findUnique({
+    where: { id_maquina: id },
+    include: {
+      sucursales: { include: { sucursal: true } },
+      servicios: { include: { servicio: true } },
+    },
+  });
+
+  if (!maquina) throw new NotFoundError(`Máquina ${id} no encontrada`);
+
+  return maquina;
 }
