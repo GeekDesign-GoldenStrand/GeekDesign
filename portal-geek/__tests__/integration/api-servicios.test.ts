@@ -214,13 +214,11 @@ describe("POST /api/servicios", () => {
   it("retorna 403 cuando un Colaborador intenta crear", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/servicios")
-      .send({
-        nombre_servicio: "Test",
-        id_estatus: 1,
-        id_sucursal: 1,
-      });
+    const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
+      nombre_servicio: "Test",
+      id_estatus: 1,
+      id_sucursal: 1,
+    });
 
     expect(res.status).toBe(403);
   });
@@ -252,15 +250,13 @@ describe("POST /api/servicios", () => {
       return callback(tx);
     });
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/servicios")
-      .send({
-        nombre_servicio: "Servicio Test",
-        descripcion_servicio: "Descripción de prueba",
-        id_estatus: 1,
-        id_sucursal: 1,
-        estatus_servicio: true,
-      });
+    const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
+      nombre_servicio: "Servicio Test",
+      descripcion_servicio: "Descripción de prueba",
+      id_estatus: 1,
+      id_sucursal: 1,
+      estatus_servicio: true,
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.data.nombre_servicio).toBe("Servicio Test");

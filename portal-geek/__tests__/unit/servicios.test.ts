@@ -100,9 +100,7 @@ describe("listServicios", () => {
 
     await listServicios(2, 10);
 
-    expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 10, take: 10 })
-    );
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 10, take: 10 }));
   });
 
   it("aplica paginación correctamente en página 1", async () => {
@@ -111,9 +109,7 @@ describe("listServicios", () => {
 
     await listServicios(1, 20);
 
-    expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 0, take: 20 })
-    );
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 0, take: 20 }));
   });
 
   it("retorna lista vacía cuando no hay servicios", async () => {
