@@ -5,8 +5,11 @@ import MaquinaServiceBadge from "../atoms/MaquinaServiceBadge";
 import MaquinaSubtitle from "../atoms/MaquinaSubtitle";
 import MaquinaTitle from "../atoms/MaquinaTitle";
 import MaquinaSection from "../molecules/MaquinaSection";
+import MaquinaStatusDropdown from "../molecules/MaquinaStatusDropdown";
 
-import type MaquinaCardProps from "@/types/MaquinaCardProps";
+import type { MaquinaCardProps, MachineStatus } from "@/types";
+
+const MACHINE_STATUS_OPTIONS: MachineStatus[] = ["Activa", "En mantenimiento"];
 
 export function MaquinaCard({
   nickname,
@@ -15,6 +18,7 @@ export function MaquinaCard({
   description,
   services,
   creation_date,
+  status,
   onDelete,
   onEdit,
 }: MaquinaCardProps) {
@@ -23,6 +27,7 @@ export function MaquinaCard({
       <div>
         <div className="flex gap-6 justify-between items-start">
           <MaquinaTitle title={nickname} />
+
           <div className="flex gap-2">
             <button
               onClick={onEdit}
@@ -42,11 +47,24 @@ export function MaquinaCard({
         </div>
         <MaquinaSubtitle subtitle={model} />
       </div>
-      <MaquinaSection heading="Sucursal" text={store} />
-      <MaquinaSubtitle subtitle="Servicios" />
-      <MaquinaServiceBadge services={services} />
-      <MaquinaSection heading="Descripción" text={description} />
-      <MaquinaCreationDate creationDate={creation_date} />
+      <MaquinaSection heading="Sucursal" text={store || "Sin asignar"} />
+      {services && services.length > 0
+        ? <div>
+            <MaquinaSubtitle subtitle="Servicios" />
+            <MaquinaServiceBadge services={services} />
+          </div>
+        : <MaquinaSection heading="Servicios" text="Sin asignar" />
+      }
+      <MaquinaSection heading="Descripción" text={description || "Sin descripción"} />
+      <div className="flex justify-between">
+        <MaquinaCreationDate creationDate={creation_date} />
+        <MaquinaStatusDropdown
+          status={status}
+          options={MACHINE_STATUS_OPTIONS}
+          optionColors={["#00c853", "#8e908f"]}
+          onChange={() => {}}
+        />
+      </div>
     </div>
   );
 }
