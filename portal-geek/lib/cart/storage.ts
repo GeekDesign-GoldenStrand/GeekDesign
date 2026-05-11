@@ -69,6 +69,40 @@ export function updateQuantity(itemId: string, cantidad: number): { items: Carri
   return updated;
 }
 
+export function updateItem(
+  itemId: string,
+  patch: { configuracion: Record<string, unknown>; cantidad: number; precioCalculado: number }
+): { items: CarritoItem[] } {
+  const carrito = getCarrito();
+  const updated = {
+    items: carrito.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)),
+  };
+  saveCarrito(updated);
+  return updated;
+}
+
+export function resetItem(
+  itemId: string,
+  defaultConfiguracion: Record<string, unknown>,
+  defaultPrecioCalculado: number
+): { items: CarritoItem[] } {
+  const carrito = getCarrito();
+  const updated = {
+    items: carrito.items.map((i) =>
+      i.id === itemId
+        ? {
+            ...i,
+            configuracion: defaultConfiguracion,
+            cantidad: 1,
+            precioCalculado: defaultPrecioCalculado,
+          }
+        : i
+    ),
+  };
+  saveCarrito(updated);
+  return updated;
+}
+
 // ─── Computed ─────────────────────────────────────────────────────────────────
 
 export function getSubtotal(items: CarritoItem[]): number {
