@@ -310,6 +310,73 @@ async function main() {
 
   console.log(`Seeded ${quotationStatuses.length} quotation statuses`);
 
+  // ── Instaladores ───────────────────────────────────────────────────────────
+  const instaladoresData = [
+    {
+      id_instalador: 1,
+      nombre_instalador: "Carlos Ramírez",
+      apodo: "El Rápido",
+      tipo: "Instalador",
+      telefono: "8113456789",
+      correo: "carlos.ramirez@instalaciones.mx",
+      notas: "Especialista en viniles y rotulación.",
+      ubicacion: "Monterrey, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 2,
+      nombre_instalador: "Grupo Instalaciones NL",
+      apodo: null,
+      tipo: "Contratista",
+      telefono: "8129876543",
+      correo: "contacto@grupoinstala.mx",
+      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
+      ubicacion: "San Nicolás de los Garza, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 3,
+      nombre_instalador: "Luis Mendoza",
+      apodo: "Lucho",
+      tipo: "Instalador",
+      telefono: "4423219876",
+      correo: "luis.mendoza@correo.mx",
+      notas: null,
+      ubicacion: "Querétaro, Querétaro",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 4,
+      nombre_instalador: "Patricia Solís",
+      apodo: "Paty",
+      tipo: "Instalador",
+      telefono: "5551234567",
+      correo: "paty.solis@instala.mx",
+      notas: "Instalación de lonas y toldos.",
+      ubicacion: "Ciudad de México, CDMX",
+      estatus: "Inactivo",
+    },
+  ];
+
+  for (const data of instaladoresData) {
+    await prisma.instaladores.upsert({
+      where: { id_instalador: data.id_instalador },
+      update: {},
+      create: data,
+    });
+  }
+
+  console.log(`Seeded ${instaladoresData.length} instaladores`);
+
+  // ── Invoice status map ─────────────────────────────────────────
+  const invoiceStatusRows = await prisma.estadoFacturaPedido.findMany();
+
+  const invoiceStatusMap: Record<string, number> = {};
+
+  invoiceStatusRows.forEach((s) => {
+    invoiceStatusMap[s.descripcion] = s.id_estado_factura;
+  });
+
   // ── Test client ────────────────────────────────────────────────────────────
   await prisma.clientes.upsert({
     where: { id_cliente: 1 },

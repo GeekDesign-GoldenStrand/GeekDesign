@@ -3,7 +3,8 @@ import { z } from "zod";
 export const CreateCotizacionSchema = z.object({
   id_pedido: z.number().int().positive().optional(),
   id_cliente: z.number().int().positive(),
-  id_estatus_cotizacion: z.number().int().positive(),
+  id_estatus_cotizacion: z.number().int().positive().optional(),
+  folio: z.string().max(50).optional(),
   monto_total: z.number().nonnegative(),
   empresa_cliente: z.string().max(100).optional(),
   fecha_fin: z.coerce.date().optional(),

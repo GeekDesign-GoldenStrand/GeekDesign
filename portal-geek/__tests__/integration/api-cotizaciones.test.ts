@@ -12,6 +12,17 @@ import { createApp } from "../helpers/next-supertest";
 const mockGetSession = jest.fn();
 type Handler = (req: Request, ctx: { params: unknown }, session?: unknown) => Promise<Response>;
 
+let routes: { PATCH: (req: unknown) => Promise<Response> };
+
+beforeAll(async () => {
+  const mod = await import("@/app/api/cotizaciones/[id]/estatus/route");
+
+  routes = {
+    PATCH: (req: unknown) =>
+      mod.PATCH(req as NextRequest, { params: Promise.resolve({ id: "1" }) }),
+  };
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
@@ -68,7 +79,10 @@ jest.mock("@/lib/db/client", () => ({
     cotizaciones: {
       findUnique: jest.fn().mockResolvedValue({
         id_cotizacion: 1,
-        id_estatus_cotizacion: 2,
+        id_estatus_cotizacion: 1,
+        estatus: {
+          descripcion: "Pendiente",
+        },
       }),
       update: jest.fn().mockImplementation(({ data }) => ({
         id_cotizacion: 1,
@@ -95,7 +109,7 @@ jest.mock("@/lib/db/client", () => ({
         }
 
         if (value === "Rechazada") {
-          return Promise.resolve({ id_estatus: 4 });
+          return Promise.resolve({ id_estatus: 3 });
         }
 
         return Promise.resolve(null);
@@ -165,6 +179,62 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
 
     console.error("Response body:", res.body);
     expect(res.status).toBe(200);
-    expect(res.body.data.id_estatus_cotizacion).toBe(4);
+    expect(res.body.data.id_estatus_cotizacion).toBe(3);
   });
+});
+
+it("returns 422 for invalid status", async () => {
+  mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+  const res = await createApp({ PATCH: routes.PATCH })
+    .patch("/api/cotizaciones/1/estatus")
+    .send({ estatus: "EstadoFake" });
+
+  expect(res.status).toBe(422);
+});
+
+it("returns 500 when quotation status does not exist in catalog", async () => {
+  const { prisma } = await import("@/lib/db/client");
+
+  (prisma.estatusCotizacion.findUnique as jest.Mock).mockResolvedValueOnce(null);
+
+  const res = await createApp({ PATCH: routes.PATCH })
+    .patch("/api/cotizaciones/1/estatus")
+    .send({ estatus: "Validada" });
+
+  expect(res.status).toBe(500);
+});
+
+it("creates status history entry when status changes", async () => {
+  const { prisma } = await import("@/lib/db/client");
+
+  const res = await createApp({ PATCH: routes.PATCH })
+    .patch("/api/cotizaciones/1/estatus")
+    .send({ estatus: "Validada" });
+
+  expect(res.status).toBe(200);
+
+  expect(prisma.historialEstadosCotizacion.create).toHaveBeenCalled();
+});
+
+it("executes updates inside a transaction", async () => {
+  const { prisma } = await import("@/lib/db/client");
+
+  await createApp({ PATCH: routes.PATCH })
+    .patch("/api/cotizaciones/1/estatus")
+    .send({ estatus: "Validada" });
+
+  expect(prisma.$transaction).toHaveBeenCalled();
+});
+
+it("returns 500 when quotation does not exist", async () => {
+  const { prisma } = await import("@/lib/db/client");
+
+  (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValueOnce(null);
+
+  const res = await createApp({ PATCH: routes.PATCH })
+    .patch("/api/cotizaciones/999/estatus")
+    .send({ estatus: "Validada" });
+
+  expect(res.status).toBe(500);
 });
