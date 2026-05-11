@@ -73,9 +73,24 @@ export function updateItem(
   itemId: string,
   patch: { configuracion: Record<string, unknown>; cantidad: number; precioCalculado: number }
 ): { items: CarritoItem[] } {
+  const safeCantidad = Number.isFinite(patch.cantidad)
+    ? Math.max(1, Math.floor(patch.cantidad))
+    : 1;
+  const safePrecio = Number.isFinite(patch.precioCalculado)
+    ? Math.max(0, patch.precioCalculado)
+    : 0;
   const carrito = getCarrito();
   const updated = {
-    items: carrito.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)),
+    items: carrito.items.map((i) =>
+      i.id === itemId
+        ? {
+            ...i,
+            configuracion: patch.configuracion,
+            cantidad: safeCantidad,
+            precioCalculado: safePrecio,
+          }
+        : i
+    ),
   };
   saveCarrito(updated);
   return updated;
