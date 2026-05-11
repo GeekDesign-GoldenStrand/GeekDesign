@@ -138,11 +138,26 @@ export async function getCotizacion(id: number): Promise<Cotizaciones | null> {
   });
 }
 
-export async function createCotizacion(data: CreateCotizacionInput): Promise<Cotizaciones> {
-  // Placeholder until implemented.
-  // Throwing explicit error avoids silent failures.
-  void data;
-  throw new Error("Not implemented");
+export async function createCotizacion(
+  data: CreateCotizacionInput
+): Promise<Cotizaciones> {
+  // Every new quotation must start as "Pendiente"
+  // to guarantee a consistent initial workflow state.
+  const pendingStatusId = 1;
+
+  return prisma.cotizaciones.create({
+    data: {
+      id_cliente: data.id_cliente,
+      id_pedido: data.id_pedido ?? null,
+      monto_total: data.monto_total,
+      empresa_cliente: data.empresa_cliente ?? null,
+      folio: data.folio ?? null,
+      fecha_fin: data.fecha_fin ?? null,
+      pdf_url: data.pdf_url ?? null,
+      notas: data.notas ?? null,
+      id_estatus_cotizacion: pendingStatusId,
+    },
+  });
 }
 
 export async function updateCotizacion(
@@ -177,19 +192,80 @@ export async function changeQuotationStatus(
   targetStatus: QuotationStatus,
   userId: number
 ) {
-  // Fetch current quotation to record previous status in history.
+  // Fetch current quotation including current status.
   const currentQuotation = await prisma.cotizaciones.findUnique({
     where: { id_cotizacion: quotationId },
+    include: {
+      estatus: true,
+    },
   });
+
   if (!currentQuotation) {
     throw new Error("Quotation not found");
   }
 
+  const currentStatus =
+    currentQuotation.estatus.descripcion as QuotationStatus;
+
+  // Valid workflow transitions.
+  const ALLOWED_QUOTATION_TRANSITIONS: Record<
+    QuotationStatus,
+    QuotationStatus[]
+  > = {
+    [QUOTATION_STATUS.PENDIENTE]: [
+      QUOTATION_STATUS.VALIDADA,
+      QUOTATION_STATUS.CANCELADA,
+      QUOTATION_STATUS.RECHAZADA,
+    ],
+
+    [QUOTATION_STATUS.VALIDADA]: [
+      QUOTATION_STATUS.APROBADA,
+      QUOTATION_STATUS.CANCELADA,
+      QUOTATION_STATUS.RECHAZADA,
+    ],
+
+    [QUOTATION_STATUS.APROBADA]: [],
+
+    [QUOTATION_STATUS.CANCELADA]: [],
+
+    [QUOTATION_STATUS.RECHAZADA]: [],
+  };
+
+  const allowedTransitions =
+    ALLOWED_QUOTATION_TRANSITIONS[currentStatus];
+
+  // Prevent illegal workflow jumps.
+  if (!allowedTransitions.includes(targetStatus)) {
+    throw new Error(
+      `Illegal status transition from '${currentStatus}' to '${targetStatus}'`
+    );
+  }
+
   const newStatusId = await getQuotationStatusId(targetStatus);
 
-  // Transaction ensures atomicity: if either update or history fails,
-  // neither change is committed. This guarantees traceability.
-  const isRejected = targetStatus === QUOTATION_STATUS.RECHAZADA;
+  // Automatically register milestone timestamps
+  // only the first time each status is reached.
+  const updateData: Prisma.CotizacionesUncheckedUpdateInput = {
+    id_estatus_cotizacion: newStatusId,
+  };
+
+  if (
+    targetStatus === QUOTATION_STATUS.VALIDADA &&
+    !currentQuotation.fecha_validacion
+  ) {
+    updateData.fecha_validacion = new Date();
+  }
+
+  if (
+    targetStatus === QUOTATION_STATUS.APROBADA &&
+    !currentQuotation.fecha_aprobacion
+  ) {
+    updateData.fecha_aprobacion = new Date();
+  }
+
+  // Transaction ensures atomicity.
+  const isRejected =
+    targetStatus === QUOTATION_STATUS.RECHAZADA;
 
   const operations: (
     | Prisma.PrismaPromise<Cotizaciones>
@@ -199,22 +275,22 @@ export async function changeQuotationStatus(
   )[] = [
     prisma.cotizaciones.update({
       where: { id_cotizacion: quotationId },
-      data: { id_estatus_cotizacion: newStatusId },
+      data: updateData,
     }),
 
     prisma.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
         id_usuario: userId,
-        id_estado_anterior: currentQuotation.id_estatus_cotizacion,
+        id_estado_anterior:
+          currentQuotation.id_estatus_cotizacion,
         id_estado_nuevo: newStatusId,
         fecha_cambio: new Date(),
       },
     }),
   ];
 
-  // If quotation becomes rejected,
-  // register it in rejected quotations table.
+  // Register rejected quotations.
   if (isRejected) {
     operations.push(
       prisma.cotizacionesRechazadas.upsert({
@@ -229,8 +305,7 @@ export async function changeQuotationStatus(
     );
   }
 
-  // If quotation is no longer rejected,
-  // remove it from rejected quotations table.
+  // Remove from rejected table if no longer rejected.
   if (!isRejected) {
     operations.push(
       prisma.cotizacionesRechazadas.deleteMany({

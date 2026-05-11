@@ -44,6 +44,28 @@ function getStatusStyle(status: string) {
   }
 }
 
+function getAllowedQuotationStatuses(currentStatus: string): string[] {
+  switch (currentStatus) {
+    case "Pendiente":
+      return ["Pendiente", "Validada", "Rechazada", "Cancelada"];
+
+    case "Validada":
+      return ["Validada", "Aprobada", "Rechazada", "Cancelada"];
+
+    case "Aprobada":
+      return ["Aprobada"];
+
+    case "Rechazada":
+      return ["Rechazada"];
+
+    case "Cancelada":
+      return ["Cancelada"];
+
+    default:
+      return [currentStatus];
+  }
+}
+
 export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
   if (cotizaciones.length === 0) {
     return (
@@ -113,11 +135,11 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   }}
                   className="pl-3 md:pl-4 pr-7 md:pr-8 py-1 rounded-full text-xs md:text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
                 >
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Validada">Validada</option>
-                  <option value="Rechazada">Rechazada</option>
-                  <option value="Aprobada">Aprobada</option>
-                  <option value="Cancelada">Cancelada</option>
+                  {getAllowedQuotationStatuses(c.estatus).map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
                 </select>
 
                 <CaretDown

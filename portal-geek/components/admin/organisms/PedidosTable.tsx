@@ -62,6 +62,28 @@ function getStatusStyle(status: string) {
   }
 }
 
+function getAllowedPedidoStatuses(currentStatus: string): string[] {
+  switch (currentStatus) {
+    case "Pendiente":
+      return ["Pendiente", "En producción", "Cancelado"];
+
+    case "En producción":
+      return ["En producción", "Finalizado", "Cancelado"];
+
+    case "Finalizado":
+      return ["Finalizado", "Entregado", "Cancelado"];
+
+    case "Entregado":
+      return ["Entregado"];
+
+    case "Cancelado":
+      return ["Cancelado"];
+
+    default:
+      return [currentStatus];
+  }
+}
+
 function getInvoiceProgress(status?: string | null) {
   if (!status) return 0;
 
@@ -199,11 +221,11 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                   }}
                   className="pl-3 md:pl-4 pr-7 md:pr-7 py-1 rounded-full text-xs md:text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
                 >
-                  <option>Pendiente</option>
-                  <option>En producción</option>
-                  <option>Finalizado</option>
-                  <option>Entregado</option>
-                  <option>Cancelado</option>
+                  {getAllowedPedidoStatuses(
+                    STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion
+                  ).map((status) => (
+                    <option key={status}>{status}</option>
+                  ))}
                 </select>
 
                 <CaretDown

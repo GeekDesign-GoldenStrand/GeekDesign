@@ -215,19 +215,61 @@ export async function changePedidoStatus(
   targetStatus: PedidoStatus,
   userId: number
 ) {
-  // Fetch current order to record previous status in history.
+  // Fetch current order including current status.
   const currentPedido = await prisma.pedidos.findUnique({
     where: { id_pedido: pedidoId },
+    include: {
+      estatus: true,
+    },
   });
 
   if (!currentPedido) {
     throw new Error("Pedido not found");
   }
 
+  const currentStatus =
+    currentPedido.estatus.descripcion as PedidoStatus;
+
+  // Valid workflow transitions.
+  const ALLOWED_PEDIDO_TRANSITIONS: Record<
+    PedidoStatus,
+    PedidoStatus[]
+  > = {
+    [PEDIDO_STATUS.PENDIENTE]: [
+      PEDIDO_STATUS.EN_PRODUCCION,
+      PEDIDO_STATUS.CANCELADO,
+    ],
+
+    [PEDIDO_STATUS.EN_PRODUCCION]: [
+      PEDIDO_STATUS.FINALIZADO,
+      PEDIDO_STATUS.CANCELADO,
+    ],
+
+    [PEDIDO_STATUS.FINALIZADO]: [
+      PEDIDO_STATUS.ENTREGADO,
+      PEDIDO_STATUS.CANCELADO,
+    ],
+
+    [PEDIDO_STATUS.ENTREGADO]: [],
+
+    [PEDIDO_STATUS.CANCELADO]: [],
+  };
+
+  const allowedTransitions =
+    ALLOWED_PEDIDO_TRANSITIONS[currentStatus];
+
+  // Prevent illegal workflow jumps.
+  if (!allowedTransitions.includes(targetStatus)) {
+    throw new Error(
+      `Illegal status transition from '${currentStatus}' to '${targetStatus}'`
+    );
+  }
+
   const newStatusId = await getPedidoStatusId(targetStatus);
 
-  // Transaction ensures atomicity: if either update or history fails,
-  // neither change is committed. This guarantees traceability.
+  // Transaction ensures atomicity:
+  // if either update or history creation fails,
+  // neither operation is committed.
   const [updatedPedido] = await prisma.$transaction([
     prisma.pedidos.update({
       where: { id_pedido: pedidoId },
