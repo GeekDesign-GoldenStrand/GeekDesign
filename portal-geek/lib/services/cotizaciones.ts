@@ -138,9 +138,7 @@ export async function getCotizacion(id: number): Promise<Cotizaciones | null> {
   });
 }
 
-export async function createCotizacion(
-  data: CreateCotizacionInput
-): Promise<Cotizaciones> {
+export async function createCotizacion(data: CreateCotizacionInput): Promise<Cotizaciones> {
   // Every new quotation must start as "Pendiente"
   // to guarantee a consistent initial workflow state.
   const pendingStatusId = 1;
@@ -204,14 +202,10 @@ export async function changeQuotationStatus(
     throw new Error("Quotation not found");
   }
 
-  const currentStatus =
-    currentQuotation.estatus.descripcion as QuotationStatus;
+  const currentStatus = currentQuotation.estatus.descripcion as QuotationStatus;
 
   // Valid workflow transitions.
-  const ALLOWED_QUOTATION_TRANSITIONS: Record<
-    QuotationStatus,
-    QuotationStatus[]
-  > = {
+  const ALLOWED_QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
     [QUOTATION_STATUS.PENDIENTE]: [
       QUOTATION_STATUS.VALIDADA,
       QUOTATION_STATUS.CANCELADA,
@@ -231,14 +225,11 @@ export async function changeQuotationStatus(
     [QUOTATION_STATUS.RECHAZADA]: [],
   };
 
-  const allowedTransitions =
-    ALLOWED_QUOTATION_TRANSITIONS[currentStatus];
+  const allowedTransitions = ALLOWED_QUOTATION_TRANSITIONS[currentStatus];
 
   // Prevent illegal workflow jumps.
   if (!allowedTransitions.includes(targetStatus)) {
-    throw new Error(
-      `Illegal status transition from '${currentStatus}' to '${targetStatus}'`
-    );
+    throw new Error(`Illegal status transition from '${currentStatus}' to '${targetStatus}'`);
   }
 
   const newStatusId = await getQuotationStatusId(targetStatus);
@@ -249,23 +240,16 @@ export async function changeQuotationStatus(
     id_estatus_cotizacion: newStatusId,
   };
 
-  if (
-    targetStatus === QUOTATION_STATUS.VALIDADA &&
-    !currentQuotation.fecha_validacion
-  ) {
+  if (targetStatus === QUOTATION_STATUS.VALIDADA && !currentQuotation.fecha_validacion) {
     updateData.fecha_validacion = new Date();
   }
 
-  if (
-    targetStatus === QUOTATION_STATUS.APROBADA &&
-    !currentQuotation.fecha_aprobacion
-  ) {
+  if (targetStatus === QUOTATION_STATUS.APROBADA && !currentQuotation.fecha_aprobacion) {
     updateData.fecha_aprobacion = new Date();
   }
 
   // Transaction ensures atomicity.
-  const isRejected =
-    targetStatus === QUOTATION_STATUS.RECHAZADA;
+  const isRejected = targetStatus === QUOTATION_STATUS.RECHAZADA;
 
   const operations: (
     | Prisma.PrismaPromise<Cotizaciones>
@@ -282,8 +266,7 @@ export async function changeQuotationStatus(
       data: {
         id_cotizacion: quotationId,
         id_usuario: userId,
-        id_estado_anterior:
-          currentQuotation.id_estatus_cotizacion,
+        id_estado_anterior: currentQuotation.id_estatus_cotizacion,
         id_estado_nuevo: newStatusId,
         fecha_cambio: new Date(),
       },
