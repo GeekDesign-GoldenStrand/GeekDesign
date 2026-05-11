@@ -56,8 +56,10 @@ export interface TerceroCardProps {
 export type MachineStatus = "Activa" | "Inactiva" | "En mantenimiento";
 
 export interface MaquinaCardProps {
-  nickname: string;
+  id: number,
   model: string;
+  nickname: string;
+  type: string;
   store: string;
   description?: string;
   services?: string[];
