@@ -22,11 +22,13 @@ interface UserCardProps {
   user: UserCardUser;
   roles?: { id_rol: number; nombre_rol: string }[];
   onRolChange?: (userId: number, newRolId: number) => void;
+  onStatusChange?: (userId: number, newStatus: string) => void;
   onEdit?: (userId: number) => void;
   saving?: boolean;
+  savingStatus?: boolean;
 }
 
-export function UserCard({ user, roles, onRolChange, onEdit, saving }: UserCardProps) {
+export function UserCard({ user, roles, onRolChange, onStatusChange, onEdit, saving, savingStatus }: UserCardProps) {
   return (
     <div className="w-full rounded-[7px] bg-white shadow-[0_0_20px_rgba(0,0,0,0.25)] p-6 flex flex-col gap-3 min-h-[321px]">
       <h3 className="font-ibm-plex font-semibold text-[24px] text-[#1e1e1e] leading-tight">
@@ -55,7 +57,11 @@ export function UserCard({ user, roles, onRolChange, onEdit, saving }: UserCardP
           onRolChange={onRolChange ? (id) => onRolChange(user.id_usuario, id) : undefined}
           saving={saving}
         />
-        <StatusTag status={user.estatus} />
+        <StatusTag
+            status={user.estatus}
+            onStatusChange={onStatusChange ? (s) => onStatusChange(user.id_usuario, s) : undefined}
+            saving={savingStatus}
+          />
       </div>
 
       {user.telefono && (
