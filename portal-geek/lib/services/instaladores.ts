@@ -8,13 +8,15 @@ export async function listInstaladores(
   page: number,
   pageSize: number
 ): Promise<{ items: Instaladores[]; total: number }> {
+  const where = { estatus: { not: "Inactivo" } };
   const [items, total] = await prisma.$transaction([
     prisma.instaladores.findMany({
+      where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: { nombre_instalador: "asc" },
     }),
-    prisma.instaladores.count(),
+    prisma.instaladores.count({ where }),
   ]);
   return { items, total };
 }
@@ -56,7 +58,10 @@ export async function updateInstalador(
 
 export async function deleteInstalador(id: number): Promise<void> {
   try {
-    await prisma.instaladores.delete({ where: { id_instalador: id } });
+    await prisma.instaladores.update({
+      where: { id_instalador: id },
+      data: { estatus: "Inactivo" },
+    });
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Instalador ${id} no encontrado`);
