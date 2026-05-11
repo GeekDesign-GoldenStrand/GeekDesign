@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
@@ -12,6 +12,9 @@ import {
   type ColaboradorApiRow,
 } from "@/components/ui/colaboradores";
 import { FiltrarColaboradoresPanel } from "@/components/ui/colaboradores/molecules/FiltrarColaboradoresPanel";
+import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
+
+const PAGE_SIZE = 20;
 
 interface Rol {
   id_rol: number;
@@ -74,6 +77,9 @@ export function ColaboradoresView() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterEstatus, setFilterEstatus] = useState("");
   const [filterRoles, setFilterRoles] = useState<number[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
   // Delete state
   const [deletingColaborador, setDeletingColaborador] = useState<{
@@ -92,39 +98,33 @@ export function ColaboradoresView() {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    try {
-      const [colabRes, rolesRes, sucursalesRes] = await Promise.all([
-        fetch("/api/colaboradores?page=1&pageSize=100"),
-        fetch("/api/roles"),
-        fetch("/api/sucursales?page=1&pageSize=100"),
-      ]);
-
-      if (!colabRes.ok || !rolesRes.ok || !sucursalesRes.ok) {
-        throw new Error("Error al cargar los datos");
-      }
-
-      const [colabJson, rolesJson, sucursalesJson] = await Promise.all([
-        colabRes.json(),
-        rolesRes.json(),
-        sucursalesRes.json(),
-      ]);
-
-      setColaboradores(((colabJson.data ?? []) as ColaboradorApiRow[]).map(mapApiRow));
-      setRoles((rolesJson.data ?? []) as Rol[]);
-      setSucursales((sucursalesJson.data ?? []) as Sucursal[]);
-    } catch {
-      setError("No se pudieron cargar los colaboradores. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+    Promise.all([
+      fetch(`/api/colaboradores?${params}`),
+      fetch("/api/roles"),
+      fetch("/api/sucursales?page=1&pageSize=100"),
+    ])
+      .then(async ([colabRes, rolesRes, sucursalesRes]) => {
+        if (!colabRes.ok || !rolesRes.ok || !sucursalesRes.ok) throw new Error();
+        const [colabJson, rolesJson, sucursalesJson] = await Promise.all([
+          colabRes.json(),
+          rolesRes.json(),
+          sucursalesRes.json(),
+        ]);
+        if (cancelled) return;
+        setColaboradores(((colabJson.data ?? []) as ColaboradorApiRow[]).map(mapApiRow));
+        setTotalPages(Math.max(1, Math.ceil((colabJson.total ?? 0) / PAGE_SIZE)));
+        setRoles((rolesJson.data ?? []) as Rol[]);
+        setSucursales((sucursalesJson.data ?? []) as Sucursal[]);
+      })
+      .catch(() => { if (!cancelled) setError("No se pudieron cargar los colaboradores. Intenta de nuevo."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [page, retryAttempt]);
 
   async function handleStatusChange(userId: number, newStatus: string) {
     setSavingStatus(userId);
@@ -240,6 +240,10 @@ export function ColaboradoresView() {
     }
   }
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterEstatus, filterRoles]);
+
   function handleRolToggle(id: number) {
     setFilterRoles((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
   }
@@ -299,7 +303,7 @@ export function ColaboradoresView() {
         <div className="px-8 flex flex-col gap-3">
           <p className="text-[#e42200] text-[16px] font-ibm-plex">{error}</p>
           <button
-            onClick={fetchData}
+            onClick={() => setRetryAttempt((n) => n + 1)}
             className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
           >
             Reintentar
@@ -308,25 +312,28 @@ export function ColaboradoresView() {
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-4 gap-5 px-8 pb-10">
-          {filtered.map((u) => (
-            <UserCard
-              key={u.id_usuario}
-              user={{ ...u, estatus: u.estatus_colaborador }}
-              onStatusChange={handleStatusChange}
-              savingStatus={savingStatus === u.id_usuario}
-              onEdit={openEditModal}
-              onDelete={(id) => {
-                setDeletingColaborador({ id, name: u.nombre_completo });
-                setDeleteError(null);
-              }}
-            />
-          ))}
-          {filtered.length === 0 && (
-            <p className="col-span-3 py-16 text-center font-ibm-plex text-[#888]">
-              {q ? "Sin resultados para esa búsqueda." : "No hay colaboradores registrados."}
-            </p>
-          )}
+        <div className="px-8 pb-10">
+          <div className="grid grid-cols-4 gap-5">
+            {filtered.map((u) => (
+              <UserCard
+                key={u.id_usuario}
+                user={{ ...u, estatus: u.estatus_colaborador }}
+                onStatusChange={handleStatusChange}
+                savingStatus={savingStatus === u.id_usuario}
+                onEdit={openEditModal}
+                onDelete={(id) => {
+                  setDeletingColaborador({ id, name: u.nombre_completo });
+                  setDeleteError(null);
+                }}
+              />
+            ))}
+            {filtered.length === 0 && (
+              <p className="col-span-4 py-16 text-center font-ibm-plex text-[#888]">
+                {q ? "Sin resultados para esa búsqueda." : "No hay colaboradores registrados."}
+              </p>
+            )}
+          </div>
+          <PaginacionControles page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
 
