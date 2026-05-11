@@ -11,6 +11,7 @@ import {
   EditarColaboradorModal,
   type ColaboradorApiRow,
 } from "@/components/ui/colaboradores";
+import { FiltrarColaboradoresPanel } from "@/components/ui/colaboradores/molecules/FiltrarColaboradoresPanel";
 
 interface Rol {
   id_rol: number;
@@ -70,6 +71,9 @@ export function ColaboradoresView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [savingStatus, setSavingStatus] = useState<number | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterEstatus, setFilterEstatus] = useState("");
+  const [filterRoles, setFilterRoles] = useState<number[]>([]);
 
   // Delete state
   const [deletingColaborador, setDeletingColaborador] = useState<{ id: number; name: string } | null>(null);
@@ -235,26 +239,49 @@ export function ColaboradoresView() {
     }
   }
 
+  function handleRolToggle(id: number) {
+    setFilterRoles((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+    );
+  }
+
+  function handleLimpiarFiltros() {
+    setFilterEstatus("");
+    setFilterRoles([]);
+  }
+
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? colaboradores.filter(
-        (u) =>
-          u.nombre_completo.toLowerCase().includes(q) ||
-          (u.correo_electronico?.toLowerCase().includes(q) ?? false)
-      )
-    : colaboradores;
+  const filtered = colaboradores.filter((u) => {
+    if (q && !u.nombre_completo.toLowerCase().includes(q) && !(u.correo_electronico?.toLowerCase().includes(q) ?? false)) return false;
+    if (filterEstatus && u.estatus_colaborador !== filterEstatus) return false;
+    if (filterRoles.length > 0 && !filterRoles.includes(u.id_rol)) return false;
+    return true;
+  });
 
   return (
     <div>
       <AdminHeader title="Colaboradores" />
 
       <div className="px-8 pt-6 pb-4">
-        <AdminToolbar
-          search={search}
-          onSearchChange={setSearch}
-          onAgregar={() => setModalOpen(true)}
-          onFiltrar={() => {}}
-        />
+        <div className="relative">
+          <AdminToolbar
+            search={search}
+            onSearchChange={setSearch}
+            onAgregar={() => setModalOpen(true)}
+            onFiltrar={() => setFilterOpen((v) => !v)}
+          />
+          {filterOpen && (
+            <FiltrarColaboradoresPanel
+              roles={roles}
+              filterEstatus={filterEstatus}
+              filterRoles={filterRoles}
+              onEstatusChange={setFilterEstatus}
+              onRolToggle={handleRolToggle}
+              onReset={handleLimpiarFiltros}
+              onClose={() => setFilterOpen(false)}
+            />
+          )}
+        </div>
         {statusError && (
           <p role="alert" className="mt-3 text-[14px] text-[#df2646]">
             {statusError}
@@ -291,7 +318,7 @@ export function ColaboradoresView() {
             />
           ))}
           {filtered.length === 0 && (
-            <p className="col-span-4 py-16 text-center font-ibm-plex text-[#888]">
+            <p className="col-span-3 py-16 text-center font-ibm-plex text-[#888]">
               {q ? "Sin resultados para esa búsqueda." : "No hay colaboradores registrados."}
             </p>
           )}
