@@ -262,7 +262,7 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
             {/* Actions */}
             <div className="flex justify-center">
               <a
-                href={`/admin/pedidos/${p.id_pedido}`}
+                href={`/pedidos/${p.id_pedido}`}
                 className="text-black hover:text-[#e42200] p-2"
               >
                 <PencilSimple size={18} />

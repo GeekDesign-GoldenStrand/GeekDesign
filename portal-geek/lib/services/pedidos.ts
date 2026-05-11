@@ -69,7 +69,7 @@ export async function listPedidos(
 
   if (onlyActive) {
     // Resolve inactive status IDs once and filter by ID.
-    const inactiveStatusIds = await getPedidoStatusIds(["Facturado"]);
+    const inactiveStatusIds = await getPedidoStatusIds(["Entregado", "Cancelado"]);
     where.id_estatus = { notIn: inactiveStatusIds };
   } else if (estatuses.length > 0) {
     // If caller explicitly filters by statuses, still resolve IDs instead of strings.
@@ -210,6 +210,14 @@ export async function getPedidoStatusId(description: string) {
   return status.id_estatus;
 }
 
+const PEDIDO_STATUS_API_TO_DB: Record<PedidoStatus, string> = {
+  [PEDIDO_STATUS.PENDIENTE]: "Pendiente",
+  [PEDIDO_STATUS.EN_PRODUCCION]: "En producción",
+  [PEDIDO_STATUS.FINALIZADO]: "Finalizado",
+  [PEDIDO_STATUS.ENTREGADO]: "Entregado",
+  [PEDIDO_STATUS.CANCELADO]: "Cancelado",
+};
+
 export async function changePedidoStatus(
   pedidoId: number,
   targetStatus: PedidoStatus,
@@ -249,7 +257,9 @@ export async function changePedidoStatus(
     throw new Error(`Illegal status transition from '${currentStatus}' to '${targetStatus}'`);
   }
 
-  const newStatusId = await getPedidoStatusId(targetStatus);
+  const dbStatus = PEDIDO_STATUS_API_TO_DB[targetStatus];
+
+  const newStatusId = await getPedidoStatusId(dbStatus);
 
   // Transaction ensures atomicity:
   // if either update or history creation fails,
