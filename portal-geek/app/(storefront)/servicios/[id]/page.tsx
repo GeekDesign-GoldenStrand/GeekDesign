@@ -6,10 +6,12 @@ import { getServicioWithDetails, listServicios } from "@/lib/services/servicios"
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ editItemId?: string }>;
 }
 
-export default async function ServicioDetallePage({ params }: Props) {
+export default async function ServicioDetallePage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { editItemId } = await searchParams;
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId < 1) notFound();
 
@@ -58,6 +60,7 @@ export default async function ServicioDetallePage({ params }: Props) {
             <AddToCartForm
               servicioId={servicio.id_servicio}
               nombreServicio={servicio.nombre_servicio}
+              editItemId={editItemId}
               opciones={servicio.opciones.map((o) => ({
                 id_opcion: o.id_opcion,
                 nombre_opcion: o.nombre_opcion,
