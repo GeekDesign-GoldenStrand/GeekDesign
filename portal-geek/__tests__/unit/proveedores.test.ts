@@ -43,7 +43,8 @@ describe("getProviderAssignments", () => {
 
     expect(result.serviceIds).toEqual([1, 2]);
     expect(result.materialIds).toEqual([10]);
-    expect(result.prices).toEqual({ 1: 150, 10: 200, 2: 50 });
+    expect(result.servicePrices).toEqual({ 1: 150, 2: 50 });
+    expect(result.materialPrices).toEqual({ 10: 200 });
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id_proveedor: 1 } })
     );
@@ -57,7 +58,8 @@ describe("getProviderAssignments", () => {
 
     expect(result.serviceIds).toEqual([]);
     expect(result.materialIds).toEqual([]);
-    expect(result.prices).toEqual({});
+    expect(result.servicePrices).toEqual({});
+    expect(result.materialPrices).toEqual({});
   });
 
   it("lanza NotFoundError si el proveedor no existe", async () => {
