@@ -18,7 +18,7 @@ export interface ColaboradorApiRow {
     telefono: string;
     estatus_colaborador: string;
     fecha_modificacion: string;
-    sucursal: { nombre_sucursal: string } | null;
+    sucursal: { id_sucursal: number; nombre_sucursal: string } | null;
   } | null;
 }
 

@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { UserCard } from "@/components/admin/organisms/UserCard";
-import { AgregarColaboradorModal, type ColaboradorApiRow } from "@/components/ui/colaboradores";
+import {
+  AgregarColaboradorModal,
+  EditarColaboradorModal,
+  type ColaboradorApiRow,
+} from "@/components/ui/colaboradores";
 
 interface Rol {
   id_rol: number;
@@ -20,7 +24,7 @@ interface Sucursal {
 interface ColaboradorRow {
   id_usuario: number;
   nombre_completo: string;
-  correo_electronico: string;
+  correo_electronico: string | null;
   edad: number | null;
   sexo: string | null;
   sucursal: string | null;
@@ -63,6 +67,15 @@ export function ColaboradoresView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [savingStatus, setSavingStatus] = useState<number | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+
+  // Edit state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editApiRow, setEditApiRow] = useState<ColaboradorApiRow | null>(null);
+  const [editLoadingData, setEditLoadingData] = useState(false);
+  const [editFetchError, setEditFetchError] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -126,12 +139,80 @@ export function ColaboradoresView() {
     setColaboradores((prev) => [mapApiRow(apiRow), ...prev]);
   }
 
+  async function openEditModal(userId: number) {
+    setEditingId(userId);
+    setEditApiRow(null);
+    setEditFetchError(null);
+    setEditError(null);
+    setEditModalOpen(true);
+    setEditLoadingData(true);
+    try {
+      const res = await fetch(`/api/colaboradores/${userId}`);
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setEditFetchError((json as { error?: string })?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setEditApiRow((json as { data: ColaboradorApiRow }).data);
+    } catch {
+      setEditFetchError("Error al cargar los datos del colaborador");
+    } finally {
+      setEditLoadingData(false);
+    }
+  }
+
+  function closeEditModal() {
+    setEditModalOpen(false);
+    setEditingId(null);
+    setEditApiRow(null);
+    setEditFetchError(null);
+    setEditError(null);
+  }
+
+  async function handleEditSubmit(payload: {
+    nombre_completo: string;
+    correo_electronico: string;
+    edad: number;
+    sexo: string;
+    telefono: string;
+    id_rol: number;
+    id_sucursal: number;
+  }) {
+    if (!editingId) return;
+    setEditLoading(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`/api/colaboradores/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setEditError((json as { error?: string })?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setColaboradores((prev) =>
+        prev.map((c) =>
+          c.id_usuario === editingId
+            ? mapApiRow((json as { data: ColaboradorApiRow }).data)
+            : c
+        )
+      );
+      closeEditModal();
+    } catch {
+      setEditError("Error de red. Intenta de nuevo.");
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
   const q = search.trim().toLowerCase();
   const filtered = q
     ? colaboradores.filter(
         (u) =>
           u.nombre_completo.toLowerCase().includes(q) ||
-          u.correo_electronico.toLowerCase().includes(q)
+          (u.correo_electronico?.toLowerCase().includes(q) ?? false)
       )
     : colaboradores;
 
@@ -177,6 +258,7 @@ export function ColaboradoresView() {
               user={u}
               onStatusChange={handleStatusChange}
               savingStatus={savingStatus === u.id_usuario}
+              onEdit={openEditModal}
             />
           ))}
           {filtered.length === 0 && (
@@ -193,6 +275,19 @@ export function ColaboradoresView() {
         onCreated={handleCreated}
         roles={roles}
         sucursales={sucursales}
+      />
+
+      <EditarColaboradorModal
+        isOpen={editModalOpen}
+        apiRow={editApiRow}
+        loadingData={editLoadingData}
+        fetchError={editFetchError}
+        editLoading={editLoading}
+        editError={editError}
+        roles={roles}
+        sucursales={sucursales}
+        onClose={closeEditModal}
+        onSubmit={handleEditSubmit}
       />
     </div>
   );

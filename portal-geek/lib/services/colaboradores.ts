@@ -18,7 +18,7 @@ const COLABORADOR_SELECT = {
       telefono: true,
       estatus_colaborador: true,
       fecha_modificacion: true,
-      sucursal: { select: { nombre_sucursal: true } },
+      sucursal: { select: { id_sucursal: true, nombre_sucursal: true } },
     },
   },
 } as const;
