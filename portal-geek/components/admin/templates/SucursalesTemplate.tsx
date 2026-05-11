@@ -167,26 +167,45 @@ export function SucursalesTemplate({
         <SucursalesTable sucursales={sucursales} onDelete={onDelete} />
 
         {/* Paginación */}
-        <div className="flex justify-center items-center gap-4 mt-4 text-black">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="border px-4 py-2 rounded disabled:opacity-40"
-          >
-            ← Anterior
-          </button>
+        {/* Pagination */}
+        <div className="flex justify-end mt-8 mb-6 pr-4">
+          <div className="flex items-center gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
+            >
+              {"<"}
+            </button>
 
-          <span>
-            Página {page} de {Math.ceil(total / pageSize)}
-          </span>
+            {Array.from({ length: Math.ceil(total / pageSize) }, (_, i) => {
+              const pageNumber = i + 1;
+              const isActive = pageNumber === page;
 
-          <button
-            disabled={page === Math.ceil(total / pageSize)}
-            onClick={() => setPage(page + 1)}
-            className="border px-4 py-2 rounded disabled:opacity-40"
-          >
-            Siguiente →
-          </button>
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => setPage(pageNumber)}
+                  className={`w-[36px] h-[36px] rounded-[4px] font-bold text-[15px]
+                  ${
+                    isActive
+                      ? "bg-[#e42200] text-white"
+                      : "bg-gray-100 text-[#1e1e1e] hover:bg-gray-200"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              disabled={page === Math.ceil(total / pageSize)}
+              onClick={() => setPage(page + 1)}
+              className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
+            >
+              {">"}
+            </button>
+          </div>
         </div>
       </section>
     </>

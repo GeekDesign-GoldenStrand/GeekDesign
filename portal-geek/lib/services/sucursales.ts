@@ -5,16 +5,78 @@ import type { CreateSucursalInput, UpdateSucursalInput } from "@/lib/schemas/suc
 
 export type SucursalWithRelations = Sucursales;
 
-export async function listSucursales(page: number, pageSize: number) {
+type ListSucursalesFilters = {
+  search?: string;
+  nombre?: string;
+  direccion?: string;
+  estatus?: string[];
+};
+
+export async function listSucursales(
+  page: number,
+  pageSize: number,
+  filters?: ListSucursalesFilters
+) {
   const skip = (page - 1) * pageSize;
+
+  const where = {
+    AND: [
+      filters?.search
+        ? {
+            OR: [
+              {
+                nombre_sucursal: {
+                  contains: filters.search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                direccion: {
+                  contains: filters.search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {},
+
+      filters?.nombre
+        ? {
+            nombre_sucursal: {
+              contains: filters.nombre,
+            },
+          }
+        : {},
+
+      filters?.direccion
+        ? {
+            direccion: {
+              contains: filters.direccion,
+            },
+          }
+        : {},
+
+      filters?.estatus?.length
+        ? {
+            estatus: {
+              in: filters.estatus,
+            },
+          }
+        : {},
+    ],
+  };
 
   const [items, total] = await Promise.all([
     prisma.sucursales.findMany({
+      where,
       skip,
       take: pageSize,
       orderBy: { id_sucursal: "asc" },
     }),
-    prisma.sucursales.count(),
+
+    prisma.sucursales.count({
+      where,
+    }),
   ]);
 
   return { items, total };

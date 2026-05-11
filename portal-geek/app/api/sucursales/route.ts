@@ -9,9 +9,29 @@ import { handleError } from "@/lib/utils/errors";
 export const GET = withRole(["Direccion"], async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
+
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-    const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
-    const result = await listSucursales(page, pageSize);
+
+    const pageSize = Math.min(
+      100,
+      Math.max(1, Number(searchParams.get("pageSize") ?? 20))
+    );
+
+    const search = searchParams.get("search") ?? "";
+
+    const nombre = searchParams.get("nombre") ?? "";
+
+    const direccion = searchParams.get("direccion") ?? "";
+
+    const estatus = searchParams.getAll("estatus");
+
+    const result = await listSucursales(page, pageSize, {
+      search,
+      nombre,
+      direccion,
+      estatus,
+    });
+
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {
     return handleError(err);

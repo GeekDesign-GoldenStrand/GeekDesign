@@ -1,37 +1,14 @@
-<<<<<<< HEAD
-import type { Cotizaciones } from "@prisma/client";
-=======
 import type {
   Cotizaciones,
   HistorialEstadosCotizacion,
   CotizacionesRechazadas,
 } from "@prisma/client";
->>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
 import { ConfigurationError } from "@/lib/utils/errors";
 
-<<<<<<< HEAD
-// Centralized catalog of quotation statuses.
-// Using constants avoids scattered "magic strings" and makes refactoring safer.
-export const QUOTATION_STATUS = {
-  VALIDADA: "Validada",
-  RECHAZADA: "Rechazada",
-  APROBADA: "Aprobada",
-  EN_REVISION: "En_revision",
-} as const;
-
-export type QuotationStatus = (typeof QUOTATION_STATUS)[keyof typeof QUOTATION_STATUS];
-
-type CotizacionWithRelations = Prisma.CotizacionesGetPayload<{
-  include: {
-    cliente: true;
-    estatus: true;
-  };
-}>;
-=======
 type CotizacionWithRelations = {
   id_cotizacion: number;
   fecha_creacion: Date;
@@ -60,7 +37,6 @@ export const QUOTATION_STATUS = {
 } as const;
 
 export type QuotationStatus = (typeof QUOTATION_STATUS)[keyof typeof QUOTATION_STATUS];
->>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
 
 export async function listCotizaciones(
   page: number,
@@ -124,10 +100,6 @@ export async function listCotizaciones(
       where,
       skip,
       take: pageSize,
-<<<<<<< HEAD
-      include: { cliente: true, estatus: true },
-      orderBy: { id_cotizacion: "asc" },
-=======
       orderBy: { id_cotizacion: "asc" },
       select: {
         id_cotizacion: true,
@@ -149,7 +121,6 @@ export async function listCotizaciones(
           },
         },
       },
->>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
     }),
     prisma.cotizaciones.count({ where }),
   ]);
@@ -218,9 +189,6 @@ export async function changeQuotationStatus(
 
   // Transaction ensures atomicity: if either update or history fails,
   // neither change is committed. This guarantees traceability.
-<<<<<<< HEAD
-  const [updatedQuotation] = await prisma.$transaction([
-=======
   const isRejected = targetStatus === QUOTATION_STATUS.RECHAZADA;
 
   const operations: (
@@ -229,15 +197,10 @@ export async function changeQuotationStatus(
     | Prisma.PrismaPromise<CotizacionesRechazadas>
     | Prisma.PrismaPromise<Prisma.BatchPayload>
   )[] = [
->>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
     prisma.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: { id_estatus_cotizacion: newStatusId },
     }),
-<<<<<<< HEAD
-=======
-
->>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
     prisma.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
@@ -247,9 +210,6 @@ export async function changeQuotationStatus(
         fecha_cambio: new Date(),
       },
     }),
-<<<<<<< HEAD
-  ]);
-=======
   ];
 
   // If quotation becomes rejected,
@@ -281,7 +241,6 @@ export async function changeQuotationStatus(
   }
 
   const [updatedQuotation] = await prisma.$transaction(operations);
->>>>>>> 28c06747318fab03b786c4ea4bd7f90353bd972d
 
   return updatedQuotation;
 }
