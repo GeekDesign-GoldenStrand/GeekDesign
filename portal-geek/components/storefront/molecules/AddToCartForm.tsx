@@ -120,7 +120,8 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones, editItemId
     if (editItemId) {
       updateItem(editItemId, { configuracion, cantidad, precioCalculado: precioUnitario });
       window.dispatchEvent(new CustomEvent("carrito:updated"));
-      router.push("/carrito");
+      setFeedback("Cambios guardados");
+      setTimeout(() => router.push("/carrito"), 1500);
       return;
     }
 
@@ -208,6 +209,16 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones, editItemId
         <ShoppingCart size={24} weight="bold" />
         {isEditMode ? "Confirmar cambios" : "Añadir al carrito"}
       </button>
+
+      {isEditMode && !confirmingReset && (
+        <button
+          type="button"
+          onClick={() => router.push("/carrito")}
+          className="h-[52px] w-full rounded-[10px] border border-[#c2c0c0] bg-white text-[#1e1e1e] font-semibold text-[16px] hover:bg-[#f5f5f5] active:scale-[0.99] transition-all duration-150"
+        >
+          Cancelar
+        </button>
+      )}
 
       {isEditMode &&
         (confirmingReset ? (
