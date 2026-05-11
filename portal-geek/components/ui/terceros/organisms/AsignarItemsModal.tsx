@@ -44,6 +44,7 @@ export function AsignarItemsModal({
   const [error, setError] = useState<string | null>(null);
 
   const isMaterial = itemType === "material";
+  const itemTypePlural = isMaterial ? "materiales" : "servicios";
   const title = isMaterial ? "Asignar Materiales" : "Asignar Servicios";
   const typeLabel = isMaterial ? "Material" : "Servicio";
   const endpoint = isMaterial ? "/api/materiales" : "/api/servicios";
@@ -105,8 +106,10 @@ export function AsignarItemsModal({
         setItems(mappedItems);
         const assignedIds: number[] =
           currentData.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? [];
-        const assignedPrices: Record<number, number> = currentData.data?.prices ?? {};
-        const assignedNotes: Record<number, string> = currentData.data?.notes ?? {};
+        const assignedPrices: Record<number, number> =
+          currentData.data?.[isMaterial ? "materialPrices" : "servicePrices"] ?? {};
+        const assignedNotes: Record<number, string> =
+          currentData.data?.[isMaterial ? "materialNotes" : "serviceNotes"] ?? {};
         setSelectedIds(assignedIds);
         setPrices(
           Object.fromEntries(assignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
@@ -114,7 +117,7 @@ export function AsignarItemsModal({
         setNotes(Object.fromEntries(assignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
       } catch (err) {
         console.error("Error fetching items:", err);
-        setError(`Hubo un error al cargar los ${itemType}s. Por favor, intenta de nuevo.`);
+        setError(`Hubo un error al cargar los ${itemTypePlural}. Por favor, intenta de nuevo.`);
         setItems([]);
       } finally {
         setLoading(false);
@@ -122,7 +125,7 @@ export function AsignarItemsModal({
     }
 
     fetchData();
-  }, [isOpen, id_proveedor, isMaterial, itemType, endpoint]);
+  }, [isOpen, id_proveedor, isMaterial, itemType, itemTypePlural, endpoint]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
@@ -249,10 +252,10 @@ export function AsignarItemsModal({
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemType}s...</p>
+              <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemTypePlural}...</p>
             </div>
           ) : items.length === 0 ? (
-            <p className="text-center py-12 text-[#8e908f]">No hay {itemType}s disponibles.</p>
+            <p className="text-center py-12 text-[#8e908f]">No hay {itemTypePlural} disponibles.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {items.map((item) => (

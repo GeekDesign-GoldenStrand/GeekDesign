@@ -72,21 +72,28 @@ export async function getProviderAssignments(id: number) {
     select: { id_servicio: true, id_material: true, precio: true, notas: true },
   });
 
-  const prices: Record<number, number> = {};
-  const notes: Record<number, string> = {};
+  const servicePrices: Record<number, number> = {};
+  const serviceNotes: Record<number, string> = {};
+  const materialPrices: Record<number, number> = {};
+  const materialNotes: Record<number, string> = {};
+
   for (const a of assignments) {
-    const itemId = a.id_servicio ?? a.id_material;
-    if (itemId !== null) {
-      prices[itemId] = Number(a.precio ?? 0);
-      notes[itemId] = a.notas ?? "";
+    if (a.id_servicio !== null) {
+      servicePrices[a.id_servicio] = Number(a.precio ?? 0);
+      serviceNotes[a.id_servicio] = a.notas ?? "";
+    } else if (a.id_material !== null) {
+      materialPrices[a.id_material] = Number(a.precio ?? 0);
+      materialNotes[a.id_material] = a.notas ?? "";
     }
   }
 
   return {
     serviceIds: assignments.map((a) => a.id_servicio).filter((id): id is number => id !== null),
     materialIds: assignments.map((a) => a.id_material).filter((id): id is number => id !== null),
-    prices,
-    notes,
+    servicePrices,
+    serviceNotes,
+    materialPrices,
+    materialNotes,
   };
 }
 
@@ -113,25 +120,27 @@ export async function syncProviderAssignments(
     },
   });
 
-  const incomingIds = items.map((i) => i.id);
+  const incomingIdSet = new Set(items.map((i) => i.id));
   const priceMap = new Map(items.map((i) => [i.id, i.precio]));
   const notesMap = new Map(items.map((i) => [i.id, i.notas ?? ""]));
 
   const toRemove = current
     .filter((c) => {
       const cid = isServicio ? c.id_servicio : c.id_material;
-      return cid !== null && !incomingIds.includes(cid);
+      return cid !== null && !incomingIdSet.has(cid);
     })
     .map((c) => c.id_proveedor_precio);
 
-  const currentIds = current
-    .map((c) => (isServicio ? c.id_servicio : c.id_material))
-    .filter((v): v is number => v !== null);
+  const currentIdSet = new Set(
+    current
+      .map((c) => (isServicio ? c.id_servicio : c.id_material))
+      .filter((v): v is number => v !== null)
+  );
 
-  const toAdd = items.filter((item) => !currentIds.includes(item.id));
+  const toAdd = items.filter((item) => !currentIdSet.has(item.id));
   const toUpdate = current.filter((c) => {
     const cid = isServicio ? c.id_servicio : c.id_material;
-    return cid !== null && incomingIds.includes(cid);
+    return cid !== null && incomingIdSet.has(cid);
   });
 
   const operations = [
