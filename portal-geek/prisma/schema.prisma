@@ -334,7 +334,9 @@ model EstatusPedidos {
   id_estatus  Int    @id @default(autoincrement())
   descripcion String @unique @db.VarChar(50)
 
-  pedidos Pedidos[]
+  pedidos           Pedidos[]
+  historialAnterior HistorialEstadosPedidos[] @relation("HistorialAnterior")
+  historialNuevo    HistorialEstadosPedidos[] @relation("HistorialNuevo")
 
   @@map("ESTATUSPEDIDOS")
 }
@@ -429,8 +431,10 @@ model HistorialEstadosPedidos {
   id_estatus_pedido  String?  // subproceso name when state is "En proceso"
   fecha_cambio       DateTime @default(now())
 
-  pedido  Pedidos  @relation(fields: [id_pedido], references: [id_pedido])
-  usuario Usuarios @relation(fields: [id_usuario], references: [id_usuario])
+  pedido         Pedidos         @relation(fields: [id_pedido], references: [id_pedido])
+  usuario        Usuarios        @relation(fields: [id_usuario], references: [id_usuario])
+  estadoAnterior EstatusPedidos? @relation("HistorialAnterior", fields: [id_estado_anterior], references: [id_estatus])
+  estadoNuevo    EstatusPedidos  @relation("HistorialNuevo", fields: [id_estado_nuevo], references: [id_estatus])
 
   @@map("HISTORIALESTADOSPEDIDOS")
 }

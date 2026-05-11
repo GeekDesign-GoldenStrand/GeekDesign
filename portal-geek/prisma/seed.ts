@@ -404,6 +404,382 @@ async function main() {
   }
 
   console.log(`Seeded ${instaladoresData.length} instaladores`);
+
+  // ── Extra clients (for pedido variety) ────────────────────────────────────
+  const clienteEmpresa = await prisma.clientes.upsert({
+    where: { id_cliente: 2 },
+    update: {},
+    create: {
+      nombre_cliente: "Ana Torres",
+      empresa: "Señalética Industrial SA",
+      rfc: "TORA800101XX0",
+      correo_electronico: "ana@senaletica.mx",
+      numero_telefono: "8114567890",
+      categoria: "Gold",
+    },
+  });
+
+  const clienteSimple = await prisma.clientes.upsert({
+    where: { id_cliente: 3 },
+    update: {},
+    create: {
+      nombre_cliente: "Roberto Vega",
+      correo_electronico: "roberto.vega@gmail.com",
+      numero_telefono: "4429876543",
+    },
+  });
+
+  console.log(
+    `Seeded extra clients: "${clienteEmpresa.nombre_cliente}", "${clienteSimple.nombre_cliente}"`
+  );
+
+  // ── Archivo de diseño ──────────────────────────────────────────────────────
+  const archivo = await prisma.archivosDisenio.upsert({
+    where: { id_archivo: 1 },
+    update: {},
+    create: {
+      nombre_archivo: "logo-demo.pdf",
+      url_archivo: "https://storage.geekdesign.mx/archivos/logo-demo.pdf",
+      formato: "pdf",
+    },
+  });
+
+  console.log(`Seeded archivo "${archivo.nombre_archivo}"`);
+
+  // ── Retrieve estatus IDs ───────────────────────────────────────────────────
+  const estatusMap = Object.fromEntries(
+    (await prisma.estatusPedidos.findMany()).map((e) => [e.descripcion, e.id_estatus])
+  );
+
+  // ── Pedidos ────────────────────────────────────────────────────────────────
+  // 1. Cotizacion — fresh quote, no payment yet
+  const pedidoCotizacion = await prisma.pedidos.upsert({
+    where: { id_pedido: 1 },
+    update: {},
+    create: {
+      id_cliente: clienteSimple.id_cliente,
+      id_estatus: estatusMap["Cotizacion"],
+      factura: false,
+      notas: "Cliente solicita muestra antes de confirmar.",
+    },
+  });
+
+  await prisma.detallePedido.upsert({
+    where: { id_detalle: 1 },
+    update: {},
+    create: {
+      id_pedido: pedidoCotizacion.id_pedido,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
+      id_archivo: archivo.id_archivo,
+      opciones_seleccionadas: { Tamaño: "chico" },
+      cantidad: 5,
+      ancho_cm: 15,
+      alto_cm: 10,
+      color: "Negro",
+      responsable_recoleccion: "Roberto Vega",
+      precio_unitario: 25.0,
+      subtotal: 125.0,
+    },
+  });
+
+  await prisma.historialEstadosPedidos.upsert({
+    where: { id_historial: 1 },
+    update: {},
+    create: {
+      id_pedido: pedidoCotizacion.id_pedido,
+      id_usuario: adminUser.id_usuario,
+      id_estado_anterior: null,
+      id_estado_nuevo: estatusMap["Cotizacion"],
+    },
+  });
+
+  // 2. Pagado — client paid, waiting for production queue
+  const pedidoPagado = await prisma.pedidos.upsert({
+    where: { id_pedido: 2 },
+    update: {},
+    create: {
+      id_cliente: clienteEmpresa.id_cliente,
+      id_estatus: estatusMap["Pagado"],
+      id_sucursal: sucursal.id_sucursal,
+      fecha_estimada: new Date("2026-05-20"),
+      factura: true,
+      facturado: false,
+      notas: "Requiere factura para empresa.",
+    },
+  });
+
+  await prisma.detallePedido.upsert({
+    where: { id_detalle: 2 },
+    update: {},
+    create: {
+      id_pedido: pedidoPagado.id_pedido,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
+      id_archivo: archivo.id_archivo,
+      opciones_seleccionadas: { Tamaño: "grande" },
+      cantidad: 20,
+      ancho_cm: 60,
+      alto_cm: 40,
+      color: "Rojo",
+      responsable_recoleccion: "Ana Torres",
+      precio_unitario: 35.0,
+      subtotal: 700.0,
+    },
+  });
+
+  await prisma.pagos.upsert({
+    where: { id_pago: 1 },
+    update: {},
+    create: {
+      id_pedido: pedidoPagado.id_pedido,
+      monto_pago: 700.0,
+      metodo_pago: "transferencia",
+      estatus_pago: "Pagado",
+    },
+  });
+
+  await prisma.historialEstadosPedidos.upsert({
+    where: { id_historial: 2 },
+    update: {},
+    create: {
+      id_pedido: pedidoPagado.id_pedido,
+      id_usuario: adminUser.id_usuario,
+      id_estado_anterior: null,
+      id_estado_nuevo: estatusMap["Cotizacion"],
+    },
+  });
+
+  await prisma.historialEstadosPedidos.upsert({
+    where: { id_historial: 3 },
+    update: {},
+    create: {
+      id_pedido: pedidoPagado.id_pedido,
+      id_usuario: adminUser.id_usuario,
+      id_estado_anterior: estatusMap["Cotizacion"],
+      id_estado_nuevo: estatusMap["Pagado"],
+    },
+  });
+
+  // 3. En producción — two-item order mid-production
+  const pedidoEnProduccion = await prisma.pedidos.upsert({
+    where: { id_pedido: 3 },
+    update: {},
+    create: {
+      id_cliente: clienteEmpresa.id_cliente,
+      id_estatus: estatusMap["En_produccion"],
+      id_sucursal: sucursal.id_sucursal,
+      fecha_estimada: new Date("2026-05-15"),
+      factura: false,
+    },
+  });
+
+  await prisma.detallePedido.upsert({
+    where: { id_detalle: 3 },
+    update: {},
+    create: {
+      id_pedido: pedidoEnProduccion.id_pedido,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
+      id_archivo: archivo.id_archivo,
+      opciones_seleccionadas: { Tamaño: "chico" },
+      cantidad: 10,
+      ancho_cm: 20,
+      alto_cm: 15,
+      color: "Azul",
+      responsable_recoleccion: "Admin GeekDesign",
+      precio_unitario: 20.0,
+      subtotal: 200.0,
+    },
+  });
+
+  await prisma.detallePedido.upsert({
+    where: { id_detalle: 4 },
+    update: {},
+    create: {
+      id_pedido: pedidoEnProduccion.id_pedido,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
+      id_archivo: archivo.id_archivo,
+      opciones_seleccionadas: { Tamaño: "grande" },
+      cantidad: 3,
+      ancho_cm: 80,
+      alto_cm: 60,
+      color: "Blanco",
+      responsable_recoleccion: "Admin GeekDesign",
+      precio_unitario: 45.0,
+      subtotal: 135.0,
+    },
+  });
+
+  await prisma.pagos.upsert({
+    where: { id_pago: 2 },
+    update: {},
+    create: {
+      id_pedido: pedidoEnProduccion.id_pedido,
+      monto_pago: 335.0,
+      metodo_pago: "efectivo",
+      estatus_pago: "Pagado",
+    },
+  });
+
+  for (const [idx, [anterior, nuevo]] of (
+    [
+      [null, "Cotizacion"],
+      ["Cotizacion", "Pagado"],
+      ["Pagado", "En_cola"],
+      ["En_cola", "Aprobacion_diseno"],
+      ["Aprobacion_diseno", "En_produccion"],
+    ] as [string | null, string][]
+  ).entries()) {
+    await prisma.historialEstadosPedidos.upsert({
+      where: { id_historial: 4 + idx },
+      update: {},
+      create: {
+        id_pedido: pedidoEnProduccion.id_pedido,
+        id_usuario: adminUser.id_usuario,
+        id_estado_anterior: anterior ? estatusMap[anterior] : null,
+        id_estado_nuevo: estatusMap[nuevo],
+      },
+    });
+  }
+
+  // 4. Entregado — completed and invoiced
+  const pedidoEntregado = await prisma.pedidos.upsert({
+    where: { id_pedido: 4 },
+    update: {},
+    create: {
+      id_cliente: clienteSimple.id_cliente,
+      id_estatus: estatusMap["Entregado"],
+      id_sucursal: sucursal.id_sucursal,
+      fecha_estimada: new Date("2026-04-30"),
+      fecha_fin: new Date("2026-04-29"),
+      factura: false,
+    },
+  });
+
+  await prisma.detallePedido.upsert({
+    where: { id_detalle: 5 },
+    update: {},
+    create: {
+      id_pedido: pedidoEntregado.id_pedido,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
+      id_archivo: archivo.id_archivo,
+      opciones_seleccionadas: { Tamaño: "grande" },
+      cantidad: 2,
+      ancho_cm: 50,
+      alto_cm: 30,
+      responsable_recoleccion: "Roberto Vega",
+      precio_unitario: 45.0,
+      subtotal: 90.0,
+    },
+  });
+
+  await prisma.pagos.upsert({
+    where: { id_pago: 3 },
+    update: {},
+    create: {
+      id_pedido: pedidoEntregado.id_pedido,
+      monto_pago: 90.0,
+      metodo_pago: "Mercado Pago",
+      estatus_pago: "Pagado",
+      referencia_mercadopago: "MP-2026-00042",
+    },
+  });
+
+  for (const [idx, [anterior, nuevo]] of (
+    [
+      [null, "Cotizacion"],
+      ["Cotizacion", "Pagado"],
+      ["Pagado", "En_cola"],
+      ["En_cola", "En_produccion"],
+      ["En_produccion", "Entregado"],
+    ] as [string | null, string][]
+  ).entries()) {
+    await prisma.historialEstadosPedidos.upsert({
+      where: { id_historial: 9 + idx },
+      update: {},
+      create: {
+        id_pedido: pedidoEntregado.id_pedido,
+        id_usuario: adminUser.id_usuario,
+        id_estado_anterior: anterior ? estatusMap[anterior] : null,
+        id_estado_nuevo: estatusMap[nuevo],
+      },
+    });
+  }
+
+  // 5. Aprobacion_diseno — design pending approval
+  const pedidoDiseño = await prisma.pedidos.upsert({
+    where: { id_pedido: 5 },
+    update: {},
+    create: {
+      id_cliente: clienteEmpresa.id_cliente,
+      id_estatus: estatusMap["Aprobacion_diseno"],
+      id_sucursal: sucursal.id_sucursal,
+      fecha_estimada: new Date("2026-05-18"),
+      factura: true,
+      facturado: false,
+      notas: "Diseño enviado al cliente el 04/05. Esperando confirmación.",
+    },
+  });
+
+  await prisma.detallePedido.upsert({
+    where: { id_detalle: 6 },
+    update: {},
+    create: {
+      id_pedido: pedidoDiseño.id_pedido,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
+      id_archivo: archivo.id_archivo,
+      opciones_seleccionadas: { Tamaño: "grande" },
+      cantidad: 50,
+      ancho_cm: 30,
+      alto_cm: 20,
+      color: "Verde",
+      responsable_recoleccion: "Ana Torres",
+      precio_unitario: 35.0,
+      subtotal: 1750.0,
+    },
+  });
+
+  await prisma.pagos.upsert({
+    where: { id_pago: 4 },
+    update: {},
+    create: {
+      id_pedido: pedidoDiseño.id_pedido,
+      monto_pago: 875.0,
+      metodo_pago: "transferencia",
+      estatus_pago: "Pagado",
+    },
+  });
+
+  for (const [idx, [anterior, nuevo]] of (
+    [
+      [null, "Cotizacion"],
+      ["Cotizacion", "Pagado"],
+      ["Pagado", "Aprobacion_diseno"],
+    ] as [string | null, string][]
+  ).entries()) {
+    await prisma.historialEstadosPedidos.upsert({
+      where: { id_historial: 14 + idx },
+      update: {},
+      create: {
+        id_pedido: pedidoDiseño.id_pedido,
+        id_usuario: adminUser.id_usuario,
+        id_estado_anterior: anterior ? estatusMap[anterior] : null,
+        id_estado_nuevo: estatusMap[nuevo],
+      },
+    });
+  }
+
+  console.log(
+    `Seeded 5 pedidos: #${pedidoCotizacion.id_pedido} Cotizacion, ` +
+      `#${pedidoPagado.id_pedido} Pagado, ` +
+      `#${pedidoEnProduccion.id_pedido} En_produccion, ` +
+      `#${pedidoEntregado.id_pedido} Entregado, ` +
+      `#${pedidoDiseño.id_pedido} Aprobacion_diseno`
+  );
 }
 
 main()

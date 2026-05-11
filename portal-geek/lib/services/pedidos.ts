@@ -1,8 +1,31 @@
-import type { Pedidos } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
+import type { Pedidos, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
+import { NotFoundError } from "@/lib/utils/errors";
+
+export type PedidoDetail = Prisma.PedidosGetPayload<{
+  include: {
+    cliente: true;
+    estatus: true;
+    sucursal: true;
+    detalles: {
+      include: {
+        servicio: { select: { nombre_servicio: true } };
+        material: { select: { nombre_material: true } };
+        archivo: { select: { url_archivo: true; nombre_archivo: true } };
+      };
+    };
+    pagos: true;
+    historial: {
+      include: {
+        estadoAnterior: { select: { descripcion: true } };
+        estadoNuevo: { select: { descripcion: true } };
+        usuario: { select: { nombre_completo: true } };
+      };
+    };
+  };
+}>;
 
 export async function listPedidos(
   page: number,
@@ -54,10 +77,33 @@ export async function listPedidos(
   return { items, total };
 }
 
-export async function getPedido(id: number): Promise<Pedidos> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+export async function getPedido(id: number): Promise<PedidoDetail> {
+  const pedido = await prisma.pedidos.findUnique({
+    where: { id_pedido: id },
+    include: {
+      cliente: true,
+      estatus: true,
+      sucursal: true,
+      detalles: {
+        include: {
+          servicio: { select: { nombre_servicio: true } },
+          material: { select: { nombre_material: true } },
+          archivo: { select: { url_archivo: true, nombre_archivo: true } },
+        },
+      },
+      pagos: { orderBy: { fecha: "asc" } },
+      historial: {
+        include: {
+          estadoAnterior: { select: { descripcion: true } },
+          estadoNuevo: { select: { descripcion: true } },
+          usuario: { select: { nombre_completo: true } },
+        },
+        orderBy: { fecha_cambio: "asc" },
+      },
+    },
+  });
+  if (!pedido) throw new NotFoundError(`Pedido ${id} no encontrado`);
+  return pedido;
 }
 
 export async function createPedido(data: CreatePedidoInput): Promise<Pedidos> {
