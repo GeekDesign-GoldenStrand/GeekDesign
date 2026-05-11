@@ -7,11 +7,17 @@ export async function listSucursales(
   page: number,
   pageSize: number
 ): Promise<{ items: Sucursales[]; total: number }> {
-  // TODO: implement
-  void prisma;
-  void page;
-  void pageSize;
-  throw new Error("Not implemented");
+  const [items, total] = await Promise.all([
+    prisma.sucursales.findMany({
+      where: { estatus: "Activo" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { nombre_sucursal: "asc" },
+    }),
+    prisma.sucursales.count(),
+  ]);
+
+  return { items, total };
 }
 
 export async function getSucursal(id: number): Promise<Sucursales> {
