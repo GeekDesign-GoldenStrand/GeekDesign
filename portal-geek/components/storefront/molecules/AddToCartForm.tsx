@@ -82,21 +82,28 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones, editItemId
         return;
       }
       const item = getCarrito().items.find((i) => i.id === editItemId);
-      if (item) {
+      if (item && item.servicioId === servicioId) {
         const raw = item.configuracion["selecciones"];
+        const savedMap = new Map<number, number>();
         if (Array.isArray(raw)) {
-          setSelecciones(
-            (raw as { opcionId: number; valorId: number }[]).map((s) => ({
-              opcionId: s.opcionId,
-              valorId: s.valorId,
-            }))
+          (raw as { opcionId: number; valorId: number }[]).forEach((s) =>
+            savedMap.set(s.opcionId, s.valorId)
           );
         }
+        // Merge: use saved valorId when the opcionId still exists, otherwise keep default
+        setSelecciones(
+          defaultSelecciones.map((d) => ({
+            opcionId: d.opcionId,
+            valorId: savedMap.get(d.opcionId) ?? d.valorId,
+          }))
+        );
         setCantidad(item.cantidad);
       }
       setHydrated(true);
     }
     apply();
+    // servicioId and defaultSelecciones are derived from static SSR props and never change after mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editItemId]);
 
   // TODO ADMIN-04/05: replace with debounced POST /api/servicios/[id]/calcular-precio
