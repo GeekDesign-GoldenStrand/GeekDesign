@@ -49,6 +49,18 @@ export async function createMaquina(data: CreateMaquinaInput): Promise<Maquinas>
       descripcion: data.descripcion || null,
       estatus: "Activa",
     },
+    include: {
+      sucursales: {
+        include: {
+          sucursal: true,
+        },
+      },
+      servicios: {
+        include: {
+          servicio: true,
+        },
+      },
+    },
   });
 }
 
