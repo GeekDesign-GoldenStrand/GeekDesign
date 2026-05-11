@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
-import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionModal"; // adjust path
+import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionModal";
 import { MaquinaCard } from "@/components/ui/maquinas/organisms/MaquinaCard";
+import RegistrarForm from "./registrar-form";
 
-import type { MaquinaCardProps } from "@/types/MaquinaCardProps";
+import type { MaquinaCardProps } from "@/types";
 
-interface MaquinaRaw {
+export interface MaquinaRaw {
   id_maquina: number;
   nombre_maquina: string;
   apodo_maquina: string;
@@ -34,17 +35,24 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
 
   return data.map((m) => ({
     id: m.id_maquina,
+    model: m.nombre_maquina,
     nickname: m.apodo_maquina,
-    model: m.tipo,
-    store: m.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", "),
+    type: m.tipo,
+    store: m.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") ?? "Sin asignar",
     description: m.descripcion ?? "",
-    services: (m.servicios ?? []).map((s) => s.servicio.nombre_servicio),
+    services: (m.servicios ?? ["Sin asignar"]).map((s) => s.servicio.nombre_servicio),
     creation_date: m.fecha_registro,
+    status: m.estatus,
+    onDelete: () => {},
+    onEdit: () => {},
   }));
 }
 
 export default function MaquinasGrid() {
   const [maquinas, setMaquinas] = useState<MaquinaCardProps[]>([]);
+
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -74,11 +82,21 @@ export default function MaquinasGrid() {
     }
   }
 
+  function handleCreated(newMachine: MaquinaCardProps) {
+    setMaquinas((prev) => [...prev, newMachine]);
+  }
+
   const selectedMaquina = maquinas.find((m) => m.id === selectedId);
 
   return (
     <div className="px-8 pt-6 pb-4">
-      <AdminToolbar search="" onSearchChange={() => {}} onAgregar={() => {}} />
+      <AdminToolbar
+        search=""
+        onSearchChange={() => {}}
+        onAgregar={() => {
+          setIsRegisterOpen(true);
+        }}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {maquinas.map((m) => (
           <MaquinaCard
@@ -101,6 +119,12 @@ export default function MaquinasGrid() {
         serverError={deleteError}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleConfirmDelete}
+      />
+
+      <RegistrarForm
+        isOpen={isRegisterOpen}
+        onCreated={handleCreated}
+        onClose={() => setIsRegisterOpen(false)}
       />
     </div>
   );
