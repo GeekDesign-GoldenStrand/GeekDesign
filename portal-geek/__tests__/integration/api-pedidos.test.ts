@@ -54,20 +54,13 @@ describe("GET /api/pedidos", () => {
   it("supports multiple serviceIds", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?serviceId=1&serviceId=2");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      20,
-      [1, 2],
-      [],
-      false,
-      null,
-      null,
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 20, [1, 2], [], false, null, null, null);
   });
 
   it("passes estatus filters correctly", async () => {
-    const req = createMockRequest("http://localhost/api/pedidos?estatus=Pendiente&estatus=Finalizado");
+    const req = createMockRequest(
+      "http://localhost/api/pedidos?estatus=Pendiente&estatus=Finalizado"
+    );
     await GET(req);
     expect(listPedidos).toHaveBeenCalledWith(
       1,
@@ -84,105 +77,42 @@ describe("GET /api/pedidos", () => {
   it("passes search filter correctly", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?search=Geek");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      20,
-      [],
-      [],
-      false,
-      null,
-      null,
-      "Geek"
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 20, [], [], false, null, null, "Geek");
   });
 
   it("passes empresa and cliente filters correctly", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?empresa=GeekDesign&cliente=Jorge");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      20,
-      [],
-      [],
-      false,
-      "GeekDesign",
-      "Jorge",
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 20, [], [], false, "GeekDesign", "Jorge", null);
   });
 
   it("uses default pagination values", async () => {
     const req = createMockRequest("http://localhost/api/pedidos");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      20,
-      [],
-      [],
-      false,
-      null,
-      null,
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 20, [], [], false, null, null, null);
   });
 
   it("applies custom pagination values", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?page=2&pageSize=50");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      2,
-      50,
-      [],
-      [],
-      false,
-      null,
-      null,
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(2, 50, [], [], false, null, null, null);
   });
 
   it("caps pageSize at 100", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?pageSize=999");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      100,
-      [],
-      [],
-      false,
-      null,
-      null,
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 100, [], [], false, null, null, null);
   });
 
   it("forces minimum page value to 1", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?page=-5");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      20,
-      [],
-      [],
-      false,
-      null,
-      null,
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 20, [], [], false, null, null, null);
   });
 
   it("passes onlyActive=true correctly", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?onlyActive=true");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(
-      1,
-      20,
-      [],
-      [],
-      true,
-      null,
-      null,
-      null
-    );
+    expect(listPedidos).toHaveBeenCalledWith(1, 20, [], [], true, null, null, null);
   });
 });
