@@ -4,13 +4,15 @@ import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listSucursales(page: number, pageSize: number) {
   const skip = (page - 1) * pageSize;
+  const where = { estatus: "Activo" };
   const [items, total] = await prisma.$transaction([
     prisma.sucursales.findMany({
+      where,
       skip,
       take: pageSize,
       orderBy: { nombre_sucursal: "asc" },
     }),
-    prisma.sucursales.count(),
+    prisma.sucursales.count({ where }),
   ]);
   return { items, total };
 }
