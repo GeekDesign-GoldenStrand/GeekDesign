@@ -73,7 +73,7 @@ export async function getProveedoresOptions(): Promise<
     nombre_proveedor: string;
     costo: string | null;
   }>
->{
+> {
   const proveedores = await prisma.proveedores.findMany({
     where: {
       estatus: "Activo",
