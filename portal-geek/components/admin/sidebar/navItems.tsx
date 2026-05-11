@@ -1,4 +1,5 @@
 import {
+  CubeTransparentIcon,
   BuildingsIcon,
   CurrencyDollarIcon,
   GearIcon,
@@ -52,6 +53,11 @@ export const navItems: NavItem[] = [
     href: "/maquinas",
     label: "Máquinas",
     icon: <GearIcon size={ICON_SIZE} />,
+  },
+  {
+    href: "/materiales",
+    label: "Materiales",
+    icon: <CubeTransparentIcon size={44} />,
   },
   {
     href: "/sucursales",

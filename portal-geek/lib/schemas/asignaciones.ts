@@ -7,7 +7,7 @@ export const AssignmentSchema = z.object({
       z.object({
         id: z.number().int().positive(),
         precio: z.number().positive().multipleOf(0.01),
-        notas: z.string().max(50).optional(),
+        notas: z.string().max(500).optional(),
       })
     )
     .refine((items) => new Set(items.map((i) => i.id)).size === items.length, {

@@ -1,14 +1,53 @@
 import { z } from "zod";
 
+// Blocklist: characters and structural symbols with no place in a material name
+const NOMBRE_BLOCKED = /[\x00-\x1F\x7F<>{}\[\]\\|^~`*]/;
+
+export const UNIDADES_MEDIDA = ["mm", "in", "cm", "mu", "pt"] as const;
+
 export const CreateMaterialSchema = z.object({
-  nombre_material: z.string().min(1).max(100),
-  descripcion_material: z.string().optional(),
-  unidad_medida: z.string().min(1).max(30),
-  ancho: z.number().positive().optional(),
-  alto: z.number().positive().optional(),
-  grosor: z.number().positive().optional(),
-  color: z.string().max(50).optional(),
-  imagen_url: z.string().url().max(500).optional(),
+  nombre_material: z
+    .string()
+    .min(1, "El nombre es requerido.")
+    .max(100, "Máximo 100 caracteres.")
+    .refine((v) => !NOMBRE_BLOCKED.test(v), "El nombre contiene caracteres no permitidos."),
+  descripcion_material: z
+    .string()
+    .min(1, "La descripción es requerida.")
+    .max(500, "Máximo 500 caracteres."),
+  unidad_medida: z.enum(UNIDADES_MEDIDA, { message: "La unidad de medida es requerida." }),
+  ancho: z
+    .number({ message: "Campo requerido" })
+    .positive("El ancho debe ser mayor a 0.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
+    .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
+  alto: z
+    .number({ message: "Campo requerido" })
+    .positive("El alto debe ser mayor a 0.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
+    .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
+  grosor: z
+    .number({ message: "Campo requerido" })
+    .positive("El grosor debe ser mayor a 0.")
+    .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
+    .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
+  color: z.string().min(1, "El color es requerido.").max(50, "Máximo 50 caracteres."),
+  imagen_url: z
+    .string()
+    .min(1, "La URL de imagen es requerida.")
+    .refine((value) => {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Debe ser una URL válida.")
+    .refine(
+      (value) => value.toLowerCase().startsWith("https://"),
+      "La URL de imagen debe iniciar con https://"
+    )
+    .max(500, "Máximo 500 caracteres."),
 });
 
 export const UpdateMaterialSchema = CreateMaterialSchema.partial();
