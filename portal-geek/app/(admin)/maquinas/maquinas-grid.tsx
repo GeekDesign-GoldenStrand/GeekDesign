@@ -6,10 +6,35 @@ import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionModal";
 import { MaquinaCard } from "@/components/ui/maquinas/organisms/MaquinaCard";
 import RegistrarForm from "./registrar-form";
+import EditarMaquina from "./editar-maquina";
 
 import type { MaquinaCardProps } from "@/types";
 
 export interface MaquinaRaw {
+  id_maquina: number;
+  nombre_maquina: string;
+  apodo_maquina: string;
+  tipo: string;
+  descripcion: string | null;
+  estatus: string;
+  fecha_registro: string;
+  sucursales: { sucursal: { nombre_sucursal: string } }[];
+  servicios?: { servicio: { nombre_servicio: string } }[];
+}
+
+export interface ServicioRaw {
+  id_maquina: number;
+  nombre_maquina: string;
+  apodo_maquina: string;
+  tipo: string;
+  descripcion: string | null;
+  estatus: string;
+  fecha_registro: string;
+  sucursales: { sucursal: { nombre_sucursal: string } }[];
+  servicios?: { servicio: { nombre_servicio: string } }[];
+}
+
+export interface SucursalRaw {
   id_maquina: number;
   nombre_maquina: string;
   apodo_maquina: string;
@@ -48,10 +73,33 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
   }));
 }
 
+async function getServicios(): Promise<MaquinaCardProps[]> {
+  const res = await fetch("/api/maquinas?pageSize=100&page=1");
+  if (!res.ok) throw new Error("Error fetching maquinas");
+
+  const json = await res.json();
+  const data: MaquinaRaw[] = json.data ?? [];
+
+  return data.map((m) => ({
+    id: m.id_maquina,
+    model: m.nombre_maquina,
+    nickname: m.apodo_maquina,
+    type: m.tipo,
+    store: m.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") ?? "Sin asignar",
+    description: m.descripcion ?? "",
+    services: (m.servicios ?? ["Sin asignar"]).map((s) => s.servicio.nombre_servicio),
+    creation_date: m.fecha_registro,
+    status: m.estatus,
+    onDelete: () => {},
+    onEdit: () => {},
+  }));
+}
+
 export default function MaquinasGrid() {
   const [maquinas, setMaquinas] = useState<MaquinaCardProps[]>([]);
 
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -86,6 +134,12 @@ export default function MaquinasGrid() {
     setMaquinas((prev) => [...prev, newMachine]);
   }
 
+  function handleEdited(updatedMachine: MaquinaCardProps) {
+    setMaquinas((prev) =>
+      prev.map((m) => (m.id === updatedMachine.id ? updatedMachine : m))
+  );
+}
+
   const selectedMaquina = maquinas.find((m) => m.id === selectedId);
 
   return (
@@ -106,7 +160,10 @@ export default function MaquinasGrid() {
               setSelectedId(m.id);
               setIsDeleteOpen(true);
             }}
-            onEdit={() => {}}
+            onEdit={() => {
+              setSelectedId(m.id);
+              setIsEditOpen(true)
+            }}
           />
         ))}
       </div>
@@ -125,6 +182,17 @@ export default function MaquinasGrid() {
         isOpen={isRegisterOpen}
         onCreated={handleCreated}
         onClose={() => setIsRegisterOpen(false)}
+      />
+
+      <EditarMaquina
+        id={`${selectedMaquina?.id}`}
+        model={`${selectedMaquina?.model}`}
+        nickname={`${selectedMaquina?.nickname}`}
+        type={`${selectedMaquina?.type}`}
+        description={`${selectedMaquina?.description}`}
+        isOpen={isEditOpen}
+        onEdit={handleEdited}
+        onClose={() => setIsEditOpen(false)}
       />
     </div>
   );
