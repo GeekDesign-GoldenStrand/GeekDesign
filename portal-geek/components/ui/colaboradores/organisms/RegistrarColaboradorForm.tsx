@@ -126,11 +126,21 @@ export function RegistrarColaboradorForm({
       return payload;
     }
 
+    const MENSAJES: Record<string, string> = {
+      nombre_completo: "El nombre es requerido.",
+      correo_electronico: "Correo electrónico inválido.",
+      id_rol: "Selecciona un rol.",
+      id_sucursal: "Selecciona una sucursal.",
+      edad: "La edad debe ser entre 16 y 100 años.",
+      sexo: "El sexo es requerido.",
+      telefono: "El teléfono es requerido.",
+    };
+
     const nextErrors: Record<string, string> = { ...fechaErrors };
     if (!result.success) {
       for (const issue of result.error.issues) {
         const field = issue.path[0] as string;
-        if (!nextErrors[field]) nextErrors[field] = issue.message;
+        if (!nextErrors[field]) nextErrors[field] = MENSAJES[field] ?? issue.message;
       }
     }
     setErrors(nextErrors);
