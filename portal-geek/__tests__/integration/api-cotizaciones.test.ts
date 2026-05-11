@@ -68,7 +68,10 @@ jest.mock("@/lib/db/client", () => ({
     cotizaciones: {
       findUnique: jest.fn().mockResolvedValue({
         id_cotizacion: 1,
-        id_estatus_cotizacion: 2,
+        id_estatus_cotizacion: 1,
+        estatus: {
+          descripcion: "Pendiente",
+        },
       }),
       update: jest.fn().mockImplementation(({ data }) => ({
         id_cotizacion: 1,
@@ -95,7 +98,7 @@ jest.mock("@/lib/db/client", () => ({
         }
 
         if (value === "Rechazada") {
-          return Promise.resolve({ id_estatus: 4 });
+          return Promise.resolve({ id_estatus: 3 });
         }
 
         return Promise.resolve(null);
@@ -165,6 +168,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
 
     console.error("Response body:", res.body);
     expect(res.status).toBe(200);
-    expect(res.body.data.id_estatus_cotizacion).toBe(4);
+    expect(res.body.data.id_estatus_cotizacion).toBe(3);
   });
 });
