@@ -1,6 +1,9 @@
 "use client";
 
-interface Rol { id_rol: number; nombre_rol: string; }
+interface Rol {
+  id_rol: number;
+  nombre_rol: string;
+}
 
 interface FiltrarColaboradoresPanelProps {
   roles: Rol[];
@@ -13,8 +16,8 @@ interface FiltrarColaboradoresPanelProps {
 }
 
 const ESTATUS_OPTIONS = [
-  { label: "Todos",    value: "" },
-  { label: "Activo",   value: "Activo" },
+  { label: "Todos", value: "" },
+  { label: "Activo", value: "Activo" },
   { label: "Inactivo", value: "Inactivo" },
 ];
 
@@ -34,7 +37,10 @@ export function FiltrarColaboradoresPanel({
           <p className="text-[24px] leading-none font-semibold text-[#1e1e1e] mb-2">Estado</p>
           <div className="space-y-1.5">
             {ESTATUS_OPTIONS.map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2 text-[13px] text-[#1e1e1e] cursor-pointer">
+              <label
+                key={opt.value}
+                className="flex items-center gap-2 text-[13px] text-[#1e1e1e] cursor-pointer"
+              >
                 <input
                   type="radio"
                   name="colab-estatus"
@@ -52,7 +58,10 @@ export function FiltrarColaboradoresPanel({
           <p className="text-[24px] leading-none font-semibold text-[#1e1e1e] mb-2">Rol</p>
           <div className="space-y-1.5">
             {roles.map((r) => (
-              <label key={r.id_rol} className="flex items-center gap-2 text-[13px] text-[#1e1e1e] cursor-pointer">
+              <label
+                key={r.id_rol}
+                className="flex items-center gap-2 text-[13px] text-[#1e1e1e] cursor-pointer"
+              >
                 <input
                   type="checkbox"
                   checked={filterRoles.includes(r.id_rol)}

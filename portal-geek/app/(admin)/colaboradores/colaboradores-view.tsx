@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { UserCard } from "@/components/admin/organisms/UserCard";
 import {
   AgregarColaboradorModal,
@@ -76,7 +76,10 @@ export function ColaboradoresView() {
   const [filterRoles, setFilterRoles] = useState<number[]>([]);
 
   // Delete state
-  const [deletingColaborador, setDeletingColaborador] = useState<{ id: number; name: string } | null>(null);
+  const [deletingColaborador, setDeletingColaborador] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -206,9 +209,7 @@ export function ColaboradoresView() {
       }
       setColaboradores((prev) =>
         prev.map((c) =>
-          c.id_usuario === editingId
-            ? mapApiRow((json as { data: ColaboradorApiRow }).data)
-            : c
+          c.id_usuario === editingId ? mapApiRow((json as { data: ColaboradorApiRow }).data) : c
         )
       );
       closeEditModal();
@@ -240,9 +241,7 @@ export function ColaboradoresView() {
   }
 
   function handleRolToggle(id: number) {
-    setFilterRoles((prev) =>
-      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
-    );
+    setFilterRoles((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
   }
 
   function handleLimpiarFiltros() {
@@ -252,7 +251,12 @@ export function ColaboradoresView() {
 
   const q = search.trim().toLowerCase();
   const filtered = colaboradores.filter((u) => {
-    if (q && !u.nombre_completo.toLowerCase().includes(q) && !(u.correo_electronico?.toLowerCase().includes(q) ?? false)) return false;
+    if (
+      q &&
+      !u.nombre_completo.toLowerCase().includes(q) &&
+      !(u.correo_electronico?.toLowerCase().includes(q) ?? false)
+    )
+      return false;
     if (filterEstatus && u.estatus_colaborador !== filterEstatus) return false;
     if (filterRoles.length > 0 && !filterRoles.includes(u.id_rol)) return false;
     return true;
@@ -289,9 +293,7 @@ export function ColaboradoresView() {
         )}
       </div>
 
-      {loading && (
-        <p className="px-8 text-[#8e908f] text-[16px] font-ibm-plex">Cargando...</p>
-      )}
+      {loading && <p className="px-8 text-[#8e908f] text-[16px] font-ibm-plex">Cargando...</p>}
 
       {error && !loading && (
         <div className="px-8 flex flex-col gap-3">
@@ -314,7 +316,10 @@ export function ColaboradoresView() {
               onStatusChange={handleStatusChange}
               savingStatus={savingStatus === u.id_usuario}
               onEdit={openEditModal}
-              onDelete={(id) => { setDeletingColaborador({ id, name: u.nombre_completo }); setDeleteError(null); }}
+              onDelete={(id) => {
+                setDeletingColaborador({ id, name: u.nombre_completo });
+                setDeleteError(null);
+              }}
             />
           ))}
           {filtered.length === 0 && (

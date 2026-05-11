@@ -33,7 +33,9 @@ export async function listColaboradores(page: number, pageSize: number) {
       select: COLABORADOR_SELECT,
       orderBy: { fecha_creacion: "desc" },
     }),
-    prisma.usuarios.count({ where: { colaborador: { isNot: null }, estatus: { not: "Inactivo" } } }),
+    prisma.usuarios.count({
+      where: { colaborador: { isNot: null }, estatus: { not: "Inactivo" } },
+    }),
   ]);
   return { items, total };
 }

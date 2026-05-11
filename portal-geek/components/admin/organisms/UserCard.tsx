@@ -34,7 +34,16 @@ interface UserCardProps {
 const ACTION_BTN =
   "flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors";
 
-export function UserCard({ user, roles, onRolChange, onStatusChange, onEdit, onDelete, saving, savingStatus }: UserCardProps) {
+export function UserCard({
+  user,
+  roles,
+  onRolChange,
+  onStatusChange,
+  onEdit,
+  onDelete,
+  saving,
+  savingStatus,
+}: UserCardProps) {
   return (
     <div className="w-full rounded-[7px] bg-white shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5">
       <h3 className="font-ibm-plex font-semibold text-[24px] text-[#1e1e1e] leading-tight">

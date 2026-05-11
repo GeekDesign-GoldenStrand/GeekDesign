@@ -198,9 +198,7 @@ export function RegistrarColaboradorForm({
               onChange={(e) => setField("correo_electronico", e.target.value)}
               className={`${FIELD} ${getFieldClass("correo_electronico")}`}
             />
-            {errors.correo_electronico && (
-              <p className={ERROR_MSG}>{errors.correo_electronico}</p>
-            )}
+            {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
           </div>
 
           <div>
@@ -218,9 +216,7 @@ export function RegistrarColaboradorForm({
                     : ""
               }`}
             />
-            {errors.fecha_nacimiento && (
-              <p className={ERROR_MSG}>{errors.fecha_nacimiento}</p>
-            )}
+            {errors.fecha_nacimiento && <p className={ERROR_MSG}>{errors.fecha_nacimiento}</p>}
             {edad !== null && !errors.fecha_nacimiento && (
               <p className="text-[13px] text-[#575757] mt-1">Edad: {edad}</p>
             )}
