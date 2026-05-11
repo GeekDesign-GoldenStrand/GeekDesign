@@ -6,13 +6,19 @@ export const CreateMaquinaSchema = z.object({
   tipo: z.enum(["Láser CO2", "Láser Fibra", "Bordadora"]),
   descripcion: z.string().max(200).optional(),
   estatus: z.enum(["Activa", "Inactiva", "En mantenimiento"]).default("Activa"),
+  sucursal: z.coerce.number().int().positive().optional(),
 });
 
 export const UpdateMaquinaSchema = CreateMaquinaSchema.partial();
+
+export const AsignarSucursalSchema = z.object({
+  sucursales: z.array(z.number().int().positive()),
+});
 
 export const MaquinaIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+export type AsignarSucursalInput = z.infer<typeof AsignarSucursalSchema>;
 export type CreateMaquinaInput = z.infer<typeof CreateMaquinaSchema>;
 export type UpdateMaquinaInput = z.infer<typeof UpdateMaquinaSchema>;
