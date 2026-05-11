@@ -5,5 +5,8 @@ export { TerceroCard } from "./organisms/TerceroCard";
 export { TercerosGrid } from "./organisms/TercerosGrid";
 export { AgregarTerceroModal } from "./organisms/AgregarTerceroModal";
 export { RegistrarTerceroForm } from "./organisms/RegistrarTerceroForm";
+export { TerceroTypeTag } from "./atoms/TerceroTypeTag";
 export { EditarProveedorModal } from "./organisms/EditarProveedorModal";
 export { ConfirmarEliminarProveedorModal } from "./organisms/ConfirmarEliminarProveedorModal";
+export { EditarInstaladorModal } from "./organisms/EditarInstaladorModal";
+export { ConfirmarEliminarInstaladorModal } from "./organisms/ConfirmarEliminarInstaladorModal";
