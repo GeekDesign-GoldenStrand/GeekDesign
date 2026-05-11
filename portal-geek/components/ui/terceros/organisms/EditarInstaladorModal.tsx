@@ -3,9 +3,9 @@
 import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import type { UpdateProveedorInput } from "@/lib/schemas/proveedores";
+import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
 
-const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
+const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function formatPhone(digits: string): string {
@@ -20,31 +20,35 @@ function formatPhone(digits: string): string {
   return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
 }
 
-function validateFields(form: ProveedorFormData): Record<string, string> {
+function validateFields(form: InstaladorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
-  if (!form.nombre_proveedor.trim()) errs.nombre_proveedor = "El nombre es requerido.";
-  else if (form.nombre_proveedor.length > 30) errs.nombre_proveedor = "Máximo 30 caracteres.";
-  else if (!NOMBRE_REGEX.test(form.nombre_proveedor))
-    errs.nombre_proveedor = "Solo letras, números, puntos, guiones y apóstrofes.";
-  if (!["Proveedor de material", "Proveedor de servicio"].includes(form.tipo))
-    errs.tipo = "Seleccione un tipo válido.";
+  if (!form.nombre_instalador.trim()) errs.nombre_instalador = "El nombre es requerido.";
+  else if (form.nombre_instalador.length > 30) errs.nombre_instalador = "Máximo 30 caracteres.";
+  else if (!NOMBRE_REGEX.test(form.nombre_instalador))
+    errs.nombre_instalador = "Solo letras, números, puntos, guiones y apóstrofes.";
+  if (form.apodo && form.apodo.length > 30) errs.apodo = "Máximo 30 caracteres.";
+  else if (form.apodo && !NOMBRE_REGEX.test(form.apodo))
+    errs.apodo = "Solo letras, números, puntos, guiones y apóstrofes.";
   if (!form.correo.trim()) errs.correo = "El correo es requerido.";
   else if (!EMAIL_REGEX.test(form.correo)) errs.correo = "Correo electrónico inválido.";
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
   else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
+  if (!["Instalador", "Contratista"].includes(form.tipo)) errs.tipo = "Seleccione un tipo válido.";
   if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+  if (form.notas && form.notas.length > 500) errs.notas = "Máximo 500 caracteres.";
   return errs;
 }
 
 function parseServerFieldErrors(serverError: string | null): Record<string, string> {
   if (!serverError) return {};
-  const fields: (keyof ProveedorFormData)[] = [
-    "nombre_proveedor",
+  const fields: (keyof InstaladorFormData)[] = [
+    "nombre_instalador",
+    "apodo",
     "tipo",
     "correo",
     "telefono",
     "ubicacion",
-    "descripcion_proveedor",
+    "notas",
     "estatus",
   ];
   const parsed: Record<string, string> = {};
@@ -62,34 +66,35 @@ const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-export type ProveedorFormData = {
-  nombre_proveedor: string;
-  tipo: "Proveedor de material" | "Proveedor de servicio";
+export type InstaladorFormData = {
+  nombre_instalador: string;
+  apodo: string;
+  tipo: "Instalador" | "Contratista";
   correo: string;
   telefono: string;
   ubicacion: string;
-  descripcion_proveedor: string;
+  notas: string;
   estatus: string;
 };
 
-interface EditarProveedorModalProps {
+interface EditarInstaladorModalProps {
   isOpen: boolean;
-  initialData: ProveedorFormData;
+  initialData: InstaladorFormData;
   loading: boolean;
   serverError: string | null;
   onClose: () => void;
-  onSubmit: (data: UpdateProveedorInput) => void;
+  onSubmit: (data: UpdateInstaladorInput) => void;
 }
 
-export function EditarProveedorModal({
+export function EditarInstaladorModal({
   isOpen,
   initialData,
   loading,
   serverError,
   onClose,
   onSubmit,
-}: EditarProveedorModalProps) {
-  const [form, setForm] = useState<ProveedorFormData>(initialData);
+}: EditarInstaladorModalProps) {
+  const [form, setForm] = useState<InstaladorFormData>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -124,18 +129,19 @@ export function EditarProveedorModal({
       return;
     }
     onSubmit({
-      nombre_proveedor: form.nombre_proveedor,
+      nombre_instalador: form.nombre_instalador,
+      apodo: form.apodo || undefined,
       tipo: form.tipo,
-      correo: form.correo || undefined,
-      telefono: form.telefono || undefined,
-      descripcion_proveedor: form.descripcion_proveedor || undefined,
+      correo: form.correo,
+      telefono: form.telefono,
       ubicacion: form.ubicacion || undefined,
-      estatus: form.estatus as UpdateProveedorInput["estatus"],
+      notas: form.notas || undefined,
+      estatus: form.estatus as UpdateInstaladorInput["estatus"],
     });
   }
 
   return (
-    <ModalShell title="Editar Proveedor" onClose={onClose}>
+    <ModalShell title="Editar Instalador" onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {serverError && (
           <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
@@ -145,31 +151,48 @@ export function EditarProveedorModal({
 
         <div>
           <label className={LABEL}>
-            Nombre del proveedor <span className="text-[#e42200]">*</span>
+            Nombre del instalador <span className="text-[#e42200]">*</span>
           </label>
           <input
             type="text"
             maxLength={30}
-            value={form.nombre_proveedor}
-            onChange={(e) => setField("nombre_proveedor", e.target.value)}
-            className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
+            value={form.nombre_instalador}
+            onChange={(e) => setField("nombre_instalador", e.target.value)}
+            className={`${FIELD} ${getFieldClass("nombre_instalador")}`}
           />
-          {allErrors.nombre_proveedor && <p className={ERROR_MSG}>{allErrors.nombre_proveedor}</p>}
+          {allErrors.nombre_instalador && (
+            <p className={ERROR_MSG}>{allErrors.nombre_instalador}</p>
+          )}
         </div>
 
-        <div>
-          <label className={LABEL}>
-            Tipo <span className="text-[#e42200]">*</span>
-          </label>
-          <select
-            value={form.tipo}
-            onChange={(e) => setField("tipo", e.target.value)}
-            className={`${FIELD} ${getFieldClass("tipo")}`}
-          >
-            <option value="Proveedor de material">Proveedor de material</option>
-            <option value="Proveedor de servicio">Proveedor de servicio</option>
-          </select>
-          {allErrors.tipo && <p className={ERROR_MSG}>{allErrors.tipo}</p>}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>Apodo</label>
+            <input
+              type="text"
+              maxLength={30}
+              placeholder="Apodo o alias"
+              value={form.apodo}
+              onChange={(e) => setField("apodo", e.target.value)}
+              className={`${FIELD} ${getFieldClass("apodo")}`}
+            />
+            {allErrors.apodo && <p className={ERROR_MSG}>{allErrors.apodo}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Tipo <span className="text-[#e42200]">*</span>
+            </label>
+            <select
+              value={form.tipo}
+              onChange={(e) => setField("tipo", e.target.value)}
+              className={`${FIELD} ${getFieldClass("tipo")}`}
+            >
+              <option value="Instalador">Instalador</option>
+              <option value="Contratista">Contratista</option>
+            </select>
+            {allErrors.tipo && <p className={ERROR_MSG}>{allErrors.tipo}</p>}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -205,40 +228,43 @@ export function EditarProveedorModal({
           </div>
         </div>
 
-        <div>
-          <label className={LABEL}>Ubicación</label>
-          <input
-            type="text"
-            placeholder="Querétaro, Querétaro"
-            value={form.ubicacion}
-            onChange={(e) => setField("ubicacion", e.target.value)}
-            className={`${FIELD} ${getFieldClass("ubicacion")}`}
-          />
-          {allErrors.ubicacion && <p className={ERROR_MSG}>{allErrors.ubicacion}</p>}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>Ubicación</label>
+            <input
+              type="text"
+              placeholder="Querétaro, Querétaro"
+              value={form.ubicacion}
+              onChange={(e) => setField("ubicacion", e.target.value)}
+              className={`${FIELD} ${getFieldClass("ubicacion")}`}
+            />
+            {allErrors.ubicacion && <p className={ERROR_MSG}>{allErrors.ubicacion}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Estatus</label>
+            <select
+              value={form.estatus}
+              onChange={(e) => setField("estatus", e.target.value)}
+              className={`${FIELD} ${getFieldClass("estatus")}`}
+            >
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+              <option value="Baneado">Baneado</option>
+            </select>
+          </div>
         </div>
 
         <div>
-          <label className={LABEL}>Estatus</label>
-          <select
-            value={form.estatus}
-            onChange={(e) => setField("estatus", e.target.value)}
-            className={`${FIELD} ${getFieldClass("estatus")}`}
-          >
-            <option value="Activo">Activo</option>
-            <option value="Inactivo">Inactivo</option>
-            <option value="Baneado">Baneado</option>
-          </select>
-        </div>
-
-        <div>
-          <label className={LABEL}>Descripción</label>
+          <label className={LABEL}>Notas</label>
           <textarea
             rows={3}
-            placeholder="Detalles adicionales del proveedor..."
-            value={form.descripcion_proveedor}
-            onChange={(e) => setField("descripcion_proveedor", e.target.value)}
-            className={`${FIELD} ${getFieldClass("descripcion_proveedor")} resize-none`}
+            placeholder="Detalles adicionales del instalador..."
+            value={form.notas}
+            onChange={(e) => setField("notas", e.target.value)}
+            className={`${FIELD} ${getFieldClass("notas")} resize-none`}
           />
+          {allErrors.notas && <p className={ERROR_MSG}>{allErrors.notas}</p>}
         </div>
 
         <div className="flex justify-end gap-3 mt-2">
