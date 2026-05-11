@@ -7,6 +7,7 @@ import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { UserCard } from "@/components/admin/organisms/UserCard";
 import {
   AgregarColaboradorModal,
+  ConfirmarEliminarColaboradorModal,
   EditarColaboradorModal,
   type ColaboradorApiRow,
 } from "@/components/ui/colaboradores";
@@ -31,6 +32,7 @@ interface ColaboradorRow {
   telefono: string | null;
   fecha_modificacion: string | null;
   estatus: string;
+  estatus_colaborador: string;
   id_rol: number;
   rol: { id_rol: number; nombre_rol: string };
 }
@@ -41,6 +43,7 @@ function mapApiRow(item: ColaboradorApiRow): ColaboradorRow {
     nombre_completo: item.nombre_completo,
     correo_electronico: item.correo_electronico,
     estatus: item.estatus,
+    estatus_colaborador: item.colaborador?.estatus_colaborador ?? "Activo",
     id_rol: item.id_rol,
     rol: item.rol,
     edad: item.colaborador?.edad ?? null,
@@ -67,6 +70,11 @@ export function ColaboradoresView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [savingStatus, setSavingStatus] = useState<number | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+
+  // Delete state
+  const [deletingColaborador, setDeletingColaborador] = useState<{ id: number; name: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Edit state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -115,10 +123,10 @@ export function ColaboradoresView() {
     setSavingStatus(userId);
     setStatusError(null);
     try {
-      const res = await fetch(`/api/usuarios/${userId}`, {
+      const res = await fetch(`/api/colaboradores/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estatus: newStatus }),
+        body: JSON.stringify({ estatus_colaborador: newStatus }),
       });
       const json = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) {
@@ -126,7 +134,7 @@ export function ColaboradoresView() {
         return;
       }
       setColaboradores((prev) =>
-        prev.map((u) => (u.id_usuario === userId ? { ...u, estatus: newStatus } : u))
+        prev.map((u) => (u.id_usuario === userId ? { ...u, estatus_colaborador: newStatus } : u))
       );
     } catch {
       setStatusError("No se pudo conectar con el servidor");
@@ -207,6 +215,26 @@ export function ColaboradoresView() {
     }
   }
 
+  async function handleDeleteConfirm() {
+    if (!deletingColaborador) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/colaboradores/${deletingColaborador.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setDeleteError((json as { error?: string })?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setColaboradores((prev) => prev.filter((c) => c.id_usuario !== deletingColaborador.id));
+      setDeletingColaborador(null);
+    } catch {
+      setDeleteError("No se pudo conectar con el servidor");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
   const q = search.trim().toLowerCase();
   const filtered = q
     ? colaboradores.filter(
@@ -255,10 +283,11 @@ export function ColaboradoresView() {
           {filtered.map((u) => (
             <UserCard
               key={u.id_usuario}
-              user={u}
+              user={{ ...u, estatus: u.estatus_colaborador }}
               onStatusChange={handleStatusChange}
               savingStatus={savingStatus === u.id_usuario}
               onEdit={openEditModal}
+              onDelete={(id) => { setDeletingColaborador({ id, name: u.nombre_completo }); setDeleteError(null); }}
             />
           ))}
           {filtered.length === 0 && (
@@ -275,6 +304,15 @@ export function ColaboradoresView() {
         onCreated={handleCreated}
         roles={roles}
         sucursales={sucursales}
+      />
+
+      <ConfirmarEliminarColaboradorModal
+        isOpen={deletingColaborador !== null}
+        colaboradorName={deletingColaborador?.name ?? ""}
+        loading={deleteLoading}
+        serverError={deleteError}
+        onClose={() => setDeletingColaborador(null)}
+        onConfirm={handleDeleteConfirm}
       />
 
       <EditarColaboradorModal

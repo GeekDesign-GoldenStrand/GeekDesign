@@ -29,11 +29,11 @@ export async function listColaboradores(page: number, pageSize: number) {
     prisma.usuarios.findMany({
       skip,
       take: pageSize,
-      where: { colaborador: { isNot: null } },
+      where: { colaborador: { isNot: null }, estatus: { not: "Inactivo" } },
       select: COLABORADOR_SELECT,
       orderBy: { fecha_creacion: "desc" },
     }),
-    prisma.usuarios.count({ where: { colaborador: { isNot: null } } }),
+    prisma.usuarios.count({ where: { colaborador: { isNot: null }, estatus: { not: "Inactivo" } } }),
   ]);
   return { items, total };
 }
