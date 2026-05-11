@@ -4,7 +4,7 @@ export const CreateMaquinaSchema = z.object({
   nombre_maquina: z.string().min(1).max(100),
   apodo_maquina: z.string().min(1).max(100),
   tipo: z.enum(["Láser CO2", "Láser Fibra", "Bordadora"]),
-  descripcion: z.string().optional(),
+  descripcion: z.string().max(200).optional(),
   estatus: z.enum(["Activa", "Inactiva", "En mantenimiento"]).default("Activa"),
 });
 
