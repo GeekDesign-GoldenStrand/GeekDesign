@@ -35,6 +35,7 @@ export async function createInstalador(data: CreateInstaladorInput): Promise<Ins
       tipo: data.tipo,
       telefono: data.telefono,
       correo: data.correo,
+      costo_instalacion: data.costo_instalacion,
       notas: data.notas || null,
       ubicacion: data.ubicacion || null,
       estatus: data.estatus,
