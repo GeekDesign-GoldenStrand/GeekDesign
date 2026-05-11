@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { StatusTag, StatusValue } from "@/components/ui/atoms/StatusTag";
+
+import type { StatusValue } from "@/components/ui/atoms/StatusTag";
+import { StatusTag } from "@/components/ui/atoms/StatusTag";
+
 import { CheckIcon } from "../../atoms/icons";
 
 interface MaquinaStatusDropdownProps {

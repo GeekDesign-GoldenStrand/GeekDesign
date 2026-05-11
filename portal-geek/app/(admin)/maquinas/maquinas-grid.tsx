@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionModal";
 import { MaquinaCard } from "@/components/ui/maquinas/organisms/MaquinaCard";
-import RegistrarForm from "./registrar-form";
-import EditarMaquina from "./editar-maquina";
-
 import type { MaquinaCardProps } from "@/types";
+
+import AsignarSucursal from "./asignar-sucursal";
+import EditarMaquina from "./editar-maquina";
+import RegistrarForm from "./registrar-form";
 
 export interface MaquinaRaw {
   id_maquina: number;
@@ -22,28 +23,14 @@ export interface MaquinaRaw {
   servicios?: { servicio: { nombre_servicio: string } }[];
 }
 
-export interface ServicioRaw {
-  id_maquina: number;
-  nombre_maquina: string;
-  apodo_maquina: string;
-  tipo: string;
-  descripcion: string | null;
-  estatus: string;
-  fecha_registro: string;
-  sucursales: { sucursal: { nombre_sucursal: string } }[];
-  servicios?: { servicio: { nombre_servicio: string } }[];
+export interface SucursalRaw {
+  id_sucursal: number;
+  nombre_sucursal: string;
 }
 
-export interface SucursalRaw {
-  id_maquina: number;
-  nombre_maquina: string;
-  apodo_maquina: string;
-  tipo: string;
-  descripcion: string | null;
-  estatus: string;
-  fecha_registro: string;
-  sucursales: { sucursal: { nombre_sucursal: string } }[];
-  servicios?: { servicio: { nombre_servicio: string } }[];
+export interface ServicioRaw {
+  id_servicio: number;
+  nombre_servicio: string;
 }
 
 async function deleteMaquina(id: number): Promise<void> {
@@ -70,41 +57,27 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
     status: m.estatus,
     onDelete: () => {},
     onEdit: () => {},
-  }));
-}
-
-async function getServicios(): Promise<MaquinaCardProps[]> {
-  const res = await fetch("/api/maquinas?pageSize=100&page=1");
-  if (!res.ok) throw new Error("Error fetching maquinas");
-
-  const json = await res.json();
-  const data: MaquinaRaw[] = json.data ?? [];
-
-  return data.map((m) => ({
-    id: m.id_maquina,
-    model: m.nombre_maquina,
-    nickname: m.apodo_maquina,
-    type: m.tipo,
-    store: m.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") ?? "Sin asignar",
-    description: m.descripcion ?? "",
-    services: (m.servicios ?? ["Sin asignar"]).map((s) => s.servicio.nombre_servicio),
-    creation_date: m.fecha_registro,
-    status: m.estatus,
-    onDelete: () => {},
-    onEdit: () => {},
+    onAssignStore: () => {},
   }));
 }
 
 export default function MaquinasGrid() {
   const [maquinas, setMaquinas] = useState<MaquinaCardProps[]>([]);
+  const [search, setSearch] = useState("");
 
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAsignarSucursalOpen, setIsAsignarSucursalOpen] = useState(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const filteredMaquinas = maquinas.filter((m) =>
+    m.nickname.toLowerCase().includes(search.toLowerCase()) ||
+    m.model.toLowerCase().includes(search.toLowerCase())
+  );
 
   async function fetchMaquinas() {
     const data = await getMaquinas();
@@ -135,24 +108,22 @@ export default function MaquinasGrid() {
   }
 
   function handleEdited(updatedMachine: MaquinaCardProps) {
-    setMaquinas((prev) =>
-      prev.map((m) => (m.id === updatedMachine.id ? updatedMachine : m))
-  );
-}
+    setMaquinas((prev) => prev.map((m) => (m.id === updatedMachine.id ? updatedMachine : m)));
+  }
 
   const selectedMaquina = maquinas.find((m) => m.id === selectedId);
 
   return (
     <div className="px-8 pt-6 pb-4">
       <AdminToolbar
-        search=""
-        onSearchChange={() => {}}
+        search={search}
+        onSearchChange={(value) => setSearch(value)}
         onAgregar={() => {
           setIsRegisterOpen(true);
         }}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {maquinas.map((m) => (
+        {filteredMaquinas.map((m) => (
           <MaquinaCard
             key={m.id}
             {...m}
@@ -162,7 +133,11 @@ export default function MaquinasGrid() {
             }}
             onEdit={() => {
               setSelectedId(m.id);
-              setIsEditOpen(true)
+              setIsEditOpen(true);
+            }}
+            onAssignStore={() => {
+              setSelectedId(m.id);
+              setIsAsignarSucursalOpen(true);
             }}
           />
         ))}
@@ -193,6 +168,15 @@ export default function MaquinasGrid() {
         isOpen={isEditOpen}
         onEdit={handleEdited}
         onClose={() => setIsEditOpen(false)}
+      />
+
+      <AsignarSucursal
+        id={selectedMaquina?.id ?? 0}
+        model={selectedMaquina?.model ?? ""}
+        nickname={selectedMaquina?.nickname ?? ""}
+        isOpen={isAsignarSucursalOpen}
+        onEdit={handleEdited}
+        onClose={() => setIsAsignarSucursalOpen(false)}
       />
     </div>
   );

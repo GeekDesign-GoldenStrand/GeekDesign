@@ -62,7 +62,7 @@ export function TrashIcon({ size = 16, className, style }: IconProps) {
 }
 
 export function XIcon({ size = 20, className, style }: IconProps) {
-  return <X size={size} weight="light" className={className} style={style} />
+  return <X size={size} weight="light" className={className} style={style} />;
 }
 
 export function PlusBoxIcon({ size = 16, className, style }: IconProps) {
