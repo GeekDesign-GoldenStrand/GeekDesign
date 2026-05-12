@@ -7,6 +7,7 @@ import MaquinaSubtitle from "../atoms/MaquinaSubtitle";
 import MaquinaTitle from "../atoms/MaquinaTitle";
 import MaquinaSection from "../molecules/MaquinaSection";
 import MaquinaStatusDropdown from "../molecules/MaquinaStatusDropdown";
+import MaquinaAssignButton from "../atoms/MaquinaAssignButton";
 import MaquinaText from "../atoms/MaquinaText";
 
 const MACHINE_STATUS_OPTIONS: MachineStatus[] = ["Activa", "En mantenimiento"];
@@ -67,13 +68,7 @@ export function MaquinaCard({
       ) : (
         <div className="my-4">
           <MaquinaSubtitle subtitle="Sucursal" />
-          <button
-            onClick={onAssignStore}
-            aria-label="Asignar sucursal"
-            className="flex-none gap-3 mt-3 flex items-center justify-center border border-[#006aff] rounded-[7px] p-2 text-[#006aff] text-[13px] max-h-[45px] hover:bg-[#f0f5ff] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
-          >
-            Asignar <PlusIcon size={10} />
-          </button>
+          <MaquinaAssignButton onClick={onAssignStore} />
         </div>
       )}
       {services && services.length > 0 ? (
@@ -93,13 +88,7 @@ export function MaquinaCard({
       ) : (
         <div className="my-3">
           <MaquinaSubtitle subtitle="Servicios" />
-          <button
-            onClick={onAssignServices}
-            aria-label="Asignar servicios"
-            className="flex-none gap-1 mt-3 flex items-center justify-center border border-[#006aff] rounded-[7px] p-2 text-[#006aff] text-[13px] max-h-[45px] hover:bg-[#f0f5ff] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
-          >
-            Asignar <PlusIcon size={10} />
-          </button>
+          <MaquinaAssignButton onClick={onAssignServices} />
         </div>
       )}
       <MaquinaSection heading="Descripción" text={description || "Sin descripción"} />
