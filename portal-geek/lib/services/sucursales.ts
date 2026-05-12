@@ -1,108 +1,192 @@
 import type { Sucursales } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateSucursalInput, UpdateSucursalInput } from "@/lib/schemas/sucursales";
+import { NotFoundError } from "@/lib/utils/errors";
 
-export type SucursalWithRelations = Sucursales;
-
-type ListSucursalesFilters = {
-  search?: string;
-  nombre?: string;
-  direccion?: string;
-  estatus?: string[];
-};
+// Detail view payload.
+// Relations are included here because the branch edit screen also works as a summary
+// of the orders, collaborators, and machines linked to that branch.
+export type SucursalWithRelations = Prisma.SucursalesGetPayload<{
+  include: {
+    pedidos: true;
+    colaboradores: {
+      include: {
+        usuario: true;
+      };
+    };
+    maquinas: {
+      include: {
+        maquina: true;
+      };
+    };
+  };
+}>;
 
 export async function listSucursales(
   page: number,
   pageSize: number,
-  filters?: ListSucursalesFilters
-) {
+  filters?: {
+    search?: string | null;
+    nombre?: string | null;
+    direccion?: string | null;
+    estatus?: string[];
+  }
+): Promise<{ items: Sucursales[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
-  const where = {
-    AND: [
-      filters?.search
-        ? {
-            OR: [
-              {
-                nombre_sucursal: {
-                  contains: filters.search,
-                  mode: "insensitive" as const,
-                },
-              },
-              {
-                direccion: {
-                  contains: filters.search,
-                  mode: "insensitive" as const,
-                },
-              },
-            ],
-          }
-        : {},
+  const where: Prisma.SucursalesWhereInput = {};
 
-      filters?.nombre
-        ? {
-            nombre_sucursal: {
-              contains: filters.nombre,
-            },
-          }
-        : {},
+  // Conditions are collected dynamically so optional filters can be combined safely.
+  const andConditions: Prisma.SucursalesWhereInput[] = [];
 
-      filters?.direccion
-        ? {
-            direccion: {
-              contains: filters.direccion,
-            },
-          }
-        : {},
+  // Branch deletion is implemented as a soft delete.
+  // By default, the table only shows active branches unless a status filter is provided.
+  if (!filters?.estatus || filters.estatus.length === 0) {
+    andConditions.push({
+      estatus: "Activo",
+    });
+  }
 
-      filters?.estatus?.length
-        ? {
-            estatus: {
-              in: filters.estatus,
-            },
-          }
-        : {},
-    ],
-  };
+  if (filters?.search) {
+    andConditions.push({
+      OR: [
+        {
+          nombre_sucursal: {
+            contains: filters.search,
+            mode: "insensitive",
+          },
+        },
+        {
+          direccion: {
+            contains: filters.search,
+            mode: "insensitive",
+          },
+        },
+      ],
+    });
+  }
 
+  if (filters?.nombre) {
+    andConditions.push({
+      nombre_sucursal: {
+        contains: filters.nombre,
+        mode: "insensitive",
+      },
+    });
+  }
+
+  if (filters?.direccion) {
+    andConditions.push({
+      direccion: {
+        contains: filters.direccion,
+        mode: "insensitive",
+      },
+    });
+  }
+
+  // Explicit status filters override the default active-only behavior.
+  // This allows users to search inactive branches when needed.
+  if (filters?.estatus && filters.estatus.length > 0) {
+    andConditions.push({
+      estatus: {
+        in: filters.estatus,
+      },
+    });
+  }
+
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
+  }
+
+  // Fetch rows and total count together to keep pagination metadata in sync with the table.
   const [items, total] = await Promise.all([
     prisma.sucursales.findMany({
       where,
       skip,
       take: pageSize,
-      orderBy: { id_sucursal: "asc" },
+      orderBy: {
+        id_sucursal: "asc",
+      },
     }),
-
-    prisma.sucursales.count({
-      where,
-    }),
+    prisma.sucursales.count({ where }),
   ]);
 
   return { items, total };
 }
 
-export async function getSucursal(id: number): Promise<Sucursales> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+export async function getSucursal(id: number): Promise<SucursalWithRelations> {
+  const sucursal = await prisma.sucursales.findUnique({
+    where: {
+      id_sucursal: id,
+    },
+    include: {
+      pedidos: true,
+      colaboradores: {
+        include: {
+          usuario: true,
+        },
+      },
+      maquinas: {
+        include: {
+          maquina: true,
+        },
+      },
+    },
+  });
+
+  if (!sucursal) {
+    throw new NotFoundError("Sucursal not found");
+  }
+
+  return sucursal;
 }
 
 export async function createSucursal(data: CreateSucursalInput): Promise<Sucursales> {
-  // TODO: implement
-  void data;
-  throw new Error("Not implemented");
+  return prisma.sucursales.create({
+    data: {
+      nombre_sucursal: data.nombre_sucursal,
+      direccion: data.direccion,
+      horario_apertura: data.horario_apertura ?? null,
+      horario_salida: data.horario_salida ?? null,
+      estatus: data.estatus,
+    },
+  });
 }
 
 export async function updateSucursal(id: number, data: UpdateSucursalInput): Promise<Sucursales> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  try {
+    return await prisma.sucursales.update({
+      where: {
+        id_sucursal: id,
+      },
+      data: {
+        nombre_sucursal: data.nombre_sucursal,
+        direccion: data.direccion,
+        horario_apertura: data.horario_apertura,
+        horario_salida: data.horario_salida,
+        estatus: data.estatus,
+      },
+    });
+  } catch {
+    throw new NotFoundError("Sucursal not found");
+  }
 }
 
 export async function deleteSucursal(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    // Soft delete keeps historical relations intact.
+    // The branch disappears from the default table because listSucursales filters active records.
+    await prisma.sucursales.update({
+      where: {
+        id_sucursal: id,
+      },
+      data: {
+        estatus: "Inactivo",
+      },
+    });
+  } catch {
+    throw new NotFoundError("Sucursal not found");
+  }
 }

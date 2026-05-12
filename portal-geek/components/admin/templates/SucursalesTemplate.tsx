@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
@@ -43,7 +44,6 @@ export function SucursalesTemplate({
   page,
   setPage,
   total,
-  onDelete,
   filterNombre,
   setFilterNombre,
   filterDireccion,
@@ -55,6 +55,7 @@ export function SucursalesTemplate({
 
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -83,7 +84,7 @@ export function SucursalesTemplate({
           <AdminToolbar
             search={search}
             onSearchChange={setSearch}
-            onAgregar={() => console.error("Agregar sucursal")}
+            onAgregar={() => router.push("/sucursales/registrar")}
             onFiltrar={() => setShowFilter((prev) => !prev)}
           />
 
@@ -163,10 +164,9 @@ export function SucursalesTemplate({
           )}
         </div>
 
-        {/* Tabla */}
-        <SucursalesTable sucursales={sucursales} onDelete={onDelete} />
+        {/* Table */}
+        <SucursalesTable sucursales={sucursales} />
 
-        {/* Paginación */}
         {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">
           <div className="flex items-center gap-2">

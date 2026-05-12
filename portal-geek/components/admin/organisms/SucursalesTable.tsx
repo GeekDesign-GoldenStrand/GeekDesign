@@ -1,7 +1,10 @@
 "use client";
 
 import { PencilSimple } from "@phosphor-icons/react";
+import Link from "next/link";
 
+// Business hours are stored as DateTime values only for DB compatibility.
+// UTC prevents the browser from shifting the displayed hour based on local timezone.
 function formatHour(dateString?: string | null) {
   if (!dateString) return "—";
 
@@ -9,6 +12,7 @@ function formatHour(dateString?: string | null) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: "UTC",
   });
 }
 
@@ -23,10 +27,9 @@ type Sucursal = {
 
 type Props = {
   sucursales: Sucursal[];
-  onDelete: (id: number) => void;
 };
 
-export function SucursalesTable({ sucursales, onDelete }: Props) {
+export function SucursalesTable({ sucursales }: Props) {
   if (sucursales.length === 0) {
     return (
       <div className="flex justify-center py-16 text-gray-500">No se encontraron sucursales.</div>
@@ -35,6 +38,7 @@ export function SucursalesTable({ sucursales, onDelete }: Props) {
 
   return (
     <div className="overflow-x-auto bg-white rounded">
+      {/* Fixed minimum width keeps the table readable on small screens while allowing horizontal scroll. */}
       <div className="space-y-2 min-w-[1100px]">
         {/* Header */}
         <div
@@ -62,15 +66,11 @@ export function SucursalesTable({ sucursales, onDelete }: Props) {
             <span className="whitespace-nowrap">{s.nombre_sucursal}</span>
             <span className="whitespace-nowrap">{s.direccion}</span>
 
-            <span>
-              {formatHour(s.horario_apertura)}
-            </span>
+            <span>{formatHour(s.horario_apertura)}</span>
 
-            <span>
-              {formatHour(s.horario_salida)}
-            </span>
+            <span>{formatHour(s.horario_salida)}</span>
 
-            {/* Estatus */}
+            {/* Status colors match the branch form to keep active/inactive states consistent. */}
             <span
               className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium whitespace-nowrap ${
                 s.estatus === "Activo"
@@ -81,15 +81,15 @@ export function SucursalesTable({ sucursales, onDelete }: Props) {
               {s.estatus}
             </span>
 
-            {/* Acciones */}
+            {/* Next Link keeps navigation client-side and avoids a full page reload. */}
             <div className="flex justify-center">
-              <a
-                href={`/admin/sucursales/${s.id_sucursal}`}
+              <Link
+                href={`/sucursales/${s.id_sucursal}`}
                 className="text-black hover:text-[#e42200] transition-colors p-2"
                 title="Editar sucursal"
               >
                 <PencilSimple size={18} />
-              </a>
+              </Link>
             </div>
           </div>
         ))}

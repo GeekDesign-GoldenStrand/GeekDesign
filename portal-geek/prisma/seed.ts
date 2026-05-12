@@ -148,27 +148,6 @@ async function main() {
     },
   });
 
-  const servicioGrabado = await prisma.servicios.upsert({
-    where: { id_servicio: 2 },
-    update: {},
-    create: {
-      id_estatus: estatusServicioActivo.id_estatus_servicio,
-      nombre_servicio: "Grabado Láser",
-      descripcion_servicio: "Grabado con láser CO2",
-      estatus_servicio: true,
-    },
-  });
-
-  const demoFile = await prisma.archivosDisenio.upsert({
-    where: { id_archivo: 1 },
-    update: {},
-    create: {
-      nombre_archivo: "demo.svg",
-      url_archivo: "/files/demo.svg",
-      formato: "svg",
-    },
-  });
-
   const material = await prisma.materiales.upsert({
     where: { id_material: 1 },
     update: {},

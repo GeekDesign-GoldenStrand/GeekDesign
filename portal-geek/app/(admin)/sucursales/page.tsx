@@ -21,6 +21,7 @@ export default function SucursalesPage() {
 
   const pageSize = 10;
 
+  // Filters are kept in the page container so the template stays focused on layout and UI.
   const [filterNombre, setFilterNombre] = useState("");
   const [filterDireccion, setFilterDireccion] = useState("");
   const [filterEstatus, setFilterEstatus] = useState<string[]>([]);
@@ -29,16 +30,16 @@ export default function SucursalesPage() {
     try {
       const params = new URLSearchParams();
 
+      // Query params keep pagination, search, and filters reflected in a single API contract.
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
 
       if (search) params.set("search", search);
       if (filterNombre) params.set("nombre", filterNombre);
       if (filterDireccion) params.set("direccion", filterDireccion);
-      filterEstatus.forEach((e) => params.append("estatus", e));
 
-      // Usa console.error si quieres mantener debug
-      console.error("QUERY:", params.toString());
+      // Multiple status values are appended because the API supports filtering by more than one status.
+      filterEstatus.forEach((e) => params.append("estatus", e));
 
       const res = await fetch(`/api/sucursales?${params.toString()}`);
       const json = await res.json();
@@ -54,11 +55,14 @@ export default function SucursalesPage() {
     const load = async () => {
       await fetchSucursales();
     };
+
     load();
   }, [fetchSucursales]);
 
   async function handleDelete(id: number) {
+    // The DELETE endpoint performs a soft delete, so refreshing hides the inactive branch from the table.
     await fetch(`/api/sucursales/${id}`, { method: "DELETE" });
+
     fetchSucursales();
   }
 
