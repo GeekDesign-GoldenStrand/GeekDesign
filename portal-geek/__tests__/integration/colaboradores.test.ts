@@ -542,9 +542,7 @@ describe("PUT /api/colaboradores/[id] — COL-05 Asignar colaborador a sucursal"
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockUpdate.mockResolvedValue(BASE_COLABORADOR);
 
-    await makeAppById({ PUT: routes.PUT })
-      .put("/api/colaboradores/1")
-      .send({ id_sucursal: 3 });
+    await makeAppById({ PUT: routes.PUT }).put("/api/colaboradores/1").send({ id_sucursal: 3 });
 
     expect(mockUpdate).toHaveBeenCalledTimes(1);
     const call = mockUpdate.mock.calls[0][0];
