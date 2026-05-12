@@ -261,6 +261,7 @@ export async function changeQuotationStatus(
       where: { id_cotizacion: quotationId },
       data: updateData,
     }),
+
     prisma.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,

@@ -230,6 +230,7 @@ export async function changePedidoStatus(
       estatus: true,
     },
   });
+
   if (!currentPedido) {
     throw new Error("Pedido not found");
   }
@@ -268,6 +269,7 @@ export async function changePedidoStatus(
       where: { id_pedido: pedidoId },
       data: { id_estatus: newStatusId },
     }),
+
     prisma.historialEstadosPedidos.create({
       data: {
         id_pedido: pedidoId,
