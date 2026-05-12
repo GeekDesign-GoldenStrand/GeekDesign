@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import MaquinaInput from "@/components/ui/atoms/FormInput";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
@@ -44,7 +44,15 @@ export default function EditarMaquina({
   const [machineName, setMachineName] = useState("");
   const [machineNickname, setMachineNickname] = useState("");
   const [machineType, setMachineType] = useState("");
-  const [machineDescription, setMachineDescription] = useState("");
+  const [machineDescription, setMachineDescription] = useState(description);
+  const [descriptionTouched, setDescriptionTouched] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMachineDescription(description ?? "");
+      setDescriptionTouched(false);
+    }
+  }, [isOpen, description]);
 
   if (!isOpen) return null;
 
@@ -63,7 +71,7 @@ export default function EditarMaquina({
           nombre_maquina: machineName || undefined,
           apodo_maquina: machineNickname || undefined,
           tipo: machineType || type,
-          descripcion: machineDescription || undefined,
+          descripcion: descriptionTouched ? machineDescription || "" : undefined,
         }),
       });
       if (!res.ok) {
@@ -98,17 +106,16 @@ export default function EditarMaquina({
   }
 
   function validate(): boolean {
-    let valid = true;
     if (
       machineName.length === 0 &&
       machineNickname.length === 0 &&
       machineType.length === 0 &&
-      machineDescription.length === 0
+      !descriptionTouched
     ) {
-      valid = false;
       setError("No se modificó ningún campo");
+      return false;
     }
-    return valid;
+    return true;
   }
 
   return (
@@ -148,9 +155,13 @@ export default function EditarMaquina({
           label="Descripción"
           placeholder="Área de trabajo o especificaciones de la máquina"
           longText={true}
-          placeholderLongText={description}
+          placeholderLongText="Área de trabajo o especificaciones de la máquina"
           maxInputLength={200}
-          onChange={(e) => setMachineDescription(e.target.value)}
+          value={machineDescription}
+          onChange={(e) => {
+            setMachineDescription(e.target.value);
+            setDescriptionTouched(true);
+          }}
         />
         {error && (
           <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
