@@ -111,6 +111,28 @@ export default function MaquinasGrid() {
     setMaquinas((prev) => prev.map((m) => (m.id === updatedMachine.id ? updatedMachine : m)));
   }
 
+  async function handleStatusChange(id: number, newStatus: string) {
+    try {
+      const res = await fetch(`/api/maquinas/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estatus: newStatus }),
+      });
+      if (!res.ok) return;
+
+      const json = await res.json();
+      const data: MaquinaRaw = json.data;
+
+      setMaquinas((prev) =>
+        prev.map((m) =>
+          m.id === id ? { ...m, status: data.estatus } : m
+        )
+      );
+    } catch {
+      console.error("Error updating status");
+    }
+  }
+
   const selectedMaquina = maquinas.find((m) => m.id === selectedId);
 
   return (
@@ -139,6 +161,7 @@ export default function MaquinasGrid() {
               setSelectedId(m.id);
               setIsAsignarSucursalOpen(true);
             }}
+            onChangeStatus={(newStatus) => handleStatusChange(m.id, newStatus)}
           />
         ))}
       </div>

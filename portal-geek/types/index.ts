@@ -68,6 +68,7 @@ export interface MaquinaCardProps {
   onDelete: () => void;
   onEdit: () => void;
   onAssignStore: () => void;
+  onChangeStatus: () => void;
 }
 
 export interface MaterialCardProps {

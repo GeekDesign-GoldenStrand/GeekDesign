@@ -21,6 +21,7 @@ export function MaquinaCard({
   onDelete,
   onEdit,
   onAssignStore,
+  onChangeStatus,
 }: MaquinaCardProps) {
   return (
     <div className="bg-white rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full font-['IBM_Plex_Sans_JP',sans-serif]">
@@ -77,7 +78,7 @@ export function MaquinaCard({
           status={status}
           options={MACHINE_STATUS_OPTIONS}
           optionColors={["#00c853", "#8e908f"]}
-          onChange={() => {}}
+          onChange={onChangeStatus}
         />
       </div>
     </div>
