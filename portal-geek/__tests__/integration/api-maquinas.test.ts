@@ -163,18 +163,14 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(VALID_PAYLOAD);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(VALID_PAYLOAD);
     expect(res.status).toBe(401);
   });
 
   it("retorna 403 cuando el rol es Colaborador", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(VALID_PAYLOAD);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(VALID_PAYLOAD);
     expect(res.status).toBe(403);
   });
 
@@ -182,9 +178,7 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockCreate.mockResolvedValue(CREATED_MAQUINA);
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(VALID_PAYLOAD);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(VALID_PAYLOAD);
 
     expect(res.status).toBe(201);
     expect(res.body.data.id_maquina).toBe(1);
@@ -196,9 +190,7 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockCreate.mockResolvedValue(CREATED_MAQUINA);
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(VALID_PAYLOAD);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(VALID_PAYLOAD);
     expect(res.status).toBe(201);
   });
 
@@ -206,9 +198,7 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockCreate.mockResolvedValue(CREATED_MAQUINA);
 
-    await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(VALID_PAYLOAD);
+    await createApp({ POST: routes.POST }).post("/api/maquinas").send(VALID_PAYLOAD);
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -221,9 +211,7 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     const { nombre_maquina: _nombre, ...rest } = VALID_PAYLOAD;
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(rest);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(rest);
     expect(res.status).toBe(422);
   });
 
@@ -231,9 +219,7 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     const { apodo_maquina: _apodo, ...rest } = VALID_PAYLOAD;
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(rest);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(rest);
     expect(res.status).toBe(422);
   });
 
@@ -241,9 +227,7 @@ describe("POST /api/maquinas — Registrar Máquina", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     const { tipo: _tipo, ...rest } = VALID_PAYLOAD;
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/maquinas")
-      .send(rest);
+    const res = await createApp({ POST: routes.POST }).post("/api/maquinas").send(rest);
     expect(res.status).toBe(422);
   });
 
@@ -450,7 +434,11 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
   it("retorna 200 al actualizar una asignación existente", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockSucursalFindFirst.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 1 });
+    mockSucursalFindFirst.mockResolvedValue({
+      id_sucursal_maquina: 5,
+      id_maquina: 1,
+      id_sucursal: 1,
+    });
     mockSucursalUpdate.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 2 });
     mockFindUnique.mockResolvedValue(CREATED_MAQUINA);
 
@@ -531,16 +519,14 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/1");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete("/api/maquinas/1");
     expect(res.status).toBe(401);
   });
 
   it("retorna 403 cuando el rol es Colaborador", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/1");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete("/api/maquinas/1");
     expect(res.status).toBe(403);
   });
 
@@ -548,8 +534,7 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockUpdate.mockResolvedValue({ ...CREATED_MAQUINA, estatus: "Inactiva" });
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/1");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete("/api/maquinas/1");
 
     expect(res.status).toBe(204);
     expect(mockUpdate).toHaveBeenCalledWith(
@@ -564,8 +549,7 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockUpdate.mockResolvedValue({ ...CREATED_MAQUINA, estatus: "Inactiva" });
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/1");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete("/api/maquinas/1");
     expect(res.status).toBe(204);
   });
 
@@ -573,8 +557,9 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockUpdate.mockRejectedValue({ code: "P2025" });
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/999");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete(
+      "/api/maquinas/999"
+    );
 
     expect(res.status).toBe(404);
     expect(res.body.error).toContain("no encontrada");
@@ -583,8 +568,9 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
   it("retorna 422 cuando el id no es un número", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/abc");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete(
+      "/api/maquinas/abc"
+    );
     expect(res.status).toBe(422);
   });
 
@@ -592,8 +578,7 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockUpdate.mockResolvedValue({ ...CREATED_MAQUINA, estatus: "Inactiva" });
 
-    await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/1");
+    await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete("/api/maquinas/1");
 
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { estatus: "Inactiva" } })
@@ -604,8 +589,7 @@ describe("DELETE /api/maquinas/[id] — Eliminar Máquina (Soft Delete)", () => 
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockUpdate.mockRejectedValue(new Error("Database connection failed"));
 
-    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE })
-      .delete("/api/maquinas/1");
+    const res = await makeAppWithId("DELETE", { DELETE: routes.DELETE }).delete("/api/maquinas/1");
     expect(res.status).toBe(500);
   });
 });

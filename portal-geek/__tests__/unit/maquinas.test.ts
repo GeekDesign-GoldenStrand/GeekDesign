@@ -231,9 +231,7 @@ describe("updateMaquina", () => {
 
     await updateMaquina(1, { nombre_maquina: "Test" });
 
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id_maquina: 1 } })
-    );
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id_maquina: 1 } }));
   });
 
   it("lanza NotFoundError cuando la máquina no existe (P2025)", async () => {
@@ -270,7 +268,11 @@ describe("asignarSucursales", () => {
   });
 
   it("actualiza el registro existente si ya hay una asignación", async () => {
-    mockSucursalFindFirst.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 1 });
+    mockSucursalFindFirst.mockResolvedValue({
+      id_sucursal_maquina: 5,
+      id_maquina: 1,
+      id_sucursal: 1,
+    });
     mockSucursalUpdate.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 2 });
     mockFindUnique.mockResolvedValue(MAQUINA);
 
