@@ -2,7 +2,9 @@
  * @jest-environment node
  */
 import { prisma } from "@/lib/db/client";
-import { listServicios, getServicio, getServicioWithDetails } from "@/lib/services/servicios";
+import { Prisma } from "@prisma/client";
+
+import { listServicios, getServicio, getServicioWithDetails, deleteServicio } from "@/lib/services/servicios";
 import { NotFoundError } from "@/lib/utils/errors";
 
 jest.mock("@/lib/db/client", () => ({
@@ -12,6 +14,10 @@ jest.mock("@/lib/db/client", () => ({
       count: jest.fn(),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    detallePedido:{
+      count: jest.fn(),
     },
   },
 }));
@@ -20,6 +26,8 @@ const mockFindMany = prisma.servicios.findMany as jest.Mock;
 const mockCount = prisma.servicios.count as jest.Mock;
 const mockFindUnique = prisma.servicios.findUnique as jest.Mock;
 const mockFindFirst = prisma.servicios.findFirst as jest.Mock;
+const mockUpdate = prisma.servicios.update as jest.Mock;
+const mockDetallePedidoCount = prisma.detallePedido.count as jest.Mock;
 
 describe("listServicios", () => {
   beforeEach(() => {
@@ -150,5 +158,66 @@ describe("getServicioWithDetails", () => {
   it("lanza NotFoundError cuando el servicio no existe o está inactivo", async () => {
     mockFindFirst.mockResolvedValue(null);
     await expect(getServicioWithDetails(999)).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe("deleteServicio (soft delete)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDetallePedidoCount.mockResolvedValue(0);
+  });
+
+  it("hace soft delete: llama update con estatus_servicio: false", async () => {
+    mockUpdate.mockResolvedValue({ id_servicio: 1, estatus_servicio: false });
+
+    await deleteServicio(1);
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id_servicio: 1 },
+      data: { estatus_servicio: false },
+    });
+  });
+
+  it("verifica primero si hay pedidos activos referenciando el servicio", async () => {
+    mockUpdate.mockResolvedValue({ id_servicio: 1, estatus_servicio: false });
+
+    await deleteServicio(1);
+
+    expect(mockDetallePedidoCount).toHaveBeenCalledWith({
+      where: {
+        id_servicio: 1,
+        pedido: {
+          estatus: {
+            descripcion: { notIn: ["Entregado", "Facturado"] },
+          },
+        },
+      },
+    });
+  });
+
+  it("lanza ConflictError cuando el servicio tiene pedidos en proceso", async () => {
+    mockDetallePedidoCount.mockResolvedValue(3);
+
+    await expect(deleteServicio(1)).rejects.toThrow(
+      "No se puede eliminar: el servicio está referenciado en 3 pedido(s) en proceso."
+    );
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("lanza NotFoundError cuando el servicio no existe (P2025)", async () => {
+    const prismaError = new Prisma.PrismaClientKnownRequestError("Record not found", {
+      code: "P2025",
+      clientVersion: "7.8.0",
+    });
+    mockUpdate.mockRejectedValue(prismaError);
+
+    await expect(deleteServicio(999)).rejects.toThrow(NotFoundError);
+    await expect(deleteServicio(999)).rejects.toThrow("999");
+  });
+
+  it("propaga errores distintos a P2025", async () => {
+    mockUpdate.mockRejectedValue(new Error("Error de base de datos"));
+
+    await expect(deleteServicio(1)).rejects.toThrow("Error de base de datos");
   });
 });

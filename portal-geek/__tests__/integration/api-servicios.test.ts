@@ -3,6 +3,8 @@
  */
 import { prisma } from "@/lib/db/client";
 
+
+
 import { createApp } from "../helpers/next-supertest";
 
 jest.mock("@/lib/db/client", () => ({
@@ -12,13 +14,19 @@ jest.mock("@/lib/db/client", () => ({
       count: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
+    detallePedido:{
+      count: jest.fn()
+    }
   },
 }));
 
 const mockFindMany = prisma.servicios.findMany as jest.Mock;
 const mockCount = prisma.servicios.count as jest.Mock;
 const mockFindFirst = prisma.servicios.findFirst as jest.Mock;
+const mockUpdate = prisma.servicios.update as jest.Mock;
+const mockDetallePedidoCount = prisma.detallePedido.count as jest.Mock;
 
 const mockGetSession = jest.fn();
 jest.mock("@/lib/auth/session", () => ({
@@ -187,5 +195,69 @@ describe("POST /api/servicios", () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("id_estatus");
+  });
+});
+
+describe("DELETE /api/servicios/[id]", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/servicios/[id]/route");
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDetallePedidoCount.mockResolvedValue(0); // default: no referencias activas
+  });
+
+  function detailApp() {
+    return createApp({ DELETE: routes.DELETE }, (url) => {
+      const segments = url.pathname.split("/");
+      return { id: segments[segments.length - 1] };
+    });
+  }
+
+  it("retorna 401 sin sesión", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const res = await detailApp().delete("/api/servicios/1");
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 403 cuando el rol no es Administrador", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    const res = await detailApp().delete("/api/servicios/1");
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 422 cuando el id no es un número válido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    const res = await detailApp().delete("/api/servicios/abc");
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 404 cuando el servicio no existe", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockUpdate.mockRejectedValue({ code: "P2025" });
+
+    const res = await detailApp().delete("/api/servicios/999");
+    expect(res.status).toBe(404);
+  });
+
+  it("retorna 409 cuando el servicio tiene pedidos en proceso", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockDetallePedidoCount.mockResolvedValue(2);
+
+    const res = await detailApp().delete("/api/servicios/1");
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain("2 pedido(s) en proceso");
+  });
+
+  it("retorna 204 cuando el soft delete es exitoso", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockUpdate.mockResolvedValue({ id_servicio: 1, estatus_servicio: false });
+
+    const res = await detailApp().delete("/api/servicios/1");
+    expect(res.status).toBe(204);
   });
 });
