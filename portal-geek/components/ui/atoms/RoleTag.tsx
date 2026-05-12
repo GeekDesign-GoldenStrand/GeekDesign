@@ -55,11 +55,11 @@ export function RoleTag({ role, roles, currentRolId, onRolChange, saving }: Role
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Cambiar rol"
-        className="flex h-[24px] items-center justify-between gap-1 rounded-[7px] px-2 shadow-[0_4px_10px_rgba(0,0,0,0.25)] disabled:cursor-default"
+        className={`flex h-[24px] items-center ${interactive ? "justify-between" : "justify-center"} gap-1 rounded-[7px] px-2 shadow-[0_4px_10px_rgba(0,0,0,0.25)] disabled:cursor-default`}
         style={{ minWidth: "96px", border: `1px solid ${cfg.color}`, backgroundColor: cfg.bg }}
       >
         <span
-          className="font-ibm-plex font-medium leading-none text-[12px]"
+          className="font-ibm-plex font-medium leading-none text-[14px]"
           style={{ color: cfg.color }}
         >
           {saving ? "..." : role}
