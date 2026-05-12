@@ -1,18 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Hash, MagnifyingGlass } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface FolioSearchBarProps {
   initialValue?: string;
   className?: string;
 }
 
-export function FolioSearchBar({ 
-  initialValue = "", 
-  className = "" 
-}: FolioSearchBarProps) {
+export function FolioSearchBar({ initialValue = "", className = "" }: FolioSearchBarProps) {
   const [folio, setFolio] = useState(initialValue);
   const router = useRouter();
 
@@ -24,9 +21,10 @@ export function FolioSearchBar({
   };
 
   return (
-    <div className={`w-full max-w-[1240px] bg-white rounded-[24px] border border-[#d1d1d1] shadow-[0_12px_50px_rgba(0,0,0,0.06)] overflow-hidden ${className}`}>
+    <div
+      className={`w-full max-w-[1240px] bg-white rounded-[24px] border border-[#d1d1d1] shadow-[0_12px_50px_rgba(0,0,0,0.06)] overflow-hidden ${className}`}
+    >
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center p-6 md:p-10 lg:p-12 gap-8 lg:gap-16">
-        
         {/* Left Side: Information */}
         <div className="flex-1 lg:max-w-[480px]">
           <h1 className="text-[32px] md:text-[38px] font-extrabold text-[#1e1e1e] mb-3 leading-tight">
@@ -45,11 +43,8 @@ export function FolioSearchBar({
           <label className="text-[16px] font-bold text-[#1e1e1e] uppercase tracking-widest">
             Folio de cotización
           </label>
-          
-          <form 
-            onSubmit={handleSearch}
-            className="flex flex-col sm:flex-row items-center gap-3"
-          >
+
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex-1 w-full relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#575757]">
                 <Hash size={22} weight="bold" />
@@ -71,12 +66,11 @@ export function FolioSearchBar({
               Buscar cotización
             </button>
           </form>
-          
+
           <p className="text-[#8e908f] text-[14px] font-medium">
             Puedes encontrar el folio en el correo de confirmación de tu solicitud
           </p>
         </div>
-
       </div>
     </div>
   );

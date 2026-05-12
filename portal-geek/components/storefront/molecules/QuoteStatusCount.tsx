@@ -36,9 +36,7 @@ export function QuoteStatusCount({ type, count, label }: QuoteStatusCountProps) 
         <Icon size={24} weight="bold" className={color} />
         <span className="text-[15px] font-medium text-[#575757]">{label}</span>
       </div>
-      {count !== undefined && (
-        <span className={`text-[18px] font-bold ${color}`}>{count}</span>
-      )}
+      {count !== undefined && <span className={`text-[18px] font-bold ${color}`}>{count}</span>}
     </div>
   );
 }

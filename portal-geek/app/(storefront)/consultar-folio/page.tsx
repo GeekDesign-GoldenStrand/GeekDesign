@@ -7,9 +7,9 @@ export default function ConsultarFolioPage() {
         <FolioSearchBar />
 
         <div className="w-full border-t border-[#e8e8e8] pt-12 mt-16">
-           <div className="flex flex-col items-center justify-center py-20 text-[#8e908f]">
-              <p className="text-[18px] font-medium italic">Esperando que ingreses un folio...</p>
-           </div>
+          <div className="flex flex-col items-center justify-center py-20 text-[#8e908f]">
+            <p className="text-[18px] font-medium italic">Esperando que ingreses un folio...</p>
+          </div>
         </div>
       </div>
     </main>

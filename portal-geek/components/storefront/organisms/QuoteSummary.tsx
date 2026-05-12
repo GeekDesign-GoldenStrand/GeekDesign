@@ -20,18 +20,37 @@ interface QuoteSummaryProps {
   showCounts?: boolean;
 }
 
-export function QuoteSummary({ resumen, counts, actionText, showCounts = true }: QuoteSummaryProps) {
+export function QuoteSummary({
+  resumen,
+  counts,
+  actionText,
+  showCounts = true,
+}: QuoteSummaryProps) {
   return (
     <div className="lg:col-span-1">
       <div className="bg-white rounded-[16px] border border-[#e8e8e8] p-5 md:p-8 sticky top-8 shadow-sm">
-        <h3 className="text-[18px] md:text-[20px] font-bold text-[#1e1e1e] mb-6">Resumen de la cotización</h3>
-        
+        <h3 className="text-[18px] md:text-[20px] font-bold text-[#1e1e1e] mb-6">
+          Resumen de la cotización
+        </h3>
+
         {/* Status Counts Section */}
         {showCounts && (
           <div className="space-y-5 mb-8">
-            <QuoteStatusCount type="aprobado" count={counts.aprobados} label="Servicios aprobados" />
-            <QuoteStatusCount type="modificado" count={counts.modificados} label="Servicios modificados" />
-            <QuoteStatusCount type="rechazado" count={counts.rechazados} label="Servicios rechazados" />
+            <QuoteStatusCount
+              type="aprobado"
+              count={counts.aprobados}
+              label="Servicios aprobados"
+            />
+            <QuoteStatusCount
+              type="modificado"
+              count={counts.modificados}
+              label="Servicios modificados"
+            />
+            <QuoteStatusCount
+              type="rechazado"
+              count={counts.rechazados}
+              label="Servicios rechazados"
+            />
           </div>
         )}
 
@@ -42,7 +61,7 @@ export function QuoteSummary({ resumen, counts, actionText, showCounts = true }:
               ${resumen.total_anterior.toLocaleString()} MXN
             </span>
           </div>
-          
+
           <div className="flex justify-between items-center mb-8">
             <span className="text-[18px] font-bold text-[#1e1e1e]">Nuevo total</span>
             <span className="text-[22px] font-extrabold text-[#f16c20]">
@@ -55,7 +74,8 @@ export function QuoteSummary({ resumen, counts, actionText, showCounts = true }:
             <div className="bg-[#fff9f0] border border-[#ffe9cc] rounded-[12px] p-5 flex justify-between items-center">
               <span className="text-[15px] font-bold text-[#1e1e1e]">Diferencia</span>
               <span className="text-[15px] font-bold text-[#f16c20]">
-                {resumen.diferencia > 0 ? "+" : ""} ${resumen.diferencia.toLocaleString()} MXN ({resumen.porcentaje})
+                {resumen.diferencia > 0 ? "+" : ""} ${resumen.diferencia.toLocaleString()} MXN (
+                {resumen.porcentaje})
               </span>
             </div>
           )}
