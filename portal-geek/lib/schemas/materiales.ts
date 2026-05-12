@@ -34,16 +34,15 @@ export const CreateMaterialSchema = z.object({
     .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
     .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales."),
   color: z.string().min(1, "El color es requerido.").max(50, "Máximo 50 caracteres."),
-  // Accepts a storage key returned by POST /api/upload (preferred) or a legacy
-  // https URL. Transitional until the UI ships <UploadInput>; remove the URL
-  // branch once all forms post storage keys.
+  // Must be a storage key returned by POST /api/upload. External URLs are
+  // rejected — the read path resolves keys to presigned URLs at fetch time.
   imagen_url: z
     .string()
     .min(1, "La imagen es requerida.")
     .max(500, "Máximo 500 caracteres.")
     .refine(
-      (v) => isValidKey(v, "materiales") || /^https:\/\//i.test(v),
-      "Debe ser una clave de almacenamiento válida o una URL https."
+      (v) => isValidKey(v, "materiales"),
+      "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
     ),
 });
 
