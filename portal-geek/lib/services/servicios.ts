@@ -2,7 +2,7 @@ import type { Servicios } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
-import { NotFoundError } from "@/lib/utils/errors";
+import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 import { Prisma } from "@prisma/client";
 
 
@@ -82,7 +82,7 @@ export async function updateServicio(id: number, data: UpdateServicioInput): Pro
 export async function deleteServicio(id: number): Promise<void> {
   const refs = await prisma.servicios.count({ where: { id_servicio: id } });
   if (refs > 0) {
-    throw new Error(
+    throw new ConflictError(
       "No se puede eliminar el servicio porque está referenciado en cotizaciones_servicios"
     )
   }try{
