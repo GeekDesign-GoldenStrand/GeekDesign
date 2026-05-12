@@ -79,20 +79,40 @@ export async function updateServicio(id: number, data: UpdateServicioInput): Pro
   throw new Error("Not implemented");
 }
 
+
+/*
+Created the function deleteServicio eith the objective of performing a soft delete on the servicio, 
+changing its status to inactive. Before doing so, it checks if there are any 
+active orders referencing the servicio. If there are, it throws a ConflictError with a message
+indicating how many active orders are referencing the servicio. If the servicio to be deleted is 
+not found, it throws a NotFoundError.
+*/
 export async function deleteServicio(id: number): Promise<void> {
-  const refs = await prisma.servicios.count({ where: { id_servicio: id } });
-  if (refs > 0) {
+  const pedidosActivos = await prisma.detallePedido.count({
+    where: {
+      id_servicio: id,
+      pedido: {
+        estatus: {
+          descripcion: { notIn: ["Entregado", "Facturado"] },
+        },
+      },
+    },
+  });
+
+  if (pedidosActivos > 0) {
     throw new ConflictError(
-      "No se puede eliminar el servicio porque está referenciado en cotizaciones_servicios"
-    )
-  }try{
+      `No se puede eliminar: el servicio está referenciado en ${pedidosActivos} pedido(s) en proceso.`
+    );
+  }
+
+  try {
     await prisma.servicios.update({
       where: { id_servicio: id },
       data: { estatus_servicio: false },
     });
-  }catch (error) {
+  } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      throw new NotFoundError(`Servicio ${id} no encontrado`);
+      throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
     throw error;
   }
