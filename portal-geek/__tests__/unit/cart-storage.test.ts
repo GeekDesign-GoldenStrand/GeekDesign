@@ -5,7 +5,9 @@ import {
   getCarrito,
   addItem,
   removeItem,
+  updateItem,
   updateQuantity,
+  resetItem,
   getSubtotal,
   getTotalItems,
   calcularPrecioUnitario,
@@ -136,6 +138,79 @@ describe("updateQuantity", () => {
     const result = updateQuantity(idToUpdate, 10);
     expect(result.items[0].cantidad).toBe(mockItem.cantidad);
     expect(result.items[1].cantidad).toBe(10);
+  });
+});
+
+describe("updateItem", () => {
+  it("actualiza configuracion, cantidad y precioCalculado del item", () => {
+    const { items } = addItem(mockItem);
+    const patch = {
+      configuracion: {
+        selecciones: [{ opcionId: 1, valorId: 3, opcionNombre: "Material", valorNombre: "MDF" }],
+      },
+      cantidad: 10,
+      precioCalculado: 60,
+    };
+    const result = updateItem(items[0].id, patch);
+    expect(result.items[0].cantidad).toBe(10);
+    expect(result.items[0].precioCalculado).toBe(60);
+    expect(result.items[0].configuracion).toEqual(patch.configuracion);
+  });
+
+  it("no modifica otros items al actualizar uno", () => {
+    addItem(mockItem);
+    const { items } = addItem({ ...mockItem, servicioId: 2 });
+    updateItem(items[1].id, { configuracion: {}, cantidad: 5, precioCalculado: 99 });
+    const stored = getCarrito();
+    expect(stored.items[0].cantidad).toBe(mockItem.cantidad);
+  });
+
+  it("no lanza error al actualizar un id inexistente", () => {
+    addItem(mockItem);
+    const result = updateItem("id-inexistente", {
+      configuracion: {},
+      cantidad: 1,
+      precioCalculado: 0,
+    });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].precioCalculado).toBe(mockItem.precioCalculado);
+  });
+
+  it("persiste los cambios en localStorage", () => {
+    const { items } = addItem(mockItem);
+    updateItem(items[0].id, { configuracion: {}, cantidad: 7, precioCalculado: 45 });
+    const raw = localStorage.getItem("geekdesign_carrito");
+    expect(JSON.parse(raw!).items[0].cantidad).toBe(7);
+  });
+});
+
+describe("resetItem", () => {
+  const defaultConfig = {
+    selecciones: [{ opcionId: 1, opcionNombre: "Material", valorId: 2, valorNombre: "Acrílico" }],
+  };
+  const defaultPrecio = 80;
+
+  it("restablece configuracion, cantidad a 1 y precioCalculado al default", () => {
+    const { items } = addItem({ ...mockItem, cantidad: 10, precioCalculado: 60 });
+    const result = resetItem(items[0].id, defaultConfig, defaultPrecio);
+    expect(result.items[0].cantidad).toBe(1);
+    expect(result.items[0].precioCalculado).toBe(defaultPrecio);
+    expect(result.items[0].configuracion).toEqual(defaultConfig);
+  });
+
+  it("no modifica otros items al resetear uno", () => {
+    addItem(mockItem);
+    const { items } = addItem({ ...mockItem, servicioId: 2, cantidad: 5 });
+    resetItem(items[1].id, defaultConfig, defaultPrecio);
+    const stored = getCarrito();
+    expect(stored.items[0].cantidad).toBe(mockItem.cantidad);
+  });
+
+  it("no lanza error al resetear un id inexistente", () => {
+    addItem(mockItem);
+    const result = resetItem("id-inexistente", defaultConfig, defaultPrecio);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].cantidad).toBe(mockItem.cantidad);
   });
 });
 

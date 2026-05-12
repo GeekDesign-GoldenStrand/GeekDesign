@@ -1,46 +1,48 @@
-import type { Sucursales } from "@prisma/client";
-
 import { prisma } from "@/lib/db/client";
 import type { CreateSucursalInput, UpdateSucursalInput } from "@/lib/schemas/sucursales";
+import { NotFoundError } from "@/lib/utils/errors";
 
-export async function listSucursales(
-  page: number,
-  pageSize: number
-): Promise<{ items: Sucursales[]; total: number }> {
-  const [items, total] = await Promise.all([
+export async function listSucursales(page: number, pageSize: number) {
+  const skip = (page - 1) * pageSize;
+  const where = { estatus: "Activo" };
+  const [items, total] = await prisma.$transaction([
     prisma.sucursales.findMany({
-      where: { estatus: "Activo" },
-      skip: (page - 1) * pageSize,
+      where,
+      skip,
       take: pageSize,
       orderBy: { nombre_sucursal: "asc" },
     }),
-    prisma.sucursales.count(),
+    prisma.sucursales.count({ where }),
   ]);
-
   return { items, total };
 }
 
-export async function getSucursal(id: number): Promise<Sucursales> {
-  // TODO: implement — throw new NotFoundError(...) if not found
-  void id;
-  throw new Error("Not implemented");
+export async function getSucursal(id: number) {
+  const sucursal = await prisma.sucursales.findUnique({ where: { id_sucursal: id } });
+  if (!sucursal) throw new NotFoundError("Sucursal no encontrada");
+  return sucursal;
 }
 
-export async function createSucursal(data: CreateSucursalInput): Promise<Sucursales> {
-  // TODO: implement
-  void data;
-  throw new Error("Not implemented");
+export async function createSucursal(data: CreateSucursalInput) {
+  return prisma.sucursales.create({ data });
 }
 
-export async function updateSucursal(id: number, data: UpdateSucursalInput): Promise<Sucursales> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  void id;
-  void data;
-  throw new Error("Not implemented");
+export async function updateSucursal(id: number, data: UpdateSucursalInput) {
+  try {
+    return await prisma.sucursales.update({ where: { id_sucursal: id }, data });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025")
+      throw new NotFoundError("Sucursal no encontrada");
+    throw err;
+  }
 }
 
 export async function deleteSucursal(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  try {
+    await prisma.sucursales.update({ where: { id_sucursal: id }, data: { estatus: "Inactivo" } });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2025")
+      throw new NotFoundError("Sucursal no encontrada");
+    throw err;
+  }
 }

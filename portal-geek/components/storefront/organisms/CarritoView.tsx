@@ -169,7 +169,7 @@ export function CarritoView({ relatedServices }: Props) {
                       </div>
 
                       <Link
-                        href={`/servicios/${item.servicioId}`}
+                        href={`/servicios/${item.servicioId}?editItemId=${item.id}`}
                         className="text-[18px] font-medium text-[#1e1e1e] underline"
                       >
                         Editar opciones
