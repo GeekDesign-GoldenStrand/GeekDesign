@@ -3,6 +3,8 @@ import type { Servicios } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
 import { NotFoundError } from "@/lib/utils/errors";
+import { Prisma } from "@prisma/client";
+
 
 export async function listServicios(
   page: number,
@@ -78,7 +80,20 @@ export async function updateServicio(id: number, data: UpdateServicioInput): Pro
 }
 
 export async function deleteServicio(id: number): Promise<void> {
-  // TODO: implement
-  void id;
-  throw new Error("Not implemented");
+  const refs = await prisma.servicios.count({ where: { id_servicio: id } });
+  if (refs > 0) {
+    throw new Error(
+      "No se puede eliminar el servicio porque está referenciado en cotizaciones_servicios"
+    )
+  }try{
+    await prisma.servicios.update({
+      where: { id_servicio: id },
+      data: { estatus_servicio: false },
+    });
+  }catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      throw new NotFoundError(`Servicio ${id} no encontrado`);
+    }
+    throw error;
+  }
 }
