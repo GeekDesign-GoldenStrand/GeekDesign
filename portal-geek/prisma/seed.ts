@@ -37,18 +37,40 @@ async function main() {
 
   console.log(`Seeded ${roles.length} roles`);
 
-  // ── Sucursal (needed before Colaboradores) ─────────────────────────────────
-  const sucursal = await prisma.sucursales.upsert({
-    where: { id_sucursal: 1 },
-    update: {},
-    create: {
+  // ── Sucursales (needed before Colaboradores) ───────────────────────────────
+  const sucursalesData = [
+    {
+      id_sucursal: 1,
       nombre_sucursal: "Sucursal Principal",
       direccion: "Monterrey, NL",
       estatus: "Activo",
     },
-  });
+    {
+      id_sucursal: 2,
+      nombre_sucursal: "Sucursal San Pedro",
+      direccion: "San Pedro Garza García, NL",
+      estatus: "Activo",
+    },
+    {
+      id_sucursal: 3,
+      nombre_sucursal: "Sucursal Querétaro",
+      direccion: "Querétaro, QRO",
+      estatus: "Activo",
+    },
+  ];
 
-  console.log(`Seeded branch "${sucursal.nombre_sucursal}"`);
+  const sucursales = await Promise.all(
+    sucursalesData.map((data) =>
+      prisma.sucursales.upsert({
+        where: { id_sucursal: data.id_sucursal },
+        update: {},
+        create: data,
+      })
+    )
+  );
+  const sucursal = sucursales[0];
+
+  console.log(`Seeded ${sucursales.length} sucursales`);
 
   // ── Admin user ─────────────────────────────────────────────────────────────
   const adminRole = roles.find((r) => r.nombre_rol === "Administrador")!;
@@ -103,6 +125,93 @@ async function main() {
   console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
 
   console.log("Seeded admin colaborador");
+
+  // ── Colaboradores demo ─────────────────────────────────────────────────────
+  const colaboradorRole = roles.find((r) => r.nombre_rol === "Colaborador")!;
+  const colaboradorPasswordHash = await bcrypt.hash(
+    process.env.SEED_COLABORADOR_PASSWORD ?? "colaborador123",
+    12
+  );
+
+  const colaboradoresData = [
+    {
+      nombre_completo: "María López Hernández",
+      correo_electronico: "maria.lopez@geekdesign.mx",
+      id_sucursal: 1,
+      edad: 27,
+      sexo: "F",
+      telefono: "8111112233",
+    },
+    {
+      nombre_completo: "Juan Carlos Pérez",
+      correo_electronico: "juan.perez@geekdesign.mx",
+      id_sucursal: 1,
+      edad: 34,
+      sexo: "M",
+      telefono: "8112223344",
+    },
+    {
+      nombre_completo: "Ana Patricia Reyes",
+      correo_electronico: "ana.reyes@geekdesign.mx",
+      id_sucursal: 2,
+      edad: 31,
+      sexo: "F",
+      telefono: "8113334455",
+    },
+    {
+      nombre_completo: "Diego Salinas Treviño",
+      correo_electronico: "diego.salinas@geekdesign.mx",
+      id_sucursal: 2,
+      edad: 24,
+      sexo: "M",
+      telefono: "8114445566",
+    },
+    {
+      nombre_completo: "Sofía Gutiérrez Mora",
+      correo_electronico: "sofia.gutierrez@geekdesign.mx",
+      id_sucursal: 3,
+      edad: 29,
+      sexo: "F",
+      telefono: "4421112233",
+    },
+    {
+      nombre_completo: "Roberto Mendoza Cruz",
+      correo_electronico: "roberto.mendoza@geekdesign.mx",
+      id_sucursal: 3,
+      edad: 42,
+      sexo: "M",
+      telefono: "4422223344",
+    },
+  ];
+
+  for (const data of colaboradoresData) {
+    const usuario = await prisma.usuarios.upsert({
+      where: { correo_electronico: data.correo_electronico },
+      update: {},
+      create: {
+        nombre_completo: data.nombre_completo,
+        correo_electronico: data.correo_electronico,
+        contrasena_hash: colaboradorPasswordHash,
+        id_rol: colaboradorRole.id_rol,
+        estatus: "Activo",
+      },
+    });
+
+    await prisma.colaboradores.upsert({
+      where: { id_usuario: usuario.id_usuario },
+      update: {},
+      create: {
+        id_usuario: usuario.id_usuario,
+        id_sucursal: data.id_sucursal,
+        edad: data.edad,
+        sexo: data.sexo,
+        telefono: data.telefono,
+        estatus_colaborador: "Activo",
+      },
+    });
+  }
+
+  console.log(`Seeded ${colaboradoresData.length} colaboradores demo`);
 
   // ── Machine ────────────────────────────────────────────────────────────────
   const maquina = await prisma.maquinas.upsert({
