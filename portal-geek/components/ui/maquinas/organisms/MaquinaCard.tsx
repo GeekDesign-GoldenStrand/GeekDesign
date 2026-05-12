@@ -7,6 +7,7 @@ import MaquinaSubtitle from "../atoms/MaquinaSubtitle";
 import MaquinaTitle from "../atoms/MaquinaTitle";
 import MaquinaSection from "../molecules/MaquinaSection";
 import MaquinaStatusDropdown from "../molecules/MaquinaStatusDropdown";
+import MaquinaText from "../atoms/MaquinaText";
 
 const MACHINE_STATUS_OPTIONS: MachineStatus[] = ["Activa", "En mantenimiento"];
 
@@ -21,10 +22,11 @@ export function MaquinaCard({
   onDelete,
   onEdit,
   onAssignStore,
+  onAssignServices,
   onChangeStatus,
 }: MaquinaCardProps) {
   return (
-    <div className="bg-white rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full font-['IBM_Plex_Sans_JP',sans-serif]">
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full font-['IBM_Plex_Sans_JP',sans-serif]">
       <div>
         <div className="flex gap-6 justify-between items-start">
           <MaquinaTitle title={nickname} />
@@ -49,9 +51,21 @@ export function MaquinaCard({
         <MaquinaSubtitle subtitle={model} />
       </div>
       {store ? (
-        <MaquinaSection heading="Sucursal" text={store} />
+        <div>
+          <div className="flex items-center gap-1">
+            <MaquinaSubtitle subtitle="Sucursal" />
+            <button
+              onClick={onAssignStore}
+              aria-label="Asignar sucursal"
+              className="flex items-center justify-center w-[30px] h-[30px] rounded-[7px] text-gray-500 hover:text-[#c30000]"
+            >
+              <EditIcon size={15} />
+            </button>
+          </div>
+          <MaquinaText text={store} />
+        </div>
       ) : (
-        <div className="my-3">
+        <div className="my-4">
           <MaquinaSubtitle subtitle="Sucursal" />
           <button
             onClick={onAssignStore}
@@ -64,20 +78,37 @@ export function MaquinaCard({
       )}
       {services && services.length > 0 ? (
         <div>
-          <MaquinaSubtitle subtitle="Servicios" />
+          <div className="flex items-center gap-1">
+            <MaquinaSubtitle subtitle="Servicios" />
+            <button
+              onClick={onAssignServices}
+              aria-label="Asignar servicios"
+              className="flex items-center justify-center w-[30px] h-[30px] rounded-[7px] text-gray-500 hover:text-[#c30000]"
+            >
+              <EditIcon size={15} />
+            </button>
+          </div>
           <MaquinaServiceBadge services={services} />
         </div>
       ) : (
-        <MaquinaSection heading="Servicios" text="Sin asignar" />
+        <div className="my-3">
+          <MaquinaSubtitle subtitle="Servicios" />
+          <button
+            onClick={onAssignServices}
+            aria-label="Asignar servicios"
+            className="flex-none gap-1 mt-3 flex items-center justify-center border border-[#006aff] rounded-[7px] p-2 text-[#006aff] text-[13px] max-h-[45px] hover:bg-[#f0f5ff] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+          >
+            Asignar <PlusIcon size={10} />
+          </button>
+        </div>
       )}
       <MaquinaSection heading="Descripción" text={description || "Sin descripción"} />
 
-      <div className="flex justify-between">
+      <div className="flex justify-between mt-auto pt-3">
         <MaquinaCreationDate creationDate={creation_date} />
         <MaquinaStatusDropdown
           status={status}
           options={MACHINE_STATUS_OPTIONS}
-          optionColors={["#00c853", "#8e908f"]}
           onChange={onChangeStatus}
         />
       </div>

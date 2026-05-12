@@ -8,6 +8,7 @@ import { MaquinaCard } from "@/components/ui/maquinas/organisms/MaquinaCard";
 import type { MaquinaCardProps } from "@/types";
 
 import AsignarSucursal from "./asignar-sucursal";
+import AsignarServicios from "./asignar-servicios";
 import EditarMaquina from "./editar-maquina";
 import RegistrarForm from "./registrar-form";
 
@@ -64,24 +65,32 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
 export default function MaquinasGrid() {
   const [maquinas, setMaquinas] = useState<MaquinaCardProps[]>([]);
   const [search, setSearch] = useState("");
+  const [isLoadingMaquinas, setIsLoadingMaquinas] = useState(true);
 
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAsignarSucursalOpen, setIsAsignarSucursalOpen] = useState(false);
+  const [isAsignarServiciosOpen, setIsAsignarServiciosOpen] = useState(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const filteredMaquinas = maquinas.filter((m) =>
-    m.nickname.toLowerCase().includes(search.toLowerCase()) ||
-    m.model.toLowerCase().includes(search.toLowerCase())
+  const filteredMaquinas = maquinas.filter(
+    (m) =>
+      m.nickname.toLowerCase().includes(search.toLowerCase()) ||
+      m.model.toLowerCase().includes(search.toLowerCase())
   );
 
   async function fetchMaquinas() {
-    const data = await getMaquinas();
-    setMaquinas(data);
+    setIsLoadingMaquinas(true);
+    try {
+      const data = await getMaquinas();
+      setMaquinas(data);
+    } finally {
+      setIsLoadingMaquinas(false);
+    }
   }
 
   useEffect(() => {
@@ -123,11 +132,7 @@ export default function MaquinasGrid() {
       const json = await res.json();
       const data: MaquinaRaw = json.data;
 
-      setMaquinas((prev) =>
-        prev.map((m) =>
-          m.id === id ? { ...m, status: data.estatus } : m
-        )
-      );
+      setMaquinas((prev) => prev.map((m) => (m.id === id ? { ...m, status: data.estatus } : m)));
     } catch {
       console.error("Error updating status");
     }
@@ -160,6 +165,10 @@ export default function MaquinasGrid() {
             onAssignStore={() => {
               setSelectedId(m.id);
               setIsAsignarSucursalOpen(true);
+            }}
+            onAssignServices={() => {
+              setSelectedId(m.id);
+              setIsAsignarServiciosOpen(true);
             }}
             onChangeStatus={(newStatus) => handleStatusChange(m.id, newStatus)}
           />
@@ -200,6 +209,15 @@ export default function MaquinasGrid() {
         isOpen={isAsignarSucursalOpen}
         onEdit={handleEdited}
         onClose={() => setIsAsignarSucursalOpen(false)}
+      />
+
+      <AsignarServicios
+        id={selectedMaquina?.id ?? 0}
+        model={selectedMaquina?.model ?? ""}
+        nickname={selectedMaquina?.nickname ?? ""}
+        isOpen={isAsignarServiciosOpen}
+        onEdit={handleEdited}
+        onClose={() => setIsAsignarServiciosOpen(false)}
       />
     </div>
   );
