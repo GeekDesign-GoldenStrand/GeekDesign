@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, WarningCircle, XCircle } from "@phosphor-icons/react";
+import { QuoteStatusCount } from "../molecules/QuoteStatusCount";
 
 interface Resumen {
   total_anterior: number;
@@ -29,29 +29,9 @@ export function QuoteSummary({ resumen, counts, actionText, showCounts = true }:
         {/* Status Counts Section */}
         {showCounts && (
           <div className="space-y-5 mb-8">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <CheckCircle size={24} weight="bold" className="text-green-600" />
-                <span className="text-[15px] font-medium text-[#575757]">Servicios aprobados</span>
-              </div>
-              <span className="text-[18px] font-bold text-green-600">{counts.aprobados}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <WarningCircle size={24} weight="bold" className="text-orange-500" />
-                <span className="text-[15px] font-medium text-[#575757]">Servicios modificados</span>
-              </div>
-              <span className="text-[18px] font-bold text-orange-500">{counts.modificados}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <XCircle size={24} weight="bold" className="text-red-500" />
-                <span className="text-[15px] font-medium text-[#575757]">Servicios rechazados</span>
-              </div>
-              <span className="text-[18px] font-bold text-red-500">{counts.rechazados}</span>
-            </div>
+            <QuoteStatusCount type="aprobado" count={counts.aprobados} label="Servicios aprobados" />
+            <QuoteStatusCount type="modificado" count={counts.modificados} label="Servicios modificados" />
+            <QuoteStatusCount type="rechazado" count={counts.rechazados} label="Servicios rechazados" />
           </div>
         )}
 

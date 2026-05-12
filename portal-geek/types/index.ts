@@ -77,3 +77,14 @@ export interface MaterialesVisibleColumns {
   color: boolean;
   image: boolean;
 }
+export interface QuotationItem {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  estado: string;
+  precio_anterior: number;
+  precio_nuevo: number | null;
+  motivo: string | null;
+  detalles_cliente: string;
+  cambio?: string;
+}
