@@ -121,9 +121,15 @@ export function ColaboradoresView() {
         setRoles((rolesJson.data ?? []) as Rol[]);
         setSucursales((sucursalesJson.data ?? []) as Sucursal[]);
       })
-      .catch(() => { if (!cancelled) setError("No se pudieron cargar los colaboradores. Intenta de nuevo."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .catch(() => {
+        if (!cancelled) setError("No se pudieron cargar los colaboradores. Intenta de nuevo.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [page, retryAttempt]);
 
   async function handleStatusChange(userId: number, newStatus: string) {
