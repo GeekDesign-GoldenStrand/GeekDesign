@@ -23,9 +23,10 @@ interface Servicio {
 
 interface QuoteServicesTableProps {
   servicios: Servicio[];
+  isRevision?: boolean;
 }
 
-export function QuoteServicesTable({ servicios }: QuoteServicesTableProps) {
+export function QuoteServicesTable({ servicios, isRevision = false }: QuoteServicesTableProps) {
   const [expandedItems, setExpandedItems] = useState<number[]>([]); 
 
   const toggleExpand = (id: number) => {
@@ -46,10 +47,10 @@ export function QuoteServicesTable({ servicios }: QuoteServicesTableProps) {
           <thead className="bg-[#f9f9f9] text-[13px] text-[#8e908f] uppercase font-bold">
             <tr>
               <th className="px-6 py-3">Servicio</th>
-              <th className="px-6 py-3">Estado</th>
-              <th className="px-6 py-3">Antes</th>
-              <th className="px-6 py-3">Nuevo precio</th>
-              <th className="px-6 py-3">Cambio</th>
+              {!isRevision && <th className="px-6 py-3">Estado</th>}
+              <th className="px-6 py-3">{isRevision ? "Precio solicitado" : "Antes"}</th>
+              {!isRevision && <th className="px-6 py-3">Nuevo precio</th>}
+              {!isRevision && <th className="px-6 py-3">Cambio</th>}
               <th className="px-6 py-3 text-center">Ver detalles</th>
             </tr>
           </thead>
@@ -61,28 +62,34 @@ export function QuoteServicesTable({ servicios }: QuoteServicesTableProps) {
                     <p className="font-bold text-[#1e1e1e] text-[16px]">{servicio.nombre}</p>
                     <p className="text-[14px] text-[#575757]">{servicio.descripcion}</p>
                   </td>
-                  <td className="px-6 py-5">
-                    <span className={`flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wider ${
-                      servicio.estado === 'sin_cambios' ? 'text-green-600' : 
-                      servicio.estado === 'modificado' ? 'text-orange-500' : 'text-red-500'
-                    }`}>
-                      {servicio.estado === 'sin_cambios' && <CheckCircle size={16} />}
-                      {servicio.estado === 'modificado' && <WarningCircle size={16} />}
-                      {servicio.estado === 'rechazado' && <XCircle size={16} />}
-                      {servicio.estado.replace('_', ' ')}
-                    </span>
-                  </td>
+                  {!isRevision && (
+                    <td className="px-6 py-5">
+                      <span className={`flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wider ${
+                        servicio.estado === 'sin_cambios' ? 'text-green-600' : 
+                        servicio.estado === 'modificado' ? 'text-orange-500' : 'text-red-500'
+                      }`}>
+                        {servicio.estado === 'sin_cambios' && <CheckCircle size={16} />}
+                        {servicio.estado === 'modificado' && <WarningCircle size={16} />}
+                        {servicio.estado === 'rechazado' && <XCircle size={16} />}
+                        {servicio.estado.replace('_', ' ')}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-6 py-5 text-[15px] text-[#575757]">
                     ${servicio.precio_anterior.toLocaleString()} MXN
                   </td>
-                  <td className="px-6 py-5 text-[15px] font-bold text-[#1e1e1e]">
-                    {servicio.precio_nuevo ? `$${servicio.precio_nuevo.toLocaleString()} MXN` : '—'}
-                  </td>
-                  <td className="px-6 py-5">
-                    <span className={`text-[14px] font-bold ${servicio.cambio ? 'text-orange-600' : 'text-[#8e908f]'}`}>
-                      {servicio.cambio || '—'}
-                    </span>
-                  </td>
+                  {!isRevision && (
+                    <>
+                      <td className="px-6 py-5 text-[15px] font-bold text-[#1e1e1e]">
+                        {servicio.precio_nuevo ? `$${servicio.precio_nuevo.toLocaleString()} MXN` : '—'}
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`text-[14px] font-bold ${servicio.cambio ? 'text-orange-600' : 'text-[#8e908f]'}`}>
+                          {servicio.cambio || '—'}
+                        </span>
+                      </td>
+                    </>
+                  )}
                   <td className="px-6 py-5 text-center">
                     <button 
                       onClick={() => toggleExpand(servicio.id)}
@@ -97,8 +104,8 @@ export function QuoteServicesTable({ servicios }: QuoteServicesTableProps) {
                   </td>
                 </tr>
 
-                {/* Motivo de cambio - Siempre visible */}
-                {servicio.motivo && (
+                {/* Motivo de cambio - Siempre visible (excepto en revisión) */}
+                {servicio.motivo && !isRevision && (
                   <tr className="border-t-0">
                     <td colSpan={6} className="px-6 pb-5 pt-0">
                       <div className={`p-4 rounded-[12px] text-[14px] leading-relaxed border flex items-center gap-3 ${
@@ -159,37 +166,41 @@ export function QuoteServicesTable({ servicios }: QuoteServicesTableProps) {
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${
-                servicio.estado === 'sin_cambios' ? 'text-green-600 bg-green-50 border-green-100' : 
-                servicio.estado === 'modificado' ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-red-600 bg-red-50 border-red-100'
-              }`}>
-                {servicio.estado.replace('_', ' ')}
-              </span>
-              {servicio.cambio && (
-                <span className="text-[11px] font-bold text-orange-600 bg-orange-50 border border-orange-100 px-2 py-1 rounded-full">
-                  {servicio.cambio}
+            {!isRevision && (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${
+                  servicio.estado === 'sin_cambios' ? 'text-green-600 bg-green-50 border-green-100' : 
+                  servicio.estado === 'modificado' ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-red-600 bg-red-50 border-red-100'
+                }`}>
+                  {servicio.estado.replace('_', ' ')}
                 </span>
-              )}
-            </div>
+                {servicio.cambio && (
+                  <span className="text-[11px] font-bold text-orange-600 bg-orange-50 border border-orange-100 px-2 py-1 rounded-full">
+                    {servicio.cambio}
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className={`grid ${isRevision ? 'grid-cols-1' : 'grid-cols-2'} gap-4 pt-2`}>
               <div>
-                <p className="text-[11px] text-[#8e908f] uppercase font-bold mb-1">Precio anterior</p>
-                <p className="text-[14px] text-[#575757] line-through decoration-[#df2646] opacity-60">
+                <p className="text-[11px] text-[#8e908f] uppercase font-bold mb-1">{isRevision ? "Precio solicitado" : "Precio anterior"}</p>
+                <p className={`text-[14px] ${isRevision ? 'text-[#1e1e1e] font-bold' : 'text-[#575757] line-through decoration-[#df2646] opacity-60'}`}>
                   ${servicio.precio_anterior.toLocaleString()}
                 </p>
               </div>
-              <div>
-                <p className="text-[11px] text-[#8e908f] uppercase font-bold mb-1">Nuevo precio</p>
-                <p className="text-[15px] font-bold text-[#1e1e1e]">
-                  {servicio.precio_nuevo ? `$${servicio.precio_nuevo.toLocaleString()}` : '—'}
-                </p>
-              </div>
+              {!isRevision && (
+                <div>
+                  <p className="text-[11px] text-[#8e908f] uppercase font-bold mb-1">Nuevo precio</p>
+                  <p className="text-[15px] font-bold text-[#1e1e1e]">
+                    {servicio.precio_nuevo ? `$${servicio.precio_nuevo.toLocaleString()}` : '—'}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Motivo siempre visible en móvil también */}
-            {servicio.motivo && (
+            {/* Motivo siempre visible (excepto revisión) */}
+            {servicio.motivo && !isRevision && (
               <div className={`p-3 rounded-[10px] text-[13px] border flex items-start gap-2 ${
                 servicio.estado === 'modificado' ? 'bg-orange-50 border-orange-100 text-orange-900' : 'bg-red-50 border-red-100 text-red-900'
               }`}>

@@ -40,14 +40,19 @@ export default function CotizacionDetailPage({ params }: { params: Promise<{ id:
           
           {/* Organism: Services Table */}
           <div className="lg:col-span-2">
-            <QuoteServicesTable servicios={data.servicios} />
+            <QuoteServicesTable 
+              servicios={data.servicios} 
+              isRevision={data.estado_actual === 'en_revision'} 
+            />
 
-            <div className="mt-8 p-6 bg-blue-50 border border-blue-100 rounded-[12px] flex items-start gap-4">
-               <WarningCircle size={24} className="text-blue-600 shrink-0 mt-0.5" />
-               <p className="text-[14px] text-blue-900 leading-relaxed">
-                 Al confirmar esta cotización, aceptas los cambios realizados en los servicios marcados como <span className="font-bold underline decoration-blue-400">modificados</span> y reconoces que los servicios <span className="font-bold underline decoration-red-400 text-red-700">rechazados</span> no formarán parte del pedido final.
-               </p>
-            </div>
+            {data.estado_actual !== 'en_revision' && (
+              <div className="mt-8 p-6 bg-blue-50 border border-blue-100 rounded-[12px] flex items-start gap-4">
+                 <WarningCircle size={24} className="text-blue-600 shrink-0 mt-0.5" />
+                 <p className="text-[14px] text-blue-900 leading-relaxed">
+                   Al confirmar esta cotización, aceptas los cambios realizados en los servicios marcados como <span className="font-bold underline decoration-blue-400">modificados</span> y reconoces que los servicios <span className="font-bold underline decoration-red-400 text-red-700">rechazados</span> no formarán parte del pedido final.
+                 </p>
+              </div>
+            )}
           </div>
 
           {/* Organism: Summary & Actions Sidebar */}
@@ -58,7 +63,9 @@ export default function CotizacionDetailPage({ params }: { params: Promise<{ id:
               modificados: data.servicios.filter((s: any) => s.estado === 'modificado').length,
               rechazados: data.servicios.filter((s: any) => s.estado === 'rechazado').length
             }}
+            showCounts={data.estado_actual !== 'en_revision'}
             actionText={
+              data.estado_actual === 'en_revision' ? "Revisión en curso" :
               data.estado_actual === 'modificada' ? "Revisar y confirmar cambios" :
               data.estado_actual === 'rechazada' ? "Finalizar y seguir comprando" :
               "Aceptar cotización y continuar"

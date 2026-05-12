@@ -17,40 +17,43 @@ interface QuoteSummaryProps {
     rechazados: number;
   };
   actionText: string;
+  showCounts?: boolean;
 }
 
-export function QuoteSummary({ resumen, counts, actionText }: QuoteSummaryProps) {
+export function QuoteSummary({ resumen, counts, actionText, showCounts = true }: QuoteSummaryProps) {
   return (
     <div className="lg:col-span-1">
       <div className="bg-white rounded-[16px] border border-[#e8e8e8] p-5 md:p-8 sticky top-8 shadow-sm">
         <h3 className="text-[18px] md:text-[20px] font-bold text-[#1e1e1e] mb-6">Resumen de la cotización</h3>
         
         {/* Status Counts Section */}
-        <div className="space-y-5 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <CheckCircle size={24} weight="bold" className="text-green-600" />
-              <span className="text-[15px] font-medium text-[#575757]">Servicios aprobados</span>
+        {showCounts && (
+          <div className="space-y-5 mb-8">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <CheckCircle size={24} weight="bold" className="text-green-600" />
+                <span className="text-[15px] font-medium text-[#575757]">Servicios aprobados</span>
+              </div>
+              <span className="text-[18px] font-bold text-green-600">{counts.aprobados}</span>
             </div>
-            <span className="text-[18px] font-bold text-green-600">{counts.aprobados}</span>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <WarningCircle size={24} weight="bold" className="text-orange-500" />
-              <span className="text-[15px] font-medium text-[#575757]">Servicios modificados</span>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <WarningCircle size={24} weight="bold" className="text-orange-500" />
+                <span className="text-[15px] font-medium text-[#575757]">Servicios modificados</span>
+              </div>
+              <span className="text-[18px] font-bold text-orange-500">{counts.modificados}</span>
             </div>
-            <span className="text-[18px] font-bold text-orange-500">{counts.modificados}</span>
-          </div>
 
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <XCircle size={24} weight="bold" className="text-red-500" />
-              <span className="text-[15px] font-medium text-[#575757]">Servicios rechazados</span>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <XCircle size={24} weight="bold" className="text-red-500" />
+                <span className="text-[15px] font-medium text-[#575757]">Servicios rechazados</span>
+              </div>
+              <span className="text-[18px] font-bold text-red-500">{counts.rechazados}</span>
             </div>
-            <span className="text-[18px] font-bold text-red-500">{counts.rechazados}</span>
           </div>
-        </div>
+        )}
 
         <div className="border-t border-[#f0f0f0] pt-8 mb-8">
           <div className="flex justify-between items-center mb-5">
@@ -68,12 +71,14 @@ export function QuoteSummary({ resumen, counts, actionText }: QuoteSummaryProps)
           </div>
 
           {/* Difference Box */}
-          <div className="bg-[#fff9f0] border border-[#ffe9cc] rounded-[12px] p-5 flex justify-between items-center">
-            <span className="text-[15px] font-bold text-[#1e1e1e]">Diferencia</span>
-            <span className="text-[15px] font-bold text-[#f16c20]">
-              + ${resumen.diferencia.toLocaleString()} MXN ({resumen.porcentaje})
-            </span>
-          </div>
+          {resumen.diferencia !== 0 && (
+            <div className="bg-[#fff9f0] border border-[#ffe9cc] rounded-[12px] p-5 flex justify-between items-center">
+              <span className="text-[15px] font-bold text-[#1e1e1e]">Diferencia</span>
+              <span className="text-[15px] font-bold text-[#f16c20]">
+                {resumen.diferencia > 0 ? "+" : ""} ${resumen.diferencia.toLocaleString()} MXN ({resumen.porcentaje})
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

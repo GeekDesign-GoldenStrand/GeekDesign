@@ -62,5 +62,20 @@ export const MOCK_SCENARIOS: Record<string, any> = {
       { id: 1, nombre: "Estructura para Eventos", descripcion: "Escenario móvil", estado: "rechazado", precio_anterior: 25000, precio_nuevo: null, motivo: "Mantenimiento preventivo en esas fechas.", detalles_cliente: "Evento al aire libre." }
     ],
     resumen: { total_anterior: 25000, total_nuevo: 0, diferencia: -25000, porcentaje: "-100%" }
+  },
+  "revision": {
+    id: "REV-001",
+    fecha_solicitud: "12 de mayo, 2024 · 10:24 a.m.",
+    estado_actual: "en_revision",
+    pasos: [
+      { label: "Solicitud enviada", fecha: "12 mayo", completado: true },
+      { label: "Revisión en curso", fecha: "Hoy", actual: true, completado: false },
+      { label: "Validación final", fecha: "Pendiente", completado: false },
+      { label: "Lista para aceptar", fecha: "Pendiente", completado: false }
+    ],
+    servicios: [
+      { id: 1, nombre: "Tazas Personalizadas", descripcion: "Lote 100 Piezas", estado: "sin_cambios", precio_anterior: 4500, precio_nuevo: 4500, motivo: null, detalles_cliente: "Logo a dos tintas." }
+    ],
+    resumen: { total_anterior: 4500, total_nuevo: 4500, diferencia: 0, porcentaje: "0%" }
   }
 };

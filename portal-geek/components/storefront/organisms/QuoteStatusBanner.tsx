@@ -1,14 +1,24 @@
 "use client";
 
-import { CheckCircle, WarningCircle, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, Clock, WarningCircle, XCircle } from "@phosphor-icons/react";
 
 interface QuoteStatusBannerProps {
   status: string;
 }
 
 export function QuoteStatusBanner({ status }: QuoteStatusBannerProps) {
-  // Configuración según el estado
+  // config according to status
   const config = {
+    en_revision: {
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-600",
+      icon: <Clock size={32} weight="bold" />,
+      title: "Tu cotización está en revisión",
+      desc: "Estamos analizando tu solicitud para verificar si requiere algún cambio técnico o comercial antes de su aprobación final.",
+      nextStep: "Espera nuestra validación. Te avisaremos pronto.",
+      btnText: "Revisión en curso",
+      btnColor: "bg-[#df2646] opacity-40 cursor-default"
+    },
     modificada: {
       bgColor: "bg-orange-50",
       iconColor: "text-orange-500",
