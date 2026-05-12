@@ -4,11 +4,9 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 
-const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, "\n");
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
-  ssl: ca ? { ca, rejectUnauthorized: true, checkServerIdentity: () => undefined } : undefined,
-});
+// Same TLS posture as lib/db/client.ts — connect plaintext; rely on the Unix
+// socket (App Engine) or Cloud SQL Auth Proxy (dev) to handle Cloud SQL TLS.
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });

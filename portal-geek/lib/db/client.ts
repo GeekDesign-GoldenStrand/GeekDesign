@@ -5,11 +5,11 @@ import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 
 function createPrismaClient() {
-  const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, "\n");
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL!,
-    ssl: ca ? { ca, rejectUnauthorized: true, checkServerIdentity: () => undefined } : undefined,
-  });
+  // No TLS config here. Local dev uses plain Postgres; App Engine reaches
+  // Cloud SQL over the `/cloudsql/INSTANCE` Unix socket; developers needing
+  // remote Cloud SQL access run the Cloud SQL Auth Proxy locally (which
+  // terminates TLS itself and exposes a plaintext socket on 127.0.0.1).
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
