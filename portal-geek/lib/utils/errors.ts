@@ -47,6 +47,13 @@ export class ValidationError extends AppError {
   }
 }
 
+export class ConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConfigurationError";
+  }
+}
+
 // 409 helper for resources that cannot be modified because they are referenced.
 export class ConflictError extends AppError {
   constructor(message: string) {
@@ -63,6 +70,13 @@ export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
   if (err instanceof ZodError) {
     const message = err.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ");
     return NextResponse.json({ data: null, error: message }, { status: 422 });
+  }
+  if (err instanceof ConfigurationError) {
+    console.error("Configuration issue:", err.message);
+    return NextResponse.json(
+      { data: null, error: "Internal configuration error" },
+      { status: 500 }
+    );
   }
   console.error("[API Error]", err);
   return NextResponse.json({ data: null, error: "Error interno del servidor" }, { status: 500 });

@@ -83,10 +83,13 @@ async function main() {
 
   // ── Dirección user ──────────────────────────────────────────────────────────
   const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
-  const direccionPasswordHash = await bcrypt.hash(
-    process.env.SEED_DIRECCION_PASSWORD ?? "direccion123",
-    12
-  );
+  const pwd = process.env.SEED_DIRECCION_PASSWORD;
+
+  if (!pwd && process.env.NODE_ENV === "production") {
+    throw new Error("SEED_DIRECCION_PASSWORD requerido en producción");
+  }
+
+  const direccionPasswordHash = await bcrypt.hash(pwd ?? "direccion123", 12);
 
   const direccionUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "direccion@geekdesign.mx" },
@@ -134,7 +137,7 @@ async function main() {
   });
 
   // ── Service + Product + Material + Pricing ─────────────────────────────────
-  const servicio = await prisma.servicios.upsert({
+  const servicioCorte = await prisma.servicios.upsert({
     where: { id_servicio: 1 },
     update: {},
     create: {
@@ -160,7 +163,7 @@ async function main() {
     where: { id_opcion: 1 },
     update: {},
     create: {
-      id_servicio: servicio.id_servicio,
+      id_servicio: servicioCorte.id_servicio,
       id_material: material.id_material,
       nombre_opcion: "Tamaño",
       afecta_precio: true,
@@ -242,7 +245,20 @@ async function main() {
   console.log(`Seeded option "${opcion.nombre_opcion}" with pricing matrix`);
 
   // ── Order statuses ─────────────────────────────────────────────────────────
-  const orderStatuses = [
+  const orderStatuses = ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
+
+  for (const descripcion of orderStatuses) {
+    await prisma.estatusPedidos.upsert({
+      where: { descripcion },
+      update: {},
+      create: { descripcion },
+    });
+  }
+
+  console.log(`Seeded ${orderStatuses.length} order statuses`);
+
+  // ── Invoice statuses ─────────────────────────────────────────
+  const invoiceStatuses = [
     "Cotizacion",
     "Pagado",
     "En_cola",
@@ -251,17 +267,18 @@ async function main() {
     "Entregado",
     "Facturado",
   ];
-  for (const descripcion of orderStatuses) {
-    await prisma.estatusPedidos.upsert({
+
+  for (const descripcion of invoiceStatuses) {
+    await prisma.estadoFacturaPedido.upsert({
       where: { descripcion },
       update: {},
       create: { descripcion },
     });
   }
-  console.log(`Seeded ${orderStatuses.length} order statuses`);
 
   // ── Quotation statuses ─────────────────────────────────────────────────────
-  const quotationStatuses = ["En_revision", "Validada", "Aprobada", "Rechazada"];
+  const quotationStatuses = ["Pendiente", "Validada", "Rechazada", "Aprobada", "Cancelada"];
+
   for (const descripcion of quotationStatuses) {
     await prisma.estatusCotizacion.upsert({
       where: { descripcion },
@@ -269,7 +286,75 @@ async function main() {
       create: { descripcion },
     });
   }
+
   console.log(`Seeded ${quotationStatuses.length} quotation statuses`);
+
+  // ── Instaladores ───────────────────────────────────────────────────────────
+  const instaladoresData = [
+    {
+      id_instalador: 1,
+      nombre_instalador: "Carlos Ramírez",
+      apodo: "El Rápido",
+      tipo: "Instalador",
+      telefono: "8113456789",
+      correo: "carlos.ramirez@instalaciones.mx",
+      notas: "Especialista en viniles y rotulación.",
+      ubicacion: "Monterrey, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 2,
+      nombre_instalador: "Grupo Instalaciones NL",
+      apodo: null,
+      tipo: "Contratista",
+      telefono: "8129876543",
+      correo: "contacto@grupoinstala.mx",
+      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
+      ubicacion: "San Nicolás de los Garza, Nuevo León",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 3,
+      nombre_instalador: "Luis Mendoza",
+      apodo: "Lucho",
+      tipo: "Instalador",
+      telefono: "4423219876",
+      correo: "luis.mendoza@correo.mx",
+      notas: null,
+      ubicacion: "Querétaro, Querétaro",
+      estatus: "Activo",
+    },
+    {
+      id_instalador: 4,
+      nombre_instalador: "Patricia Solís",
+      apodo: "Paty",
+      tipo: "Instalador",
+      telefono: "5551234567",
+      correo: "paty.solis@instala.mx",
+      notas: "Instalación de lonas y toldos.",
+      ubicacion: "Ciudad de México, CDMX",
+      estatus: "Inactivo",
+    },
+  ];
+
+  for (const data of instaladoresData) {
+    await prisma.instaladores.upsert({
+      where: { id_instalador: data.id_instalador },
+      update: {},
+      create: data,
+    });
+  }
+
+  console.log(`Seeded ${instaladoresData.length} instaladores`);
+
+  // ── Invoice status map ─────────────────────────────────────────
+  const invoiceStatusRows = await prisma.estadoFacturaPedido.findMany();
+
+  const invoiceStatusMap: Record<string, number> = {};
+
+  invoiceStatusRows.forEach((s) => {
+    invoiceStatusMap[s.descripcion] = s.id_estado_factura;
+  });
 
   // ── Test client ────────────────────────────────────────────────────────────
   await prisma.clientes.upsert({
@@ -347,63 +432,146 @@ async function main() {
 
   console.log(`Seeded ${proveedoresData.length} proveedores`);
 
-  // ── Instaladores ───────────────────────────────────────────────────────────
-  const instaladoresData = [
-    {
-      id_instalador: 1,
-      nombre_instalador: "Carlos Ramírez",
-      apodo: "El Rápido",
-      tipo: "Instalador",
-      telefono: "8113456789",
-      correo: "carlos.ramirez@instalaciones.mx",
-      notas: "Especialista en viniles y rotulación.",
-      ubicacion: "Monterrey, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 2,
-      nombre_instalador: "Grupo Instalaciones NL",
-      apodo: null,
-      tipo: "Contratista",
-      telefono: "8129876543",
-      correo: "contacto@grupoinstala.mx",
-      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
-      ubicacion: "San Nicolás de los Garza, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 3,
-      nombre_instalador: "Luis Mendoza",
-      apodo: "Lucho",
-      tipo: "Instalador",
-      telefono: "4423219876",
-      correo: "luis.mendoza@correo.mx",
-      notas: null,
-      ubicacion: "Querétaro, Querétaro",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 4,
-      nombre_instalador: "Patricia Solís",
-      apodo: "Paty",
-      tipo: "Instalador",
-      telefono: "5551234567",
-      correo: "paty.solis@instala.mx",
-      notas: "Instalación de lonas y toldos.",
-      ubicacion: "Ciudad de México, CDMX",
-      estatus: "Inactivo",
-    },
-  ];
+  // ── Demo Cotizaciones ──────────────────────────────────────────────────────
+  const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
+  const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
 
-  for (const data of instaladoresData) {
-    await prisma.instaladores.upsert({
-      where: { id_instalador: data.id_instalador },
-      update: {},
-      create: data,
+  if (clienteDemo && cotizacionStatuses.length > 0) {
+    const statusMap: Record<string, number> = {};
+    cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
+
+    const demoCotizaciones = [
+      {
+        id_pedido: 1,
+        monto_total: 1500,
+        notas: "Cotización pendiente para corte láser",
+        fecha_creacion: new Date("2026-04-13"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
+      },
+      {
+        id_pedido: 2,
+        monto_total: 2500,
+        notas: "Cotización aprobada para grabado",
+        fecha_creacion: new Date("2026-04-15"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Validada"],
+      },
+      {
+        id_pedido: 3,
+        monto_total: 1800,
+        notas: "Cliente rechazó la propuesta",
+        fecha_creacion: new Date("2026-04-17"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Rechazada"],
+      },
+      {
+        id_pedido: 4,
+        monto_total: 2200,
+        notas: "Cotización validada por cambios de requerimiento",
+        fecha_creacion: new Date("2026-04-20"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        id_pedido: 5,
+        monto_total: 3000,
+        notas: "Cotización cancelada",
+        fecha_creacion: new Date("2026-06-20"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Cancelada"],
+      },
+    ];
+
+    // ── Invoice status map ─────────────────────────────────────────
+    const invoiceStatuses = await prisma.estadoFacturaPedido.findMany();
+
+    const invoiceStatusMap: Record<string, number> = {};
+
+    invoiceStatuses.forEach((s) => {
+      invoiceStatusMap[s.descripcion] = s.id_estado_factura;
     });
-  }
 
-  console.log(`Seeded ${instaladoresData.length} instaladores`);
+    // ── Demo Pedidos ───────────────────────────────────────────────
+    const demoPedidos = [
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-13"),
+        fecha_estimada: new Date("2026-04-18"),
+        notas: "Pedido demo pendiente",
+      },
+
+      {
+        status: "En producción",
+        estado_factura: "Pagado",
+        fecha_creacion: new Date("2026-04-15"),
+        fecha_estimada: new Date("2026-04-22"),
+        notas: "Pedido demo en producción",
+      },
+
+      {
+        status: "Finalizado",
+        estado_factura: "Aprobacion_diseno",
+        fecha_creacion: new Date("2026-04-17"),
+        fecha_estimada: new Date("2026-04-24"),
+        notas: "Pedido demo finalizado",
+      },
+
+      {
+        status: "Entregado",
+        estado_factura: "Entregado",
+        fecha_creacion: new Date("2026-04-20"),
+        fecha_estimada: new Date("2026-04-27"),
+        notas: "Pedido demo entregado",
+      },
+
+      {
+        status: "Cancelado",
+        estado_factura: "Facturado",
+        fecha_creacion: new Date("2026-04-25"),
+        fecha_estimada: new Date("2026-05-01"),
+        notas: "Pedido demo cancelado",
+      },
+    ];
+
+    for (const pedido of demoPedidos) {
+      await prisma.pedidos.create({
+        data: {
+          cliente: {
+            connect: {
+              id_cliente: 1,
+            },
+          },
+
+          estatus: {
+            connect: {
+              descripcion: pedido.status,
+            },
+          },
+
+          estado_factura: {
+            connect: {
+              id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+            },
+          },
+
+          sucursal: {
+            connect: {
+              id_sucursal: 1,
+            },
+          },
+
+          fecha_creacion: pedido.fecha_creacion,
+          fecha_estimada: pedido.fecha_estimada,
+          notas: pedido.notas,
+        },
+      });
+    }
+
+    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
+    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
+  }
 }
 
 main()

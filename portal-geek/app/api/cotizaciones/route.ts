@@ -1,28 +1,61 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
 import { CreateCotizacionSchema } from "@/lib/schemas/cotizaciones";
 import { listCotizaciones, createCotizacion } from "@/lib/services/cotizaciones";
-import { paginated, created } from "@/lib/utils/api";
+import { created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion"], async (req: NextRequest) => {
+// Helper para respuesta paginada
+export function paginated<T>(items: T[], total: number, page: number, pageSize: number) {
+  return {
+    data: items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+// GET endpoint: lists cotizaciones with filters and pagination
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+
+  // Pagination parameters: default page=1, pageSize=13
+  const page = Number(searchParams.get("page") ?? 1);
+  const pageSize = Number(searchParams.get("pageSize") ?? 13);
+
+  // Optional filters: client, company, and multiple status values
+  const cliente = searchParams.get("cliente") ?? undefined;
+  const empresa = searchParams.get("empresa") ?? undefined;
+  const estatus = searchParams.getAll("estatus"); // can appear multiple times
+  const search = searchParams.get("search") ?? undefined;
+
   try {
-    const { searchParams } = new URL(req.url);
-    const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-    const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
-    const result = await listCotizaciones(page, pageSize);
-    return paginated(result.items, result.total, page, pageSize);
+    const { items, total } = await listCotizaciones(page, pageSize, {
+      cliente,
+      empresa,
+      estatus: estatus.length > 0 ? estatus : undefined,
+      search,
+    });
+
+    return NextResponse.json(paginated(items, total, page, pageSize));
   } catch (err) {
     return handleError(err);
   }
-});
+}
 
+// POST endpoint: creates a new cotizacion
 export const POST = withRole(["Direccion"], async (req: NextRequest) => {
   try {
+    // Validate request body against schema
     const body = CreateCotizacionSchema.parse(await req.json());
+
+    // Create cotizacion and return created response
     return created(await createCotizacion(body));
   } catch (err) {
+    // Centralized error handling
     return handleError(err);
   }
 });
