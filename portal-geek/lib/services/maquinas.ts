@@ -130,3 +130,28 @@ export async function asignarSucursales(id: number, sucursales: number[]): Promi
 
   return maquina;
 }
+
+export async function asignarServicios(id: number, servicios: number[]): Promise<Maquinas> {
+  await prisma.serviciosMaquina.deleteMany({
+    where: { id_maquina: id },
+  });
+
+  await prisma.serviciosMaquina.createMany({
+    data: servicios.map((id_servicio) => ({
+      id_maquina: id,
+      id_servicio,
+    })),
+  });
+
+  const maquina = await prisma.maquinas.findUnique({
+    where: { id_maquina: id },
+    include: {
+      sucursales: { include: { sucursal: true } },
+      servicios: { include: { servicio: true } },
+    },
+  });
+
+  if (!maquina) throw new NotFoundError(`Máquina ${id} no encontrada`);
+
+  return maquina;
+}

@@ -15,10 +15,15 @@ export const AsignarSucursalSchema = z.object({
   sucursales: z.array(z.number().int().positive()),
 });
 
+export const AsignarServiciosSchema = z.object({
+  servicios: z.array(z.number().int().positive()),
+});
+
 export const MaquinaIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
 export type AsignarSucursalInput = z.infer<typeof AsignarSucursalSchema>;
+export type AsignarServiciosInput = z.infer<typeof AsignarServiciosSchema>;
 export type CreateMaquinaInput = z.infer<typeof CreateMaquinaSchema>;
 export type UpdateMaquinaInput = z.infer<typeof UpdateMaquinaSchema>;
