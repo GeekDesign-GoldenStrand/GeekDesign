@@ -4,25 +4,128 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
 
+// Type for pedidos including frontend-required relations
+type PedidoWithRelations = Prisma.PedidosGetPayload<{
+  include: {
+    cliente: true;
+    sucursal: true;
+    estatus: true;
+    cotizaciones: {
+      select: {
+        monto_total: true;
+      };
+    };
+    detalles: {
+      include: {
+        servicio: true;
+        material: true;
+        archivo: true;
+      };
+    };
+  };
+}>;
+
+// Centralized catalog of order statuses.
+// Using constants avoids scattered "magic strings" and makes refactoring safer.
+export const PEDIDO_STATUS = {
+  PENDIENTE: "Pendiente",
+  EN_PRODUCCION: "En_produccion",
+  FINALIZADO: "Finalizado",
+  ENTREGADO: "Entregado",
+  CANCELADO: "Cancelado",
+} as const;
+
+export type PedidoStatus = (typeof PEDIDO_STATUS)[keyof typeof PEDIDO_STATUS];
+
+// Helper to resolve status IDs by description.
+// Avoids "magic strings" and ensures filters remain valid if catalog descriptions change.
+export async function getPedidoStatusIds(descriptions: string[]): Promise<number[]> {
+  const statuses = await prisma.estatusPedidos.findMany({
+    where: { descripcion: { in: descriptions } },
+    select: { id_estatus: true },
+  });
+
+  if (statuses.length !== descriptions.length) {
+    throw new Error("One or more pedido statuses not found in catalog");
+  }
+
+  return statuses.map((s) => s.id_estatus);
+}
+
 export async function listPedidos(
   page: number,
   pageSize: number,
-  serviceId?: number,
-  onlyActive?: boolean
-): Promise<{ items: Pedidos[]; total: number }> {
+  serviceIds: number[] = [],
+  estatuses: string[] = [],
+  onlyActive?: boolean,
+  empresa?: string | null,
+  cliente?: string | null,
+  search?: string | null
+): Promise<{ items: PedidoWithRelations[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
   // Build dynamic filter conditions
   const where: Prisma.PedidosWhereInput = {};
-  if (serviceId) {
-    // Include only orders that have at least one detail with the given serviceId
-    where.detalles = { some: { id_servicio: serviceId } };
-  }
+
   if (onlyActive) {
-    // Exclude orders whose status is "Entregado" or "Cancelado"
-    where.estatus = {
-      descripcion: { notIn: ["Entregado", "Cancelado"] },
-    };
+    // Resolve inactive status IDs once and filter by ID.
+    const inactiveStatusIds = await getPedidoStatusIds(["Entregado", "Cancelado"]);
+    where.id_estatus = { notIn: inactiveStatusIds };
+  } else if (estatuses.length > 0) {
+    // If caller explicitly filters by statuses, still resolve IDs instead of strings.
+    const statusIds = await getPedidoStatusIds(estatuses);
+    where.id_estatus = { in: statusIds };
+  }
+
+  if (serviceIds.length > 0) {
+    where.detalles = { some: { id_servicio: { in: serviceIds } } };
+  }
+
+  if (empresa || cliente) {
+    where.cliente = {};
+
+    if (empresa) {
+      where.cliente.empresa = {
+        contains: empresa,
+        mode: "insensitive",
+      };
+    }
+
+    if (cliente) {
+      where.cliente.nombre_cliente = {
+        contains: cliente,
+        mode: "insensitive",
+      };
+    }
+  }
+
+  if (search) {
+    where.OR = [
+      {
+        cliente: {
+          nombre_cliente: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      },
+      {
+        cliente: {
+          empresa: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      },
+      {
+        estatus: {
+          descripcion: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      },
+    ];
   }
 
   // Execute two queries in parallel:
@@ -30,14 +133,27 @@ export async function listPedidos(
   // 2. Count the total number of matching orders (for pagination metadata)
   const [items, total] = await Promise.all([
     prisma.pedidos.findMany({
-      where, // apply filters
+      where,
       skip,
       take: pageSize,
+
       include: {
-        // include related entities for richer response
         cliente: true,
         sucursal: true,
         estatus: true,
+        estado_factura: true,
+
+        // Pull latest quotation amount for frontend "Monto" column
+        cotizaciones: {
+          select: {
+            monto_total: true,
+          },
+          orderBy: {
+            fecha_creacion: "desc",
+          },
+          take: 1,
+        },
+
         detalles: {
           include: {
             servicio: true,
@@ -46,8 +162,12 @@ export async function listPedidos(
           },
         },
       },
-      orderBy: { fecha_creacion: "desc" },
+
+      orderBy: {
+        fecha_creacion: "desc",
+      },
     }),
+
     prisma.pedidos.count({ where }),
   ]);
 
@@ -55,20 +175,16 @@ export async function listPedidos(
 }
 
 export async function getPedido(id: number): Promise<Pedidos> {
-  // TODO: implement — throw new NotFoundError(...) if not found
   void id;
   throw new Error("Not implemented");
 }
 
 export async function createPedido(data: CreatePedidoInput): Promise<Pedidos> {
-  // TODO: implement
   void data;
   throw new Error("Not implemented");
 }
 
 export async function updatePedido(id: number, data: UpdatePedidoInput): Promise<Pedidos> {
-  // TODO: implement — throw NotFoundError on Prisma P2025
-  // Also log HistorialEstadosPedidos when id_estatus changes
   void id;
   void data;
   throw new Error("Not implemented");
@@ -78,4 +194,92 @@ export async function deletePedido(id: number): Promise<void> {
   // TODO: implement
   void id;
   throw new Error("Not implemented");
+}
+
+export async function getPedidoStatusId(description: string) {
+  // Lookup status ID by description in catalog table.
+  // This indirection allows DB-driven status values while keeping code strongly typed.
+  const status = await prisma.estatusPedidos.findUnique({
+    where: { descripcion: description },
+  });
+
+  if (!status) {
+    throw new Error(`Pedido status '${description}' not found`);
+  }
+
+  return status.id_estatus;
+}
+
+const PEDIDO_STATUS_API_TO_DB: Record<PedidoStatus, string> = {
+  [PEDIDO_STATUS.PENDIENTE]: "Pendiente",
+  [PEDIDO_STATUS.EN_PRODUCCION]: "En producción",
+  [PEDIDO_STATUS.FINALIZADO]: "Finalizado",
+  [PEDIDO_STATUS.ENTREGADO]: "Entregado",
+  [PEDIDO_STATUS.CANCELADO]: "Cancelado",
+};
+
+export async function changePedidoStatus(
+  pedidoId: number,
+  targetStatus: PedidoStatus,
+  userId: number
+) {
+  // Fetch current order including current status.
+  const currentPedido = await prisma.pedidos.findUnique({
+    where: { id_pedido: pedidoId },
+    include: {
+      estatus: true,
+    },
+  });
+
+  if (!currentPedido) {
+    throw new Error("Pedido not found");
+  }
+
+  const currentStatus = currentPedido.estatus.descripcion as PedidoStatus;
+
+  // Valid workflow transitions.
+  const ALLOWED_PEDIDO_TRANSITIONS: Record<PedidoStatus, PedidoStatus[]> = {
+    [PEDIDO_STATUS.PENDIENTE]: [PEDIDO_STATUS.EN_PRODUCCION, PEDIDO_STATUS.CANCELADO],
+
+    [PEDIDO_STATUS.EN_PRODUCCION]: [PEDIDO_STATUS.FINALIZADO, PEDIDO_STATUS.CANCELADO],
+
+    [PEDIDO_STATUS.FINALIZADO]: [PEDIDO_STATUS.ENTREGADO, PEDIDO_STATUS.CANCELADO],
+
+    [PEDIDO_STATUS.ENTREGADO]: [],
+
+    [PEDIDO_STATUS.CANCELADO]: [],
+  };
+
+  const allowedTransitions = ALLOWED_PEDIDO_TRANSITIONS[currentStatus];
+
+  // Prevent illegal workflow jumps.
+  if (!allowedTransitions.includes(targetStatus)) {
+    throw new Error(`Illegal status transition from '${currentStatus}' to '${targetStatus}'`);
+  }
+
+  const dbStatus = PEDIDO_STATUS_API_TO_DB[targetStatus];
+
+  const newStatusId = await getPedidoStatusId(dbStatus);
+
+  // Transaction ensures atomicity:
+  // if either update or history creation fails,
+  // neither operation is committed.
+  const [updatedPedido] = await prisma.$transaction([
+    prisma.pedidos.update({
+      where: { id_pedido: pedidoId },
+      data: { id_estatus: newStatusId },
+    }),
+
+    prisma.historialEstadosPedidos.create({
+      data: {
+        id_pedido: pedidoId,
+        id_usuario: userId,
+        id_estado_anterior: currentPedido.id_estatus,
+        id_estado_nuevo: newStatusId,
+        fecha_cambio: new Date(),
+      },
+    }),
+  ]);
+
+  return updatedPedido;
 }

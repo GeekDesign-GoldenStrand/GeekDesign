@@ -1,6 +1,7 @@
 "use client";
 
-import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/atoms/icons";
+import { SearchBar } from "@/components/admin/molecules/SearchBar";
+import { FilterIcon, PlusIcon } from "@/components/ui/atoms/icons";
 
 interface AdminToolbarProps {
   search: string;
@@ -44,18 +45,7 @@ export function AdminToolbar({
         </div>
       )}
 
-      <div className="flex h-[41px] w-[439px] shrink-0 items-center gap-2 rounded-[4px] border border-[#b9b8b8] bg-white px-3">
-        <input
-          type="search"
-          placeholder="Buscar"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="flex-1 bg-transparent font-ibm-plex text-[14px] font-medium text-[#333] outline-none placeholder:text-[#8e908f]"
-        />
-        <span className="shrink-0 text-[#8e908f]">
-          <SearchIcon />
-        </span>
-      </div>
+      <SearchBar value={search} onChange={onSearchChange} />
 
       {(onAgregar || onFiltrar) && (
         <div className="ml-auto flex items-center gap-3">
@@ -63,7 +53,7 @@ export function AdminToolbar({
             <button
               type="button"
               onClick={onAgregar}
-              className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#575757] bg-[#e8e8e8] font-ibm-plex font-medium text-[20px] text-[#575757] transition-colors hover:bg-[#d8d8d8]"
+              className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#575757] bg-[#e8e8e8] font-ibm-plex font-medium text-[13px] text-[#575757] transition-colors hover:bg-[#d8d8d8]"
             >
               <PlusIcon />
               {agregarLabel}
@@ -74,7 +64,7 @@ export function AdminToolbar({
             <button
               type="button"
               onClick={onFiltrar}
-              className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[20px] text-[#e42200] transition-colors hover:bg-[#ffd5d5]"
+              className="flex items-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5]"
             >
               <FilterIcon />
               Filtrar
