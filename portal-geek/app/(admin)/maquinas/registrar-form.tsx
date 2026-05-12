@@ -61,6 +61,7 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
 
       const json = await res.json();
       const data: MaquinaRaw = json.data;
+      console.log("Description:", JSON.stringify(data.descripcion));
 
       onCreated({
         id: data.id_maquina,

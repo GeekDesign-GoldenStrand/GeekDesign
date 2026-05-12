@@ -37,6 +37,8 @@ export default function FormInput({
           {...props}
           className="w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors"
           id="myInput"
+          value={props.value as string}
+          onChange={props.onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
           rows={4}
           cols={50}
           placeholder={placeholderLongText}
