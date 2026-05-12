@@ -76,9 +76,22 @@ export function publicUrl(key: string): string | null {
   return base ? `${base}/${key}` : null;
 }
 
+// URL the public storefront should embed for an object stored in a
+// catalog-public category (materiales, servicios). Same-origin proxy that
+// 302s to a fresh presigned URL — stable for HTML caching even though the
+// bucket stays private.
+export function publicImageUrl(key: string): string {
+  return `/api/images/${key}`;
+}
+
 // Resolves a stored object key to something the browser can fetch:
-// the public URL when the bucket is public-read, otherwise a short-lived
-// presigned GET. Use on read paths to translate DB-stored keys into URLs.
+// the public URL when STORAGE_PUBLIC_BASE_URL is configured, otherwise a
+// short-lived presigned GET (default 5 min).
+//
+// Use on admin / auth-gated read paths where the URL is consumed
+// immediately. For the public storefront use `publicImageUrl(key)` instead
+// — it returns the stable `/api/images/<key>` proxy route, which 302s to a
+// fresh presigned URL per request and so survives HTML caching.
 export async function resolveImageUrl(key: string | null): Promise<string | null> {
   if (!key) return null;
   // Legacy rows may still hold absolute URLs from before keys were introduced.
