@@ -111,4 +111,20 @@ describe("POST /api/upload", () => {
     });
     expect(res.status).toBe(422);
   });
+
+  it("retorna 429 cuando el usuario excede el rate limit (30/min)", async () => {
+    // Use a unique session id so this test's bucket starts empty regardless of
+    // ordering with other tests in the file.
+    mockGetSession.mockResolvedValue({ id: 999, role: "Direccion" });
+    const app = createApp({ POST: routes.POST });
+    const payload = { category: "materiales", contentType: "image/jpeg", size: 1024 };
+
+    for (let i = 0; i < 30; i++) {
+      const res = await app.post("/api/upload").send(payload);
+      expect(res.status).toBe(200);
+    }
+
+    const blocked = await app.post("/api/upload").send(payload);
+    expect(blocked.status).toBe(429);
+  });
 });

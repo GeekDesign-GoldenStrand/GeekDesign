@@ -1,16 +1,31 @@
 import type { NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/auth/guards";
+import type { SessionPayload } from "@/lib/auth/session";
 import { PresignUploadSchema, UPLOAD_LIMITS } from "@/lib/schemas/upload";
 import { DEFAULT_TTL_SECONDS, presignPut } from "@/lib/services/storage";
 import { buildKey, extFromFilename, extFromMime } from "@/lib/storage/keys";
 import { ok } from "@/lib/utils/api";
-import { ForbiddenError, handleError, ValidationError } from "@/lib/utils/errors";
+import {
+  ForbiddenError,
+  handleError,
+  RateLimitError,
+  ValidationError,
+} from "@/lib/utils/errors";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
+
+// Caps the rate at which a single user can mint presigned PUT URLs. Presigns
+// are cheap on our side but credentials in the wrong hands could fan-out
+// uploads to the bucket; this bounds the blast radius.
+const UPLOAD_RATE_LIMIT = { maxAttempts: 30, windowMs: 60_000 };
 
 // POST /api/upload — issues a one-shot presigned PUT URL for direct browser upload.
 // The client must PUT the file with the same Content-Type it declared here.
-export const POST = withAuth(async (req: NextRequest) => {
+export const POST = withAuth(async (req: NextRequest, session: SessionPayload) => {
   try {
+    const { allowed } = checkRateLimit(`upload:${session.id}`, UPLOAD_RATE_LIMIT);
+    if (!allowed) throw new RateLimitError();
+
     const body = PresignUploadSchema.parse(await req.json());
     const limits = UPLOAD_LIMITS[body.category];
 
