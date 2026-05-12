@@ -2,11 +2,13 @@ import type { NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/auth/guards";
 import type { SessionPayload } from "@/lib/auth/session";
+import { prisma } from "@/lib/db/client";
 import { PresignUploadSchema, UPLOAD_LIMITS } from "@/lib/schemas/upload";
-import { DEFAULT_TTL_SECONDS, presignPut } from "@/lib/services/storage";
-import { buildKey, extFromFilename, extFromMime } from "@/lib/storage/keys";
+import { DEFAULT_TTL_SECONDS, deleteObject, presignPut } from "@/lib/services/storage";
+import { buildKey, extFromFilename, extFromMime, isValidKey } from "@/lib/storage/keys";
 import { ok } from "@/lib/utils/api";
 import {
+  ConflictError,
   ForbiddenError,
   handleError,
   RateLimitError,
@@ -66,6 +68,41 @@ export const POST = withAuth(async (req: NextRequest, session: SessionPayload) =
     const url = await presignPut(key, contentType);
 
     return ok({ key, url, expiresIn: DEFAULT_TTL_SECONDS });
+  } catch (err) {
+    return handleError(err);
+  }
+});
+
+// DELETE /api/upload?key=... — removes an orphan upload (e.g. the user
+// clicked "Quitar" before saving the form). Refuses to delete any key that
+// is already referenced by a persisted entity — those are removed via the
+// entity's own update/delete flow.
+export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload) => {
+  try {
+    const { allowed } = checkRateLimit(`upload:${session.id}`, UPLOAD_RATE_LIMIT);
+    if (!allowed) throw new RateLimitError();
+
+    const key = new URL(req.url).searchParams.get("key");
+    if (!key || !isValidKey(key)) {
+      throw new ValidationError("Clave de almacenamiento inválida.");
+    }
+
+    if (key.startsWith("cotizaciones/")) {
+      throw new ForbiddenError("La categoría de cotizaciones se administra del lado del servidor.");
+    }
+
+    // Block deletion of keys persisted to any entity. Extend this list when a
+    // new entity starts storing storage keys.
+    const inUse = await prisma.materiales.findFirst({
+      where: { imagen_url: key },
+      select: { id_material: true },
+    });
+    if (inUse) {
+      throw new ConflictError("Esta imagen ya está en uso y no puede eliminarse desde aquí.");
+    }
+
+    await deleteObject(key);
+    return ok({ deleted: true });
   } catch (err) {
     return handleError(err);
   }

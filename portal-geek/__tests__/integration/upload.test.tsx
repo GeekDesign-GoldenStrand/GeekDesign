@@ -3,9 +3,16 @@
  */
 import { createApp } from "../helpers/next-supertest";
 
+const mockDeleteObject = jest.fn(async (_key: string) => {});
 jest.mock("@/lib/services/storage", () => ({
   presignPut: jest.fn(async (key: string) => `https://signed.example/${key}`),
+  deleteObject: (key: string) => mockDeleteObject(key),
   DEFAULT_TTL_SECONDS: 300,
+}));
+
+const mockFindFirst = jest.fn();
+jest.mock("@/lib/db/client", () => ({
+  prisma: { materiales: { findFirst: (...a: unknown[]) => mockFindFirst(...a) } },
 }));
 
 const mockGetSession = jest.fn();
@@ -126,5 +133,55 @@ describe("POST /api/upload", () => {
 
     const blocked = await app.post("/api/upload").send(payload);
     expect(blocked.status).toBe(429);
+  });
+});
+
+describe("DELETE /api/upload", () => {
+  const ORPHAN_KEY = "materiales/2026/05/11111111-2222-3333-4444-555555555555.jpg";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetSession.mockResolvedValue({ id: 2, role: "Direccion" });
+    mockFindFirst.mockResolvedValue(null);
+  });
+
+  it("retorna 401 cuando no hay sesión", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const res = await createApp({ DELETE: routes.DELETE }).delete(
+      `/api/upload?key=${encodeURIComponent(ORPHAN_KEY)}`
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("elimina una clave huérfana", async () => {
+    const res = await createApp({ DELETE: routes.DELETE }).delete(
+      `/api/upload?key=${encodeURIComponent(ORPHAN_KEY)}`
+    );
+    expect(res.status).toBe(200);
+    expect(mockDeleteObject).toHaveBeenCalledWith(ORPHAN_KEY);
+  });
+
+  it("retorna 422 cuando la clave no tiene un formato válido", async () => {
+    const res = await createApp({ DELETE: routes.DELETE }).delete("/api/upload?key=not-a-key");
+    expect(res.status).toBe(422);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("retorna 403 cuando la clave es de la categoría cotizaciones (server-only)", async () => {
+    const COT_KEY = "cotizaciones/2026/05/11111111-2222-3333-4444-555555555555.pdf";
+    const res = await createApp({ DELETE: routes.DELETE }).delete(
+      `/api/upload?key=${encodeURIComponent(COT_KEY)}`
+    );
+    expect(res.status).toBe(403);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("retorna 409 cuando la clave ya está en uso por un material", async () => {
+    mockFindFirst.mockResolvedValue({ id_material: 7 });
+    const res = await createApp({ DELETE: routes.DELETE }).delete(
+      `/api/upload?key=${encodeURIComponent(ORPHAN_KEY)}`
+    );
+    expect(res.status).toBe(409);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
   });
 });

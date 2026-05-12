@@ -41,3 +41,16 @@ export async function uploadFile(file: File, category: Category): Promise<string
 
   return key;
 }
+
+// Removes an orphan upload from the bucket — used when the user clears a
+// freshly-uploaded but not-yet-saved file. The server refuses to delete keys
+// already referenced by a persisted entity, so this is safe to call from the UI.
+export async function deleteFile(key: string): Promise<void> {
+  const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? `Error ${res.status} al eliminar el archivo`);
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { uploadFile } from "@/lib/utils/upload";
+import { deleteFile, uploadFile } from "@/lib/utils/upload";
 
 interface MaterialImageInputProps {
   // Presigned GET URL for an already-saved image, when editing. Null/empty when registering.
@@ -61,6 +61,11 @@ export function MaterialImageInput({
     }
 
     if (localPreview) URL.revokeObjectURL(localPreview);
+    // If we already uploaded a previous file in this session, clean it up before
+    // replacing. Fire-and-forget: a failure becomes an orphan for nightly GC.
+    if (uploadedKey) {
+      void deleteFile(uploadedKey).catch(() => {});
+    }
     const blobUrl = URL.createObjectURL(file);
     setLocalPreview(blobUrl);
     setFileName(file.name);
@@ -81,6 +86,11 @@ export function MaterialImageInput({
 
   function handleClear() {
     if (localPreview) URL.revokeObjectURL(localPreview);
+    // Server refuses to delete keys already referenced by a saved entity, so
+    // this only removes the bucket object if it was never committed.
+    if (uploadedKey) {
+      void deleteFile(uploadedKey).catch(() => {});
+    }
     setLocalPreview(null);
     setUploadedKey(null);
     setFileName(null);
