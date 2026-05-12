@@ -1,7 +1,7 @@
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
 import type { CreateColaboradorInput, UpdateColaboradorInput } from "@/lib/schemas/colaboradores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 const COLABORADOR_SELECT = {
   id_usuario: true,
@@ -65,25 +65,31 @@ export async function createColaborador(data: CreateColaboradorInput) {
 
   const contrasena_hash = await hashPassword(plainPassword);
 
-  return prisma.usuarios.create({
-    data: {
-      nombre_completo,
-      correo_electronico,
-      contrasena_hash,
-      id_rol,
-      estatus,
-      colaborador: {
-        create: {
-          id_sucursal,
-          edad,
-          sexo,
-          telefono,
-          estatus_colaborador,
+  try {
+    return await prisma.usuarios.create({
+      data: {
+        nombre_completo,
+        correo_electronico,
+        contrasena_hash,
+        id_rol,
+        estatus,
+        colaborador: {
+          create: {
+            id_sucursal,
+            edad,
+            sexo,
+            telefono,
+            estatus_colaborador,
+          },
         },
       },
-    },
-    select: COLABORADOR_SELECT,
-  });
+      select: COLABORADOR_SELECT,
+    });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2002")
+      throw new ConflictError("El correo electrónico ya está registrado");
+    throw err;
+  }
 }
 
 export async function updateColaborador(id: number, data: UpdateColaboradorInput) {
@@ -128,6 +134,8 @@ export async function updateColaborador(id: number, data: UpdateColaboradorInput
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2025")
       throw new NotFoundError("Colaborador no encontrado");
+    if ((err as { code?: string }).code === "P2002")
+      throw new ConflictError("El correo electrónico ya está registrado");
     throw err;
   }
 }

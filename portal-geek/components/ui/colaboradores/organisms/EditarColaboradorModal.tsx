@@ -78,8 +78,8 @@ function validate(form: FormState): Record<string, string> {
     errors.correo_electronico = "Correo electrónico inválido.";
   const edad = Number(form.edad);
   if (!form.edad) errors.edad = "La edad es requerida.";
-  else if (isNaN(edad) || edad < 15 || edad > 100)
-    errors.edad = "La edad debe ser entre 15 y 100 años.";
+  else if (isNaN(edad) || edad < 16 || edad > 100)
+    errors.edad = "La edad debe ser entre 16 y 100 años.";
   if (!form.sexo) errors.sexo = "El sexo es requerido.";
   if (!form.telefono.trim()) errors.telefono = "El teléfono es requerido.";
   if (!form.id_rol) errors.id_rol = "Selecciona un rol.";
