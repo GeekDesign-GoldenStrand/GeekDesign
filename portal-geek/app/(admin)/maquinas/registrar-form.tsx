@@ -74,9 +74,9 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
         status: data.estatus,
         onDelete: () => {},
         onEdit: () => {},
-        onAssignStore: () => {}, 
-        onAssignServices: () => {},    
-        onChangeStatus: () => {},   
+        onAssignStore: () => {},
+        onAssignServices: () => {},
+        onChangeStatus: () => {},
       });
 
       window.alert("Máquina registrada correctamente");

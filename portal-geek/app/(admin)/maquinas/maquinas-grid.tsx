@@ -58,9 +58,9 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
     status: m.estatus,
     onDelete: () => {},
     onEdit: () => {},
-    onAssignStore: () => {}, 
-    onAssignServices: () => {},    
-    onChangeStatus: () => {},   
+    onAssignStore: () => {},
+    onAssignServices: () => {},
+    onChangeStatus: () => {},
   }));
 }
 
