@@ -144,7 +144,6 @@ model Servicios {
   descripcion_servicio String?
   estatus_servicio     Boolean @default(true)
 
-<<<<<<< HEAD
   estatusServicio      EstatusServicio      @relation(fields: [id_estatus], references: [id_estatus_servicio])
   opciones             OpcionesProducto[]
   formulaVariables     FormulaVariables[]
@@ -152,14 +151,6 @@ model Servicios {
   instaladorServicios  InstaladorServicios[]
   proveedorPrecios     ProveedorPrecios[]
   servicios            ServiciosMaquina[]
-=======
-  estatusServicio     EstatusServicio       @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  opciones            OpcionesProducto[]
-  formulaVariables    FormulaVariables[]
-  detallesPedido      DetallePedido[]
-  instaladorServicios InstaladorServicios[]
-  proveedorPrecios    ProveedorPrecios[]
->>>>>>> 4b5b6743dbbaaa365d29c31d9b897b540be94b07
 
   @@map("SERVICIOS")
 }
