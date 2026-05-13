@@ -64,6 +64,9 @@ export default function CotizacionDetailPage({ params }: { params: Promise<{ id:
 
           {/* Organism: Summary & Actions Sidebar */}
           <QuoteSummary
+            quotationId={data.id}
+            services={data.servicios}
+            status={data.estado_actual}
             resumen={data.resumen}
             counts={{
               aprobados: data.servicios.filter((s: QuotationItem) => s.estado === "sin_cambios")

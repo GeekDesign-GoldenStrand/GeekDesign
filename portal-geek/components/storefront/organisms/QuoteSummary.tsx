@@ -1,5 +1,10 @@
 "use client";
 
+import { DownloadSimple, CircleNotch } from "@phosphor-icons/react";
+
+import { useWorkOrder } from "@/hooks/useWorkOrder";
+import type { QuotationItem } from "@/types";
+
 import { QuoteStatusCount } from "../molecules/QuoteStatusCount";
 
 interface Resumen {
@@ -10,6 +15,9 @@ interface Resumen {
 }
 
 interface QuoteSummaryProps {
+  quotationId: string;
+  services: QuotationItem[];
+  status: string;
   resumen: Resumen;
   counts: {
     aprobados: number;
@@ -21,11 +29,20 @@ interface QuoteSummaryProps {
 }
 
 export function QuoteSummary({
+  quotationId,
+  services,
+  status,
   resumen,
   counts,
   actionText,
   showCounts = true,
 }: QuoteSummaryProps) {
+  const { generatePDF, isGenerating, error } = useWorkOrder();
+
+  const handleDownload = async () => {
+    await generatePDF(quotationId, services, status);
+  };
+
   return (
     <div className="lg:col-span-1">
       <div className="bg-white rounded-[16px] border border-[#e8e8e8] p-5 md:p-8 sticky top-8 shadow-sm">
@@ -81,10 +98,36 @@ export function QuoteSummary({
           )}
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-[10px]">
+            <p className="text-[13px] text-red-600 font-medium">{error}</p>
+          </div>
+        )}
+
         <div className="space-y-4">
-          <button className="w-full h-[56px] bg-[#df2646] hover:bg-[#c41e3a] text-white font-bold rounded-[14px] transition-all shadow-[0_4px_15px_rgba(223,38,70,0.25)]">
+          <button className="w-full h-[56px] bg-[#df2646] hover:bg-[#c41e3a] text-white font-bold rounded-[14px] transition-all shadow-[0_4px_15px_rgba(223,38,70,0.25)] flex items-center justify-center gap-2">
             {actionText}
           </button>
+
+          <button
+            onClick={handleDownload}
+            disabled={isGenerating}
+            className="w-full h-[56px] bg-white border-2 border-[#e8e8e8] text-[#575757] hover:border-[#df2646] hover:text-[#df2646] font-bold rounded-[14px] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <>
+                <CircleNotch className="w-5 h-5 animate-spin" />
+                Generando documento...
+              </>
+            ) : (
+              <>
+                <DownloadSimple className="w-5 h-5" />
+                Descargar Orden de Trabajo
+              </>
+            )}
+          </button>
+
           <button className="w-full h-[56px] bg-white border-2 border-[#e8e8e8] text-[#575757] hover:border-[#df2646] hover:text-[#df2646] font-bold rounded-[14px] transition-all">
             Solicitar aclaración
           </button>

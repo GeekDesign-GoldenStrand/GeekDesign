@@ -88,3 +88,32 @@ export interface QuotationItem {
   detalles_cliente: string;
   cambio?: string;
 }
+export interface SucursalInfo {
+  nombre: string;
+  direccion: string;
+  colonia: string;
+  municipio: string;
+  estado: string;
+  cp: string;
+}
+
+export interface DirectionContact {
+  nombre: string;
+  email: string;
+  telefono: string;
+}
+
+export interface QuotationFullContext {
+  id: string;
+  fecha_validacion: string;
+  currency: string;
+  sucursal: SucursalInfo;
+  contacto_direccion: DirectionContact;
+  servicios: QuotationItem[];
+  resumen: {
+    subtotal: number;
+    iva: number;
+    total: number;
+  };
+  terminos: string;
+}
