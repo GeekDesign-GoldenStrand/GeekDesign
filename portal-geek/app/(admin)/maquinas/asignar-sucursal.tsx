@@ -88,7 +88,7 @@ export default function AsignarSucursal({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sucursales: [Number(selectedSucursal)],
+          sucursal: Number(selectedSucursal),
         }),
       });
 

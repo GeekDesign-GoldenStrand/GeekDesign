@@ -12,7 +12,7 @@ export const CreateMaquinaSchema = z.object({
 export const UpdateMaquinaSchema = CreateMaquinaSchema.partial();
 
 export const AsignarSucursalSchema = z.object({
-  sucursales: z.array(z.number().int().positive()),
+  sucursal: z.number().int().positive(),
 });
 
 export const AsignarServiciosSchema = z.object({

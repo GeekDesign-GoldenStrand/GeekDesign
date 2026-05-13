@@ -29,7 +29,11 @@ export async function listMaquinas(
         },
       },
     }),
-    prisma.maquinas.count(),
+    prisma.maquinas.count({
+      where: {
+        estatus: { not: "Inactiva" },
+      },
+    }),
   ]);
   return { items, total };
 }
@@ -100,8 +104,7 @@ export async function deleteMaquina(id: number): Promise<void> {
   }
 }
 
-export async function asignarSucursales(id: number, sucursales: number[]): Promise<Maquinas> {
-  const id_sucursal = sucursales[0];
+export async function asignarSucursal(id: number, sucursal: number): Promise<Maquinas> {
 
   const existing = await prisma.sucursalesMaquina.findFirst({
     where: { id_maquina: id },
@@ -110,11 +113,11 @@ export async function asignarSucursales(id: number, sucursales: number[]): Promi
   if (existing) {
     await prisma.sucursalesMaquina.update({
       where: { id_sucursal_maquina: existing.id_sucursal_maquina },
-      data: { id_sucursal },
+      data: { id_sucursal: sucursal },
     });
   } else {
     await prisma.sucursalesMaquina.create({
-      data: { id_maquina: id, id_sucursal },
+      data: { id_maquina: id, id_sucursal: sucursal },
     });
   }
 
