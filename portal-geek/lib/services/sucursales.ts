@@ -1,5 +1,5 @@
+import { Prisma } from "@prisma/client";
 import type { Sucursales } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateSucursalInput, UpdateSucursalInput } from "@/lib/schemas/sucursales";
@@ -23,6 +23,14 @@ export type SucursalWithRelations = Prisma.SucursalesGetPayload<{
     };
   };
 }>;
+
+function handlePrismaNotFoundError(err: unknown): never {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+    throw new NotFoundError("Sucursal not found");
+  }
+
+  throw err;
+}
 
 export async function listSucursales(
   page: number,
@@ -100,8 +108,9 @@ export async function listSucursales(
     where.AND = andConditions;
   }
 
-  // Fetch rows and total count together to keep pagination metadata in sync with the table.
-  const [items, total] = await Promise.all([
+  // Run the list and count queries in the same transaction.
+  // This prevents pagination inconsistencies if another write happens between both reads.
+  const [items, total] = await prisma.$transaction([
     prisma.sucursales.findMany({
       where,
       skip,
@@ -169,8 +178,8 @@ export async function updateSucursal(id: number, data: UpdateSucursalInput): Pro
         estatus: data.estatus,
       },
     });
-  } catch {
-    throw new NotFoundError("Sucursal not found");
+  } catch (err) {
+    handlePrismaNotFoundError(err);
   }
 }
 
@@ -186,7 +195,7 @@ export async function deleteSucursal(id: number): Promise<void> {
         estatus: "Inactivo",
       },
     });
-  } catch {
-    throw new NotFoundError("Sucursal not found");
+  } catch (err) {
+    handlePrismaNotFoundError(err);
   }
 }

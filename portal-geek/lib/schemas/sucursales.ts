@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Creation requires the minimum data needed to make a branch usable immediately.
-// Status is required so every branch has a clear active/inactive state from the start.
+// Status defaults to "Activo" so clients can omit it without creating incomplete records.
 export const CreateSucursalSchema = z.object({
   nombre_sucursal: z.string().min(1).max(100),
   direccion: z.string().min(1).max(255),
@@ -11,7 +11,7 @@ export const CreateSucursalSchema = z.object({
   horario_apertura: z.coerce.date().optional().nullable(),
   horario_salida: z.coerce.date().optional().nullable(),
 
-  estatus: z.enum(["Activo", "Inactivo"]),
+  estatus: z.enum(["Activo", "Inactivo"]).default("Activo"),
 });
 
 // Updates are partial because edit forms may send only the fields that changed.
