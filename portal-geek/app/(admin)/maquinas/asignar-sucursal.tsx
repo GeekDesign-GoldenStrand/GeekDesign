@@ -112,6 +112,10 @@ export default function AsignarSucursal({
         status: data.estatus,
         onDelete: () => {},
         onEdit: () => {},
+        onAssignStore: () => {}, 
+        onAssignServices: () => {},    
+        onChangeStatus: () => {},   
+
       });
 
       window.alert("Sucursal asignada correctamente");

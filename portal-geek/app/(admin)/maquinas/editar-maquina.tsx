@@ -94,6 +94,9 @@ export default function EditarMaquina({
         status: data.estatus,
         onDelete: () => {},
         onEdit: () => {},
+        onAssignStore: () => {}, 
+        onAssignServices: () => {},    
+        onChangeStatus: () => {},   
       });
 
       window.alert("Máquina editada correctamente");

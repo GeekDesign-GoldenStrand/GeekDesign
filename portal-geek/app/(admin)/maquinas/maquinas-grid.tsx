@@ -58,7 +58,9 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
     status: m.estatus,
     onDelete: () => {},
     onEdit: () => {},
-    onAssignStore: () => {},
+    onAssignStore: () => {}, 
+    onAssignServices: () => {},    
+    onChangeStatus: () => {},   
   }));
 }
 
@@ -194,7 +196,7 @@ export default function MaquinasGrid() {
       />
 
       <EditarMaquina
-        id={`${selectedMaquina?.id} ?? 0`}
+        id={selectedMaquina?.id ?? 0}
         model={`${selectedMaquina?.model}`}
         nickname={`${selectedMaquina?.nickname}`}
         type={`${selectedMaquina?.type}`}

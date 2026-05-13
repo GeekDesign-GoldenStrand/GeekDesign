@@ -111,6 +111,9 @@ export default function AsignarServicios({
         status: data.estatus,
         onDelete: () => {},
         onEdit: () => {},
+        onAssignStore: () => {}, 
+        onAssignServices: () => {},    
+        onChangeStatus: () => {},   
       });
 
       window.alert("Servicios asignados correctamente");

@@ -98,7 +98,7 @@ export function MaquinaCard({
         <MaquinaStatusDropdown
           status={status}
           options={MACHINE_STATUS_OPTIONS}
-          onChange={onChangeStatus}
+          onChange={onChangeStatus ?? (() => {})}
         />
       </div>
     </div>
