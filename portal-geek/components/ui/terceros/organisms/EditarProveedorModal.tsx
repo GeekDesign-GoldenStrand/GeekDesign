@@ -9,12 +9,10 @@ import {
   UBICACION_REGEX,
   type UpdateProveedorInput,
 } from "@/lib/schemas/proveedores";
-import { normalizePhone } from "@/lib/utils/format";
+import { formatPhoneNumber, normalizePhone } from "@/lib/utils/format";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-import { formatPhoneNumber } from "@/lib/utils/format";
 
 function validateFields(form: ProveedorFormData): Record<string, string> {
   const errs: Record<string, string> = {};

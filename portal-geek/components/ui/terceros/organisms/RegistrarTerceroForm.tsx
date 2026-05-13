@@ -6,14 +6,12 @@ import { z } from "zod";
 import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
-import { normalizePhone } from "@/lib/utils/format";
+import { formatPhoneNumber, normalizePhone } from "@/lib/utils/format";
 import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-import { formatPhoneNumber } from "@/lib/utils/format";
 
 const proveedorSchema = z.object({
   nombre_proveedor: z
