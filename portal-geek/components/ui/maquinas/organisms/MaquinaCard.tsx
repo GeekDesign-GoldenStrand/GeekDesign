@@ -1,14 +1,14 @@
-import { EditIcon, TrashIcon, PlusIcon } from "@/components/ui/atoms/icons";
+import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
 import type { MaquinaCardProps, MachineStatus } from "@/types";
 
+import MaquinaAssignButton from "../atoms/MaquinaAssignButton";
 import MaquinaCreationDate from "../atoms/MaquinaCreationDate";
 import MaquinaServiceBadge from "../atoms/MaquinaServiceBadge";
 import MaquinaSubtitle from "../atoms/MaquinaSubtitle";
+import MaquinaText from "../atoms/MaquinaText";
 import MaquinaTitle from "../atoms/MaquinaTitle";
 import MaquinaSection from "../molecules/MaquinaSection";
 import MaquinaStatusDropdown from "../molecules/MaquinaStatusDropdown";
-import MaquinaAssignButton from "../atoms/MaquinaAssignButton";
-import MaquinaText from "../atoms/MaquinaText";
 
 const MACHINE_STATUS_OPTIONS: MachineStatus[] = ["Activa", "En mantenimiento"];
 

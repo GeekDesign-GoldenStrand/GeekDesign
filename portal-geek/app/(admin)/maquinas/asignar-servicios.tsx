@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import MultiSelect, { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
+import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
+import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 

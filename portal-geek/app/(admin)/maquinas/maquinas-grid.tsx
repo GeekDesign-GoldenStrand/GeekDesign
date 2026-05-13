@@ -7,8 +7,8 @@ import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionMo
 import { MaquinaCard } from "@/components/ui/maquinas/organisms/MaquinaCard";
 import type { MaquinaCardProps } from "@/types";
 
-import AsignarSucursal from "./asignar-sucursal";
 import AsignarServicios from "./asignar-servicios";
+import AsignarSucursal from "./asignar-sucursal";
 import EditarMaquina from "./editar-maquina";
 import RegistrarForm from "./registrar-form";
 
@@ -134,7 +134,7 @@ export default function MaquinasGrid() {
 
       setMaquinas((prev) => prev.map((m) => (m.id === id ? { ...m, status: data.estatus } : m)));
     } catch {
-      console.error("Error updating status");
+      setIsLoadingMaquinas(false);
     }
   }
 
@@ -149,6 +149,8 @@ export default function MaquinasGrid() {
           setIsRegisterOpen(true);
         }}
       />
+      {isLoadingMaquinas && <p className="text-14 font-ibm plex-sans">Cargando máquinas...</p>}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredMaquinas.map((m) => (
           <MaquinaCard

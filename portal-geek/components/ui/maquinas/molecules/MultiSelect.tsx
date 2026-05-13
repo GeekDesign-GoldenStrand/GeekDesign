@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 export interface MultiSelectOption {
   value: string | number;
@@ -33,22 +33,6 @@ export default function MultiSelect({
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-
-  useEffect(() => {
-    if (value !== undefined) setSelected(value);
-  }, [value]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const filtered = options.filter(
     (o) =>
