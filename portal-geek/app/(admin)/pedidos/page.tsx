@@ -69,6 +69,7 @@ export default function PedidosPage() {
   const fetchPedidos = useCallback(async () => {
     try {
       const params = new URLSearchParams();
+
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
       params.set("onlyActive", onlyActive ? "true" : "false");
@@ -112,6 +113,7 @@ export default function PedidosPage() {
     async function load() {
       await fetchPedidos();
     }
+
     load();
   }, [fetchPedidos]);
 
@@ -128,6 +130,7 @@ export default function PedidosPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ estatus: status }),
     });
+
     fetchPedidos();
   }
 
