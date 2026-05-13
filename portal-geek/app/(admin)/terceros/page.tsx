@@ -57,6 +57,7 @@ function mapInstalador(item: DbInstalador): TerceroRow {
       item.estatus === "Activo" ? "Activo" : item.estatus === "Baneado" ? "Baneado" : "Inactivo",
     email: item.correo ?? "",
     phone: item.telefono ?? "",
+    tipo: item.tipo,
   };
 }
 
@@ -315,6 +316,7 @@ export default function TercerosPage() {
                 location: updated.ubicacion ?? "",
                 email: updated.correo,
                 phone: updated.telefono,
+                tipo: updated.tipo,
                 status:
                   updated.estatus === "Activo"
                     ? "Activo"
