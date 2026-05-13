@@ -4,12 +4,11 @@ import { useState } from "react";
 import { z } from "zod";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
+import { formatPhoneNumber } from "@/lib/utils/format";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-import { formatPhoneNumber } from "@/lib/utils/format";
 
 const proveedorSchema = z.object({
   nombre_proveedor: z

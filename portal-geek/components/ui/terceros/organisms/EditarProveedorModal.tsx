@@ -4,11 +4,10 @@ import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateProveedorInput } from "@/lib/schemas/proveedores";
+import { formatPhoneNumber } from "@/lib/utils/format";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-import { formatPhoneNumber } from "@/lib/utils/format";
 
 function validateFields(form: ProveedorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
