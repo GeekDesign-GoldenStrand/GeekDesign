@@ -8,17 +8,7 @@ import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function formatPhone(digits: string): string {
-  const metro = /^(55|33|81)/.test(digits);
-  if (metro) {
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-    return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-  }
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-}
+import { formatPhoneNumber } from "@/lib/utils/format";
 
 function validateFields(form: InstaladorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
@@ -217,7 +207,7 @@ export function EditarInstaladorModal({
               type="tel"
               inputMode="numeric"
               placeholder="442 123 4567"
-              value={formatPhone(form.telefono)}
+              value={formatPhoneNumber(form.telefono)}
               onChange={(e) => {
                 const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                 setField("telefono", digits);
