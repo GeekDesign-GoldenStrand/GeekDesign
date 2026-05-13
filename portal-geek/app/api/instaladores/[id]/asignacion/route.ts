@@ -20,7 +20,9 @@ export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   try {
     const { id } = InstaladorIdParams.parse(await ctx.params);
     const body = AssignmentSchema.parse(await req.json());
-    // For installers, we only care about services, but we use the generic AssignmentSchema
+    if (body.type !== "servicio") {
+      return handleError(new Error("Los instaladores solo pueden tener servicios asignados"));
+    }
     await syncInstaladorAssignments(id, body.ids);
     return ok({ success: true });
   } catch (err) {
