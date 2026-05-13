@@ -67,8 +67,8 @@ export interface MaquinaCardProps {
   status: string;
   onDelete: () => void;
   onEdit: () => void;
-  onAssignStore?: () => void;
-  onAssignServices?: () => void;
+  onAssignStore: () => void;
+  onAssignServices: () => void;
   onChangeStatus?: (newStatus: string) => void;
 }
 

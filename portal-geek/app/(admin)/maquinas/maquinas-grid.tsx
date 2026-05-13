@@ -194,7 +194,7 @@ export default function MaquinasGrid() {
       />
 
       <EditarMaquina
-        id={`${selectedMaquina?.id}`}
+        id={`${selectedMaquina?.id} ?? 0`}
         model={`${selectedMaquina?.model}`}
         nickname={`${selectedMaquina?.nickname}`}
         type={`${selectedMaquina?.type}`}
