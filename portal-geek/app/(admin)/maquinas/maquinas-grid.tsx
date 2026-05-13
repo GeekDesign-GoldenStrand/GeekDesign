@@ -53,7 +53,7 @@ async function getMaquinas(): Promise<MaquinaCardProps[]> {
     type: m.tipo,
     store: m.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") ?? "Sin asignar",
     description: m.descripcion ?? "",
-    services: (m.servicios ?? ["Sin asignar"]).map((s) => s.servicio.nombre_servicio),
+    services: (m.servicios ?? []).map((s) => s.servicio.nombre_servicio),
     creation_date: m.fecha_registro,
     status: m.estatus,
     onDelete: () => {},
@@ -172,7 +172,7 @@ export default function MaquinasGrid() {
               setSelectedId(m.id);
               setIsAsignarServiciosOpen(true);
             }}
-            onChangeStatus={(newStatus) => handleStatusChange(m.id, newStatus)}
+            onChangeStatus={(newStatus: string) => handleStatusChange(m.id, newStatus)}
           />
         ))}
       </div>

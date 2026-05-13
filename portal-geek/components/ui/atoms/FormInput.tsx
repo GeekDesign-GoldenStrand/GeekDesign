@@ -4,7 +4,7 @@ import type { InputHTMLAttributes } from "react";
 
 export interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  error?: string;
+  error?: string | null;
   required?: boolean;
   longText?: boolean;
   placeholderLongText?: string;
@@ -29,20 +29,18 @@ export default function FormInput({
         {label}
         {required && <span className="text-[#e42200]">*</span>}
       </span>
-      {longText ? (
-        <textarea
-          aria-invalid={error ? true : undefined}
-          aria-describedby={errorId}
-          maxLength={maxInputLength}
-          {...props}
-          className="w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors"
-          id="myInput"
-          value={props.value as string}
-          onChange={props.onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
-          rows={4}
-          cols={50}
-          placeholder={placeholderLongText}
-        ></textarea>
+        {longText ? (
+          <textarea
+            aria-invalid={error ? true : undefined}
+            aria-describedby={errorId}
+            rows={4}
+            cols={50}
+            maxLength={maxInputLength}
+            placeholder={placeholderLongText}
+            value={props.value as string | undefined}
+            onChange={props.onChange as unknown as React.ChangeEventHandler<HTMLTextAreaElement>}
+            className="w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors"
+          />
       ) : (
         <input
           aria-invalid={error ? true : undefined}

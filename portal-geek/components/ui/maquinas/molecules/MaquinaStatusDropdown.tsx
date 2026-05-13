@@ -16,7 +16,7 @@ const DEFAULT = { color: "#8e908f", bg: "rgba(142,144,143,0.07)" };
 interface MaquinaStatusDropdownProps {
   status: string;
   options: string[];
-  onChange: (value: string) => void;
+  onChange: (newStatus: string) => void;
   saving?: boolean;
 }
 
