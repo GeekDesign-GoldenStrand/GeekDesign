@@ -20,7 +20,7 @@ export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   try {
     const { id } = ProveedorIdParams.parse(await ctx.params);
     const body = AssignmentSchema.parse(await req.json());
-    await syncProviderAssignments(id, body.type, body.ids);
+    await syncProviderAssignments(id, body.type, body.items);
     return ok({ success: true });
   } catch (err) {
     return handleError(err);
