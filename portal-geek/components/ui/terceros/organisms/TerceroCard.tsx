@@ -68,10 +68,15 @@ export function TerceroCard({
           {role}
         </span>
 
-        {hasMaterial && (
+        {hasMaterial && role === "Proveedor" && (
           <TerceroTypeTag type="Material" onClick={() => setIsMaterialesOpen(true)} />
         )}
-        {hasServicio && <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />}
+        {hasServicio && role === "Proveedor" && (
+          <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />
+        )}
+        {role === "Instalador" && (
+          <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />
+        )}
 
         <StatusDropdown status={status} onChange={onStatusChange} />
       </div>
@@ -123,10 +128,11 @@ export function TerceroCard({
         )}
       </div>
 
-      {role === "Proveedor" && isServiciosOpen && (
+      {isServiciosOpen && (
         <AsignarItemsModal
           itemType="servicio"
-          id_proveedor={id}
+          targetId={id}
+          targetType={role === "Proveedor" ? "proveedor" : "instalador"}
           companyName={companyName}
           contactName={contactName}
           email={email}
@@ -142,7 +148,8 @@ export function TerceroCard({
       {role === "Proveedor" && isMaterialesOpen && (
         <AsignarItemsModal
           itemType="material"
-          id_proveedor={id}
+          targetId={id}
+          targetType="proveedor"
           companyName={companyName}
           contactName={contactName}
           email={email}
