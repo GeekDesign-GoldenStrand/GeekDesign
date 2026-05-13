@@ -71,8 +71,6 @@ export async function deleteInstalador(id: number): Promise<void> {
   }
 }
 
-// Additional helper to the list dropdown in order to not show unactive instaladores.
-
 export async function getInstaladoresOptions(): Promise<
   Array<{
     id_instalador: number;
@@ -92,9 +90,53 @@ export async function getInstaladoresOptions(): Promise<
     orderBy: { costo_instalacion: "asc" },
   });
 
-  // Prisma returns Decimal as a Decimal object; serialize to string for the client component.
   return instaladores.map((i) => ({
     ...i,
     costo_instalacion: i.costo_instalacion.toString(),
   }));
+}
+
+export async function getInstaladorAssignments(id: number) {
+  await getInstalador(id);
+  const assignments = await prisma.instaladorServicios.findMany({
+    where: { id_instalador: id },
+    select: { id_servicio: true },
+  });
+
+  return {
+    serviceIds: assignments.map((a) => a.id_servicio),
+  };
+}
+
+export async function syncInstaladorAssignments(id: number, serviceIds: number[]) {
+  const ids = Array.from(new Set(serviceIds));
+  await getInstalador(id);
+
+  const current = await prisma.instaladorServicios.findMany({
+    where: { id_instalador: id },
+  });
+
+  const currentIds = current.map((c) => c.id_servicio);
+
+  const toAdd = ids.filter((sid) => !currentIds.includes(sid));
+  const toRemove = current
+    .filter((c) => !ids.includes(c.id_servicio))
+    .map((c) => c.id_instalador_servicio);
+
+  const operations = [
+    prisma.instaladorServicios.deleteMany({
+      where: { id_instalador_servicio: { in: toRemove } },
+    }),
+    ...toAdd.map((targetId) =>
+      prisma.instaladorServicios.create({
+        data: {
+          id_instalador: id,
+          id_servicio: targetId,
+          precio: 0,
+        },
+      })
+    ),
+  ];
+
+  await prisma.$transaction(operations);
 }
