@@ -9,22 +9,35 @@ import { prisma } from "@/lib/db/client";
 import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
 import { ConfigurationError } from "@/lib/utils/errors";
 
-type CotizacionWithRelations = {
-  id_cotizacion: number;
-  fecha_creacion: Date;
-  monto_total: Prisma.Decimal;
-  empresa_cliente: string | null;
-  folio: string | null;
-  fecha_fin: Date | null;
-  fecha_aprobacion: Date | null;
-  cliente: {
-    nombre_cliente: string;
-    empresa: string | null;
-  };
-  estatus: {
-    descripcion: string;
-  };
-};
+/**
+ * Common include configuration for quotations to ensure consistent typing.
+ */
+const INCLUDE_CONFIG = {
+  cliente: true,
+  estatus: true,
+  variablesCotizacion: {
+    include: {
+      formula: {
+        include: {
+          servicio: true,
+        },
+      },
+    },
+  },
+  pedido: {
+    include: {
+      detalles: {
+        include: {
+          servicio: true,
+        },
+      },
+    },
+  },
+} as const;
+
+export type CotizacionWithRelations = Prisma.CotizacionesGetPayload<{
+  include: typeof INCLUDE_CONFIG;
+}>;
 
 // Centralized catalog of quotation statuses.
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
@@ -41,11 +54,27 @@ export type QuotationStatus = (typeof QUOTATION_STATUS)[keyof typeof QUOTATION_S
 export async function listCotizaciones(
   page: number,
   pageSize: number,
-  filters?: { cliente?: string; empresa?: string; estatus?: string[]; search?: string }
+  filters?: {
+    cliente?: string;
+    empresa?: string;
+    estatus?: string[];
+    search?: string;
+    includeFinished?: boolean;
+  }
 ): Promise<{ items: CotizacionWithRelations[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
   const where: Prisma.CotizacionesWhereInput = {};
+
+  // By default, we only show "Active" quotes (Pendiente, Validada) in the main admin view.
+  // Approved quotes move to Pedidos, and Rejected ones move to a separate view.
+  if (!filters?.includeFinished && (!filters?.estatus || filters.estatus.length === 0)) {
+    where.estatus = {
+      descripcion: {
+        in: [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA],
+      },
+    };
+  }
 
   if (filters?.cliente) {
     where.cliente = { nombre_cliente: { contains: filters.cliente, mode: "insensitive" } };
@@ -101,26 +130,7 @@ export async function listCotizaciones(
       skip,
       take: pageSize,
       orderBy: { id_cotizacion: "asc" },
-      select: {
-        id_cotizacion: true,
-        fecha_creacion: true,
-        monto_total: true,
-        empresa_cliente: true,
-        folio: true,
-        fecha_fin: true,
-        fecha_aprobacion: true,
-        cliente: {
-          select: {
-            nombre_cliente: true,
-            empresa: true,
-          },
-        },
-        estatus: {
-          select: {
-            descripcion: true,
-          },
-        },
-      },
+      include: INCLUDE_CONFIG,
     }),
     prisma.cotizaciones.count({ where }),
   ]);
@@ -128,13 +138,21 @@ export async function listCotizaciones(
   return { items, total };
 }
 
-export async function getCotizacion(id: number): Promise<Cotizaciones | null> {
+export async function getCotizacion(id: number): Promise<CotizacionWithRelations | null> {
   return prisma.cotizaciones.findUnique({
     where: { id_cotizacion: id },
-    include: {
-      cliente: true,
-      estatus: true,
-    },
+    include: INCLUDE_CONFIG,
+  });
+}
+
+/**
+ * Fetch a quotation by its Folio number.
+ * Used for public client lookup.
+ */
+export async function getCotizacionByFolio(folio: string): Promise<CotizacionWithRelations | null> {
+  return prisma.cotizaciones.findUnique({
+    where: { folio },
+    include: INCLUDE_CONFIG,
   });
 }
 
@@ -302,4 +320,119 @@ export async function changeQuotationStatus(
   const [updatedQuotation] = await prisma.$transaction(operations);
 
   return updatedQuotation;
+}
+
+/**
+ * Approves a quotation and automatically creates a corresponding Order (Pedido).
+ * This is an atomic operation to ensure data consistency between Sales and Production.
+ */
+export async function approveQuotation(quotationId: number, userId: number) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Fetch quotation with details
+    const quotation = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion: quotationId },
+      include: { estatus: true },
+    });
+
+    if (!quotation) throw new Error("Quotation not found");
+    if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
+      throw new Error("Only validated quotations can be approved");
+    }
+
+    // 2. Resolve necessary IDs
+    const approvedStatus = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.APROBADA },
+    });
+    const initialPedidoStatus = await tx.estatusPedidos.findUnique({
+      where: { descripcion: "Pendiente" },
+    });
+
+    if (!approvedStatus || !initialPedidoStatus) {
+      throw new Error("Required status catalogs not found");
+    }
+
+    // 3. Create the Pedido (Order)
+    // Starts with 0% progress (null estado_factura) as requested.
+    const pedido = await tx.pedidos.create({
+      data: {
+        id_cliente: quotation.id_cliente,
+        id_estatus: initialPedidoStatus.id_estatus,
+        fecha_creacion: new Date(),
+        factura: false, // Default to false as per user request
+        notas: quotation.notas,
+      },
+    });
+
+    // 4. Update Quotation
+    const updatedQuotation = await tx.cotizaciones.update({
+      where: { id_cotizacion: quotationId },
+      data: {
+        id_estatus_cotizacion: approvedStatus.id_estatus,
+        id_pedido: pedido.id_pedido,
+        fecha_aprobacion: new Date(),
+      },
+    });
+
+    // 5. Log status history
+    await tx.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: quotationId,
+        id_usuario: userId,
+        id_estado_anterior: quotation.id_estatus_cotizacion,
+        id_estado_nuevo: approvedStatus.id_estatus,
+        fecha_cambio: new Date(),
+      },
+    });
+
+    return { quotation: updatedQuotation, pedido };
+  });
+}
+
+/**
+ * Rejects a quotation and moves it to the rejected archive.
+ */
+export async function rejectQuotation(quotationId: number, userId: number, reason?: string) {
+  return prisma.$transaction(async (tx) => {
+    const quotation = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion: quotationId },
+      include: { estatus: true },
+    });
+
+    if (!quotation) throw new Error("Quotation not found");
+
+    const rejectedStatus = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.RECHAZADA },
+    });
+
+    if (!rejectedStatus) throw new Error("Rejected status not found");
+
+    // Update quote status and add rejection reason to notes
+    const updatedQuotation = await tx.cotizaciones.update({
+      where: { id_cotizacion: quotationId },
+      data: {
+        id_estatus_cotizacion: rejectedStatus.id_estatus,
+        notas: reason ? `${quotation.notas ?? ""}\n\nMotivo de rechazo: ${reason}` : quotation.notas,
+      },
+    });
+
+    // Ensure it's in the rejected table
+    await tx.cotizacionesRechazadas.upsert({
+      where: { id_cotizacion: quotationId },
+      update: {},
+      create: { id_cotizacion: quotationId },
+    });
+
+    // Log history
+    await tx.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: quotationId,
+        id_usuario: userId,
+        id_estado_anterior: quotation.id_estatus_cotizacion,
+        id_estado_nuevo: rejectedStatus.id_estatus,
+        fecha_cambio: new Date(),
+      },
+    });
+
+    return updatedQuotation;
+  });
 }

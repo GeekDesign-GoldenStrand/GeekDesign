@@ -19,7 +19,7 @@ export function paginated<T>(items: T[], total: number, page: number, pageSize: 
 }
 
 // GET endpoint: lists cotizaciones with filters and pagination
-export async function GET(req: NextRequest) {
+export const GET = withRole(["Direccion"], async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
 
   // Pagination parameters: default page=1, pageSize=13
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     return handleError(err);
   }
-}
+});
 
 // POST endpoint: creates a new cotizacion
 export const POST = withRole(["Direccion"], async (req: NextRequest) => {

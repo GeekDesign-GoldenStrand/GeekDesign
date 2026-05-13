@@ -63,25 +63,13 @@ function getStatusStyle(status: string) {
 }
 
 function getAllowedPedidoStatuses(currentStatus: string): string[] {
-  switch (currentStatus) {
-    case "Pendiente":
-      return ["Pendiente", "En producción", "Cancelado"];
-
-    case "En producción":
-      return ["En producción", "Finalizado", "Cancelado"];
-
-    case "Finalizado":
-      return ["Finalizado", "Entregado", "Cancelado"];
-
-    case "Entregado":
-      return ["Entregado"];
-
-    case "Cancelado":
-      return ["Cancelado"];
-
-    default:
-      return [currentStatus];
+  // Terminal states: only 'Entregado' and 'Cancelado' block further movement.
+  if (currentStatus === "Entregado" || currentStatus === "Cancelado") {
+    return [currentStatus];
   }
+
+  // Any other state allows free transition between all options.
+  return ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
 }
 
 function getInvoiceProgress(status?: string | null) {
@@ -185,23 +173,23 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
               gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
             }}
           >
-            {/* Fecha */}
+            {/* Date */}
             <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
 
-            {/* Monto */}
+            {/* Amount */}
             <span className="whitespace-nowrap">
               {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
             </span>
 
-            {/* Entrega */}
+            {/* Delivery */}
             <span className="whitespace-nowrap">
               {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
             </span>
 
-            {/* Empresa */}
+            {/* Company */}
             <span className="whitespace-nowrap">{p.cliente?.empresa ?? "—"}</span>
 
-            {/* Cliente */}
+            {/* Client */}
             <span className="whitespace-nowrap">{p.cliente?.nombre_cliente}</span>
 
             {/* STATUS SELECT */}
@@ -236,7 +224,7 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
               </div>
             </div>
 
-            {/* Estado Factura */}
+            {/* Invoice Status */}
             <div className="flex flex-col items-center px-1 md:px-2 min-w-[180px]">
               <div className="flex items-center gap-2 w-full">
                 <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />

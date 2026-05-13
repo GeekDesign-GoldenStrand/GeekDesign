@@ -17,7 +17,7 @@ type Cotizacion = {
 
 type Props = {
   cotizaciones: Cotizacion[];
-  onDelete: (id: number) => void; // no se usa pero lo dejamos para no romper props
+  onDelete: (id: number) => void; // Unused but kept for prop compatibility
   onStatusChange: (id: number, status: string) => void;
 };
 
@@ -47,20 +47,9 @@ function getStatusStyle(status: string) {
 function getAllowedQuotationStatuses(currentStatus: string): string[] {
   switch (currentStatus) {
     case "Pendiente":
-      return ["Pendiente", "Validada", "Rechazada", "Cancelada"];
+      return ["Pendiente", "Validada", "Rechazada"];
 
-    case "Validada":
-      return ["Validada", "Aprobada", "Rechazada", "Cancelada"];
-
-    case "Aprobada":
-      return ["Aprobada"];
-
-    case "Rechazada":
-      return ["Rechazada"];
-
-    case "Cancelada":
-      return ["Cancelada"];
-
+    // Once Validated, Approved or Rejected, the status is locked for administration.
     default:
       return [currentStatus];
   }
@@ -101,29 +90,29 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
             }}
           >
-            {/* Fecha */}
+            {/* Date */}
             <span className="whitespace-nowrap">
               {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
             </span>
 
-            {/* Monto */}
+            {/* Amount */}
             <span className="whitespace-nowrap">${c.monto_total.toLocaleString("es-MX")} MXN</span>
 
-            {/* Entrega */}
+            {/* Delivery */}
             <span className="whitespace-nowrap">
               {c.fecha_estimada ? formatDate(c.fecha_estimada) : "—"}
             </span>
 
-            {/* Empresa */}
+            {/* Company */}
             <span className="whitespace-nowrap">{c.empresa || "—"}</span>
 
-            {/* Cliente */}
+            {/* Client */}
             <span className="whitespace-nowrap">{c.cliente}</span>
 
             {/* Folio */}
             <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
 
-            {/* Estatus */}
+            {/* Status */}
             <div className="flex justify-center">
               <div
                 className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
@@ -150,7 +139,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               </div>
             </div>
 
-            {/* Acciones */}
+            {/* Actions */}
             <div className="flex justify-center">
               <button
                 className="text-black hover:text-[#e42200] transition-colors p-2"

@@ -440,137 +440,100 @@ async function main() {
     const statusMap: Record<string, number> = {};
     cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
 
-    const demoCotizaciones = [
+    // ── Demo Formulas ────────────────────────────────────────────────────────
+    const formulaCorte = await prisma.formulaVariables.upsert({
+      where: { id_formula: 1 },
+      update: {},
+      create: {
+        id_servicio: servicioCorte.id_servicio,
+        nombre_variable: "Corte Láser Base",
+        descripcion: "Corte con láser CO2",
+        es_constante: true,
+        valor_constante: 0,
+      },
+    });
+
+    console.log("Seeded demo formula for Corte Láser");
+
+    const demoFolios = ["COT-101", "COT-102", "COT-103", "COT-104", "COT-105", "COT-106"];
+    await prisma.variablesCotizacion.deleteMany({
+      where: { cotizacion: { folio: { in: demoFolios } } }
+    });
+    await prisma.historialEstadosCotizacion.deleteMany({
+      where: { cotizacion: { folio: { in: demoFolios } } }
+    });
+    await prisma.cotizaciones.deleteMany({
+      where: { folio: { in: demoFolios } }
+    });
+
+    const demoQuotationsData = [
       {
-        id_pedido: 1,
+        folio: "COT-101",
         monto_total: 1500,
-        notas: "Cotización pendiente para corte láser",
-        fecha_creacion: new Date("2026-04-13"),
+        notas: "Cotización pendiente: El cliente solicitó corte láser simple.",
+        fecha_creacion: new Date("2026-05-01"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Pendiente"],
       },
       {
-        id_pedido: 2,
-        monto_total: 2500,
-        notas: "Cotización aprobada para grabado",
-        fecha_creacion: new Date("2026-04-15"),
+        folio: "COT-102",
+        monto_total: 4500,
+        notas: "Cotización validada (MIXTA): [ESTADO:modificado] Algunos servicios fueron aprobados tal cual, otros fueron modificados en precio por el administrador.",
+        fecha_creacion: new Date("2026-05-02"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Validada"],
       },
       {
-        id_pedido: 3,
-        monto_total: 1800,
-        notas: "Cliente rechazó la propuesta",
-        fecha_creacion: new Date("2026-04-17"),
+        folio: "COT-103",
+        monto_total: 2800,
+        notas: "Cotización validada (MODIFICADA): [ESTADO:modificado] Se ajustaron todos los precios unitarios debido a actualización de costos de material.",
+        fecha_creacion: new Date("2026-05-03"),
         id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Rechazada"],
+        id_estatus_cotizacion: statusMap["Validada"],
       },
       {
-        id_pedido: 4,
-        monto_total: 2200,
-        notas: "Cotización validada por cambios de requerimiento",
-        fecha_creacion: new Date("2026-04-20"),
+        folio: "COT-104",
+        monto_total: 12000,
+        notas: "Cotización aprobada: Todos los servicios fueron aceptados por el cliente.",
+        fecha_creacion: new Date("2026-05-04"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Aprobada"],
       },
       {
-        id_pedido: 5,
-        monto_total: 3000,
-        notas: "Cotización cancelada",
-        fecha_creacion: new Date("2026-06-20"),
+        folio: "COT-105",
+        monto_total: 3500,
+        notas: "Rechazada por Administración: [ESTADO:rechazado] Los archivos enviados por el cliente no cumplen con la calidad mínima requerida para producción.",
+        fecha_creacion: new Date("2026-05-05"),
         id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Cancelada"],
+        id_estatus_cotizacion: statusMap["Rechazada"],
+      },
+      {
+        folio: "COT-106",
+        monto_total: 950,
+        notas: "Rechazada por el Cliente: El cliente encontró un proveedor más económico.",
+        fecha_creacion: new Date("2026-05-06"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Rechazada"],
       },
     ];
 
-    // ── Invoice status map ─────────────────────────────────────────
-    const invoiceStatuses = await prisma.estadoFacturaPedido.findMany();
+    for (const q of demoQuotationsData) {
+      const quote = await prisma.cotizaciones.create({
+        data: q,
+      });
 
-    const invoiceStatusMap: Record<string, number> = {};
-
-    invoiceStatuses.forEach((s) => {
-      invoiceStatusMap[s.descripcion] = s.id_estado_factura;
-    });
-
-    // ── Demo Pedidos ───────────────────────────────────────────────
-    const demoPedidos = [
-      {
-        status: "Pendiente",
-        estado_factura: "Cotizacion",
-        fecha_creacion: new Date("2026-04-13"),
-        fecha_estimada: new Date("2026-04-18"),
-        notas: "Pedido demo pendiente",
-      },
-
-      {
-        status: "En producción",
-        estado_factura: "Pagado",
-        fecha_creacion: new Date("2026-04-15"),
-        fecha_estimada: new Date("2026-04-22"),
-        notas: "Pedido demo en producción",
-      },
-
-      {
-        status: "Finalizado",
-        estado_factura: "Aprobacion_diseno",
-        fecha_creacion: new Date("2026-04-17"),
-        fecha_estimada: new Date("2026-04-24"),
-        notas: "Pedido demo finalizado",
-      },
-
-      {
-        status: "Entregado",
-        estado_factura: "Entregado",
-        fecha_creacion: new Date("2026-04-20"),
-        fecha_estimada: new Date("2026-04-27"),
-        notas: "Pedido demo entregado",
-      },
-
-      {
-        status: "Cancelado",
-        estado_factura: "Facturado",
-        fecha_creacion: new Date("2026-04-25"),
-        fecha_estimada: new Date("2026-05-01"),
-        notas: "Pedido demo cancelado",
-      },
-    ];
-
-    for (const pedido of demoPedidos) {
-      await prisma.pedidos.create({
+      // Add at least one service to each quotation
+      await prisma.variablesCotizacion.create({
         data: {
-          cliente: {
-            connect: {
-              id_cliente: 1,
-            },
-          },
-
-          estatus: {
-            connect: {
-              descripcion: pedido.status,
-            },
-          },
-
-          estado_factura: {
-            connect: {
-              id_estado_factura: invoiceStatusMap[pedido.estado_factura],
-            },
-          },
-
-          sucursal: {
-            connect: {
-              id_sucursal: 1,
-            },
-          },
-
-          fecha_creacion: pedido.fecha_creacion,
-          fecha_estimada: pedido.fecha_estimada,
-          notas: pedido.notas,
+          id_cotizacion: quote.id_cotizacion,
+          id_formula: formulaCorte.id_formula,
+          valor: quote.monto_total, 
+          id_usuario_asigno: adminUser.id_usuario,
         },
       });
     }
 
-    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
-    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
+    console.log(`Seeded ${demoQuotationsData.length} demo cotizaciones with services`);
   }
 }
 
