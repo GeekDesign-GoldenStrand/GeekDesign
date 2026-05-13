@@ -112,22 +112,11 @@ export async function syncInstaladorAssignments(id: number, serviceIds: number[]
   const ids = Array.from(new Set(serviceIds));
   await getInstalador(id);
 
-  const current = await prisma.instaladorServicios.findMany({
-    where: { id_instalador: id },
-  });
-
-  const currentIds = current.map((c) => c.id_servicio);
-
-  const toAdd = ids.filter((sid) => !currentIds.includes(sid));
-  const toRemove = current
-    .filter((c) => !ids.includes(c.id_servicio))
-    .map((c) => c.id_instalador_servicio);
-
   const operations = [
     prisma.instaladorServicios.deleteMany({
-      where: { id_instalador_servicio: { in: toRemove } },
+      where: { id_instalador: id },
     }),
-    ...toAdd.map((targetId) =>
+    ...ids.map((targetId) =>
       prisma.instaladorServicios.create({
         data: {
           id_instalador: id,

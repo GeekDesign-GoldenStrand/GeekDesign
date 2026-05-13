@@ -8,6 +8,8 @@ import {
   getInstalador,
   updateInstalador,
   deleteInstalador,
+  getInstaladorAssignments,
+  syncInstaladorAssignments,
 } from "@/lib/services/instaladores";
 import { NotFoundError } from "@/lib/utils/errors";
 
@@ -21,6 +23,11 @@ jest.mock("@/lib/db/client", () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
+    instaladorServicios: {
+      findMany: jest.fn(),
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -30,6 +37,9 @@ const mockCount = prisma.instaladores.count as jest.Mock;
 const mockFindUnique = prisma.instaladores.findUnique as jest.Mock;
 const mockCreate = prisma.instaladores.create as jest.Mock;
 const mockUpdate = prisma.instaladores.update as jest.Mock;
+const mockServiciosFindMany = prisma.instaladorServicios.findMany as jest.Mock;
+const mockServiciosDeleteMany = prisma.instaladorServicios.deleteMany as jest.Mock;
+const mockServiciosCreate = prisma.instaladorServicios.create as jest.Mock;
 
 const INSTALADOR = {
   id_instalador: 1,
@@ -278,5 +288,62 @@ describe("deleteInstalador", () => {
     mockUpdate.mockRejectedValue(new Error("Error de base de datos"));
 
     await expect(deleteInstalador(1)).rejects.toThrow("Error de base de datos");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getInstaladorAssignments
+// ---------------------------------------------------------------------------
+describe("getInstaladorAssignments", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("retorna los IDs de los servicios asignados", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockServiciosFindMany.mockResolvedValue([{ id_servicio: 10 }, { id_servicio: 20 }]);
+
+    const result = await getInstaladorAssignments(1);
+
+    expect(result.serviceIds).toEqual([10, 20]);
+    expect(mockServiciosFindMany).toHaveBeenCalledWith({
+      where: { id_instalador: 1 },
+      select: { id_servicio: true },
+    });
+  });
+
+  it("lanza NotFoundError si el instalador no existe", async () => {
+    mockFindUnique.mockResolvedValue(null);
+    await expect(getInstaladorAssignments(999)).rejects.toThrow(NotFoundError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// syncInstaladorAssignments
+// ---------------------------------------------------------------------------
+describe("syncInstaladorAssignments", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTransaction.mockImplementation((promises: Promise<unknown>[]) => Promise.all(promises));
+  });
+
+  it("sincroniza servicios: borra y crea nuevos", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+
+    await syncInstaladorAssignments(1, [5, 6]);
+
+    expect(mockServiciosDeleteMany).toHaveBeenCalledWith({
+      where: { id_instalador: 1 },
+    });
+    expect(mockServiciosCreate).toHaveBeenCalledTimes(2);
+    expect(mockServiciosCreate).toHaveBeenCalledWith({
+      data: { id_instalador: 1, id_servicio: 5, precio: 0 },
+    });
+    expect(mockServiciosCreate).toHaveBeenCalledWith({
+      data: { id_instalador: 1, id_servicio: 6, precio: 0 },
+    });
+  });
+
+  it("lanza NotFoundError si el instalador no existe", async () => {
+    mockFindUnique.mockResolvedValue(null);
+    await expect(syncInstaladorAssignments(999, [1])).rejects.toThrow(NotFoundError);
   });
 });
