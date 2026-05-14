@@ -247,7 +247,7 @@ export function PedidosTemplate({
         {/* Table */}
         <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
 
-        {/* Pagination (Figma-style) */}
+        {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">
           <div className="flex items-center gap-2">
             <button

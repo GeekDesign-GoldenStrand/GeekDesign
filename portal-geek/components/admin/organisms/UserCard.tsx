@@ -27,6 +27,7 @@ interface UserCardProps {
   onStatusChange?: (userId: number, newStatus: string) => void;
   onEdit?: (userId: number) => void;
   onDelete?: (userId: number) => void;
+  onSucursalClick?: (userId: number) => void;
   saving?: boolean;
   savingStatus?: boolean;
 }
@@ -41,6 +42,7 @@ export function UserCard({
   onStatusChange,
   onEdit,
   onDelete,
+  onSucursalClick,
   saving,
   savingStatus,
 }: UserCardProps) {
@@ -53,11 +55,29 @@ export function UserCard({
       <div className="flex flex-col gap-0.5 font-ibm-plex font-light text-[16px] text-[#424242]">
         {user.edad != null && <span>Edad: {user.edad}</span>}
         {user.sexo && <span>Sexo: {user.sexo}</span>}
-        {user.sucursal && (
-          <span className="flex items-center gap-1">
+        {onSucursalClick ? (
+          <button
+            type="button"
+            onClick={() => onSucursalClick(user.id_usuario)}
+            aria-label={
+              user.sucursal
+                ? `Cambiar sucursal de ${user.nombre_completo}`
+                : `Asignar sucursal a ${user.nombre_completo}`
+            }
+            className="flex items-center gap-1 self-start rounded-[6px] px-1 -mx-1 hover:bg-[#f5f5f5] text-left transition-colors"
+          >
             <MapPin size={16} aria-hidden />
-            {user.sucursal}
-          </span>
+            <span className={user.sucursal ? "" : "italic text-[#8e908f]"}>
+              {user.sucursal ?? "Sin sucursal"}
+            </span>
+          </button>
+        ) : (
+          user.sucursal && (
+            <span className="flex items-center gap-1">
+              <MapPin size={16} aria-hidden />
+              {user.sucursal}
+            </span>
+          )
         )}
         {user.fecha_modificacion && (
           <span className="text-[14px]">Modificado: {user.fecha_modificacion}</span>
