@@ -14,7 +14,7 @@ import { formatDate } from "@/lib/utils/date";
 // UI → API
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
   Pendiente: "Pendiente",
-  "En producción": "En_produccion",
+  "En producción": "En producción",
   Finalizado: "Finalizado",
   Entregado: "Entregado",
   Cancelado: "Cancelado",
@@ -23,7 +23,7 @@ const STATUS_MAP_UI_TO_API: Record<string, string> = {
 // API → UI
 const STATUS_MAP_API_TO_UI: Record<string, string> = {
   Pendiente: "Pendiente",
-  En_produccion: "En producción",
+  "En producción": "En producción",
   Finalizado: "Finalizado",
   Entregado: "Entregado",
   Cancelado: "Cancelado",

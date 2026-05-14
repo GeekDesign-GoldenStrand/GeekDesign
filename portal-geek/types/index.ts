@@ -11,7 +11,7 @@ export type OrderStatus =
   | "Entregado"
   | "Facturado";
 
-export type QuotationStatus = "En_revision" | "Validada" | "Aprobada" | "Rechazada";
+export type QuotationStatus = "Pendiente" | "Validada" | "Aprobada" | "Rechazada";
 
 export type PaymentMethod = "efectivo" | "transferencia" | "mercadopago";
 
