@@ -22,7 +22,7 @@ jest.mock("@/lib/db/client", () => ({
       update: jest.fn(),
     },
     sucursalesMaquina: {
-      upsert: jest.fn(), // ✅ replaced findFirst, create, update
+      upsert: jest.fn(),
     },
   },
 }));
@@ -33,7 +33,7 @@ const mockCount = prisma.maquinas.count as jest.Mock;
 const mockFindUnique = prisma.maquinas.findUnique as jest.Mock;
 const mockCreate = prisma.maquinas.create as jest.Mock;
 const mockUpdate = prisma.maquinas.update as jest.Mock;
-const mockSucursalUpsert = prisma.sucursalesMaquina.upsert as jest.Mock; // ✅
+const mockSucursalUpsert = prisma.sucursalesMaquina.upsert as jest.Mock;
 
 const MAQUINA = {
   id_maquina: 1,

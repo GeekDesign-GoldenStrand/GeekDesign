@@ -16,9 +16,7 @@ jest.mock("@/lib/db/client", () => ({
       update: jest.fn(),
     },
     sucursalesMaquina: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      create: jest.fn(),
+      upsert: jest.fn(),
     },
   },
 }));
@@ -29,9 +27,7 @@ const mockCount = prisma.maquinas.count as jest.Mock;
 const mockFindUnique = prisma.maquinas.findUnique as jest.Mock;
 const mockCreate = prisma.maquinas.create as jest.Mock;
 const mockUpdate = prisma.maquinas.update as jest.Mock;
-const mockSucursalFindFirst = prisma.sucursalesMaquina.findFirst as jest.Mock;
-const mockSucursalUpdate = prisma.sucursalesMaquina.update as jest.Mock;
-const mockSucursalCreate = prisma.sucursalesMaquina.create as jest.Mock;
+const mockSucursalUpsert = prisma.sucursalesMaquina.upsert as jest.Mock;
 
 const mockGetSession = jest.fn();
 jest.mock("@/lib/auth/session", () => ({
@@ -69,7 +65,6 @@ function makeAppWithId(method: "GET" | "PUT" | "DELETE", routes: Record<string, 
 function makeAppWithSucursalId(routes: Record<string, any>) {
   return createApp(routes, (url) => {
     const segments = url.pathname.split("/");
-    // Path format: /api/maquinas/1/sucursales
     return { id: segments[segments.length - 2] };
   });
 }
@@ -418,10 +413,9 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
     expect(res.status).toBe(403);
   });
 
-  it("retorna 200 al crear una nueva asignación", async () => {
+  it("retorna 200 al crear o actualizar una asignación", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockSucursalFindFirst.mockResolvedValue(null);
-    mockSucursalCreate.mockResolvedValue({ id_sucursal_maquina: 1, id_maquina: 1, id_sucursal: 1 });
+    mockSucursalUpsert.mockResolvedValue({ id_sucursal_maquina: 1, id_maquina: 1, id_sucursal: 1 });
     mockFindUnique.mockResolvedValue(CREATED_MAQUINA);
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
@@ -429,32 +423,12 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
       .send({ sucursal: 1 });
 
     expect(res.status).toBe(200);
-    expect(mockSucursalCreate).toHaveBeenCalled();
-  });
-
-  it("retorna 200 al actualizar una asignación existente", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockSucursalFindFirst.mockResolvedValue({
-      id_sucursal_maquina: 5,
-      id_maquina: 1,
-      id_sucursal: 1,
-    });
-    mockSucursalUpdate.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 2 });
-    mockFindUnique.mockResolvedValue(CREATED_MAQUINA);
-
-    const res = await makeAppWithSucursalId({ PUT: routes.PUT })
-      .put("/api/maquinas/1/sucursales")
-      .send({ sucursal: 2 });
-
-    expect(res.status).toBe(200);
-    expect(mockSucursalUpdate).toHaveBeenCalled();
-    expect(mockSucursalCreate).not.toHaveBeenCalled();
+    expect(mockSucursalUpsert).toHaveBeenCalled();
   });
 
   it("acepta rol Administrador como equivalente a Direccion", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
-    mockSucursalFindFirst.mockResolvedValue(null);
-    mockSucursalCreate.mockResolvedValue({});
+    mockSucursalUpsert.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(CREATED_MAQUINA);
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
@@ -492,8 +466,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
   it("retorna 404 cuando la máquina no existe", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockSucursalFindFirst.mockResolvedValue(null);
-    mockSucursalCreate.mockResolvedValue({});
+    mockSucursalUpsert.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(null);
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
