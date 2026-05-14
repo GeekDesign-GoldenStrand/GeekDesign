@@ -260,7 +260,7 @@ describe("asignarSucursal", () => {
     mockSucursalCreate.mockResolvedValue({ id_sucursal_maquina: 1, id_maquina: 1, id_sucursal: 2 });
     mockFindUnique.mockResolvedValue(MAQUINA);
 
-    await asignarSucursal(1, [2]);
+    await asignarSucursal(1, 2);
 
     expect(mockSucursalCreate).toHaveBeenCalledWith({
       data: { id_maquina: 1, id_sucursal: 2 },
@@ -276,7 +276,7 @@ describe("asignarSucursal", () => {
     mockSucursalUpdate.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 2 });
     mockFindUnique.mockResolvedValue(MAQUINA);
 
-    await asignarSucursal(1, [2]);
+    await asignarSucursal(1, 2);
 
     expect(mockSucursalUpdate).toHaveBeenCalledWith({
       where: { id_sucursal_maquina: 5 },
@@ -290,7 +290,7 @@ describe("asignarSucursal", () => {
     mockSucursalCreate.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(MAQUINA);
 
-    const result = await asignarSucursal(1, [1]);
+    const result = await asignarSucursal(1, 1);
     expect(result).toEqual(MAQUINA);
   });
 
@@ -299,7 +299,7 @@ describe("asignarSucursal", () => {
     mockSucursalCreate.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(null);
 
-    await expect(asignarSucursal(999, [1])).rejects.toThrow(NotFoundError);
+    await expect(asignarSucursal(999, 1)).rejects.toThrow(NotFoundError);
   });
 });
 
