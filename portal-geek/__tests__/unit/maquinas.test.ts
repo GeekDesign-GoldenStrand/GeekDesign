@@ -7,7 +7,7 @@ import {
   createMaquina,
   updateMaquina,
   deleteMaquina,
-  asignarSucursales,
+  asignarSucursal,
 } from "@/lib/services/maquinas";
 import { NotFoundError } from "@/lib/utils/errors";
 
@@ -250,9 +250,9 @@ describe("updateMaquina", () => {
 });
 
 // ---------------------------------------------------------------------------
-// asignarSucursales — Asignar Sucursal
+// asignarSucursal — Asignar Sucursal
 // ---------------------------------------------------------------------------
-describe("asignarSucursales", () => {
+describe("asignarSucursal", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("crea un nuevo registro si no existe asignación previa", async () => {
@@ -260,7 +260,7 @@ describe("asignarSucursales", () => {
     mockSucursalCreate.mockResolvedValue({ id_sucursal_maquina: 1, id_maquina: 1, id_sucursal: 2 });
     mockFindUnique.mockResolvedValue(MAQUINA);
 
-    await asignarSucursales(1, [2]);
+    await asignarSucursal(1, [2]);
 
     expect(mockSucursalCreate).toHaveBeenCalledWith({
       data: { id_maquina: 1, id_sucursal: 2 },
@@ -276,7 +276,7 @@ describe("asignarSucursales", () => {
     mockSucursalUpdate.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 2 });
     mockFindUnique.mockResolvedValue(MAQUINA);
 
-    await asignarSucursales(1, [2]);
+    await asignarSucursal(1, [2]);
 
     expect(mockSucursalUpdate).toHaveBeenCalledWith({
       where: { id_sucursal_maquina: 5 },
@@ -290,7 +290,7 @@ describe("asignarSucursales", () => {
     mockSucursalCreate.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(MAQUINA);
 
-    const result = await asignarSucursales(1, [1]);
+    const result = await asignarSucursal(1, [1]);
     expect(result).toEqual(MAQUINA);
   });
 
@@ -299,7 +299,7 @@ describe("asignarSucursales", () => {
     mockSucursalCreate.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(null);
 
-    await expect(asignarSucursales(999, [1])).rejects.toThrow(NotFoundError);
+    await expect(asignarSucursal(999, [1])).rejects.toThrow(NotFoundError);
   });
 });
 
