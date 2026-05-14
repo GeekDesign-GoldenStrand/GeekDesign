@@ -22,6 +22,7 @@ interface Item {
   cantidad: number;
   precio_unitario: number;
   precio_total: number;
+  precio_anterior: number;
   estado: string;
   descripcion: string;
 }
@@ -52,11 +53,6 @@ export function QuotationDetailView({ quotation }: Props) {
   const [loading, setLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
-  const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
-
-  const toggleItem = (id: number) => {
-    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleApprove = async () => {
     if (!confirm("¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente.")) return;
@@ -100,6 +96,15 @@ export function QuotationDetailView({ quotation }: Props) {
       setShowRejectModal(false);
     }
   };
+
+  const totalAnterior = quotation.items.reduce((acc, item) => acc + (item.precio_anterior || item.precio_total), 0);
+  const totalNuevo = quotation.estatus === "Rechazada" ? 0 : quotation.items.reduce((acc, item) => {
+    if (item.estado === "rechazado") return acc;
+    return acc + item.precio_total;
+  }, 0);
+
+  const diferencia = totalNuevo - totalAnterior;
+  const porcentajeDiferencia = totalAnterior > 0 ? (diferencia / totalAnterior) * 100 : 0;
 
   const isActionable = quotation.estatus === "Validada";
 
@@ -262,7 +267,6 @@ export function QuotationDetailView({ quotation }: Props) {
                   <tr className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px]">
                     <th className="px-8 py-4">Servicio</th>
                     <th className="px-4 py-4 text-center">Precio Solicitado</th>
-                    <th className="px-8 py-4 text-right">Ver Detalles</th>
                   </tr>
                 ) : (
                   <tr className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px]">
@@ -273,7 +277,6 @@ export function QuotationDetailView({ quotation }: Props) {
                     <th className="px-4 py-4 text-center">Antes</th>
                     <th className="px-4 py-4 text-center">Total</th>
                     <th className="px-4 py-4 text-center">Cambio</th>
-                    <th className="px-8 py-4 text-right">Ver</th>
                   </tr>
                 )}
               </thead>
@@ -291,11 +294,6 @@ export function QuotationDetailView({ quotation }: Props) {
                           <>
                             <td className="px-4 py-6 text-center align-top font-bold">
                               {formatPeso(item.precio_total)} <span className="text-[10px] font-medium">MXN</span>
-                            </td>
-                            <td className="px-8 py-6 text-right align-top">
-                              <button onClick={() => toggleItem(item.id)} className="text-[#B9B8B8] hover:text-[#DF2646]">
-                                <ArrowRight size={20} weight="bold" className={`transition-transform ${expandedItems[item.id] ? "rotate-90" : ""}`} />
-                              </button>
                             </td>
                           </>
                         ) : (
@@ -327,41 +325,21 @@ export function QuotationDetailView({ quotation }: Props) {
                               {item.cantidad}
                             </td>
                             <td className="px-4 py-6 text-center align-top text-[#575757] font-medium">
-                              {formatPeso(item.precio_total)} <br/><span className="text-[10px]">MXN</span>
+                              {formatPeso(item.precio_anterior || item.precio_total)} <br/><span className="text-[10px]">MXN</span>
                             </td>
                             <td className="px-4 py-6 text-center align-top font-bold">
                               {item.estado === "rechazado" || quotation.estatus === "Rechazada" ? "—" : formatPeso(item.precio_total)} <br/><span className="text-[10px] font-medium">{item.estado === "rechazado" || quotation.estatus === "Rechazada" ? "" : "MXN"}</span>
                             </td>
                             <td className="px-4 py-6 text-center align-top">
                               {item.estado === "modificado" && quotation.estatus !== "Rechazada" ? (
-                                <span className="text-[#F16C20] font-bold text-[12px]">+38%</span>
+                                <span className={`font-bold text-[12px] ${item.precio_total > item.precio_anterior ? "text-[#F16C20]" : "text-[#2A940D]"}`}>
+                                  {item.precio_total > item.precio_anterior ? "+" : ""}{((item.precio_total - item.precio_anterior) / item.precio_anterior * 100).toFixed(1)}%
+                                </span>
                               ) : "—"}
-                            </td>
-                            <td className="px-8 py-6 text-right align-top">
-                              <button onClick={() => toggleItem(item.id)} className="text-[#B9B8B8] hover:text-[#DF2646]">
-                                <ArrowRight size={20} weight="bold" className={`transition-transform ${expandedItems[item.id] ? "rotate-90" : ""}`} />
-                              </button>
                             </td>
                           </>
                         )}
                       </tr>
-                      {expandedItems[item.id] && (
-                        <tr>
-                          <td colSpan={quotation.estatus === "Pendiente" ? 3 : 8} className="px-8 pb-6">
-                            <div className={`p-4 rounded-[10px] text-[14px] font-medium flex items-center gap-3 ${
-                              item.estado === "modificado" ? "bg-[#FFF9F0] text-[#855E28]" : item.estado === "rechazado" ? "bg-[#FFF1F1] text-[#A91E1E]" : "bg-gray-50 text-gray-600"
-                            }`}>
-                              <div className={`w-1.5 h-1.5 rounded-full ${
-                                item.estado === "modificado" ? "bg-[#F16C20]" : item.estado === "rechazado" ? "bg-[#DF2646]" : "bg-gray-400"
-                              }`} />
-                              <p>
-                                <span className="font-bold">{item.estado === "modificado" ? "Nota sobre el cambio: " : item.estado === "rechazado" ? "Motivo del rechazo: " : "Detalles: "}</span>
-                                {item.descripcion}
-                              </p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                     </React.Fragment>
                   ))
                 ) : (
@@ -418,26 +396,24 @@ export function QuotationDetailView({ quotation }: Props) {
               <div className="flex justify-between items-center text-[16px] font-medium">
                 <span className="text-[#1e1e1e]">{quotation.estatus === "Pendiente" ? "Total solicitado" : "Total anterior"}</span>
                 <span className={`${quotation.estatus !== "Pendiente" ? "text-[#575757] line-through" : "text-[24px] font-extrabold text-[#1e1e1e]"}`}>
-                  {formatPeso(quotation.monto_total)} MXN
+                  {formatPeso(totalAnterior)} MXN
                 </span>
               </div>
               {quotation.estatus !== "Pendiente" && (
                 <div className="flex justify-between items-center">
                   <span className="text-[18px] font-bold text-[#1e1e1e]">Nuevo total</span>
                   <span className="text-[24px] font-extrabold text-[#F16C20]">
-                    {quotation.estatus === "Rechazada" ? formatPeso(0) : formatPeso(quotation.monto_total)} MXN
+                    {formatPeso(totalNuevo)} MXN
                   </span>
                 </div>
               )}
             </div>
 
-            {(counts.modificados > 0 || quotation.estatus === "Rechazada") && (
-              <div className={`${quotation.estatus === "Rechazada" ? "bg-[#FFF1F1] border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}>
+            {(counts.modificados > 0 || counts.rechazados > 0 || quotation.estatus === "Rechazada") && (
+              <div className={`${diferencia < 0 ? "bg-[#FFF1F1] border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}>
                 <span className="text-[14px] font-bold text-[#1e1e1e]">Diferencia</span>
-                <span className={`text-[14px] font-bold ${quotation.estatus === "Rechazada" ? "text-[#DF2646]" : "text-[#F16C20]"}`}>
-                  {quotation.estatus === "Rechazada" 
-                    ? `- ${formatPeso(quotation.monto_total || 25000)} (-100%)` 
-                    : `+ $1,600 MXN (+11.2%)`}
+                <span className={`text-[14px] font-bold ${diferencia < 0 ? "text-[#DF2646]" : "text-[#F16C20]"}`}>
+                  {diferencia > 0 ? "+" : ""}{formatPeso(diferencia)} MXN ({diferencia > 0 ? "+" : ""}{porcentajeDiferencia.toFixed(1)}%)
                 </span>
               </div>
             )}

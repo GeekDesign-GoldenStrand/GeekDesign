@@ -148,7 +148,51 @@ async function main() {
     },
   });
 
-  const material = await prisma.materiales.upsert({
+  const servicioGrabado = await prisma.servicios.upsert({
+    where: { id_servicio: 2 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      nombre_servicio: "Grabado Láser",
+      descripcion_servicio: "Grabado superficial en diversos materiales",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioBordado = await prisma.servicios.upsert({
+    where: { id_servicio: 3 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      nombre_servicio: "Bordado",
+      descripcion_servicio: "Bordado computarizado",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioImpresion = await prisma.servicios.upsert({
+    where: { id_servicio: 4 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      nombre_servicio: "Impresión UV",
+      descripcion_servicio: "Impresión directa en cama plana",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioVinil = await prisma.servicios.upsert({
+    where: { id_servicio: 5 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      nombre_servicio: "Corte de Vinil",
+      descripcion_servicio: "Corte de vinil autoadherible",
+      estatus_servicio: true,
+    },
+  });
+
+  const materialMdf = await prisma.materiales.upsert({
     where: { id_material: 1 },
     update: {},
     create: {
@@ -159,12 +203,23 @@ async function main() {
     },
   });
 
+  const materialAcrilico = await prisma.materiales.upsert({
+    where: { id_material: 2 },
+    update: {},
+    create: {
+      nombre_material: "Acrílico 3mm",
+      descripcion_material: "Acrílico transparente",
+      unidad_medida: "hoja",
+      grosor: 3.0,
+    },
+  });
+
   const opcion = await prisma.opcionesProducto.upsert({
     where: { id_opcion: 1 },
     update: {},
     create: {
       id_servicio: servicioCorte.id_servicio,
-      id_material: material.id_material,
+      id_material: materialMdf.id_material,
       nombre_opcion: "Tamaño",
       afecta_precio: true,
     },
@@ -207,8 +262,6 @@ async function main() {
         cantidad_maxima: 99999,
         precio_unitario: 20.0,
         tiene_mayoreo: true,
-        cantidad_mayoreo: 10,
-        descuento_mayoreo: 20.0,
         id_usuario_modifico: adminUser.id_usuario,
       },
     }),
@@ -534,6 +587,176 @@ async function main() {
     }
 
     console.log(`Seeded ${demoQuotationsData.length} demo cotizaciones with services`);
+
+    // ── Complex Quotation (COT-107) ──────────────────────────────────────────
+    // This one has a linked Pedido with multiple details in different states
+    const complexFolio = "COT-107";
+    
+    // Cleanup complex data
+    await prisma.detallePedido.deleteMany({ where: { pedido: { cotizaciones: { some: { folio: complexFolio } } } } });
+    await prisma.pedidos.deleteMany({ where: { cotizaciones: { some: { folio: complexFolio } } } });
+    await prisma.variablesCotizacion.deleteMany({ where: { cotizacion: { folio: complexFolio } } });
+    await prisma.cotizaciones.deleteMany({ where: { folio: complexFolio } });
+
+    const designFile = await prisma.archivosDisenio.upsert({
+      where: { id_archivo: 1 },
+      update: {},
+      create: {
+        nombre_archivo: "demo_design.pdf",
+        url_archivo: "/uploads/demo_design.pdf",
+        formato: "pdf",
+      }
+    });
+
+    const complexPedido = await prisma.pedidos.create({
+      data: {
+        id_cliente: clienteDemo.id_cliente,
+        id_sucursal: 1,
+        id_estatus: 1, // Pendiente
+        id_estado_factura: 1, // Cotizacion
+        notas: "Pedido complejo para pruebas de estados mixtos.",
+        detalles: {
+          create: [
+            {
+              id_servicio: 1, // Corte Láser
+              id_material: 1, // MDF
+              id_archivo: designFile.id_archivo,
+              cantidad: 10,
+              precio_unitario: 150,
+              subtotal: 1500,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:sin_cambios] [ANTES:1500] Servicio validado correctamente.",
+            },
+            {
+              id_servicio: 2, // Grabado Láser
+              id_material: 1, // MDF
+              id_archivo: designFile.id_archivo,
+              cantidad: 5,
+              precio_unitario: 200,
+              subtotal: 1000,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:modificado] [ANTES:724.64] Se ajustó el precio por el nivel de detalle requerido.",
+            },
+            {
+              id_servicio: 3, // Bordado
+              id_material: 1, // MDF (filler)
+              id_archivo: designFile.id_archivo,
+              cantidad: 1,
+              precio_unitario: 500,
+              subtotal: 500,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:rechazado] [MOTIVO:No disponible] [ANTES:500] No contamos con capacidad técnica para este bordado específico.",
+            }
+          ]
+        }
+      }
+    });
+
+    await prisma.cotizaciones.create({
+      data: {
+        folio: complexFolio,
+        monto_total: 3000,
+        notas: "Cotización con estados mixtos para validación de UI.",
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Validada"],
+        id_pedido: complexPedido.id_pedido,
+      }
+    });
+
+    console.log("Seeded complex quotation COT-107");
+
+    // ── Ultra Complex Quotation (COT-108) ────────────────────────────────────
+    const ultraComplexFolio = "COT-108";
+    
+    await prisma.detallePedido.deleteMany({ where: { pedido: { cotizaciones: { some: { folio: ultraComplexFolio } } } } });
+    await prisma.pedidos.deleteMany({ where: { cotizaciones: { some: { folio: ultraComplexFolio } } } });
+    await prisma.variablesCotizacion.deleteMany({ where: { cotizacion: { folio: ultraComplexFolio } } });
+    await prisma.cotizaciones.deleteMany({ where: { folio: ultraComplexFolio } });
+
+    const ultraComplexPedido = await prisma.pedidos.create({
+      data: {
+        id_cliente: clienteDemo.id_cliente,
+        id_sucursal: 1,
+        id_estatus: 1, // Pendiente
+        id_estado_factura: 1, // Cotizacion
+        notas: "Cotización de 5 servicios con estados mixtos.",
+        detalles: {
+          create: [
+            {
+              id_servicio: 1, // Corte Láser
+              id_material: 1,
+              id_archivo: designFile.id_archivo,
+              cantidad: 10,
+              precio_unitario: 150,
+              subtotal: 1500,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:sin_cambios] [ANTES:1500] Servicio validado sin ajustes.",
+            },
+            {
+              id_servicio: 2, // Grabado Láser
+              id_material: 1,
+              id_archivo: designFile.id_archivo,
+              cantidad: 1,
+              precio_unitario: 1200,
+              subtotal: 1200,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:modificado] [ANTES:800] Incremento por diseño complejo (+50%).",
+            },
+            {
+              id_servicio: 3, // Bordado
+              id_material: 1,
+              id_archivo: designFile.id_archivo,
+              cantidad: 1,
+              precio_unitario: 500,
+              subtotal: 500,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:rechazado] [MOTIVO:Capacidad] [ANTES:500] No disponible en este momento.",
+            },
+            {
+              id_servicio: 4, // Impresión UV
+              id_material: 2, // Acrílico
+              id_archivo: designFile.id_archivo,
+              cantidad: 2,
+              precio_unitario: 1000,
+              subtotal: 2000,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:modificado] [ANTES:2500] Descuento especial por volumen (-20%).",
+            },
+            {
+              id_servicio: 5, // Corte de Vinil
+              id_material: 1,
+              id_archivo: designFile.id_archivo,
+              cantidad: 3,
+              precio_unitario: 100,
+              subtotal: 300,
+              opciones_seleccionadas: {},
+              responsable_recoleccion: "Cliente",
+              notas: "[ESTADO:sin_cambios] [ANTES:300] Precio base mantenido.",
+            }
+          ]
+        }
+      }
+    });
+
+    await prisma.cotizaciones.create({
+      data: {
+        folio: ultraComplexFolio,
+        monto_total: 5500,
+        notas: "Cotización maestra con 5 servicios y todos los estados posibles.",
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Validada"],
+        id_pedido: ultraComplexPedido.id_pedido,
+      }
+    });
+
+    console.log("Seeded ultra complex quotation COT-108");
   }
 }
 

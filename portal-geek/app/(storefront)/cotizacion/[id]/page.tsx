@@ -36,30 +36,35 @@ export default async function CotizacionDetallePage({ params }: Props) {
       ? quote.pedido.detalles.map((d) => {
           const notas = d.notas || "";
           const estadoMatch = notas.match(/\[ESTADO:(.*?)\]/);
-          const cleanNotas = notas
-            .replace(/\[ESTADO:.*?\]/, "")
-            .replace(/\[MOTIVO:.*?\]/, "")
-            .trim();
+          const antesMatch = notas.match(/\[ANTES:(.*?)\]/);
+          const precioAnterior = antesMatch ? Number(antesMatch[1]) : Number(d.precio_unitario) * d.cantidad;
+          const currentTotal = Number(d.precio_unitario) * d.cantidad;
+          const isActuallyModified = estadoMatch && estadoMatch[1].toLowerCase() === "modificado" && precioAnterior !== currentTotal;
 
           return {
             id: d.id_detalle,
             nombre: d.servicio.nombre_servicio,
             cantidad: d.cantidad,
             precio_unitario: Number(d.precio_unitario),
-            precio_total: Number(d.precio_unitario) * d.cantidad,
-            estado: (estadoMatch ? estadoMatch[1].toLowerCase() : "sin_cambios"),
-            descripcion: cleanNotas || "Servicio solicitado",
+            precio_total: currentTotal,
+            precio_anterior: precioAnterior,
+            estado: isActuallyModified ? "modificado" : (estadoMatch ? (estadoMatch[1].toLowerCase() === "modificado" ? "sin_cambios" : estadoMatch[1].toLowerCase()) : "sin_cambios"),
+            descripcion: d.servicio.descripcion_servicio || "Servicio solicitado",
           };
         })
-      : quote.variablesCotizacion.map((v) => ({
-          id: v.id_valor,
-          nombre: v.formula.servicio.nombre_servicio,
-          cantidad: 1,
-          precio_unitario: Number(v.valor),
-          precio_total: Number(v.valor),
-          estado: "sin_cambios",
-          descripcion: "Servicio solicitado",
-        })),
+      : quote.variablesCotizacion.map((v) => {
+          const precio = Number(v.valor);
+          return {
+            id: v.id_valor,
+            nombre: v.formula.servicio.nombre_servicio,
+            cantidad: 1,
+            precio_unitario: precio,
+            precio_total: precio,
+            precio_anterior: precio,
+            estado: "sin_cambios",
+            descripcion: v.formula.servicio.descripcion_servicio || "Servicio solicitado",
+          };
+        }),
   };
 
   return (

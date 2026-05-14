@@ -383,6 +383,11 @@ export async function approveQuotation(quotationId: number, userId: number) {
         fecha_cambio: new Date(),
       },
     });
+    await tx.variablesCotizacion.updateMany({
+      where: { id_cotizacion: quotationId },
+      data: {
+      }
+    });
 
     return { quotation: updatedQuotation, pedido };
   });
