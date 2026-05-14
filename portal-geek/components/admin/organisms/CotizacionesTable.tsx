@@ -1,8 +1,10 @@
 "use client";
 
-import { PencilSimple, CaretDown } from "@phosphor-icons/react";
+import { ArrowSquareOut, CaretDown } from "@phosphor-icons/react";
 
 import { formatDate } from "@/lib/utils/date";
+
+import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
 
 type Cotizacion = {
   id_cotizacion: number;
@@ -90,7 +92,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
           <span className="whitespace-nowrap">Cliente</span>
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">Estatus</span>
-          <span className="whitespace-nowrap">Acciones</span>
+          <span className="whitespace-nowrap disabled hidden">Acciones</span>
         </div>
 
         {cotizaciones.map((c) => (
@@ -107,7 +109,10 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
             </span>
 
             {/* Monto */}
-            <span className="whitespace-nowrap">${c.monto_total.toLocaleString("es-MX")} MXN</span>
+            <div className="flex items-center justify-center gap-1">
+              <span className="whitespace-nowrap">${c.monto_total.toLocaleString("es-MX")} MXN</span>
+              <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada? c.fecha_estimada : ""}/>
+            </div>
 
             {/* Entrega */}
             <span className="whitespace-nowrap">
@@ -156,7 +161,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 className="text-black hover:text-[#e42200] transition-colors p-2"
                 title="Editar cotización"
               >
-                <PencilSimple size={18} />
+                <ArrowSquareOut size={25} />
               </button>
             </div>
           </div>
