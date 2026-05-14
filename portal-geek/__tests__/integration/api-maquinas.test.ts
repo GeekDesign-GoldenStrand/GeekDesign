@@ -405,7 +405,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: [1] });
+      .send({ sucursal: 1 });
     expect(res.status).toBe(401);
   });
 
@@ -414,7 +414,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: [1] });
+      .send({ sucursal: 1 });
     expect(res.status).toBe(403);
   });
 
@@ -426,7 +426,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: [1] });
+      .send({ sucursal: 1 });
 
     expect(res.status).toBe(200);
     expect(mockSucursalCreate).toHaveBeenCalled();
@@ -444,7 +444,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: [2] });
+      .send({ sucursal: 2 });
 
     expect(res.status).toBe(200);
     expect(mockSucursalUpdate).toHaveBeenCalled();
@@ -459,7 +459,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: [1] });
+      .send({ sucursal: 1 });
     expect(res.status).toBe(200);
   });
 
@@ -468,7 +468,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/abc/sucursales")
-      .send({ sucursales: [1] });
+      .send({ sucursal: 1 });
     expect(res.status).toBe(422);
   });
 
@@ -477,7 +477,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: "no-soy-un-array" });
+      .send({ sucursal: "no-soy-un-array" });
     expect(res.status).toBe(422);
   });
 
@@ -486,7 +486,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/1/sucursales")
-      .send({ sucursales: ["abc"] });
+      .send({ sucursal: ["abc"] });
     expect(res.status).toBe(422);
   });
 
@@ -498,7 +498,7 @@ describe("PUT /api/maquinas/[id]/sucursales — Asignar Sucursal", () => {
 
     const res = await makeAppWithSucursalId({ PUT: routes.PUT })
       .put("/api/maquinas/999/sucursales")
-      .send({ sucursales: [1] });
+      .send({ sucursal: 1 });
     expect(res.status).toBe(404);
   });
 });
