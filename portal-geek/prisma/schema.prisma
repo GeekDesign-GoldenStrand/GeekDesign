@@ -264,6 +264,7 @@ model SucursalesMaquina {
   sucursal Sucursales @relation(fields: [id_sucursal], references: [id_sucursal])
   maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
 
+  @@unique([id_maquina, id_sucursal])
   @@map("SUCURSALESMAQUINA")
 }
 
@@ -275,6 +276,7 @@ model ServiciosMaquina {
   servicio Servicios @relation(fields: [id_servicio], references: [id_servicio])
   maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
 
+  @@unique([id_servicio, id_maquina])
   @@map("SERVICIOSMAQUINA")
 }
 
