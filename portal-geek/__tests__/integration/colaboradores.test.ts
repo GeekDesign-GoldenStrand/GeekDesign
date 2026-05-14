@@ -478,3 +478,104 @@ describe("DELETE /api/colaboradores/[id] — COL-04 Eliminar colaborador", () =>
     expect(res.status).toBe(422);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// COL-05 — PUT /api/colaboradores/[id] — Asignar colaborador a sucursal
+// ──────────────────────────────────────────────────────────────────────────────
+describe("PUT /api/colaboradores/[id] — COL-05 Asignar colaborador a sucursal", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/colaboradores/[id]/route");
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/1")
+      .send({ id_sucursal: 2 });
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 403 con rol Colaborador", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/1")
+      .send({ id_sucursal: 2 });
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 403 con rol Finanzas", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/1")
+      .send({ id_sucursal: 2 });
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 200 con la nueva sucursal asignada", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const updated = {
+      ...BASE_COLABORADOR,
+      colaborador: {
+        ...BASE_COLABORADOR.colaborador,
+        sucursal: { id_sucursal: 2, nombre_sucursal: "Sucursal Sur" },
+      },
+    };
+    mockUpdate.mockResolvedValue(updated);
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/1")
+      .send({ id_sucursal: 2 });
+    expect(res.status).toBe(200);
+    expect(res.body.data.colaborador.sucursal.id_sucursal).toBe(2);
+    expect(res.body.data.colaborador.sucursal.nombre_sucursal).toBe("Sucursal Sur");
+  });
+
+  it("actualiza id_sucursal mediante el nested update de colaborador", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockUpdate.mockResolvedValue(BASE_COLABORADOR);
+
+    await makeAppById({ PUT: routes.PUT }).put("/api/colaboradores/1").send({ id_sucursal: 3 });
+
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    const call = mockUpdate.mock.calls[0][0];
+    expect(call.where).toEqual({ id_usuario: 1 });
+    expect(call.data.colaborador.update.id_sucursal).toBe(3);
+  });
+
+  it("retorna 404 cuando el colaborador no existe (P2025)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockUpdate.mockRejectedValue(Object.assign(new Error("Record not found"), { code: "P2025" }));
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/999")
+      .send({ id_sucursal: 2 });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toContain("no encontrado");
+  });
+
+  it("retorna 422 cuando id_sucursal no es un entero positivo", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/1")
+      .send({ id_sucursal: 0 });
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando id_sucursal no es numérico", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/1")
+      .send({ id_sucursal: "abc" });
+    expect(res.status).toBe(422);
+  });
+});

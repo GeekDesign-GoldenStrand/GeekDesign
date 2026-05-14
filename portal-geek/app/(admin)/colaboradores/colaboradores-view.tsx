@@ -7,6 +7,7 @@ import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { UserCard } from "@/components/admin/organisms/UserCard";
 import {
   AgregarColaboradorModal,
+  AsignarSucursalModal,
   ConfirmarEliminarColaboradorModal,
   EditarColaboradorModal,
   type ColaboradorApiRow,
@@ -33,6 +34,7 @@ interface ColaboradorRow {
   edad: number | null;
   sexo: string | null;
   sucursal: string | null;
+  id_sucursal: number | null;
   telefono: string | null;
   fecha_modificacion: string | null;
   estatus: string;
@@ -53,6 +55,7 @@ function mapApiRow(item: ColaboradorApiRow): ColaboradorRow {
     edad: item.colaborador?.edad ?? null,
     sexo: item.colaborador?.sexo ?? null,
     sucursal: item.colaborador?.sucursal?.nombre_sucursal ?? null,
+    id_sucursal: item.colaborador?.sucursal?.id_sucursal ?? null,
     telefono: item.colaborador?.telefono ?? null,
     fecha_modificacion: item.colaborador?.fecha_modificacion
       ? new Date(item.colaborador.fecha_modificacion).toLocaleDateString("es-MX", {
@@ -97,6 +100,15 @@ export function ColaboradoresView() {
   const [editFetchError, setEditFetchError] = useState<string | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Assign sucursal state
+  const [asignandoColaborador, setAsignandoColaborador] = useState<{
+    id: number;
+    nombre: string;
+    id_sucursal: number | null;
+  } | null>(null);
+  const [asignarLoading, setAsignarLoading] = useState(false);
+  const [asignarError, setAsignarError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -226,6 +238,44 @@ export function ColaboradoresView() {
     }
   }
 
+  function openAsignarSucursal(userId: number) {
+    const row = colaboradores.find((c) => c.id_usuario === userId);
+    if (!row) return;
+    setAsignarError(null);
+    setAsignandoColaborador({
+      id: row.id_usuario,
+      nombre: row.nombre_completo,
+      id_sucursal: row.id_sucursal,
+    });
+  }
+
+  async function handleAsignarSucursal(idSucursal: number) {
+    if (!asignandoColaborador) return;
+    setAsignarLoading(true);
+    setAsignarError(null);
+    try {
+      const res = await fetch(`/api/colaboradores/${asignandoColaborador.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_sucursal: idSucursal }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setAsignarError((json as { error?: string })?.error ?? `Error ${res.status}`);
+        return;
+      }
+      const updated = (json as { data: ColaboradorApiRow }).data;
+      setColaboradores((prev) =>
+        prev.map((c) => (c.id_usuario === asignandoColaborador.id ? mapApiRow(updated) : c))
+      );
+      setAsignandoColaborador(null);
+    } catch {
+      setAsignarError("No se pudo conectar con el servidor");
+    } finally {
+      setAsignarLoading(false);
+    }
+  }
+
   async function handleDeleteConfirm() {
     if (!deletingColaborador) return;
     setDeleteLoading(true);
@@ -327,6 +377,7 @@ export function ColaboradoresView() {
                 onStatusChange={handleStatusChange}
                 savingStatus={savingStatus === u.id_usuario}
                 onEdit={openEditModal}
+                onSucursalClick={openAsignarSucursal}
                 onDelete={(id) => {
                   setDeletingColaborador({ id, name: u.nombre_completo });
                   setDeleteError(null);
@@ -358,6 +409,21 @@ export function ColaboradoresView() {
         serverError={deleteError}
         onClose={() => setDeletingColaborador(null)}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <AsignarSucursalModal
+        isOpen={asignandoColaborador !== null}
+        colaboradorId={asignandoColaborador?.id ?? null}
+        colaboradorName={asignandoColaborador?.nombre ?? ""}
+        currentSucursalId={asignandoColaborador?.id_sucursal ?? null}
+        sucursales={sucursales}
+        loading={asignarLoading}
+        serverError={asignarError}
+        onClose={() => {
+          setAsignandoColaborador(null);
+          setAsignarError(null);
+        }}
+        onSubmit={handleAsignarSucursal}
       />
 
       <EditarColaboradorModal
