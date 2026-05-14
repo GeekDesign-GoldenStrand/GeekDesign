@@ -10,7 +10,7 @@ import { SucursalSelector } from "@/components/admin/servicios/molecules/Sucursa
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
 import { useNuevoServicioForm } from "@/lib/hooks/useNuevoServicioForm";
 
-export default function NuevoServicioPage() {
+export function ViewNuevoServicio() {
   const { form, submitting, submitError, initialLoading, fetchError, canSubmit, options, actions } =
     useNuevoServicioForm();
 
