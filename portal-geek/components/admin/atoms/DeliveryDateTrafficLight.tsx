@@ -11,6 +11,5 @@ export default function DeliveryDateTrafficLight({ deliveryDate }: { deliveryDat
     <span className={color}>
       <AlarmIcon size={15} weight="fill" />
     </span>
-    
   );
 }

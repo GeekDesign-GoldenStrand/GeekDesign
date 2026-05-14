@@ -110,8 +110,10 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
 
             {/* Monto */}
             <div className="flex items-center justify-center gap-1">
-              <span className="whitespace-nowrap">${c.monto_total.toLocaleString("es-MX")} MXN</span>
-              <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada? c.fecha_estimada : ""}/>
+              <span className="whitespace-nowrap">
+                ${c.monto_total.toLocaleString("es-MX")} MXN
+              </span>
+              <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada ? c.fecha_estimada : ""} />
             </div>
 
             {/* Entrega */}
