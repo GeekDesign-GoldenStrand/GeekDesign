@@ -258,13 +258,12 @@ model Maquinas {
 
 model SucursalesMaquina {
   id_sucursal_maquina Int @id @default(autoincrement())
-  id_maquina          Int
+  id_maquina          Int @unique
   id_sucursal         Int
 
   sucursal Sucursales @relation(fields: [id_sucursal], references: [id_sucursal])
   maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
 
-  @@unique([id_maquina, id_sucursal])
   @@map("SUCURSALESMAQUINA")
 }
 

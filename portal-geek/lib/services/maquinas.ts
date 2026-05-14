@@ -105,20 +105,11 @@ export async function deleteMaquina(id: number): Promise<void> {
 }
 
 export async function asignarSucursal(id: number, sucursal: number): Promise<Maquinas> {
-  const existing = await prisma.sucursalesMaquina.findFirst({
+  await prisma.sucursalesMaquina.upsert({
     where: { id_maquina: id },
+    update: { id_sucursal: sucursal },
+    create: { id_maquina: id, id_sucursal: sucursal },
   });
-
-  if (existing) {
-    await prisma.sucursalesMaquina.update({
-      where: { id_sucursal_maquina: existing.id_sucursal_maquina },
-      data: { id_sucursal: sucursal },
-    });
-  } else {
-    await prisma.sucursalesMaquina.create({
-      data: { id_maquina: id, id_sucursal: sucursal },
-    });
-  }
 
   const maquina = await prisma.maquinas.findUnique({
     where: { id_maquina: id },
