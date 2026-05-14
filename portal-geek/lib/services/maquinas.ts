@@ -135,16 +135,17 @@ export async function asignarSucursal(id: number, sucursal: number): Promise<Maq
 }
 
 export async function asignarServicios(id: number, servicios: number[]): Promise<Maquinas> {
-  await prisma.serviciosMaquina.deleteMany({
-    where: { id_maquina: id },
-  });
-
-  await prisma.serviciosMaquina.createMany({
-    data: servicios.map((id_servicio) => ({
-      id_maquina: id,
-      id_servicio,
-    })),
-  });
+  await prisma.$transaction([
+    prisma.serviciosMaquina.deleteMany({
+      where: { id_maquina: id },
+    }),
+    prisma.serviciosMaquina.createMany({
+      data: servicios.map((id_servicio) => ({
+        id_maquina: id,
+        id_servicio,
+      })),
+    }),
+  ]);
 
   const maquina = await prisma.maquinas.findUnique({
     where: { id_maquina: id },
