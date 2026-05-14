@@ -105,7 +105,6 @@ export async function deleteMaquina(id: number): Promise<void> {
 }
 
 export async function asignarSucursal(id: number, sucursal: number): Promise<Maquinas> {
-
   const existing = await prisma.sucursalesMaquina.findFirst({
     where: { id_maquina: id },
   });
