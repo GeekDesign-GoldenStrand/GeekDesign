@@ -52,7 +52,7 @@ export type MaquinaOption = {
 // "Instalador" availability for linking to the service.
 export type InstaladorOption = {
   id_instalador: number;
-  nombre_proveedor: string;
+  nombre_instalador: string;
   apodo: string | null;
   costo_instalacion: string;
 };

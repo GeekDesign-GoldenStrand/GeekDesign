@@ -1,7 +1,7 @@
 "use client";
 
 import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { InstaladorOption, ProveedorOption } from "@/types/servicios";
@@ -74,9 +74,12 @@ export function ConstantesSection({
 
   // If the currently-selected origen becomes unavailable (e.g. user added
   // an auto installer constant), reset draft origen to "manual".
-  if (!origenesDisponibles.includes(draft.origen)) {
-    setDraft((d) => ({ ...d, origen: "manual" }));
-  }
+  // Runs in an effect to avoid calling setState during render.
+  useEffect(() => {
+    if (!origenesDisponibles.includes(draft.origen)) {
+      setDraft((d) => ({ ...d, origen: "manual" }));
+    }
+  }, [draft.origen, yaHayInstaladorAuto, yaHayProveedorAuto]);
 
   const handleAdd = () => {
     setError(null);
@@ -127,7 +130,7 @@ export function ConstantesSection({
     switch (c.origen) {
       case "instalador": {
         const inst = instaladoresDisponibles.find((i) => i.id_instalador === c.id_instalador);
-        return `Costo de ${inst?.nombre_proveedor ?? "?"}`;
+        return `Costo de ${inst?.nombre_instalador ?? "?"}`;
       }
       case "proveedor": {
         const prov = proveedoresDisponibles.find((p) => p.id_proveedor === c.id_proveedor);
@@ -248,7 +251,7 @@ export function ConstantesSection({
               <option value="">Selecciona</option>
               {instaladoresDisponibles.map((i) => (
                 <option key={i.id_instalador} value={i.id_instalador}>
-                  {i.nombre_proveedor} — ${i.costo_instalacion}
+                  {i.nombre_instalador} — ${i.costo_instalacion}
                 </option>
               ))}
             </select>

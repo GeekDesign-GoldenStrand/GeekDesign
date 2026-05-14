@@ -138,7 +138,7 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
 
               return (
                 <option key={i.id_instalador} value={i.id_instalador}>
-                  {i.nombre_proveedor} — {formatCosto(precioMostrado)}
+                  {i.nombre_instalador} — {formatCosto(precioMostrado)}
                   {isSelected && tieneOverride ? " (modificado)" : ""}
                 </option>
               );
