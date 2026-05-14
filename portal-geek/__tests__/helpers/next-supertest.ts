@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import supertest from "supertest";
 
-type NextRouteHandler = (
+export type NextRouteHandler = (
   req: NextRequest,
   ctx?: { params: Promise<Record<string, string>> }
 ) => Promise<Response>;

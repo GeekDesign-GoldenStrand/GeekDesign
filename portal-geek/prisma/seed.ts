@@ -1,14 +1,9 @@
 /* eslint-disable no-console */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
-
-// Dev-only default password for the seeded admin.
-// In production / CI set SEED_ADMIN_PASSWORD to override.
-const ADMIN_DEFAULT_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin123";
 
 async function main() {
   // ── Roles ──────────────────────────────────────────────────────────────────
@@ -52,14 +47,13 @@ async function main() {
 
   // ── Admin user ─────────────────────────────────────────────────────────────
   const adminRole = roles.find((r) => r.nombre_rol === "Administrador")!;
-  const adminPasswordHash = await bcrypt.hash(ADMIN_DEFAULT_PASSWORD, 12);
   const adminUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "admin@geekdesign.mx" },
-    update: { contrasena_hash: adminPasswordHash },
+    update: {},
     create: {
       nombre_completo: "Admin GeekDesign",
       correo_electronico: "admin@geekdesign.mx",
-      contrasena_hash: adminPasswordHash,
+      contrasena_hash: "$2b$10$Y566Ua8zM.6V39Q0lB9.geDqY.M0h9JdE.Qk0vG0lB9.geDqY.M0h",
       id_rol: adminRole.id_rol,
       estatus: "Activo",
     },
@@ -80,30 +74,6 @@ async function main() {
       estatus_colaborador: "Activo",
     },
   });
-
-  // ── Dirección user ──────────────────────────────────────────────────────────
-  const direccionRole = roles.find((r) => r.nombre_rol === "Direccion")!;
-  const pwd = process.env.SEED_DIRECCION_PASSWORD;
-
-  if (!pwd && process.env.NODE_ENV === "production") {
-    throw new Error("SEED_DIRECCION_PASSWORD requerido en producción");
-  }
-
-  const direccionPasswordHash = await bcrypt.hash(pwd ?? "direccion123", 12);
-
-  const direccionUser = await prisma.usuarios.upsert({
-    where: { correo_electronico: "direccion@geekdesign.mx" },
-    update: { contrasena_hash: direccionPasswordHash },
-    create: {
-      nombre_completo: "Usuario Dirección",
-      correo_electronico: "direccion@geekdesign.mx",
-      contrasena_hash: direccionPasswordHash,
-      id_rol: direccionRole.id_rol,
-      estatus: "Activo",
-    },
-  });
-
-  console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
 
   console.log("Seeded admin colaborador");
 
@@ -137,7 +107,7 @@ async function main() {
   });
 
   // ── Service + Product + Material + Pricing ─────────────────────────────────
-  const servicioCorte = await prisma.servicios.upsert({
+  const servicio = await prisma.servicios.upsert({
     where: { id_servicio: 1 },
     update: {},
     create: {
@@ -148,51 +118,7 @@ async function main() {
     },
   });
 
-  const servicioGrabado = await prisma.servicios.upsert({
-    where: { id_servicio: 2 },
-    update: {},
-    create: {
-      id_estatus: estatusServicioActivo.id_estatus_servicio,
-      nombre_servicio: "Grabado Láser",
-      descripcion_servicio: "Grabado superficial en diversos materiales",
-      estatus_servicio: true,
-    },
-  });
-
-  const servicioBordado = await prisma.servicios.upsert({
-    where: { id_servicio: 3 },
-    update: {},
-    create: {
-      id_estatus: estatusServicioActivo.id_estatus_servicio,
-      nombre_servicio: "Bordado",
-      descripcion_servicio: "Bordado computarizado",
-      estatus_servicio: true,
-    },
-  });
-
-  const servicioImpresion = await prisma.servicios.upsert({
-    where: { id_servicio: 4 },
-    update: {},
-    create: {
-      id_estatus: estatusServicioActivo.id_estatus_servicio,
-      nombre_servicio: "Impresión UV",
-      descripcion_servicio: "Impresión directa en cama plana",
-      estatus_servicio: true,
-    },
-  });
-
-  const servicioVinil = await prisma.servicios.upsert({
-    where: { id_servicio: 5 },
-    update: {},
-    create: {
-      id_estatus: estatusServicioActivo.id_estatus_servicio,
-      nombre_servicio: "Corte de Vinil",
-      descripcion_servicio: "Corte de vinil autoadherible",
-      estatus_servicio: true,
-    },
-  });
-
-  const materialMdf = await prisma.materiales.upsert({
+  const material = await prisma.materiales.upsert({
     where: { id_material: 1 },
     update: {},
     create: {
@@ -203,23 +129,12 @@ async function main() {
     },
   });
 
-  const materialAcrilico = await prisma.materiales.upsert({
-    where: { id_material: 2 },
-    update: {},
-    create: {
-      nombre_material: "Acrílico 3mm",
-      descripcion_material: "Acrílico transparente",
-      unidad_medida: "hoja",
-      grosor: 3.0,
-    },
-  });
-
   const opcion = await prisma.opcionesProducto.upsert({
     where: { id_opcion: 1 },
     update: {},
     create: {
-      id_servicio: servicioCorte.id_servicio,
-      id_material: materialMdf.id_material,
+      id_servicio: servicio.id_servicio,
+      id_material: material.id_material,
       nombre_opcion: "Tamaño",
       afecta_precio: true,
     },
@@ -262,6 +177,8 @@ async function main() {
         cantidad_maxima: 99999,
         precio_unitario: 20.0,
         tiene_mayoreo: true,
+        cantidad_mayoreo: 10,
+        descuento_mayoreo: 20.0,
         id_usuario_modifico: adminUser.id_usuario,
       },
     }),
@@ -298,20 +215,7 @@ async function main() {
   console.log(`Seeded option "${opcion.nombre_opcion}" with pricing matrix`);
 
   // ── Order statuses ─────────────────────────────────────────────────────────
-  const orderStatuses = ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
-
-  for (const descripcion of orderStatuses) {
-    await prisma.estatusPedidos.upsert({
-      where: { descripcion },
-      update: {},
-      create: { descripcion },
-    });
-  }
-
-  console.log(`Seeded ${orderStatuses.length} order statuses`);
-
-  // ── Invoice statuses ─────────────────────────────────────────
-  const invoiceStatuses = [
+  const orderStatuses = [
     "Cotizacion",
     "Pagado",
     "En_cola",
@@ -320,18 +224,17 @@ async function main() {
     "Entregado",
     "Facturado",
   ];
-
-  for (const descripcion of invoiceStatuses) {
-    await prisma.estadoFacturaPedido.upsert({
+  for (const descripcion of orderStatuses) {
+    await prisma.estatusPedidos.upsert({
       where: { descripcion },
       update: {},
       create: { descripcion },
     });
   }
+  console.log(`Seeded ${orderStatuses.length} order statuses`);
 
   // ── Quotation statuses ─────────────────────────────────────────────────────
-  const quotationStatuses = ["Pendiente", "Validada", "Rechazada", "Aprobada", "Cancelada"];
-
+  const quotationStatuses = ["Pendiente", "Validada", "Aprobada", "Rechazada"];
   for (const descripcion of quotationStatuses) {
     await prisma.estatusCotizacion.upsert({
       where: { descripcion },
@@ -339,75 +242,7 @@ async function main() {
       create: { descripcion },
     });
   }
-
   console.log(`Seeded ${quotationStatuses.length} quotation statuses`);
-
-  // ── Instaladores ───────────────────────────────────────────────────────────
-  const instaladoresData = [
-    {
-      id_instalador: 1,
-      nombre_instalador: "Carlos Ramírez",
-      apodo: "El Rápido",
-      tipo: "Instalador",
-      telefono: "8113456789",
-      correo: "carlos.ramirez@instalaciones.mx",
-      notas: "Especialista en viniles y rotulación.",
-      ubicacion: "Monterrey, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 2,
-      nombre_instalador: "Grupo Instalaciones NL",
-      apodo: null,
-      tipo: "Contratista",
-      telefono: "8129876543",
-      correo: "contacto@grupoinstala.mx",
-      notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
-      ubicacion: "San Nicolás de los Garza, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 3,
-      nombre_instalador: "Luis Mendoza",
-      apodo: "Lucho",
-      tipo: "Instalador",
-      telefono: "4423219876",
-      correo: "luis.mendoza@correo.mx",
-      notas: null,
-      ubicacion: "Querétaro, Querétaro",
-      estatus: "Activo",
-    },
-    {
-      id_instalador: 4,
-      nombre_instalador: "Patricia Solís",
-      apodo: "Paty",
-      tipo: "Instalador",
-      telefono: "5551234567",
-      correo: "paty.solis@instala.mx",
-      notas: "Instalación de lonas y toldos.",
-      ubicacion: "Ciudad de México, CDMX",
-      estatus: "Inactivo",
-    },
-  ];
-
-  for (const data of instaladoresData) {
-    await prisma.instaladores.upsert({
-      where: { id_instalador: data.id_instalador },
-      update: {},
-      create: data,
-    });
-  }
-
-  console.log(`Seeded ${instaladoresData.length} instaladores`);
-
-  // ── Invoice status map ─────────────────────────────────────────
-  const invoiceStatusRows = await prisma.estadoFacturaPedido.findMany();
-
-  const invoiceStatusMap: Record<string, number> = {};
-
-  invoiceStatusRows.forEach((s) => {
-    invoiceStatusMap[s.descripcion] = s.id_estado_factura;
-  });
 
   // ── Test client ────────────────────────────────────────────────────────────
   await prisma.clientes.upsert({
@@ -420,358 +255,6 @@ async function main() {
     },
   });
   console.log("Seeded test client");
-
-  // ── Proveedores ────────────────────────────────────────────────────────────
-  const proveedoresData = [
-    {
-      id_proveedor: 1,
-      nombre_proveedor: "Maderas del Norte SA",
-      tipo: "Proveedor de material",
-      telefono: "8112345678",
-      correo: "ventas@maderasnorte.mx",
-      descripcion_proveedor: "Proveedor de MDF, triplay y madera sólida.",
-      ubicacion: "Monterrey, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_proveedor: 2,
-      nombre_proveedor: "Acrilatos Querétaro",
-      tipo: "Proveedor de material",
-      telefono: "4421234567",
-      correo: "contacto@acrilatosqro.mx",
-      descripcion_proveedor: "Acrílicos de colores, transparentes y espejados.",
-      ubicacion: "Querétaro, Querétaro",
-      estatus: "Activo",
-    },
-    {
-      id_proveedor: 3,
-      nombre_proveedor: "Vinilos Express",
-      tipo: "Proveedor de material",
-      telefono: "5598765432",
-      correo: "pedidos@vinilosexpress.mx",
-      descripcion_proveedor: "Viniles de corte, impresión y laminado.",
-      ubicacion: "Ciudad de México, CDMX",
-      estatus: "Activo",
-    },
-    {
-      id_proveedor: 4,
-      nombre_proveedor: "Grabados Industriales MX",
-      tipo: "Proveedor de servicio",
-      telefono: "8187654321",
-      correo: "info@grabadosindustriales.mx",
-      descripcion_proveedor: "Servicio externo de grabado en metal y vidrio.",
-      ubicacion: "San Pedro Garza García, Nuevo León",
-      estatus: "Activo",
-    },
-    {
-      id_proveedor: 5,
-      nombre_proveedor: "Foil & Print CDMX",
-      tipo: "Proveedor de servicio",
-      telefono: "5512349876",
-      correo: "hola@foilprint.mx",
-      descripcion_proveedor: null,
-      ubicacion: "Naucalpan, Estado de México",
-      estatus: "Inactivo",
-    },
-  ];
-
-  for (const data of proveedoresData) {
-    await prisma.proveedores.upsert({
-      where: { id_proveedor: data.id_proveedor },
-      update: {},
-      create: data,
-    });
-  }
-
-  console.log(`Seeded ${proveedoresData.length} proveedores`);
-
-  // ── Demo Cotizaciones ──────────────────────────────────────────────────────
-  const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
-  const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
-
-  if (clienteDemo && cotizacionStatuses.length > 0) {
-    const statusMap: Record<string, number> = {};
-    cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
-
-    // ── Demo Formulas ────────────────────────────────────────────────────────
-    const formulaCorte = await prisma.formulaVariables.upsert({
-      where: { id_formula: 1 },
-      update: {},
-      create: {
-        id_servicio: servicioCorte.id_servicio,
-        nombre_variable: "Corte Láser Base",
-        descripcion: "Corte con láser CO2",
-        es_constante: true,
-        valor_constante: 0,
-      },
-    });
-
-    console.log("Seeded demo formula for Corte Láser");
-
-    const demoFolios = ["COT-101", "COT-102", "COT-103", "COT-104", "COT-105", "COT-106"];
-    await prisma.variablesCotizacion.deleteMany({
-      where: { cotizacion: { folio: { in: demoFolios } } },
-    });
-    await prisma.historialEstadosCotizacion.deleteMany({
-      where: { cotizacion: { folio: { in: demoFolios } } },
-    });
-    await prisma.cotizaciones.deleteMany({
-      where: { folio: { in: demoFolios } },
-    });
-
-    const demoQuotationsData = [
-      {
-        folio: "COT-101",
-        monto_total: 1500,
-        notas: "Cotización pendiente: El cliente solicitó corte láser simple.",
-        fecha_creacion: new Date("2026-05-01"),
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Pendiente"],
-      },
-      {
-        folio: "COT-102",
-        monto_total: 4500,
-        notas:
-          "Cotización validada (MIXTA): [ESTADO:modificado] Algunos servicios fueron aprobados tal cual, otros fueron modificados en precio por el administrador.",
-        fecha_creacion: new Date("2026-05-02"),
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Validada"],
-      },
-      {
-        folio: "COT-103",
-        monto_total: 2800,
-        notas:
-          "Cotización validada (MODIFICADA): [ESTADO:modificado] Se ajustaron todos los precios unitarios debido a actualización de costos de material.",
-        fecha_creacion: new Date("2026-05-03"),
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Validada"],
-      },
-      {
-        folio: "COT-104",
-        monto_total: 12000,
-        notas: "Cotización aprobada: Todos los servicios fueron aceptados por el cliente.",
-        fecha_creacion: new Date("2026-05-04"),
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Aprobada"],
-      },
-      {
-        folio: "COT-105",
-        monto_total: 3500,
-        notas:
-          "Rechazada por Administración: [ESTADO:rechazado] Los archivos enviados por el cliente no cumplen con la calidad mínima requerida para producción.",
-        fecha_creacion: new Date("2026-05-05"),
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Rechazada"],
-      },
-      {
-        folio: "COT-106",
-        monto_total: 950,
-        notas: "Rechazada por el Cliente: El cliente encontró un proveedor más económico.",
-        fecha_creacion: new Date("2026-05-06"),
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Rechazada"],
-      },
-    ];
-
-    for (const q of demoQuotationsData) {
-      const quote = await prisma.cotizaciones.create({
-        data: q,
-      });
-
-      // Add at least one service to each quotation
-      await prisma.variablesCotizacion.create({
-        data: {
-          id_cotizacion: quote.id_cotizacion,
-          id_formula: formulaCorte.id_formula,
-          valor: quote.monto_total,
-          id_usuario_asigno: adminUser.id_usuario,
-        },
-      });
-    }
-
-    console.log(`Seeded ${demoQuotationsData.length} demo cotizaciones with services`);
-
-    // ── Complex Quotation (COT-107) ──────────────────────────────────────────
-    // This one has a linked Pedido with multiple details in different states
-    const complexFolio = "COT-107";
-
-    // Cleanup complex data
-    await prisma.detallePedido.deleteMany({
-      where: { pedido: { cotizaciones: { some: { folio: complexFolio } } } },
-    });
-    await prisma.pedidos.deleteMany({ where: { cotizaciones: { some: { folio: complexFolio } } } });
-    await prisma.variablesCotizacion.deleteMany({ where: { cotizacion: { folio: complexFolio } } });
-    await prisma.cotizaciones.deleteMany({ where: { folio: complexFolio } });
-
-    const designFile = await prisma.archivosDisenio.upsert({
-      where: { id_archivo: 1 },
-      update: {},
-      create: {
-        nombre_archivo: "demo_design.pdf",
-        url_archivo: "/uploads/demo_design.pdf",
-        formato: "pdf",
-      },
-    });
-
-    const complexPedido = await prisma.pedidos.create({
-      data: {
-        id_cliente: clienteDemo.id_cliente,
-        id_sucursal: 1,
-        id_estatus: 1, // Pendiente
-        id_estado_factura: 1, // Cotizacion
-        notas: "Pedido complejo para pruebas de estados mixtos.",
-        detalles: {
-          create: [
-            {
-              id_servicio: 1, // Corte Láser
-              id_material: 1, // MDF
-              id_archivo: designFile.id_archivo,
-              cantidad: 10,
-              precio_unitario: 150,
-              subtotal: 1500,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:sin_cambios] [ANTES:1500] Servicio validado correctamente.",
-            },
-            {
-              id_servicio: 2, // Grabado Láser
-              id_material: 1, // MDF
-              id_archivo: designFile.id_archivo,
-              cantidad: 5,
-              precio_unitario: 200,
-              subtotal: 1000,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas:
-                "[ESTADO:modificado] [ANTES:724.64] Se ajustó el precio por el nivel de detalle requerido.",
-            },
-            {
-              id_servicio: 3, // Bordado
-              id_material: 1, // MDF (filler)
-              id_archivo: designFile.id_archivo,
-              cantidad: 1,
-              precio_unitario: 500,
-              subtotal: 500,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas:
-                "[ESTADO:rechazado] [MOTIVO:No disponible] [ANTES:500] No contamos con capacidad técnica para este bordado específico.",
-            },
-          ],
-        },
-      },
-    });
-
-    await prisma.cotizaciones.create({
-      data: {
-        folio: complexFolio,
-        monto_total: 3000,
-        notas: "Cotización con estados mixtos para validación de UI.",
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Validada"],
-        id_pedido: complexPedido.id_pedido,
-      },
-    });
-
-    console.log("Seeded complex quotation COT-107");
-
-    // ── Ultra Complex Quotation (COT-108) ────────────────────────────────────
-    const ultraComplexFolio = "COT-108";
-
-    await prisma.detallePedido.deleteMany({
-      where: { pedido: { cotizaciones: { some: { folio: ultraComplexFolio } } } },
-    });
-    await prisma.pedidos.deleteMany({
-      where: { cotizaciones: { some: { folio: ultraComplexFolio } } },
-    });
-    await prisma.variablesCotizacion.deleteMany({
-      where: { cotizacion: { folio: ultraComplexFolio } },
-    });
-    await prisma.cotizaciones.deleteMany({ where: { folio: ultraComplexFolio } });
-
-    const ultraComplexPedido = await prisma.pedidos.create({
-      data: {
-        id_cliente: clienteDemo.id_cliente,
-        id_sucursal: 1,
-        id_estatus: 1, // Pendiente
-        id_estado_factura: 1, // Cotizacion
-        notas: "Cotización de 5 servicios con estados mixtos.",
-        detalles: {
-          create: [
-            {
-              id_servicio: 1, // Corte Láser
-              id_material: 1,
-              id_archivo: designFile.id_archivo,
-              cantidad: 10,
-              precio_unitario: 150,
-              subtotal: 1500,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:sin_cambios] [ANTES:1500] Servicio validado sin ajustes.",
-            },
-            {
-              id_servicio: 2, // Grabado Láser
-              id_material: 1,
-              id_archivo: designFile.id_archivo,
-              cantidad: 1,
-              precio_unitario: 1200,
-              subtotal: 1200,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:modificado] [ANTES:800] Incremento por diseño complejo (+50%).",
-            },
-            {
-              id_servicio: 3, // Bordado
-              id_material: 1,
-              id_archivo: designFile.id_archivo,
-              cantidad: 1,
-              precio_unitario: 500,
-              subtotal: 500,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas:
-                "[ESTADO:rechazado] [MOTIVO:Capacidad] [ANTES:500] No disponible en este momento.",
-            },
-            {
-              id_servicio: 4, // Impresión UV
-              id_material: 2, // Acrílico
-              id_archivo: designFile.id_archivo,
-              cantidad: 2,
-              precio_unitario: 1000,
-              subtotal: 2000,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:modificado] [ANTES:2500] Descuento especial por volumen (-20%).",
-            },
-            {
-              id_servicio: 5, // Corte de Vinil
-              id_material: 1,
-              id_archivo: designFile.id_archivo,
-              cantidad: 3,
-              precio_unitario: 100,
-              subtotal: 300,
-              opciones_seleccionadas: {},
-              responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:sin_cambios] [ANTES:300] Precio base mantenido.",
-            },
-          ],
-        },
-      },
-    });
-
-    await prisma.cotizaciones.create({
-      data: {
-        folio: ultraComplexFolio,
-        monto_total: 5500,
-        notas: "Cotización maestra con 5 servicios y todos los estados posibles.",
-        id_cliente: clienteDemo.id_cliente,
-        id_estatus_cotizacion: statusMap["Validada"],
-        id_pedido: ultraComplexPedido.id_pedido,
-      },
-    });
-
-    console.log("Seeded ultra complex quotation COT-108");
-  }
 }
 
 main()

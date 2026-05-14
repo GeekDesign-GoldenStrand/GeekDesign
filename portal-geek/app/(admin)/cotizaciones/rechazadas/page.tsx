@@ -65,7 +65,10 @@ export default function CotizacionesRechazadasPage() {
   }, [search, page]);
 
   useEffect(() => {
-    fetchCotizaciones();
+    async function load() {
+      await fetchCotizaciones();
+    }
+    load();
   }, [fetchCotizaciones]);
 
   return (

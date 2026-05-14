@@ -7,7 +7,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
-import { ConfigurationError } from "@/lib/utils/errors";
+import { ConfigurationError, ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 /**
  * Common include configuration for quotations to ensure consistent typing.
@@ -331,15 +331,15 @@ export async function approveQuotation(quotationId: number, userId: number) {
     // 1. Fetch quotation with details
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
-      include: { 
+      include: {
         estatus: true,
         pedido: true,
       },
     });
 
-    if (!quotation) throw new Error("Quotation not found");
+    if (!quotation) throw new NotFoundError("Quotation not found");
     if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
-      throw new Error("Only validated quotations can be approved");
+      throw new ConflictError("Only validated quotations can be approved");
     }
 
     // 2. Resolve necessary IDs
