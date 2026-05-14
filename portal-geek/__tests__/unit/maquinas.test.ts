@@ -22,9 +22,7 @@ jest.mock("@/lib/db/client", () => ({
       update: jest.fn(),
     },
     sucursalesMaquina: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      create: jest.fn(),
+      upsert: jest.fn(), // ✅ replaced findFirst, create, update
     },
   },
 }));
@@ -35,9 +33,7 @@ const mockCount = prisma.maquinas.count as jest.Mock;
 const mockFindUnique = prisma.maquinas.findUnique as jest.Mock;
 const mockCreate = prisma.maquinas.create as jest.Mock;
 const mockUpdate = prisma.maquinas.update as jest.Mock;
-const mockSucursalFindFirst = prisma.sucursalesMaquina.findFirst as jest.Mock;
-const mockSucursalUpdate = prisma.sucursalesMaquina.update as jest.Mock;
-const mockSucursalCreate = prisma.sucursalesMaquina.create as jest.Mock;
+const mockSucursalUpsert = prisma.sucursalesMaquina.upsert as jest.Mock; // ✅
 
 const MAQUINA = {
   id_maquina: 1,
@@ -255,39 +251,21 @@ describe("updateMaquina", () => {
 describe("asignarSucursal", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("crea un nuevo registro si no existe asignación previa", async () => {
-    mockSucursalFindFirst.mockResolvedValue(null);
-    mockSucursalCreate.mockResolvedValue({ id_sucursal_maquina: 1, id_maquina: 1, id_sucursal: 2 });
+  it("llama a upsert con los argumentos correctos", async () => {
+    mockSucursalUpsert.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(MAQUINA);
 
     await asignarSucursal(1, 2);
 
-    expect(mockSucursalCreate).toHaveBeenCalledWith({
-      data: { id_maquina: 1, id_sucursal: 2 },
+    expect(mockSucursalUpsert).toHaveBeenCalledWith({
+      where: { id_maquina: 1 },
+      update: { id_sucursal: 2 },
+      create: { id_maquina: 1, id_sucursal: 2 },
     });
-  });
-
-  it("actualiza el registro existente si ya hay una asignación", async () => {
-    mockSucursalFindFirst.mockResolvedValue({
-      id_sucursal_maquina: 5,
-      id_maquina: 1,
-      id_sucursal: 1,
-    });
-    mockSucursalUpdate.mockResolvedValue({ id_sucursal_maquina: 5, id_maquina: 1, id_sucursal: 2 });
-    mockFindUnique.mockResolvedValue(MAQUINA);
-
-    await asignarSucursal(1, 2);
-
-    expect(mockSucursalUpdate).toHaveBeenCalledWith({
-      where: { id_sucursal_maquina: 5 },
-      data: { id_sucursal: 2 },
-    });
-    expect(mockSucursalCreate).not.toHaveBeenCalled();
   });
 
   it("retorna la máquina actualizada con sucursales", async () => {
-    mockSucursalFindFirst.mockResolvedValue(null);
-    mockSucursalCreate.mockResolvedValue({});
+    mockSucursalUpsert.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(MAQUINA);
 
     const result = await asignarSucursal(1, 1);
@@ -295,11 +273,19 @@ describe("asignarSucursal", () => {
   });
 
   it("lanza NotFoundError si la máquina no existe", async () => {
-    mockSucursalFindFirst.mockResolvedValue(null);
-    mockSucursalCreate.mockResolvedValue({});
+    mockSucursalUpsert.mockResolvedValue({});
     mockFindUnique.mockResolvedValue(null);
 
     await expect(asignarSucursal(999, 1)).rejects.toThrow(NotFoundError);
+  });
+
+  it("no llama a findFirst, create ni update por separado", async () => {
+    mockSucursalUpsert.mockResolvedValue({});
+    mockFindUnique.mockResolvedValue(MAQUINA);
+
+    await asignarSucursal(1, 2);
+
+    expect(mockSucursalUpsert).toHaveBeenCalledTimes(1);
   });
 });
 
