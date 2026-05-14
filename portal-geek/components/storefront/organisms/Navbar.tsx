@@ -54,7 +54,12 @@ export function Navbar({ categories = [] }: NavbarProps) {
             className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
             aria-label="Consultar Cotización"
           >
-            <MagnifyingGlass size={28} weight="light" className="text-[#1e1e1e]" aria-hidden="true" />
+            <MagnifyingGlass
+              size={28}
+              weight="light"
+              className="text-[#1e1e1e]"
+              aria-hidden="true"
+            />
             <span className="hidden lg:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Seguimiento
             </span>

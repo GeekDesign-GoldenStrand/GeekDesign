@@ -1,19 +1,16 @@
 "use client";
 
-import { 
-  CheckCircle, 
-  XCircle, 
-  Info, 
-  FileText, 
-  WarningCircle, 
+import {
+  CheckCircle,
+  XCircle,
+  Info,
+  WarningCircle,
   Clock,
-  ArrowRight,
-  ShieldCheck,
   SpinnerGap,
-  Question
 } from "@phosphor-icons/react";
-import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+
 import { FolioSearch } from "./FolioSearch";
 
 interface Item {
@@ -55,8 +52,13 @@ export function QuotationDetailView({ quotation }: Props) {
   const [rejectReason, setRejectReason] = useState("");
 
   const handleApprove = async () => {
-    if (!confirm("¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente.")) return;
-    
+    if (
+      !confirm(
+        "¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente."
+      )
+    )
+      return;
+
     setLoading(true);
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/approve`, {
@@ -97,11 +99,17 @@ export function QuotationDetailView({ quotation }: Props) {
     }
   };
 
-  const totalAnterior = quotation.items.reduce((acc, item) => acc + (item.precio_anterior || item.precio_total), 0);
-  const totalNuevo = quotation.estatus === "Rechazada" ? 0 : quotation.items.reduce((acc, item) => {
-    if (item.estado === "rechazado") return acc;
-    return acc + item.precio_total;
-  }, 0);
+  const totalAnterior = quotation.items.reduce(
+    (acc, item) => acc + (item.precio_anterior || item.precio_total),
+    0
+  );
+  const totalNuevo =
+    quotation.estatus === "Rechazada"
+      ? 0
+      : quotation.items.reduce((acc, item) => {
+          if (item.estado === "rechazado") return acc;
+          return acc + item.precio_total;
+        }, 0);
 
   const diferencia = totalNuevo - totalAnterior;
   const porcentajeDiferencia = totalAnterior > 0 ? (diferencia / totalAnterior) * 100 : 0;
@@ -109,9 +117,18 @@ export function QuotationDetailView({ quotation }: Props) {
   const isActionable = quotation.estatus === "Validada";
 
   const counts = {
-    aprobados: quotation.estatus === "Rechazada" ? 0 : quotation.items.filter(i => i.estado === "sin_cambios").length,
-    modificados: quotation.estatus === "Rechazada" ? 0 : quotation.items.filter(i => i.estado === "modificado").length,
-    rechazados: quotation.estatus === "Rechazada" ? quotation.items.length : quotation.items.filter(i => i.estado === "rechazado").length,
+    aprobados:
+      quotation.estatus === "Rechazada"
+        ? 0
+        : quotation.items.filter((i) => i.estado === "sin_cambios").length,
+    modificados:
+      quotation.estatus === "Rechazada"
+        ? 0
+        : quotation.items.filter((i) => i.estado === "modificado").length,
+    rechazados:
+      quotation.estatus === "Rechazada"
+        ? quotation.items.length
+        : quotation.items.filter((i) => i.estado === "rechazado").length,
   };
 
   // Banner configuration
@@ -126,25 +143,28 @@ export function QuotationDetailView({ quotation }: Props) {
       buttonText: "Revisión en curso",
       buttonColor: "bg-[#F9A8B3] text-white cursor-not-allowed",
     },
-    Validada: counts.modificados > 0 ? {
-      bgColor: "bg-[#FFF9F0]",
-      iconColor: "text-[#F16C20]",
-      icon: <WarningCircle size={28} weight="bold" />,
-      title: "Tu cotización fue modificada",
-      desc: "Algunos servicios cambiaron de precio. Revisa los cambios antes de confirmar.",
-      nextStep: "Revisa los cambios y confirma para comenzar.",
-      buttonText: "Revisar y confirmar cambios",
-      buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
-    } : {
-      bgColor: "bg-green-50",
-      iconColor: "text-green-600",
-      icon: <CheckCircle size={28} weight="bold" />,
-      title: "Tu cotización está lista",
-      desc: "Todos los servicios han sido validados y están listos para ser procesados.",
-      nextStep: "Confirma tu pedido para iniciar con el proyecto.",
-      buttonText: "Aceptar cotización y continuar",
-      buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
-    },
+    Validada:
+      counts.modificados > 0
+        ? {
+            bgColor: "bg-[#FFF9F0]",
+            iconColor: "text-[#F16C20]",
+            icon: <WarningCircle size={28} weight="bold" />,
+            title: "Tu cotización fue modificada",
+            desc: "Algunos servicios cambiaron de precio. Revisa los cambios antes de confirmar.",
+            nextStep: "Revisa los cambios y confirma para comenzar.",
+            buttonText: "Revisar y confirmar cambios",
+            buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
+          }
+        : {
+            bgColor: "bg-green-50",
+            iconColor: "text-green-600",
+            icon: <CheckCircle size={28} weight="bold" />,
+            title: "Tu cotización está lista",
+            desc: "Todos los servicios han sido validados y están listos para ser procesados.",
+            nextStep: "Confirma tu pedido para iniciar con el proyecto.",
+            buttonText: "Aceptar cotización y continuar",
+            buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
+          },
     Rechazada: {
       bgColor: "bg-[#FFF1F1]",
       iconColor: "text-[#DF2646]",
@@ -164,7 +184,7 @@ export function QuotationDetailView({ quotation }: Props) {
       nextStep: "Puedes consultar el estatus en Mis Pedidos.",
       buttonText: "Ver mi pedido",
       buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
-    }
+    },
   }[quotation.estatus] || {
     bgColor: "bg-gray-50",
     iconColor: "text-gray-600",
@@ -176,30 +196,42 @@ export function QuotationDetailView({ quotation }: Props) {
     buttonColor: "bg-gray-200 text-gray-500 cursor-not-allowed",
   };
 
+  const creationDate = new Date(quotation.fecha_creacion);
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+
   const steps = [
-    { label: "Solicitud enviada", date: "12 mayo", completed: true },
-    { 
-      label: quotation.estatus === "Pendiente" ? "Revisión en curso" : "Validación Geek", 
-      date: quotation.estatus === "Pendiente" ? "Hoy" : "13 mayo", 
+    { label: "Solicitud enviada", date: formatDate(creationDate), completed: true },
+    {
+      label: quotation.estatus === "Pendiente" ? "Revisión en curso" : "Validación Geek",
+      date:
+        quotation.estatus === "Pendiente"
+          ? "Hoy"
+          : formatDate(new Date(creationDate.getTime() + 86400000)),
       completed: quotation.estatus !== "Pendiente",
-      current: quotation.estatus === "Pendiente"
+      current: quotation.estatus === "Pendiente",
     },
-    { 
-      label: quotation.estatus === "Rechazada" ? "No disponible" : (counts.modificados > 0 ? "En revisión" : "Lista para aceptar"), 
-      date: (quotation.estatus === "Validada" || quotation.estatus === "Rechazada") ? "Hoy" : "Pendiente", 
+    {
+      label:
+        quotation.estatus === "Rechazada"
+          ? "No disponible"
+          : counts.modificados > 0
+            ? "En revisión"
+            : "Lista para aceptar",
+      date:
+        quotation.estatus === "Validada" || quotation.estatus === "Rechazada" ? "Hoy" : "Pendiente",
       completed: quotation.estatus === "Aprobada",
-      current: quotation.estatus === "Validada" || quotation.estatus === "Rechazada"
+      current: quotation.estatus === "Validada" || quotation.estatus === "Rechazada",
     },
-    { 
-      label: quotation.estatus === "Rechazada" ? "Finalizado" : "Confirmada", 
-      date: quotation.estatus === "Rechazada" ? "Cerrado" : "Pendiente", 
-      completed: quotation.estatus === "Aprobada" 
-    }
+    {
+      label: quotation.estatus === "Rechazada" ? "Finalizado" : "Confirmada",
+      date: quotation.estatus === "Aprobada" ? "Hoy" : "Pendiente",
+      completed: quotation.estatus === "Aprobada",
+    },
   ];
 
   return (
     <div className="max-w-[1240px] mx-auto py-10 px-4 space-y-12">
-      
       {/* Persistent Search Section */}
       <div className="mb-8">
         <FolioSearch />
@@ -207,16 +239,30 @@ export function QuotationDetailView({ quotation }: Props) {
 
       {/* Folio and Date */}
       <div>
-        <h2 className="text-[24px] font-bold text-[#1e1e1e]">Cotización #{quotation.folio || quotation.id_cotizacion}</h2>
+        <h2 className="text-[24px] font-bold text-[#1e1e1e]">
+          Cotización #{quotation.folio || quotation.id_cotizacion}
+        </h2>
         <p className="text-[#8e908f] text-[16px] font-medium">
-          Solicitada el {new Date(quotation.fecha_creacion).toLocaleDateString("es-MX", { day: 'numeric', month: 'long', year: 'numeric' })} - {new Date(quotation.fecha_creacion).toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' })}
+          Solicitada el{" "}
+          {new Date(quotation.fecha_creacion).toLocaleDateString("es-MX", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}{" "}
+          -{" "}
+          {new Date(quotation.fecha_creacion).toLocaleTimeString("es-MX", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </p>
       </div>
 
       {/* Status Banner */}
       <div className="bg-white rounded-[16px] border border-[#E8E8E8] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col md:flex-row">
         <div className="flex-1 p-6 md:p-10 flex items-center gap-8">
-          <div className={`w-14 h-14 rounded-full ${bannerConfig.bgColor} flex items-center justify-center shrink-0 ${bannerConfig.iconColor}`}>
+          <div
+            className={`w-14 h-14 rounded-full ${bannerConfig.bgColor} flex items-center justify-center shrink-0 ${bannerConfig.iconColor}`}
+          >
             {bannerConfig.icon}
           </div>
           <div>
@@ -225,14 +271,22 @@ export function QuotationDetailView({ quotation }: Props) {
           </div>
         </div>
         <div className="bg-[#f9f9f9] p-6 md:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-[#E8E8E8] min-w-[340px]">
-          <p className="text-[12px] font-bold text-[#1e1e1e] mb-2 uppercase tracking-[1.2px]">Paso siguiente:</p>
+          <p className="text-[12px] font-bold text-[#1e1e1e] mb-2 uppercase tracking-[1.2px]">
+            Paso siguiente:
+          </p>
           <p className="text-[15px] text-[#575757] font-medium mb-6">{bannerConfig.nextStep}</p>
-          <button 
-            onClick={quotation.estatus === "Rechazada" ? () => router.push("/storefront") : handleApprove}
+          <button
+            onClick={
+              quotation.estatus === "Rechazada" ? () => router.push("/storefront") : handleApprove
+            }
             disabled={(!isActionable && quotation.estatus !== "Rechazada") || loading}
             className={`h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center ${bannerConfig.buttonColor}`}
           >
-            {loading ? <SpinnerGap size={24} className="animate-spin mx-auto" /> : bannerConfig.buttonText}
+            {loading ? (
+              <SpinnerGap size={24} className="animate-spin mx-auto" />
+            ) : (
+              bannerConfig.buttonText
+            )}
           </button>
         </div>
       </div>
@@ -241,13 +295,23 @@ export function QuotationDetailView({ quotation }: Props) {
       <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
         {steps.map((p, i) => (
           <div key={i} className="flex flex-col items-center text-center space-y-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold ${
-              p.completed ? "bg-[#DF2646] text-white" : p.current ? "bg-white border-2 border-[#F16C20] text-[#F16C20]" : "bg-white border border-[#E8E8E8] text-[#B9B8B8]"
-            }`}>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold ${
+                p.completed
+                  ? "bg-[#DF2646] text-white"
+                  : p.current
+                    ? "bg-white border-2 border-[#F16C20] text-[#F16C20]"
+                    : "bg-white border border-[#E8E8E8] text-[#B9B8B8]"
+              }`}
+            >
               {p.completed ? <CheckCircle size={20} weight="bold" /> : i + 1}
             </div>
             <div>
-              <p className={`text-[13px] font-bold ${p.completed || p.current ? "text-[#1e1e1e]" : "text-[#B9B8B8]"}`}>{p.label}</p>
+              <p
+                className={`text-[13px] font-bold ${p.completed || p.current ? "text-[#1e1e1e]" : "text-[#B9B8B8]"}`}
+              >
+                {p.label}
+              </p>
               <p className="text-[11px] font-medium text-[#B9B8B8] mt-0.5">{p.date}</p>
             </div>
           </div>
@@ -287,31 +351,37 @@ export function QuotationDetailView({ quotation }: Props) {
                       <tr className="text-[14px] text-[#1e1e1e]">
                         <td className="px-8 py-6 align-top">
                           <p className="font-bold">{item.nombre}</p>
-                          <p className="text-[12px] text-[#8e908f] font-medium mt-1">{item.descripcion}</p>
+                          <p className="text-[12px] text-[#8e908f] font-medium mt-1">
+                            {item.descripcion}
+                          </p>
                         </td>
-                        
+
                         {quotation.estatus === "Pendiente" ? (
                           <>
                             <td className="px-4 py-6 text-center align-top font-bold">
-                              {formatPeso(item.precio_total)} <span className="text-[10px] font-medium">MXN</span>
+                              {formatPeso(item.precio_total)}{" "}
+                              <span className="text-[10px] font-medium">MXN</span>
                             </td>
                           </>
                         ) : (
                           <>
                             <td className="px-4 py-6 align-top">
-                              {(item.estado === "sin_cambios" && quotation.estatus !== "Rechazada") && (
-                                <div className="flex items-center gap-1.5 text-[#2A940D] font-bold text-[10px] uppercase tracking-[0.5px]">
-                                  <CheckCircle size={14} weight="bold" />
-                                  <span>Sin cambios</span>
-                                </div>
-                              )}
-                              {(item.estado === "modificado" && quotation.estatus !== "Rechazada") && (
-                                <div className="flex items-center gap-1.5 text-[#F16C20] font-bold text-[10px] uppercase tracking-[0.5px]">
-                                  <WarningCircle size={14} weight="bold" />
-                                  <span>Modificado</span>
-                                </div>
-                              )}
-                              {(item.estado === "rechazado" || quotation.estatus === "Rechazada") && (
+                              {item.estado === "sin_cambios" &&
+                                quotation.estatus !== "Rechazada" && (
+                                  <div className="flex items-center gap-1.5 text-[#2A940D] font-bold text-[10px] uppercase tracking-[0.5px]">
+                                    <CheckCircle size={14} weight="bold" />
+                                    <span>Sin cambios</span>
+                                  </div>
+                                )}
+                              {item.estado === "modificado" &&
+                                quotation.estatus !== "Rechazada" && (
+                                  <div className="flex items-center gap-1.5 text-[#F16C20] font-bold text-[10px] uppercase tracking-[0.5px]">
+                                    <WarningCircle size={14} weight="bold" />
+                                    <span>Modificado</span>
+                                  </div>
+                                )}
+                              {(item.estado === "rechazado" ||
+                                quotation.estatus === "Rechazada") && (
                                 <div className="flex items-center gap-1.5 text-[#DF2646] font-bold text-[10px] uppercase tracking-[0.5px]">
                                   <XCircle size={14} weight="bold" />
                                   <span>Rechazado</span>
@@ -325,17 +395,36 @@ export function QuotationDetailView({ quotation }: Props) {
                               {item.cantidad}
                             </td>
                             <td className="px-4 py-6 text-center align-top text-[#575757] font-medium">
-                              {formatPeso(item.precio_anterior || item.precio_total)} <br/><span className="text-[10px]">MXN</span>
+                              {formatPeso(item.precio_anterior || item.precio_total)} <br />
+                              <span className="text-[10px]">MXN</span>
                             </td>
                             <td className="px-4 py-6 text-center align-top font-bold">
-                              {item.estado === "rechazado" || quotation.estatus === "Rechazada" ? "—" : formatPeso(item.precio_total)} <br/><span className="text-[10px] font-medium">{item.estado === "rechazado" || quotation.estatus === "Rechazada" ? "" : "MXN"}</span>
+                              {item.estado === "rechazado" || quotation.estatus === "Rechazada"
+                                ? "—"
+                                : formatPeso(item.precio_total)}{" "}
+                              <br />
+                              <span className="text-[10px] font-medium">
+                                {item.estado === "rechazado" || quotation.estatus === "Rechazada"
+                                  ? ""
+                                  : "MXN"}
+                              </span>
                             </td>
                             <td className="px-4 py-6 text-center align-top">
                               {item.estado === "modificado" && quotation.estatus !== "Rechazada" ? (
-                                <span className={`font-bold text-[12px] ${item.precio_total > item.precio_anterior ? "text-[#F16C20]" : "text-[#2A940D]"}`}>
-                                  {item.precio_total > item.precio_anterior ? "+" : ""}{((item.precio_total - item.precio_anterior) / item.precio_anterior * 100).toFixed(1)}%
+                                <span
+                                  className={`font-bold text-[12px] ${item.precio_total > item.precio_anterior ? "text-[#F16C20]" : "text-[#2A940D]"}`}
+                                >
+                                  {item.precio_total > item.precio_anterior ? "+" : ""}
+                                  {(
+                                    ((item.precio_total - item.precio_anterior) /
+                                      item.precio_anterior) *
+                                    100
+                                  ).toFixed(1)}
+                                  %
                                 </span>
-                              ) : "—"}
+                              ) : (
+                                "—"
+                              )}
                             </td>
                           </>
                         )}
@@ -356,7 +445,10 @@ export function QuotationDetailView({ quotation }: Props) {
           <div className="bg-[#F0F7FF] border border-[#D0E6FF] rounded-[16px] p-6 flex items-start gap-4">
             <Info size={24} className="text-[#0066CC] shrink-0 mt-0.5" />
             <p className="text-[14px] text-[#004C99] font-medium leading-relaxed">
-              Al confirmar esta cotización, aceptas los cambios realizados en los servicios marcados como <span className="font-bold underline">modificados</span> y reconoces que los servicios <span className="font-bold underline text-[#DF2646]">rechazados</span> no formarán parte del pedido final.
+              Al confirmar esta cotización, aceptas los cambios realizados en los servicios marcados
+              como <span className="font-bold underline">modificados</span> y reconoces que los
+              servicios <span className="font-bold underline text-[#DF2646]">rechazados</span> no
+              formarán parte del pedido final.
             </p>
           </div>
         </div>
@@ -365,7 +457,7 @@ export function QuotationDetailView({ quotation }: Props) {
         <div className="lg:col-span-1 sticky top-8">
           <div className="bg-white rounded-[24px] border border-[#E8E8E8] p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
             <h3 className="text-[20px] font-bold text-[#1e1e1e] mb-8">Resumen de la cotización</h3>
-            
+
             {quotation.estatus !== "Pendiente" && (
               <div className="space-y-5 mb-8">
                 <div className="flex items-center justify-between text-[14px] font-medium">
@@ -394,8 +486,12 @@ export function QuotationDetailView({ quotation }: Props) {
 
             <div className="pt-8 border-t border-[#F0F0F0] space-y-6 mb-8">
               <div className="flex justify-between items-center text-[16px] font-medium">
-                <span className="text-[#1e1e1e]">{quotation.estatus === "Pendiente" ? "Total solicitado" : "Total anterior"}</span>
-                <span className={`${quotation.estatus !== "Pendiente" ? "text-[#575757] line-through" : "text-[24px] font-extrabold text-[#1e1e1e]"}`}>
+                <span className="text-[#1e1e1e]">
+                  {quotation.estatus === "Pendiente" ? "Total solicitado" : "Total anterior"}
+                </span>
+                <span
+                  className={`${quotation.estatus !== "Pendiente" ? "text-[#575757] line-through" : "text-[24px] font-extrabold text-[#1e1e1e]"}`}
+                >
                   {formatPeso(totalAnterior)} MXN
                 </span>
               </div>
@@ -409,24 +505,42 @@ export function QuotationDetailView({ quotation }: Props) {
               )}
             </div>
 
-            {(counts.modificados > 0 || counts.rechazados > 0 || quotation.estatus === "Rechazada") && (
-              <div className={`${diferencia < 0 ? "bg-[#FFF1F1] border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}>
+            {(counts.modificados > 0 ||
+              counts.rechazados > 0 ||
+              quotation.estatus === "Rechazada") && (
+              <div
+                className={`${diferencia < 0 ? "bg-[#FFF1F1] border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}
+              >
                 <span className="text-[14px] font-bold text-[#1e1e1e]">Diferencia</span>
-                <span className={`text-[14px] font-bold ${diferencia < 0 ? "text-[#DF2646]" : "text-[#F16C20]"}`}>
-                  {diferencia > 0 ? "+" : ""}{formatPeso(diferencia)} MXN ({diferencia > 0 ? "+" : ""}{porcentajeDiferencia.toFixed(1)}%)
+                <span
+                  className={`text-[14px] font-bold ${diferencia < 0 ? "text-[#DF2646]" : "text-[#F16C20]"}`}
+                >
+                  {diferencia > 0 ? "+" : ""}
+                  {formatPeso(diferencia)} MXN ({diferencia > 0 ? "+" : ""}
+                  {porcentajeDiferencia.toFixed(1)}%)
                 </span>
               </div>
             )}
 
             <div className="space-y-4">
               <button
-                onClick={quotation.estatus === "Rechazada" ? () => router.push("/storefront") : handleApprove}
+                onClick={
+                  quotation.estatus === "Rechazada"
+                    ? () => router.push("/storefront")
+                    : handleApprove
+                }
                 disabled={(!isActionable && quotation.estatus !== "Rechazada") || loading}
                 className={`w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all ${
-                  isActionable || quotation.estatus === "Rechazada" ? "bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20" : "bg-[#F5F5F5] text-[#B9B8B8]"
+                  isActionable || quotation.estatus === "Rechazada"
+                    ? "bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
+                    : "bg-[#F5F5F5] text-[#B9B8B8]"
                 }`}
               >
-                {loading ? <SpinnerGap size={24} className="animate-spin mx-auto" /> : bannerConfig.buttonText}
+                {loading ? (
+                  <SpinnerGap size={24} className="animate-spin mx-auto" />
+                ) : (
+                  bannerConfig.buttonText
+                )}
               </button>
 
               {isActionable && (
@@ -439,7 +553,7 @@ export function QuotationDetailView({ quotation }: Props) {
                 </button>
               )}
 
-              <a 
+              <a
                 href={`https://wa.me/524424468442?text=${encodeURIComponent(`Hola, tengo la cotización con el folio ${quotation.folio || quotation.id_cotizacion}, quisiera solicitar una aclaración.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -461,9 +575,10 @@ export function QuotationDetailView({ quotation }: Props) {
             </div>
             <h2 className="text-[26px] font-bold text-[#1e1e1e] mb-4">¿Rechazar cotización?</h2>
             <p className="text-[#575757] text-[17px] mb-8 leading-relaxed">
-              Por favor, indícanos el motivo de tu rechazo para ayudarnos a ofrecerte una mejor alternativa.
+              Por favor, indícanos el motivo de tu rechazo para ayudarnos a ofrecerte una mejor
+              alternativa.
             </p>
-            
+
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
@@ -491,4 +606,3 @@ export function QuotationDetailView({ quotation }: Props) {
     </div>
   );
 }
-

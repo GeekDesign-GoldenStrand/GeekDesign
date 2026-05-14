@@ -1,4 +1,5 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
 import { approveQuotation } from "@/lib/services/cotizaciones";
 import { created } from "@/lib/utils/api";

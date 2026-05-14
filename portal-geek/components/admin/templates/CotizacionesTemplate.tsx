@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
@@ -96,14 +96,11 @@ export function CotizacionesTemplate({
         <div className="relative">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <AdminToolbar
-                search={search}
-                onSearchChange={setSearch}
-              />
+              <AdminToolbar search={search} onSearchChange={setSearch} />
             </div>
-            
+
             {!isArchive ? (
-              <Link 
+              <Link
                 href="/cotizaciones/rechazadas"
                 className="flex items-center gap-2 h-[41px] px-4 rounded-[7px] border border-[#c2c0c0] bg-white font-medium text-[13px] text-[#666] transition-all hover:bg-gray-50 hover:shadow-sm"
               >
@@ -113,7 +110,7 @@ export function CotizacionesTemplate({
                 Oportunidades Perdidas
               </Link>
             ) : (
-              <Link 
+              <Link
                 href="/cotizaciones"
                 className="flex items-center gap-2 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-white font-medium text-[13px] text-[#e42200] transition-all hover:bg-rose-50 hover:shadow-sm"
               >

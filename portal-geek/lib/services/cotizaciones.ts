@@ -331,7 +331,10 @@ export async function approveQuotation(quotationId: number, userId: number) {
     // 1. Fetch quotation with details
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
-      include: { estatus: true },
+      include: { 
+        estatus: true,
+        pedido: true,
+      },
     });
 
     if (!quotation) throw new Error("Quotation not found");
@@ -351,19 +354,48 @@ export async function approveQuotation(quotationId: number, userId: number) {
       throw new Error("Required status catalogs not found");
     }
 
-    // 3. Create the Pedido (Order)
-    // Starts with 0% progress (null estado_factura) as requested.
+    // 3. Fetch current details to promote (filter out rejected items)
+    const currentDetails = await tx.detallePedido.findMany({
+      where: { id_pedido: quotation.id_pedido || 0 },
+    });
+
+    const activeDetails = currentDetails.filter((d) => {
+      const notas = d.notas || "";
+      return !notas.includes("[ESTADO:rechazado]");
+    });
+
+    // 4. Create the Pedido (Order)
+    // Starts with 0% progress as requested.
     const pedido = await tx.pedidos.create({
       data: {
         id_cliente: quotation.id_cliente,
+        id_sucursal: quotation.pedido?.id_sucursal || 1,
         id_estatus: initialPedidoStatus.id_estatus,
         fecha_creacion: new Date(),
-        factura: false, // Default to false as per user request
+        factura: false,
         notas: quotation.notas,
+        // Promote the active items to the new pedido
+        detalles: {
+          create: activeDetails.map((d) => ({
+            servicio: { connect: { id_servicio: d.id_servicio } },
+            material: { connect: { id_material: d.id_material } },
+            archivo: { connect: { id_archivo: d.id_archivo } },
+            opciones_seleccionadas: d.opciones_seleccionadas || {},
+            cantidad: d.cantidad,
+            responsable_recoleccion: d.responsable_recoleccion,
+            precio_unitario: d.precio_unitario,
+            subtotal: d.subtotal,
+            notas: d.notas,
+            ancho_cm: d.ancho_cm,
+            alto_cm: d.alto_cm,
+            grosor_cm: d.grosor_cm,
+            color: d.color,
+          })),
+        },
       },
     });
 
-    // 4. Update Quotation
+    // 5. Update Quotation
     const updatedQuotation = await tx.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: {
@@ -373,7 +405,7 @@ export async function approveQuotation(quotationId: number, userId: number) {
       },
     });
 
-    // 5. Log status history
+    // 6. Log status history
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
@@ -382,11 +414,6 @@ export async function approveQuotation(quotationId: number, userId: number) {
         id_estado_nuevo: approvedStatus.id_estatus,
         fecha_cambio: new Date(),
       },
-    });
-    await tx.variablesCotizacion.updateMany({
-      where: { id_cotizacion: quotationId },
-      data: {
-      }
     });
 
     return { quotation: updatedQuotation, pedido };
@@ -416,7 +443,9 @@ export async function rejectQuotation(quotationId: number, userId: number, reaso
       where: { id_cotizacion: quotationId },
       data: {
         id_estatus_cotizacion: rejectedStatus.id_estatus,
-        notas: reason ? `${quotation.notas ?? ""}\n\nMotivo de rechazo: ${reason}` : quotation.notas,
+        notas: reason
+          ? `${quotation.notas ?? ""}\n\nMotivo de rechazo: ${reason}`
+          : quotation.notas,
       },
     });
 

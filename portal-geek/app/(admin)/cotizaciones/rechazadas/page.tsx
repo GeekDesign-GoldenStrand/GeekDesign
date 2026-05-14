@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+
 import { CotizacionesTemplate } from "@/components/admin/templates/CotizacionesTemplate";
 
 type Cotizacion = {

@@ -510,13 +510,13 @@ async function main() {
 
     const demoFolios = ["COT-101", "COT-102", "COT-103", "COT-104", "COT-105", "COT-106"];
     await prisma.variablesCotizacion.deleteMany({
-      where: { cotizacion: { folio: { in: demoFolios } } }
+      where: { cotizacion: { folio: { in: demoFolios } } },
     });
     await prisma.historialEstadosCotizacion.deleteMany({
-      where: { cotizacion: { folio: { in: demoFolios } } }
+      where: { cotizacion: { folio: { in: demoFolios } } },
     });
     await prisma.cotizaciones.deleteMany({
-      where: { folio: { in: demoFolios } }
+      where: { folio: { in: demoFolios } },
     });
 
     const demoQuotationsData = [
@@ -531,7 +531,8 @@ async function main() {
       {
         folio: "COT-102",
         monto_total: 4500,
-        notas: "Cotización validada (MIXTA): [ESTADO:modificado] Algunos servicios fueron aprobados tal cual, otros fueron modificados en precio por el administrador.",
+        notas:
+          "Cotización validada (MIXTA): [ESTADO:modificado] Algunos servicios fueron aprobados tal cual, otros fueron modificados en precio por el administrador.",
         fecha_creacion: new Date("2026-05-02"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Validada"],
@@ -539,7 +540,8 @@ async function main() {
       {
         folio: "COT-103",
         monto_total: 2800,
-        notas: "Cotización validada (MODIFICADA): [ESTADO:modificado] Se ajustaron todos los precios unitarios debido a actualización de costos de material.",
+        notas:
+          "Cotización validada (MODIFICADA): [ESTADO:modificado] Se ajustaron todos los precios unitarios debido a actualización de costos de material.",
         fecha_creacion: new Date("2026-05-03"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Validada"],
@@ -555,7 +557,8 @@ async function main() {
       {
         folio: "COT-105",
         monto_total: 3500,
-        notas: "Rechazada por Administración: [ESTADO:rechazado] Los archivos enviados por el cliente no cumplen con la calidad mínima requerida para producción.",
+        notas:
+          "Rechazada por Administración: [ESTADO:rechazado] Los archivos enviados por el cliente no cumplen con la calidad mínima requerida para producción.",
         fecha_creacion: new Date("2026-05-05"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Rechazada"],
@@ -580,7 +583,7 @@ async function main() {
         data: {
           id_cotizacion: quote.id_cotizacion,
           id_formula: formulaCorte.id_formula,
-          valor: quote.monto_total, 
+          valor: quote.monto_total,
           id_usuario_asigno: adminUser.id_usuario,
         },
       });
@@ -591,9 +594,11 @@ async function main() {
     // ── Complex Quotation (COT-107) ──────────────────────────────────────────
     // This one has a linked Pedido with multiple details in different states
     const complexFolio = "COT-107";
-    
+
     // Cleanup complex data
-    await prisma.detallePedido.deleteMany({ where: { pedido: { cotizaciones: { some: { folio: complexFolio } } } } });
+    await prisma.detallePedido.deleteMany({
+      where: { pedido: { cotizaciones: { some: { folio: complexFolio } } } },
+    });
     await prisma.pedidos.deleteMany({ where: { cotizaciones: { some: { folio: complexFolio } } } });
     await prisma.variablesCotizacion.deleteMany({ where: { cotizacion: { folio: complexFolio } } });
     await prisma.cotizaciones.deleteMany({ where: { folio: complexFolio } });
@@ -605,7 +610,7 @@ async function main() {
         nombre_archivo: "demo_design.pdf",
         url_archivo: "/uploads/demo_design.pdf",
         formato: "pdf",
-      }
+      },
     });
 
     const complexPedido = await prisma.pedidos.create({
@@ -637,7 +642,8 @@ async function main() {
               subtotal: 1000,
               opciones_seleccionadas: {},
               responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:modificado] [ANTES:724.64] Se ajustó el precio por el nivel de detalle requerido.",
+              notas:
+                "[ESTADO:modificado] [ANTES:724.64] Se ajustó el precio por el nivel de detalle requerido.",
             },
             {
               id_servicio: 3, // Bordado
@@ -648,11 +654,12 @@ async function main() {
               subtotal: 500,
               opciones_seleccionadas: {},
               responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:rechazado] [MOTIVO:No disponible] [ANTES:500] No contamos con capacidad técnica para este bordado específico.",
-            }
-          ]
-        }
-      }
+              notas:
+                "[ESTADO:rechazado] [MOTIVO:No disponible] [ANTES:500] No contamos con capacidad técnica para este bordado específico.",
+            },
+          ],
+        },
+      },
     });
 
     await prisma.cotizaciones.create({
@@ -663,17 +670,23 @@ async function main() {
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Validada"],
         id_pedido: complexPedido.id_pedido,
-      }
+      },
     });
 
     console.log("Seeded complex quotation COT-107");
 
     // ── Ultra Complex Quotation (COT-108) ────────────────────────────────────
     const ultraComplexFolio = "COT-108";
-    
-    await prisma.detallePedido.deleteMany({ where: { pedido: { cotizaciones: { some: { folio: ultraComplexFolio } } } } });
-    await prisma.pedidos.deleteMany({ where: { cotizaciones: { some: { folio: ultraComplexFolio } } } });
-    await prisma.variablesCotizacion.deleteMany({ where: { cotizacion: { folio: ultraComplexFolio } } });
+
+    await prisma.detallePedido.deleteMany({
+      where: { pedido: { cotizaciones: { some: { folio: ultraComplexFolio } } } },
+    });
+    await prisma.pedidos.deleteMany({
+      where: { cotizaciones: { some: { folio: ultraComplexFolio } } },
+    });
+    await prisma.variablesCotizacion.deleteMany({
+      where: { cotizacion: { folio: ultraComplexFolio } },
+    });
     await prisma.cotizaciones.deleteMany({ where: { folio: ultraComplexFolio } });
 
     const ultraComplexPedido = await prisma.pedidos.create({
@@ -716,7 +729,8 @@ async function main() {
               subtotal: 500,
               opciones_seleccionadas: {},
               responsable_recoleccion: "Cliente",
-              notas: "[ESTADO:rechazado] [MOTIVO:Capacidad] [ANTES:500] No disponible en este momento.",
+              notas:
+                "[ESTADO:rechazado] [MOTIVO:Capacidad] [ANTES:500] No disponible en este momento.",
             },
             {
               id_servicio: 4, // Impresión UV
@@ -739,10 +753,10 @@ async function main() {
               opciones_seleccionadas: {},
               responsable_recoleccion: "Cliente",
               notas: "[ESTADO:sin_cambios] [ANTES:300] Precio base mantenido.",
-            }
-          ]
-        }
-      }
+            },
+          ],
+        },
+      },
     });
 
     await prisma.cotizaciones.create({
@@ -753,7 +767,7 @@ async function main() {
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Validada"],
         id_pedido: ultraComplexPedido.id_pedido,
-      }
+      },
     });
 
     console.log("Seeded ultra complex quotation COT-108");

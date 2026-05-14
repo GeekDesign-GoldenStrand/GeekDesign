@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
+
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
+import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -32,39 +33,51 @@ export default async function CotizacionDetallePage({ params }: Props) {
       nombre_cliente: quote.cliente.nombre_cliente,
       empresa: quote.cliente.empresa,
     },
-    items: (quote.pedido?.detalles && quote.pedido.detalles.length > 0) 
-      ? quote.pedido.detalles.map((d) => {
-          const notas = d.notas || "";
-          const estadoMatch = notas.match(/\[ESTADO:(.*?)\]/);
-          const antesMatch = notas.match(/\[ANTES:(.*?)\]/);
-          const precioAnterior = antesMatch ? Number(antesMatch[1]) : Number(d.precio_unitario) * d.cantidad;
-          const currentTotal = Number(d.precio_unitario) * d.cantidad;
-          const isActuallyModified = estadoMatch && estadoMatch[1].toLowerCase() === "modificado" && precioAnterior !== currentTotal;
+    items:
+      quote.pedido?.detalles && quote.pedido.detalles.length > 0
+        ? quote.pedido.detalles.map((d) => {
+            const notas = d.notas || "";
+            const estadoMatch = notas.match(/\[ESTADO:(.*?)\]/);
+            const antesMatch = notas.match(/\[ANTES:(.*?)\]/);
+            const precioAnterior = antesMatch
+              ? Number(antesMatch[1])
+              : Number(d.precio_unitario) * d.cantidad;
+            const currentTotal = Number(d.precio_unitario) * d.cantidad;
+            const isActuallyModified =
+              estadoMatch &&
+              estadoMatch[1].toLowerCase() === "modificado" &&
+              precioAnterior !== currentTotal;
 
-          return {
-            id: d.id_detalle,
-            nombre: d.servicio.nombre_servicio,
-            cantidad: d.cantidad,
-            precio_unitario: Number(d.precio_unitario),
-            precio_total: currentTotal,
-            precio_anterior: precioAnterior,
-            estado: isActuallyModified ? "modificado" : (estadoMatch ? (estadoMatch[1].toLowerCase() === "modificado" ? "sin_cambios" : estadoMatch[1].toLowerCase()) : "sin_cambios"),
-            descripcion: d.servicio.descripcion_servicio || "Servicio solicitado",
-          };
-        })
-      : quote.variablesCotizacion.map((v) => {
-          const precio = Number(v.valor);
-          return {
-            id: v.id_valor,
-            nombre: v.formula.servicio.nombre_servicio,
-            cantidad: 1,
-            precio_unitario: precio,
-            precio_total: precio,
-            precio_anterior: precio,
-            estado: "sin_cambios",
-            descripcion: v.formula.servicio.descripcion_servicio || "Servicio solicitado",
-          };
-        }),
+            return {
+              id: d.id_detalle,
+              nombre: d.servicio.nombre_servicio,
+              cantidad: d.cantidad,
+              precio_unitario: Number(d.precio_unitario),
+              precio_total: currentTotal,
+              precio_anterior: precioAnterior,
+              estado: isActuallyModified
+                ? "modificado"
+                : estadoMatch
+                  ? estadoMatch[1].toLowerCase() === "modificado"
+                    ? "sin_cambios"
+                    : estadoMatch[1].toLowerCase()
+                  : "sin_cambios",
+              descripcion: d.servicio.descripcion_servicio || "Servicio solicitado",
+            };
+          })
+        : quote.variablesCotizacion.map((v) => {
+            const precio = Number(v.valor);
+            return {
+              id: v.id_valor,
+              nombre: v.formula.servicio.nombre_servicio,
+              cantidad: 1,
+              precio_unitario: precio,
+              precio_total: precio,
+              precio_anterior: precio,
+              estado: "sin_cambios",
+              descripcion: v.formula.servicio.descripcion_servicio || "Servicio solicitado",
+            };
+          }),
   };
 
   return (

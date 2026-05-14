@@ -21,7 +21,6 @@ export function FolioSearch() {
   return (
     <div className="max-w-[1240px] mx-auto py-12 px-4">
       <div className="bg-white rounded-[24px] border border-[#E8E8E8] shadow-[0_12px_60px_rgba(0,0,0,0.03)] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-        
         {/* Left Side: Text */}
         <div className="flex-1 text-center lg:text-left space-y-4">
           <h2 className="text-[36px] md:text-[42px] font-black text-[#1e1e1e] leading-tight">
@@ -68,5 +67,3 @@ export function FolioSearch() {
     </div>
   );
 }
-
-
