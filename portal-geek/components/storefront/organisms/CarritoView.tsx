@@ -11,6 +11,7 @@ import {
   getSubtotal,
   type CarritoItem,
 } from "@/lib/cart/storage";
+import { DesignUploadZone } from "@/components/storefront/molecules/DesignUploadZone";
 
 interface RelatedService {
   id_servicio: number;
@@ -145,7 +146,7 @@ export function CarritoView({ relatedServices }: Props) {
                 <div key={item.id}>
                   <div className="py-[24px] flex gap-[24px]">
                     {/* Preview + edit links */}
-                    <div className="flex flex-col gap-[8px] shrink-0">
+                    <div className="flex flex-col gap-[8px] shrink-0 w-[303px]">
                       <div className="flex items-center gap-[8px]">
                         <button
                           className="bg-[#ebebeb] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] flex items-center justify-center"
@@ -174,9 +175,7 @@ export function CarritoView({ relatedServices }: Props) {
                       >
                         Editar opciones
                       </Link>
-                      <button className="text-[18px] font-medium text-[#1e1e1e] underline text-left">
-                        Editar diseño
-                      </button>
+                      <DesignUploadZone />
                     </div>
 
                     {/* Item details */}
