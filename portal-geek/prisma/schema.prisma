@@ -598,6 +598,7 @@ model FormulaConstantes {
   id_formula       Int
   nombre_constante String  @db.VarChar(100)  // identificador en la expresión: "costo_laser_co2"
   origen           String  @db.VarChar(20)
+  valor            Decimal? @db.Decimal(10, 2)  // Required for "manual" origin; null for others
   id_instalador    Int?
   id_proveedor     Int?
   estatus          String  @db.VarChar(20)

@@ -17,6 +17,7 @@ export type ConstanteDraft = {
   origen: "instalador" | "proveedor" | "global" | "manual";
   id_instalador?: number;
   id_proveedor?: number;
+  valor?: number;  // Required for "manual" origin; null/undefined for others
   // Auto-managed by the page (instalador/proveedor toggles, IVA when formula on).
   // Can't be edited or deleted from the UI.
   auto?: boolean;
@@ -61,6 +62,7 @@ export function ConstantesSection({
     origen: OrigenManual;
     id_instalador?: number;
     id_proveedor?: number;
+    valor?: number;
   }>({
     etiqueta: "",
     origen: "manual",
@@ -110,12 +112,17 @@ export function ConstantesSection({
       setError("Selecciona un proveedor");
       return;
     }
+    if (draft.origen === "manual" && (draft.valor === undefined || draft.valor === null)) {
+      setError("Especifica un valor numérico para la constante");
+      return;
+    }
 
     const cleaned: ConstanteDraft = {
       nombre_constante: nombre,
       origen: draft.origen,
       ...(draft.origen === "instalador" ? { id_instalador: draft.id_instalador } : {}),
       ...(draft.origen === "proveedor" ? { id_proveedor: draft.id_proveedor } : {}),
+      ...(draft.origen === "manual" ? { valor: draft.valor } : {}),
     };
 
     onChange([...constantes, cleaned]);
@@ -141,7 +148,7 @@ export function ConstantesSection({
         if (c.nombre_constante === "iva") return "16% — se aplica al final";
         return "Constante del sistema";
       case "manual":
-        return "Valor fijo (en la fórmula)";
+        return `Valor fijo: ${c.valor ?? "?"}`;
     }
   };
 
@@ -283,10 +290,28 @@ export function ConstantesSection({
         )}
 
         {draft.origen === "manual" && (
-          <p className="text-xs text-gray-500 italic">
-            El valor lo escribes directamente en la fórmula. Ej:{" "}
-            <code className="bg-gray-100 px-1 rounded">* 1.4</code> para 40% de comisión.
-          </p>
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              Valor numérico
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Ej. 1.4 para 40% de comisión"
+              value={draft.valor ?? ""}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  valor: e.target.value ? parseFloat(e.target.value) : undefined,
+                }))
+              }
+              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+            />
+            <p className="text-xs text-gray-500 italic mt-1">
+              Este valor se usará cada vez que referencie <code className="bg-gray-100 px-1 rounded font-mono">{previewNombre}</code> en la fórmula.
+            </p>
+          </div>
         )}
 
         {error && <p className="text-xs text-[#e42200]">{error}</p>}

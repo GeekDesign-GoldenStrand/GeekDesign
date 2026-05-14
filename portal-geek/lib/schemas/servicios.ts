@@ -23,16 +23,18 @@ const ConstanteSchema = z
     origen: z.enum(["instalador", "proveedor", "global", "manual"]),
     id_instalador: z.number().int().positive().optional(),
     id_proveedor: z.number().int().positive().optional(),
+    valor: z.number().nonnegative().optional(),
     // Future-proof: when ConstantesGlobales is wired, add id_constante_global here.
   })
   .refine(
     (data) => {
       if (data.origen === "instalador") return data.id_instalador !== undefined;
       if (data.origen === "proveedor") return data.id_proveedor !== undefined;
-      // 'global' and 'manual' don't require an FK; manual = admin types value directly
+      if (data.origen === "manual") return data.valor !== undefined && data.valor !== null;
+      // 'global' doesn't require an FK or valor
       return true;
     },
-    { message: "El ID correspondiente al origen seleccionado es requerido" }
+    { message: "El valor es requerido para constantes manuales; selecciona un instalador/proveedor o especifica un valor numérico" }
   );
 
 const FormulaSchema = z.object({

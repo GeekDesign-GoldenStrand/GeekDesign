@@ -40,7 +40,7 @@ export function useNuevoServicioForm() {
 
   // Static option fetches (load once on mount).
   const sucursales = useFetch<{ data: SucursalOption[] }>("/api/sucursales?mode=options");
-  const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores");
+  const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores?mode=options");
   const proveedores = useFetch<{ data: ProveedorOption[] }>("/api/proveedores?mode=options");
   const tiposVariable = useFetch<{ data: TipoVariableOption[] }>("/api/tipos-variable");
 
