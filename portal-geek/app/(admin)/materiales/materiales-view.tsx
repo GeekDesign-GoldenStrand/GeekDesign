@@ -178,45 +178,45 @@ export function MaterialesView() {
       <main className="py-6">
         <section className="max-w-[1350px] mx-auto px-4 sm:px-8 pt-5 space-y-4">
           <MaterialesToolbar
-          search={search}
-          onSearchChange={setSearch}
-          isFilterOpen={showFilters}
-          visibleColumns={visibleColumns}
-          sortOrder={sortOrder}
-          onToggleColumn={handleToggleColumn}
-          onSortChange={handleSortChange}
-          onResetFilters={handleResetFilters}
-          onAddClick={() => setShowAddModal(true)}
-          onFilterClick={() => setShowFilters((state) => !state)}
-          onCloseFilter={() => setShowFilters(false)}
-        />
-
-        {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
-
-        {error && !loading && (
-          <div className="flex flex-col gap-3">
-            <p className="text-[#e42200] text-[16px]">{error}</p>
-            <button
-              onClick={handleRetry}
-              className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <MaterialesGrid
-            items={rows}
+            search={search}
+            onSearchChange={setSearch}
+            isFilterOpen={showFilters}
             visibleColumns={visibleColumns}
-            onEditMaterial={handleEditClick}
-            page={page}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            hasSearch={!!debouncedSearch.trim()}
-            onClearFilters={handleResetFilters}
+            sortOrder={sortOrder}
+            onToggleColumn={handleToggleColumn}
+            onSortChange={handleSortChange}
+            onResetFilters={handleResetFilters}
+            onAddClick={() => setShowAddModal(true)}
+            onFilterClick={() => setShowFilters((state) => !state)}
+            onCloseFilter={() => setShowFilters(false)}
           />
-        )}
+
+          {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
+
+          {error && !loading && (
+            <div className="flex flex-col gap-3">
+              <p className="text-[#e42200] text-[16px]">{error}</p>
+              <button
+                onClick={handleRetry}
+                className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <MaterialesGrid
+              items={rows}
+              visibleColumns={visibleColumns}
+              onEditMaterial={handleEditClick}
+              page={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              hasSearch={!!debouncedSearch.trim()}
+              onClearFilters={handleResetFilters}
+            />
+          )}
         </section>
       </main>
 
