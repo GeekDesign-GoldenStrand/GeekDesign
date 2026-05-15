@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { withRoleParams } from "@/lib/auth/guards";
 import { AssignmentSchema } from "@/lib/schemas/asignaciones";
 import { InstaladorIdParams } from "@/lib/schemas/instaladores";
@@ -19,10 +21,7 @@ export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
 export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   try {
     const { id } = InstaladorIdParams.parse(await ctx.params);
-    const body = AssignmentSchema.parse(await req.json());
-    if (body.type !== "servicio") {
-      return handleError(new Error("Los instaladores solo pueden tener servicios asignados"));
-    }
+    const body = AssignmentSchema.extend({ type: z.literal("servicio") }).parse(await req.json());
     await syncInstaladorAssignments(id, body.ids);
     return ok({ success: true });
   } catch (err) {

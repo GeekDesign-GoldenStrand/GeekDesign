@@ -8,21 +8,15 @@ jest.mock("@/lib/db/client", () => ({
   prisma: {
     proveedorPrecios: {
       findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
     },
     proveedores: {
       findUnique: jest.fn(),
     },
-    $transaction: jest.fn((ops) => Promise.all(ops)),
+    $transaction: jest.fn(),
   },
 }));
 
 const mockFindMany = prisma.proveedorPrecios.findMany as jest.Mock;
-const mockDeleteMany = prisma.proveedorPrecios.deleteMany as jest.Mock;
-const mockCreate = prisma.proveedorPrecios.create as jest.Mock;
-const mockUpdate = prisma.proveedorPrecios.update as jest.Mock;
 const mockFindUniqueProveedor = prisma.proveedores.findUnique as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
 
@@ -69,70 +63,140 @@ describe("getProviderAssignments", () => {
 });
 
 describe("syncProviderAssignments", () => {
+  let mockTx: {
+    proveedorPrecios: {
+      findMany: jest.Mock;
+      deleteMany: jest.Mock;
+      createMany: jest.Mock;
+      update: jest.Mock;
+    };
+    gastos: { findMany: jest.Mock };
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockTx = {
+      proveedorPrecios: {
+        findMany: jest.fn(),
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+        update: jest.fn(),
+      },
+      gastos: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    mockTransaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
   });
 
-  it("agrega nuevas asignaciones de servicios con precio", async () => {
+  it("agrega servicios nuevos sin tocar los existentes", async () => {
     mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockFindMany.mockResolvedValue([]);
-
-    await syncProviderAssignments(1, "servicio", [{ id: 5, precio: 100 }]);
-
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          id_proveedor: 1,
-          id_servicio: 5,
-          id_material: null,
-          precio: 100,
-        }),
-      })
-    );
-    expect(mockTransaction).toHaveBeenCalled();
-  });
-
-  it("elimina asignaciones que ya no están en la lista", async () => {
-    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockFindMany.mockResolvedValue([
-      { id_proveedor_precio: 100, id_material: 10, id_servicio: null, precio: 50, notas: "" },
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 1, id_material: null },
     ]);
 
-    await syncProviderAssignments(1, "material", [{ id: 20, precio: 75 }]);
+    await syncProviderAssignments(1, "servicio", [
+      { id: 1, precio: 0 },
+      { id: 5, precio: 50 },
+    ]);
 
-    expect(mockDeleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id_proveedor_precio: { in: [100] } },
-      })
-    );
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          id_material: 20,
-          precio: 75,
-        }),
-      })
-    );
+    expect(mockTx.proveedorPrecios.deleteMany).not.toHaveBeenCalled();
+    expect(mockTx.proveedorPrecios.createMany).toHaveBeenCalledWith({
+      data: [{ id_proveedor: 1, id_servicio: 5, id_material: null, precio: 50, notas: "" }],
+      skipDuplicates: true,
+    });
+  });
+
+  it("usa createMany en una sola llamada para múltiples adiciones", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([]);
+
+    await syncProviderAssignments(1, "material", [
+      { id: 10, precio: 100 },
+      { id: 20, precio: 200 },
+    ]);
+
+    expect(mockTx.proveedorPrecios.createMany).toHaveBeenCalledWith({
+      data: [
+        { id_proveedor: 1, id_servicio: null, id_material: 10, precio: 100, notas: "" },
+        { id_proveedor: 1, id_servicio: null, id_material: 20, precio: 200, notas: "" },
+      ],
+      skipDuplicates: true,
+    });
   });
 
   it("actualiza el precio si la asignación ya existe", async () => {
     mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockFindMany.mockResolvedValue([
-      { id_proveedor_precio: 100, id_servicio: 1, id_material: null, precio: 50, notas: "" },
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 1, id_material: null },
     ]);
 
     await syncProviderAssignments(1, "servicio", [{ id: 1, precio: 200, notas: "actualizado" }]);
 
-    expect(mockDeleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id_proveedor_precio: { in: [] } } })
-    );
-    expect(mockCreate).not.toHaveBeenCalled();
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id_proveedor_precio: 100 },
-        data: expect.objectContaining({ precio: 200, notas: "actualizado" }),
-      })
-    );
+    expect(mockTx.proveedorPrecios.deleteMany).not.toHaveBeenCalled();
+    expect(mockTx.proveedorPrecios.createMany).not.toHaveBeenCalled();
+    expect(mockTx.proveedorPrecios.update).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: 100 },
+      data: expect.objectContaining({ precio: 200, notas: "actualizado" }),
+    });
+  });
+
+  it("elimina asignaciones removidas que no tienen Gastos", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_material: 10, id_servicio: null },
+    ]);
+
+    await syncProviderAssignments(1, "material", [{ id: 20, precio: 75 }]);
+
+    expect(mockTx.proveedorPrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [100] } },
+    });
+    expect(mockTx.proveedorPrecios.createMany).toHaveBeenCalledWith({
+      data: [{ id_proveedor: 1, id_servicio: null, id_material: 20, precio: 75, notas: "" }],
+      skipDuplicates: true,
+    });
+  });
+
+  it("no borra asignaciones referenciadas por Gastos", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 1, id_material: null },
+      { id_proveedor_precio: 101, id_servicio: 2, id_material: null },
+    ]);
+    mockTx.gastos.findMany.mockResolvedValue([{ id_proveedor_precio: 101 }]);
+
+    await syncProviderAssignments(1, "servicio", [{ id: 1, precio: 0 }]); // wants to remove service 2 (pk 101)
+
+    expect(mockTx.proveedorPrecios.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("borra solo las asignaciones sin referencia en Gastos", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 1, id_material: null },
+      { id_proveedor_precio: 101, id_servicio: 2, id_material: null },
+    ]);
+    mockTx.gastos.findMany.mockResolvedValue([{ id_proveedor_precio: 101 }]);
+
+    await syncProviderAssignments(1, "servicio", [{ id: 2, precio: 0 }]); // keep 2 (pk 101 protected), remove 1 (pk 100)
+
+    expect(mockTx.proveedorPrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [100] } },
+    });
+  });
+
+  it("elimina todas las asignaciones sin Gastos si el arreglo está vacío", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 1, id_material: null },
+      { id_proveedor_precio: 101, id_servicio: 2, id_material: null },
+    ]);
+
+    await syncProviderAssignments(1, "servicio", []);
+
+    expect(mockTx.proveedorPrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [100, 101] } },
+    });
+    expect(mockTx.proveedorPrecios.createMany).not.toHaveBeenCalled();
   });
 
   it("lanza NotFoundError si el proveedor no existe al sincronizar", async () => {
@@ -142,24 +206,8 @@ describe("syncProviderAssignments", () => {
     ).rejects.toThrow("Proveedor 123 no encontrado");
   });
 
-  it("elimina todas las asignaciones si el arreglo de IDs está vacío", async () => {
-    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockFindMany.mockResolvedValue([
-      { id_proveedor_precio: 100, id_servicio: 1, id_material: null, precio: 50, notas: "" },
-      { id_proveedor_precio: 101, id_servicio: 2, id_material: null, precio: 80, notas: "" },
-    ]);
-
-    await syncProviderAssignments(1, "servicio", []);
-
-    expect(mockDeleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id_proveedor_precio: { in: [100, 101] } } })
-    );
-    expect(mockCreate).not.toHaveBeenCalled();
-  });
-
   it("lanza un error si la transacción falla", async () => {
     mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockFindMany.mockResolvedValue([]);
     mockTransaction.mockRejectedValue(new Error("Transaction failed"));
 
     await expect(syncProviderAssignments(1, "servicio", [{ id: 5, precio: 100 }])).rejects.toThrow(
