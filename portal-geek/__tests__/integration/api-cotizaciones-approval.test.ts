@@ -169,6 +169,20 @@ describe("Req. ST-08-09 Integration Tests", () => {
         .send();
 
       expect(res.status).toBe(201);
+      expect(prisma.pedidos.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id_cliente: 1,
+          id_sucursal: 1,
+          detalles: {
+            create: [
+              expect.objectContaining({
+                precio_unitario: 100,
+                subtotal: 1000,
+              }),
+            ],
+          },
+        }),
+      });
     });
 
     it("should return 422 when client email header is missing", async () => {
