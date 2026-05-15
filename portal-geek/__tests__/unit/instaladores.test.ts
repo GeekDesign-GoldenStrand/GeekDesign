@@ -331,9 +331,7 @@ describe("syncInstaladorAssignments", () => {
       },
       gastos: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    mockTransaction.mockImplementation(
-      (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx)
-    );
+    mockTransaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
   });
 
   it("agrega servicios nuevos sin tocar los existentes", async () => {
