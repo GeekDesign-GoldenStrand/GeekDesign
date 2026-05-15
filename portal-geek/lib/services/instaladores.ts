@@ -112,20 +112,47 @@ export async function syncInstaladorAssignments(id: number, serviceIds: number[]
   const ids = Array.from(new Set(serviceIds));
   await getInstalador(id);
 
-  const operations = [
-    prisma.instaladorServicios.deleteMany({
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.instaladorServicios.findMany({
       where: { id_instalador: id },
-    }),
-    ...ids.map((targetId) =>
-      prisma.instaladorServicios.create({
-        data: {
-          id_instalador: id,
-          id_servicio: targetId,
-          precio: 0,
-        },
-      })
-    ),
-  ];
+      select: { id_instalador_servicio: true, id_servicio: true },
+    });
 
-  await prisma.$transaction(operations);
+    const existingIds = new Set(existing.map((e) => e.id_servicio));
+    const newIds = new Set(ids);
+
+    const candidatePkIds = existing
+      .filter((e) => !newIds.has(e.id_servicio))
+      .map((e) => e.id_instalador_servicio);
+
+    // Skip assignments referenced by Gastos — deleting them would break cost history
+    let toDeletePkIds: number[] = candidatePkIds;
+    if (candidatePkIds.length > 0) {
+      const referenced = await tx.gastos.findMany({
+        where: { id_instalador_servicio: { in: candidatePkIds } },
+        select: { id_instalador_servicio: true },
+      });
+      const referencedSet = new Set(referenced.map((g) => g.id_instalador_servicio));
+      toDeletePkIds = candidatePkIds.filter((pk) => !referencedSet.has(pk));
+    }
+
+    const toAddServiceIds = ids.filter((sid) => !existingIds.has(sid));
+
+    if (toDeletePkIds.length > 0) {
+      await tx.instaladorServicios.deleteMany({
+        where: { id_instalador_servicio: { in: toDeletePkIds } },
+      });
+    }
+
+    if (toAddServiceIds.length > 0) {
+      await tx.instaladorServicios.createMany({
+        data: toAddServiceIds.map((sid) => ({
+          id_instalador: id,
+          id_servicio: sid,
+          precio: 0,
+        })),
+        skipDuplicates: true,
+      });
+    }
+  });
 }

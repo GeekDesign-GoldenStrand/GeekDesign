@@ -25,8 +25,6 @@ jest.mock("@/lib/db/client", () => ({
     },
     instaladorServicios: {
       findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      create: jest.fn(),
     },
   },
 }));
@@ -38,8 +36,6 @@ const mockFindUnique = prisma.instaladores.findUnique as jest.Mock;
 const mockCreate = prisma.instaladores.create as jest.Mock;
 const mockUpdate = prisma.instaladores.update as jest.Mock;
 const mockServiciosFindMany = prisma.instaladorServicios.findMany as jest.Mock;
-const mockServiciosDeleteMany = prisma.instaladorServicios.deleteMany as jest.Mock;
-const mockServiciosCreate = prisma.instaladorServicios.create as jest.Mock;
 
 const INSTALADOR = {
   id_instalador: 1,
@@ -320,25 +316,93 @@ describe("getInstaladorAssignments", () => {
 // syncInstaladorAssignments
 // ---------------------------------------------------------------------------
 describe("syncInstaladorAssignments", () => {
+  let mockTx: {
+    instaladorServicios: { findMany: jest.Mock; deleteMany: jest.Mock; createMany: jest.Mock };
+    gastos: { findMany: jest.Mock };
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTransaction.mockImplementation((promises: Promise<unknown>[]) => Promise.all(promises));
+    mockTx = {
+      instaladorServicios: {
+        findMany: jest.fn(),
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
+      gastos: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    mockTransaction.mockImplementation(
+      (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx)
+    );
   });
 
-  it("sincroniza servicios: borra y crea nuevos", async () => {
+  it("agrega servicios nuevos sin tocar los existentes", async () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockTx.instaladorServicios.findMany.mockResolvedValue([
+      { id_instalador_servicio: 10, id_servicio: 1 },
+    ]);
+
+    await syncInstaladorAssignments(1, [1, 2]);
+
+    expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
+    expect(mockTx.instaladorServicios.createMany).toHaveBeenCalledWith({
+      data: [{ id_instalador: 1, id_servicio: 2, precio: 0 }],
+      skipDuplicates: true,
+    });
+  });
+
+  it("usa createMany con todos los IDs nuevos en una sola llamada", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockTx.instaladorServicios.findMany.mockResolvedValue([]);
 
     await syncInstaladorAssignments(1, [5, 6]);
 
-    expect(mockServiciosDeleteMany).toHaveBeenCalledWith({
-      where: { id_instalador: 1 },
+    expect(mockTx.instaladorServicios.createMany).toHaveBeenCalledWith({
+      data: [
+        { id_instalador: 1, id_servicio: 5, precio: 0 },
+        { id_instalador: 1, id_servicio: 6, precio: 0 },
+      ],
+      skipDuplicates: true,
     });
-    expect(mockServiciosCreate).toHaveBeenCalledTimes(2);
-    expect(mockServiciosCreate).toHaveBeenCalledWith({
-      data: { id_instalador: 1, id_servicio: 5, precio: 0 },
-    });
-    expect(mockServiciosCreate).toHaveBeenCalledWith({
-      data: { id_instalador: 1, id_servicio: 6, precio: 0 },
+  });
+
+  it("no llama deleteMany ni createMany cuando la lista es idéntica", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockTx.instaladorServicios.findMany.mockResolvedValue([
+      { id_instalador_servicio: 10, id_servicio: 5 },
+    ]);
+
+    await syncInstaladorAssignments(1, [5]);
+
+    expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
+    expect(mockTx.instaladorServicios.createMany).not.toHaveBeenCalled();
+  });
+
+  it("no borra asignaciones referenciadas por Gastos", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockTx.instaladorServicios.findMany.mockResolvedValue([
+      { id_instalador_servicio: 10, id_servicio: 1 },
+      { id_instalador_servicio: 11, id_servicio: 2 },
+    ]);
+    mockTx.gastos.findMany.mockResolvedValue([{ id_instalador_servicio: 11 }]);
+
+    await syncInstaladorAssignments(1, [1]); // wants to remove service 2 (pk 11)
+
+    expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("borra solo las asignaciones sin referencia en Gastos", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockTx.instaladorServicios.findMany.mockResolvedValue([
+      { id_instalador_servicio: 10, id_servicio: 1 },
+      { id_instalador_servicio: 11, id_servicio: 2 },
+    ]);
+    mockTx.gastos.findMany.mockResolvedValue([{ id_instalador_servicio: 11 }]);
+
+    await syncInstaladorAssignments(1, [2]); // keep service 2 (pk 11 protected), remove service 1 (pk 10)
+
+    expect(mockTx.instaladorServicios.deleteMany).toHaveBeenCalledWith({
+      where: { id_instalador_servicio: { in: [10] } },
     });
   });
 

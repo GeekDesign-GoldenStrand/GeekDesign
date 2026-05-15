@@ -103,6 +103,16 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
     expect(res.status).toBe(422);
   });
 
+  it("retorna 422 si el type es material (instaladores solo aceptan servicio)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await testApp()
+      .put("/api/instaladores/1/asignacion")
+      .send({ type: "material", ids: [1] });
+
+    expect(res.status).toBe(422);
+  });
+
   it("retorna 403 si el rol es Vendedor", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Vendedor" });
     const res = await testApp()
