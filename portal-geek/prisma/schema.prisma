@@ -144,12 +144,13 @@ model Servicios {
   descripcion_servicio String?
   estatus_servicio     Boolean @default(true)
 
-  estatusServicio     EstatusServicio       @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  opciones            OpcionesProducto[]
-  formulaVariables    FormulaVariables[]
-  detallesPedido      DetallePedido[]
-  instaladorServicios InstaladorServicios[]
-  proveedorPrecios    ProveedorPrecios[]
+  estatusServicio      EstatusServicio      @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  opciones             OpcionesProducto[]
+  formulaVariables     FormulaVariables[]
+  detallesPedido       DetallePedido[]
+  instaladorServicios  InstaladorServicios[]
+  proveedorPrecios     ProveedorPrecios[]
+  servicios            ServiciosMaquina[]
 
   @@map("SERVICIOS")
 }
@@ -240,29 +241,42 @@ model Sucursales {
 }
 
 model Maquinas {
-  id_maquina     Int      @id @default(autoincrement())
-  nombre_maquina String   @db.VarChar(100)
-  apodo_maquina  String   @db.VarChar(100)
-  tipo           String   @db.VarChar(50) // Láser CO2 / Láser Fibra / Bordadora
-  descripcion    String?
-  estatus        String   @db.VarChar(30) // Activa / Inactiva / En mantenimiento
+  id_maquina    Int      @id @default(autoincrement())
+  nombre_maquina String  @db.VarChar(100) // CO2 100 Watts / Fibra 100 Watts / Happy 15 hilos 1 cabeza
+  apodo_maquina  String  @db.VarChar(100)
+  tipo           String  @db.VarChar(50)  // Láser CO2 / Láser Fibra / Bordadora
+  descripcion    String? @db.VarChar(200)
+  estatus        String  @db.VarChar(30)  // Activa / Inactiva / En mantenimiento
   fecha_registro DateTime @default(now())
 
   sucursales    SucursalesMaquina[]
   pedidoMaquina PedidoMaquina[]
+  servicios     ServiciosMaquina[]
 
   @@map("MAQUINAS")
 }
 
 model SucursalesMaquina {
   id_sucursal_maquina Int @id @default(autoincrement())
-  id_maquina          Int
+  id_maquina          Int @unique
   id_sucursal         Int
 
   sucursal Sucursales @relation(fields: [id_sucursal], references: [id_sucursal])
   maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
 
   @@map("SUCURSALESMAQUINA")
+}
+
+model ServiciosMaquina {
+  id_servicio_maquina Int @id @default(autoincrement())
+  id_servicio         Int
+  id_maquina          Int
+
+  servicio Servicios @relation(fields: [id_servicio], references: [id_servicio])
+  maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
+
+  @@unique([id_servicio, id_maquina])
+  @@map("SERVICIOSMAQUINA")
 }
 
 model Proveedores {
