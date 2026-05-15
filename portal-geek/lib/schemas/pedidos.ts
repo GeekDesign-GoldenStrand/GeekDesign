@@ -5,7 +5,6 @@ export const CreatePedidoSchema = z.object({
   id_estatus: z.number().int().positive(),
   id_sucursal: z.number().int().positive().optional(),
   fecha_estimada: z.coerce.date().optional(),
-  factura: z.boolean().default(false),
   notas: z.string().optional(),
 });
 
@@ -14,7 +13,6 @@ export const UpdatePedidoSchema = z.object({
   id_sucursal: z.number().int().positive().optional(),
   fecha_estimada: z.coerce.date().optional(),
   fecha_fin: z.coerce.date().optional(),
-  factura: z.boolean().optional(),
   facturado: z.boolean().optional(),
   numero_factura: z.string().max(100).optional(),
   notas: z.string().optional(),
