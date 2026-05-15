@@ -1,7 +1,7 @@
 "use client";
 
 import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { InstaladorOption, ProveedorOption } from "@/types/servicios";
@@ -51,11 +51,14 @@ export function ConstantesSection({
   const yaHayProveedorAuto = constantes.some((c) => c.auto && c.origen === "proveedor");
 
   // Build the available origin options dynamically.
-  const origenesDisponibles: OrigenManual[] = [
-    "manual",
-    ...(!yaHayInstaladorAuto ? (["instalador"] as OrigenManual[]) : []),
-    ...(!yaHayProveedorAuto ? (["proveedor"] as OrigenManual[]) : []),
-  ];
+  const origenesDisponibles = useMemo<OrigenManual[]>(
+    () => [
+      "manual",
+      ...(!yaHayInstaladorAuto ? (["instalador"] as OrigenManual[]) : []),
+      ...(!yaHayProveedorAuto ? (["proveedor"] as OrigenManual[]) : []),
+    ],
+    [yaHayInstaladorAuto, yaHayProveedorAuto],
+  );
 
   const [draft, setDraft] = useState<{
     etiqueta: string;
@@ -81,7 +84,7 @@ export function ConstantesSection({
     if (!origenesDisponibles.includes(draft.origen)) {
       setDraft((d) => ({ ...d, origen: "manual" }));
     }
-  }, [draft.origen, yaHayInstaladorAuto, yaHayProveedorAuto]);
+  }, [draft.origen, origenesDisponibles]);
 
   const handleAdd = () => {
     setError(null);
