@@ -382,7 +382,9 @@ export async function approveQuotation(quotationId: number, providedEmail: strin
 
     const branchId = quotation.pedido?.id_sucursal;
     if (!branchId) {
-      throw new ValidationError("No se pudo determinar la sucursal para este pedido. Por favor, contacta a soporte.");
+      throw new ValidationError(
+        "No se pudo determinar la sucursal para este pedido. Por favor, contacta a soporte."
+      );
     }
 
     // 4. Create the Pedido (Order)

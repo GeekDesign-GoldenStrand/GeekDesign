@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
 import { WarningCircle, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
@@ -36,7 +36,8 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
           </div>
           <h2 className="text-[28px] font-black text-[#1e1e1e] mb-4">Datos incorrectos</h2>
           <p className="text-[#575757] text-[18px] font-medium leading-relaxed mb-10">
-            Los datos ingresados no son coincidentes. Por favor, verifica tus datos e intenta de nuevo.
+            Los datos ingresados no son coincidentes. Por favor, verifica tus datos e intenta de
+            nuevo.
           </p>
           <Link
             href="/storefront"

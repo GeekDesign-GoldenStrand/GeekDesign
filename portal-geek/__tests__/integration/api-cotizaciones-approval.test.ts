@@ -22,9 +22,14 @@ jest.mock("@/lib/db/client", () => ({
     },
     pedidos: {
       create: jest.fn(),
+      delete: jest.fn(),
     },
     detallePedido: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    historialEstadosPedidos: {
+      deleteMany: jest.fn(),
     },
     historialEstadosCotizacion: {
       create: jest.fn(),
