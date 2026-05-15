@@ -64,19 +64,8 @@ export function MaterialCard({
   return (
     <article
       className="flex flex-col md:grid md:items-center gap-3 md:gap-4 p-4 md:px-4 md:py-3 bg-white rounded-[7px] shadow-[0_2px_7px_rgba(0,0,0,0.14)] relative"
-      style={{ "--gtc": "none" } as React.CSSProperties}
+      style={{ gridTemplateColumns }}
     >
-      <style jsx>{`
-        article {
-          --gtc: none;
-          grid-template-columns: var(--gtc);
-        }
-        @media (min-width: 768px) {
-          article {
-            --gtc: ${gridTemplateColumns};
-          }
-        }
-      `}</style>
       <div className="flex items-center justify-between md:contents">
         {visibleColumns.name && (
           <div className="flex flex-col md:block">

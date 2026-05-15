@@ -175,8 +175,9 @@ export function MaterialesView() {
   return (
     <div className="min-h-screen bg-[#ececec] font-ibm-plex">
       <AdminHeader title="Materiales" />
-      <main className="px-4 sm:px-8 py-6">
-        <MaterialesToolbar
+      <main className="py-6">
+        <section className="max-w-[1350px] mx-auto px-4 sm:px-8 pt-5 space-y-4">
+          <MaterialesToolbar
           search={search}
           onSearchChange={setSearch}
           isFilterOpen={showFilters}
@@ -216,6 +217,7 @@ export function MaterialesView() {
             onClearFilters={handleResetFilters}
           />
         )}
+        </section>
       </main>
 
       <AgregarMaterialModal
