@@ -17,7 +17,7 @@ export type ConstanteDraft = {
   origen: "instalador" | "proveedor" | "global" | "manual";
   id_instalador?: number;
   id_proveedor?: number;
-  valor?: number;  // Required for "manual" origin; null/undefined for others
+  valor?: number; // Required for "manual" origin; null/undefined for others
   // Auto-managed by the page (instalador/proveedor toggles, IVA when formula on).
   // Can't be edited or deleted from the UI.
   auto?: boolean;
@@ -57,7 +57,7 @@ export function ConstantesSection({
       ...(!yaHayInstaladorAuto ? (["instalador"] as OrigenManual[]) : []),
       ...(!yaHayProveedorAuto ? (["proveedor"] as OrigenManual[]) : []),
     ],
-    [yaHayInstaladorAuto, yaHayProveedorAuto],
+    [yaHayInstaladorAuto, yaHayProveedorAuto]
   );
 
   const [draft, setDraft] = useState<{
@@ -294,9 +294,7 @@ export function ConstantesSection({
 
         {draft.origen === "manual" && (
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Valor numérico
-            </label>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Valor numérico</label>
             <input
               type="number"
               step="0.01"
@@ -312,7 +310,9 @@ export function ConstantesSection({
               className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             />
             <p className="text-xs text-gray-500 italic mt-1">
-              Este valor se usará cada vez que referencie <code className="bg-gray-100 px-1 rounded font-mono">{previewNombre}</code> en la fórmula.
+              Este valor se usará cada vez que referencie{" "}
+              <code className="bg-gray-100 px-1 rounded font-mono">{previewNombre}</code> en la
+              fórmula.
             </p>
           </div>
         )}

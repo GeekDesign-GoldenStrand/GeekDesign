@@ -34,7 +34,10 @@ const ConstanteSchema = z
       // 'global' doesn't require an FK or valor
       return true;
     },
-    { message: "El valor es requerido para constantes manuales; selecciona un instalador/proveedor o especifica un valor numérico" }
+    {
+      message:
+        "El valor es requerido para constantes manuales; selecciona un instalador/proveedor o especifica un valor numérico",
+    }
   );
 
 const FormulaSchema = z.object({

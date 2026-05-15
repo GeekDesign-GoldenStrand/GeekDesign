@@ -31,12 +31,15 @@ export const PUT = withRoleParams<Params>(
   }
 );
 
-export const DELETE = withRoleParams<Params>(["Administrador", "Direccion"], async (req: NextRequest, ctx) => {
-  try {
-    const { id } = ServicioIdParams.parse(await ctx.params);
-    await deleteServicio(id);
-    return noContent();
-  } catch (err) {
-    return handleError(err);
+export const DELETE = withRoleParams<Params>(
+  ["Administrador", "Direccion"],
+  async (req: NextRequest, ctx) => {
+    try {
+      const { id } = ServicioIdParams.parse(await ctx.params);
+      await deleteServicio(id);
+      return noContent();
+    } catch (err) {
+      return handleError(err);
+    }
   }
-});
+);
