@@ -290,7 +290,7 @@ export function QuotationDetailView({ quotation }: Props) {
             <p className="text-[17px] text-[#575757] font-medium">{bannerConfig.desc}</p>
           </div>
         </div>
-        <div className="bg-[#f9f9f9] p-6 md:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-[#E8E8E8] min-w-[340px]">
+        <div className="bg-[#f9f9f9] p-6 md:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-[#E8E8E8] md:min-w-[340px]">
           <p className="text-[12px] font-bold text-[#1e1e1e] mb-2 uppercase tracking-[1.2px]">
             Paso siguiente:
           </p>
@@ -319,7 +319,7 @@ export function QuotationDetailView({ quotation }: Props) {
       </div>
 
       {/* Stepper */}
-      <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 max-w-4xl mx-auto">
         {steps.map((p, i) => (
           <div key={i} className="flex flex-col items-center text-center space-y-3">
             <div
@@ -352,7 +352,8 @@ export function QuotationDetailView({ quotation }: Props) {
             <div className="p-6 border-b border-[#F0F0F0]">
               <h3 className="text-[18px] font-bold text-[#1e1e1e]">Servicios incluidos</h3>
             </div>
-            <table className="w-full text-left">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left hidden md:table">
               <thead className="bg-[#fcfcfc] border-b border-[#F0F0F0]">
                 {quotation.estatus === "Pendiente" ? (
                   <tr className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px]">
@@ -472,7 +473,110 @@ export function QuotationDetailView({ quotation }: Props) {
                 )}
               </tbody>
             </table>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-[#F0F0F0]">
+              {quotation.items.length > 0 ? (
+                quotation.items.map((item) => (
+                  <div key={item.id} className="p-6 space-y-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <p className="font-bold text-[16px] text-[#1e1e1e]">{item.nombre}</p>
+                        <p className="text-[13px] text-[#8e908f] font-medium mt-1">
+                          {item.descripcion}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        {item.estado === "sin_cambios" && quotation.estatus !== "Rechazada" && (
+                          <div className="flex items-center gap-1.5 text-[#2A940D] font-bold text-[10px] uppercase tracking-[0.5px] bg-green-50 px-2 py-1 rounded-full">
+                            <CheckCircle size={14} weight="bold" />
+                            <span>Sin cambios</span>
+                          </div>
+                        )}
+                        {item.estado === "modificado" && quotation.estatus !== "Rechazada" && (
+                          <div className="flex items-center gap-1.5 text-[#F16C20] font-bold text-[10px] uppercase tracking-[0.5px] bg-[#FFF9F0] px-2 py-1 rounded-full">
+                            <WarningCircle size={14} weight="bold" />
+                            <span>Modificado</span>
+                          </div>
+                        )}
+                        {(item.estado === "rechazado" ||
+                          quotation.estatus === "Rechazada" ||
+                          quotation.estatus === "Cancelada") && (
+                          <div className="flex items-center gap-1.5 text-[#DF2646] font-bold text-[10px] uppercase tracking-[0.5px] bg-[#FFF1F1] px-2 py-1 rounded-full">
+                            <XCircle size={14} weight="bold" />
+                            <span>Rechazado</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dashed border-[#F0F0F0]">
+                      <div>
+                        <p className="text-[11px] font-bold text-[#8e908f] uppercase tracking-[0.5px] mb-1">
+                          P. Unitario
+                        </p>
+                        <p className="text-[14px] font-bold text-[#1e1e1e]">
+                          {formatPeso(item.precio_unitario)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[11px] font-bold text-[#8e908f] uppercase tracking-[0.5px] mb-1">
+                          Cantidad
+                        </p>
+                        <p className="text-[14px] font-bold text-[#1e1e1e]">{item.cantidad}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-[#8e908f] uppercase tracking-[0.5px] mb-1">
+                          {quotation.estatus === "Pendiente" ? "Total Solicitado" : "Precio Anterior"}
+                        </p>
+                        <p
+                          className={`text-[14px] font-medium ${quotation.estatus !== "Pendiente" && item.estado === "modificado" ? "text-[#8e908f] line-through" : "text-[#1e1e1e] font-bold"}`}
+                        >
+                          {formatPeso(item.precio_anterior || item.precio_total)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        {quotation.estatus !== "Pendiente" && (
+                          <>
+                            <p className="text-[11px] font-bold text-[#8e908f] uppercase tracking-[0.5px] mb-1">
+                              Nuevo Total
+                            </p>
+                            <p className="text-[16px] font-extrabold text-[#F16C20]">
+                              {item.estado === "rechazado" ||
+                              quotation.estatus === "Rechazada" ||
+                              quotation.estatus === "Cancelada"
+                                ? "—"
+                                : formatPeso(item.precio_total)}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {item.estado === "modificado" && quotation.estatus !== "Rechazada" && (
+                      <div className="bg-[#FFF9F0] rounded-lg p-3 flex justify-between items-center">
+                        <span className="text-[12px] font-bold text-[#F16C20]">Cambio detectado</span>
+                        <span
+                          className={`font-bold text-[14px] ${item.precio_total > item.precio_anterior ? "text-[#F16C20]" : "text-[#2A940D]"}`}
+                        >
+                          {item.precio_total > item.precio_anterior ? "+" : ""}
+                          {(((item.precio_total - item.precio_anterior) / item.precio_anterior) * 100).toFixed(
+                            1
+                          )}
+                          %
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-[#8e908f] font-medium">
+                  No hay servicios registrados.
+                </div>
+              )}
+            </div>
           </div>
+        </div>
 
           <div className="bg-[#F0F7FF] border border-[#D0E6FF] rounded-[16px] p-6 flex items-start gap-4">
             <Info size={24} className="text-[#0066CC] shrink-0 mt-0.5" />

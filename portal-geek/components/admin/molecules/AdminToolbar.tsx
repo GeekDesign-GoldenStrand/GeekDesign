@@ -25,7 +25,7 @@ export function AdminToolbar({
   onTabChange,
 }: AdminToolbarProps) {
   return (
-    <div className="flex items-center gap-4 flex-wrap mb-6">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-wrap mb-6">
       {tabs && tabs.length > 0 && (
         <div className="flex items-center gap-4">
           {tabs.map((tab) => (
@@ -48,7 +48,7 @@ export function AdminToolbar({
       <SearchBar value={search} onChange={onSearchChange} />
 
       {(onAgregar || onFiltrar) && (
-        <div className="ml-auto flex items-center gap-3">
+        <div className="flex-1 md:flex-none flex items-center justify-end gap-3">
           {onAgregar && (
             <button
               type="button"

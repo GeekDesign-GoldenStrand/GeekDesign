@@ -35,7 +35,7 @@ export function FolioSearch() {
         <div className="hidden lg:block w-[1.5px] h-[120px] bg-[#F0F0F0]" />
 
         {/* Right Side: Form */}
-        <div className="w-full lg:w-auto min-w-[320px] md:min-w-[450px] space-y-6">
+        <div className="w-full lg:w-auto md:min-w-[450px] space-y-6">
           <div className="space-y-2">
             <label className="text-[12px] font-bold text-[#1e1e1e] uppercase tracking-[1.5px]">
               Folio de cotización

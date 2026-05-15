@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-
 import { NavLink } from "../atoms/NavLink";
 import { navItems } from "../navItems";
 
@@ -9,7 +8,7 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col items-center gap-1 flex-1 w-full overflow-y-auto">
+    <nav className="flex flex-col items-center gap-2 w-full mt-8">
       {navItems.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
         return (

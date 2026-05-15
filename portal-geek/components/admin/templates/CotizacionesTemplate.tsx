@@ -91,18 +91,18 @@ export function CotizacionesTemplate({
     <>
       <AdminHeader title={title} />
 
-      <section className="max-w-[1350px] mx-auto px-6 pt-5 space-y-4">
+      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
         {/* Toolbar section */}
         <div className="relative">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div className="w-full md:flex-1">
               <AdminToolbar search={search} onSearchChange={setSearch} />
             </div>
 
             {!isArchive ? (
               <Link
                 href="/cotizaciones/rechazadas"
-                className="flex items-center gap-2 h-[41px] px-4 rounded-[7px] border border-[#c2c0c0] bg-white font-medium text-[13px] text-[#666] transition-all hover:bg-gray-50 hover:shadow-sm"
+                className="flex items-center justify-center gap-2 h-[41px] px-4 rounded-[7px] border border-[#c2c0c0] bg-white font-medium text-[13px] text-[#666] transition-all hover:bg-gray-50 hover:shadow-sm whitespace-nowrap shrink-0"
               >
                 <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
                   <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM216,192H40V64H216V192ZM96,96a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,96Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,128Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,160Z" />
