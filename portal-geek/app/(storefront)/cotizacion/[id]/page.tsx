@@ -1,6 +1,5 @@
 import { WarningCircle, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
