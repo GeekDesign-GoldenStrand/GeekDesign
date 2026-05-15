@@ -1,7 +1,7 @@
 "use client";
 
 import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { InstaladorOption, ProveedorOption } from "@/types/servicios";
@@ -17,7 +17,6 @@ export type ConstanteDraft = {
   origen: "instalador" | "proveedor" | "global" | "manual";
   id_instalador?: number;
   id_proveedor?: number;
-  valor?: number; // Required for "manual" origin; null/undefined for others
   // Auto-managed by the page (instalador/proveedor toggles, IVA when formula on).
   // Can't be edited or deleted from the UI.
   auto?: boolean;
@@ -51,21 +50,17 @@ export function ConstantesSection({
   const yaHayProveedorAuto = constantes.some((c) => c.auto && c.origen === "proveedor");
 
   // Build the available origin options dynamically.
-  const origenesDisponibles = useMemo<OrigenManual[]>(
-    () => [
-      "manual",
-      ...(!yaHayInstaladorAuto ? (["instalador"] as OrigenManual[]) : []),
-      ...(!yaHayProveedorAuto ? (["proveedor"] as OrigenManual[]) : []),
-    ],
-    [yaHayInstaladorAuto, yaHayProveedorAuto]
-  );
+  const origenesDisponibles: OrigenManual[] = [
+    "manual",
+    ...(!yaHayInstaladorAuto ? (["instalador"] as OrigenManual[]) : []),
+    ...(!yaHayProveedorAuto ? (["proveedor"] as OrigenManual[]) : []),
+  ];
 
   const [draft, setDraft] = useState<{
     etiqueta: string;
     origen: OrigenManual;
     id_instalador?: number;
     id_proveedor?: number;
-    valor?: number;
   }>({
     etiqueta: "",
     origen: "manual",
@@ -77,14 +72,12 @@ export function ConstantesSection({
     ? toSnakeIdentifier(draft.etiqueta).slice(0, MAX_NOMBRE_LEN)
     : "";
 
-  // If the currently-selected origen becomes unavailable (e.g. user added
-  // an auto installer constant), reset draft origen to "manual".
-  // Runs in an effect to avoid calling setState during render.
-  useEffect(() => {
-    if (!origenesDisponibles.includes(draft.origen)) {
-      setDraft((d) => ({ ...d, origen: "manual" }));
-    }
-  }, [draft.origen, origenesDisponibles]);
+  // Derive the effective origen: if the user's draft origen is no longer
+  // available (auto constant was added), fall back to "manual" without
+  // mutating state during render.
+  const effectiveOrigen: OrigenManual = origenesDisponibles.includes(draft.origen)
+    ? draft.origen
+    : "manual";
 
   const handleAdd = () => {
     setError(null);
@@ -107,25 +100,20 @@ export function ConstantesSection({
       setError(`Ya existe una constante con el identificador "${nombre}". Usa un nombre distinto.`);
       return;
     }
-    if (draft.origen === "instalador" && !draft.id_instalador) {
+    if (effectiveOrigen === "instalador" && !draft.id_instalador) {
       setError("Selecciona un instalador");
       return;
     }
-    if (draft.origen === "proveedor" && !draft.id_proveedor) {
+    if (effectiveOrigen === "proveedor" && !draft.id_proveedor) {
       setError("Selecciona un proveedor");
-      return;
-    }
-    if (draft.origen === "manual" && (draft.valor === undefined || draft.valor === null)) {
-      setError("Especifica un valor numérico para la constante");
       return;
     }
 
     const cleaned: ConstanteDraft = {
       nombre_constante: nombre,
-      origen: draft.origen,
-      ...(draft.origen === "instalador" ? { id_instalador: draft.id_instalador } : {}),
-      ...(draft.origen === "proveedor" ? { id_proveedor: draft.id_proveedor } : {}),
-      ...(draft.origen === "manual" ? { valor: draft.valor } : {}),
+      origen: effectiveOrigen,
+      ...(effectiveOrigen === "instalador" ? { id_instalador: draft.id_instalador } : {}),
+      ...(effectiveOrigen === "proveedor" ? { id_proveedor: draft.id_proveedor } : {}),
     };
 
     onChange([...constantes, cleaned]);
@@ -151,7 +139,7 @@ export function ConstantesSection({
         if (c.nombre_constante === "iva") return "16% — se aplica al final";
         return "Constante del sistema";
       case "manual":
-        return `Valor fijo: ${c.valor ?? "?"}`;
+        return "Valor fijo (en la fórmula)";
     }
   };
 
@@ -228,7 +216,7 @@ export function ConstantesSection({
             ¿De dónde viene el valor de esta constante?
           </label>
           <select
-            value={draft.origen}
+            value={effectiveOrigen}
             onChange={(e) =>
               setDraft({
                 etiqueta: draft.etiqueta,
@@ -245,7 +233,7 @@ export function ConstantesSection({
           </select>
         </div>
 
-        {draft.origen === "instalador" && (
+        {effectiveOrigen === "instalador" && (
           <div>
             <label className="text-xs font-medium text-gray-700 mb-1 block">Instalador</label>
             <select
@@ -268,7 +256,7 @@ export function ConstantesSection({
           </div>
         )}
 
-        {draft.origen === "proveedor" && (
+        {effectiveOrigen === "proveedor" && (
           <div>
             <label className="text-xs font-medium text-gray-700 mb-1 block">Proveedor</label>
             <select
@@ -292,29 +280,11 @@ export function ConstantesSection({
           </div>
         )}
 
-        {draft.origen === "manual" && (
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Valor numérico</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="Ej. 1.4 para 40% de comisión"
-              value={draft.valor ?? ""}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  valor: e.target.value ? parseFloat(e.target.value) : undefined,
-                }))
-              }
-              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
-            />
-            <p className="text-xs text-gray-500 italic mt-1">
-              Este valor se usará cada vez que referencie{" "}
-              <code className="bg-gray-100 px-1 rounded font-mono">{previewNombre}</code> en la
-              fórmula.
-            </p>
-          </div>
+        {effectiveOrigen === "manual" && (
+          <p className="text-xs text-gray-500 italic">
+            El valor lo escribes directamente en la fórmula. Ej:{" "}
+            <code className="bg-gray-100 px-1 rounded">* 1.4</code> para 40% de comisión.
+          </p>
         )}
 
         {error && <p className="text-xs text-[#e42200]">{error}</p>}

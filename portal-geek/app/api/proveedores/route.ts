@@ -10,7 +10,6 @@ import {
 } from "@/lib/services/proveedores";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
-import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 
 export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
   try {
