@@ -62,6 +62,14 @@ export class ConflictError extends AppError {
   }
 }
 
+// 429 helper for clients that exceed a rate limit.
+export class RateLimitError extends AppError {
+  constructor(message = "Demasiadas solicitudes. Intenta de nuevo en un momento.") {
+    super(message, 429);
+    this.name = "RateLimitError";
+  }
+}
+
 // Zod is a schema validator; it checks input shape and returns detailed issues.
 export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
   if (err instanceof AppError) {
