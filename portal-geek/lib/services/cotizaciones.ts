@@ -443,9 +443,9 @@ export async function cancelQuotationByClient(quotationId: number, reason?: stri
     if (!quotation) throw new NotFoundError("Quotation not found");
 
     if (
-      !(
-        [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA] as string[]
-      ).includes(quotation.estatus.descripcion)
+      !([QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA] as string[]).includes(
+        quotation.estatus.descripcion
+      )
     ) {
       throw new ConflictError(
         `Cannot cancel a quotation in '${quotation.estatus.descripcion}' status`

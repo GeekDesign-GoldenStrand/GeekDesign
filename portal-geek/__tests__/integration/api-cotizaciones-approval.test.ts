@@ -2,8 +2,6 @@
  * @jest-environment node
  */
 
-import type { NextRequest } from "next/server";
-
 import { prisma } from "@/lib/db/client";
 
 import type { NextRouteHandler } from "../helpers/next-supertest";

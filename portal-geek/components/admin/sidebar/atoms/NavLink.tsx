@@ -25,12 +25,15 @@ export function NavLink({ href, label, icon, isActive }: NavLinkProps) {
 
       {/* Icon Container with responsive sizing */}
       <div className="w-6 h-6 md:w-10 md:h-10 transition-transform duration-200 active:scale-90 flex items-center justify-center">
-        {React.isValidElement(icon) ? 
-          React.cloneElement(icon as React.ReactElement<{ size?: string | number; weight?: string }>, { 
-            size: "100%", 
-            weight: isActive ? "fill" : "regular" 
-          }) : icon
-        }
+        {React.isValidElement(icon)
+          ? React.cloneElement(
+              icon as React.ReactElement<{ size?: string | number; weight?: string }>,
+              {
+                size: "100%",
+                weight: isActive ? "fill" : "regular",
+              }
+            )
+          : icon}
       </div>
     </Link>
   );

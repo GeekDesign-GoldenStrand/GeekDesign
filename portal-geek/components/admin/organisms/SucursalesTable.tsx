@@ -114,18 +114,26 @@ export function SucursalesTable({ sucursales }: Props) {
                 <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
                   Dirección
                 </p>
-                <p className="text-[13px] font-medium text-[#1e1e1e] leading-relaxed">{s.direccion}</p>
+                <p className="text-[13px] font-medium text-[#1e1e1e] leading-relaxed">
+                  {s.direccion}
+                </p>
               </div>
 
               <div className="flex justify-between items-center pt-2">
                 <div className="flex gap-6">
                   <div>
-                    <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Apertura</p>
-                    <p className="text-[12px] font-bold text-[#1e1e1e]">{formatHour(s.horario_apertura)}</p>
+                    <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                      Apertura
+                    </p>
+                    <p className="text-[12px] font-bold text-[#1e1e1e]">
+                      {formatHour(s.horario_apertura)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Cierre</p>
-                    <p className="text-[12px] font-bold text-[#1e1e1e]">{formatHour(s.horario_salida)}</p>
+                    <p className="text-[12px] font-bold text-[#1e1e1e]">
+                      {formatHour(s.horario_salida)}
+                    </p>
                   </div>
                 </div>
                 <Link
