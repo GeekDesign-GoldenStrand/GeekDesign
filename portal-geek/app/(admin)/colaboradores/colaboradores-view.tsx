@@ -353,7 +353,9 @@ export function ColaboradoresView() {
         )}
       </div>
 
-      {loading && <p className="px-4 sm:px-8 text-[#8e908f] text-[16px] font-ibm-plex">Cargando...</p>}
+      {loading && (
+        <p className="px-4 sm:px-8 text-[#8e908f] text-[16px] font-ibm-plex">Cargando...</p>
+      )}
 
       {error && !loading && (
         <div className="px-4 sm:px-8 flex flex-col gap-3">

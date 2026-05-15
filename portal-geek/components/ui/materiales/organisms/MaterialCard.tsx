@@ -64,11 +64,12 @@ export function MaterialCard({
   return (
     <article
       className="flex flex-col md:grid md:items-center gap-3 md:gap-4 p-4 md:px-4 md:py-3 bg-white rounded-[7px] shadow-[0_2px_7px_rgba(0,0,0,0.14)] relative"
-      style={{ gridTemplateColumns: "var(--gtc)" } as any}
+      style={{ "--gtc": "none" } as React.CSSProperties}
     >
       <style jsx>{`
         article {
           --gtc: none;
+          grid-template-columns: var(--gtc);
         }
         @media (min-width: 768px) {
           article {
