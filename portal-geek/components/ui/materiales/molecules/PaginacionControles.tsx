@@ -14,10 +14,10 @@ export function PaginacionControles({ page, totalPages, onPageChange }: Paginaci
         disabled={page <= 1}
         className="px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        ← Anterior
+        ← <span className="hidden sm:inline ml-1">Anterior</span>
       </button>
 
-      <span className="text-[14px] text-[#575757]">
+      <span className="text-[14px] text-[#575757] whitespace-nowrap">
         Página {page} de {totalPages}
       </span>
 
@@ -26,7 +26,7 @@ export function PaginacionControles({ page, totalPages, onPageChange }: Paginaci
         disabled={page >= totalPages}
         className="px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        Siguiente →
+        <span className="hidden sm:inline mr-1">Siguiente</span> →
       </button>
     </div>
   );

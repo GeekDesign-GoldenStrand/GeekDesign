@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
@@ -34,6 +35,8 @@ type CotizacionesTemplateProps = {
   setFilterEmpresa: (value: string) => void;
   filterEstatus: string[];
   setFilterEstatus: (value: string[]) => void;
+  isArchive?: boolean;
+  title?: string;
 };
 
 export function CotizacionesTemplate({
@@ -51,6 +54,8 @@ export function CotizacionesTemplate({
   setFilterEmpresa,
   filterEstatus,
   setFilterEstatus,
+  isArchive = false,
+  title = "Cotizaciones",
 }: CotizacionesTemplateProps) {
   const pageSize = 13;
 
@@ -62,7 +67,8 @@ export function CotizacionesTemplate({
     { label: "Validada", value: "Validada" },
     { label: "Aprobada", value: "Aprobada" },
     { label: "Rechazada", value: "Rechazada" },
-    { label: "En revisión", value: "En_revision" },
+    { label: "Cancelada", value: "Cancelada" },
+    { label: "Pendiente", value: "Pendiente" },
   ];
 
   // Close filter dropdown when clicking outside
@@ -84,18 +90,38 @@ export function CotizacionesTemplate({
 
   return (
     <>
-      <AdminHeader title="Cotizaciones" />
+      <AdminHeader title={title} />
 
-      <section className="max-w-[1350px] mx-auto px-6 pt-5 space-y-4">
+      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
         {/* Toolbar section */}
         <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            // onAgregar={() => {}}
-            // Filter button for quotations, uncomment if you want to implement it
-            // onFiltrar={() => setShowFilter((prev) => !prev)}
-          />
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div className="w-full md:flex-1">
+              <AdminToolbar search={search} onSearchChange={setSearch} />
+            </div>
+
+            {!isArchive ? (
+              <Link
+                href="/cotizaciones/rechazadas"
+                className="flex items-center justify-center gap-2 h-[41px] px-4 rounded-[7px] border border-[#c2c0c0] bg-white font-medium text-[13px] text-[#666] transition-all hover:bg-gray-50 hover:shadow-sm whitespace-nowrap shrink-0"
+              >
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM216,192H40V64H216V192ZM96,96a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,96Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,128Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,160Z" />
+                </svg>
+                Oportunidades Perdidas
+              </Link>
+            ) : (
+              <Link
+                href="/cotizaciones"
+                className="flex items-center gap-2 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-white font-medium text-[13px] text-[#e42200] transition-all hover:bg-rose-50 hover:shadow-sm"
+              >
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z" />
+                </svg>
+                Volver a Cotizaciones
+              </Link>
+            )}
+          </div>
 
           {/* Filter dropdown */}
           {showFilter && (
@@ -103,7 +129,6 @@ export function CotizacionesTemplate({
               <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-2 border-rose-200 text-black">
                 <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
 
-                {/* Client filter */}
                 <div className="mb-3">
                   <p className="text-[13px] font-semibold text-[#575757] mb-1">Cliente</p>
                   <input
@@ -113,7 +138,6 @@ export function CotizacionesTemplate({
                   />
                 </div>
 
-                {/* Company filter */}
                 <div className="mb-3">
                   <p className="text-[13px] font-semibold text-[#575757] mb-1">Empresa</p>
                   <input
@@ -123,7 +147,6 @@ export function CotizacionesTemplate({
                   />
                 </div>
 
-                {/* Status filter */}
                 <div className="mb-3">
                   <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
                   <div className="space-y-2">
@@ -147,7 +170,6 @@ export function CotizacionesTemplate({
                   </div>
                 </div>
 
-                {/* Filter actions */}
                 <div className="mt-4 flex justify-center gap-3">
                   <button
                     onClick={() => {

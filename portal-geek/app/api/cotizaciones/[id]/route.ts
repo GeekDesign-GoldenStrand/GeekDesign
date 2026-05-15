@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 import { withRoleParams } from "@/lib/auth/guards";
 import { CotizacionIdParams, UpdateCotizacionSchema } from "@/lib/schemas/cotizaciones";
 import { getCotizacion, updateCotizacion, deleteCotizacion } from "@/lib/services/cotizaciones";
@@ -9,7 +11,11 @@ type Params = { id: string };
 export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
   try {
     const { id } = CotizacionIdParams.parse(await ctx.params);
-    return ok(await getCotizacion(id));
+    const quotation = await getCotizacion(id);
+    if (!quotation) {
+      return NextResponse.json({ data: null, error: "Folio no encontrado" }, { status: 404 });
+    }
+    return ok(quotation);
   } catch (err) {
     return handleError(err);
   }

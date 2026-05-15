@@ -46,10 +46,10 @@ export function MaterialesGrid({
 
   return (
     <section className="space-y-3">
-      {/* Column headers — hidden when there are no rows to avoid orphaned headers */}
+      {/* Column headers — hidden on mobile and when there are no rows */}
       {items.length > 0 && (
         <div
-          className="grid items-center gap-4 px-4 py-2 rounded-[6px] bg-[#c6c6c6] text-[#1e1e1e] text-[20px] font-bold"
+          className="hidden md:grid items-center gap-4 px-4 py-2 rounded-[6px] bg-[#c6c6c6] text-[#1e1e1e] text-[14px] lg:text-[16px] font-bold"
           style={{ gridTemplateColumns: templateColumns }}
         >
           {enabledColumns.map((column) => (

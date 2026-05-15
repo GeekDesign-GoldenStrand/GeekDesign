@@ -29,7 +29,7 @@ type PedidoWithRelations = Prisma.PedidosGetPayload<{
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
 export const PEDIDO_STATUS = {
   PENDIENTE: "Pendiente",
-  EN_PRODUCCION: "En_produccion",
+  EN_PRODUCCION: "En producción",
   FINALIZADO: "Finalizado",
   ENTREGADO: "Entregado",
   CANCELADO: "Cancelado",
@@ -237,24 +237,14 @@ export async function changePedidoStatus(
 
   const currentStatus = currentPedido.estatus.descripcion as PedidoStatus;
 
-  // Valid workflow transitions.
-  const ALLOWED_PEDIDO_TRANSITIONS: Record<PedidoStatus, PedidoStatus[]> = {
-    [PEDIDO_STATUS.PENDIENTE]: [PEDIDO_STATUS.EN_PRODUCCION, PEDIDO_STATUS.CANCELADO],
+  // Valid workflow transitions:
+  // Only Entregado and Cancelado are final states.
+  // Any other status can move to any other status.
+  const isFinalStatus =
+    currentStatus === PEDIDO_STATUS.ENTREGADO || currentStatus === PEDIDO_STATUS.CANCELADO;
 
-    [PEDIDO_STATUS.EN_PRODUCCION]: [PEDIDO_STATUS.FINALIZADO, PEDIDO_STATUS.CANCELADO],
-
-    [PEDIDO_STATUS.FINALIZADO]: [PEDIDO_STATUS.ENTREGADO, PEDIDO_STATUS.CANCELADO],
-
-    [PEDIDO_STATUS.ENTREGADO]: [],
-
-    [PEDIDO_STATUS.CANCELADO]: [],
-  };
-
-  const allowedTransitions = ALLOWED_PEDIDO_TRANSITIONS[currentStatus];
-
-  // Prevent illegal workflow jumps.
-  if (!allowedTransitions.includes(targetStatus)) {
-    throw new Error(`Illegal status transition from '${currentStatus}' to '${targetStatus}'`);
+  if (isFinalStatus && targetStatus !== currentStatus) {
+    throw new Error(`No se puede cambiar el estatus de un pedido que ya está '${currentStatus}'`);
   }
 
   const dbStatus = PEDIDO_STATUS_API_TO_DB[targetStatus];
