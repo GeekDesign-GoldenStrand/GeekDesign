@@ -30,8 +30,7 @@ const ConstanteSchema = z
     (data) => {
       if (data.origen === "instalador") return data.id_instalador !== undefined;
       if (data.origen === "proveedor") return data.id_proveedor !== undefined;
-      if (data.origen === "manual") return data.valor !== undefined && data.valor !== null;
-      // 'global' doesn't require an FK or valor
+      // 'manual' and 'global' don't require a FK or valor at creation time
       return true;
     },
     {
@@ -49,6 +48,7 @@ const FormulaSchema = z.object({
 // ─── Main service schema ─────────────────────────────────────────────
 
 export const CreateServicioSchema = z.object({
+  id_estatus: z.number().int().positive(),
   id_sucursal: z.number().int().positive(),
   nombre_servicio: z.string().min(1).max(100),
   descripcion_servicio: z.string().optional(),
