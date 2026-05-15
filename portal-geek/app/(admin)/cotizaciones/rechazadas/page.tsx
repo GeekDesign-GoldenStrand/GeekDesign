@@ -61,7 +61,7 @@ export default function CotizacionesRechazadasPage() {
       setCotizaciones(mapped);
       setTotal(json.total ?? 0);
     } catch {
-      console.error("Error loading rejected quotations");
+      console.error("Error loading lost opportunities");
     }
   }, [search, page]);
 

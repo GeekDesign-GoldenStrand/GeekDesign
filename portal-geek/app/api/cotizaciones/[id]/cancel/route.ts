@@ -4,7 +4,7 @@ import { z } from "zod";
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
 import { cancelQuotationByClient } from "@/lib/services/cotizaciones";
 import { ok } from "@/lib/utils/api";
-import { handleError } from "@/lib/utils/errors";
+import { handleError, ValidationError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
@@ -21,8 +21,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<Params> }) {
     const { id } = CotizacionIdParams.parse(await ctx.params);
     const body = CancelSchema.parse(await req.json());
 
+    const email = req.headers.get("X-Client-Email");
+
+    if (!email) {
+      return handleError(new ValidationError("Client email is required for this action"));
+    }
+
     // Cancellation uses id_cliente for history traceability when triggered by client.
-    const result = await cancelQuotationByClient(id, body.reason);
+    // Service now verifies the email matches the quotation's client.
+    const result = await cancelQuotationByClient(id, email, body.reason);
 
     return ok(result);
   } catch (err) {

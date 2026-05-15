@@ -67,6 +67,7 @@ export function CotizacionesTemplate({
     { label: "Validada", value: "Validada" },
     { label: "Aprobada", value: "Aprobada" },
     { label: "Rechazada", value: "Rechazada" },
+    { label: "Cancelada", value: "Cancelada" },
     { label: "Pendiente", value: "Pendiente" },
   ];
 

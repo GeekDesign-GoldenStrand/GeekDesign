@@ -11,6 +11,8 @@ import {
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
+import { motion } from "framer-motion";
+
 import { FolioSearch } from "./FolioSearch";
 
 interface Item {
@@ -52,6 +54,14 @@ export function QuotationDetailView({ quotation }: Props) {
   const [cancelReason, setCancelReason] = useState("");
 
   const handleApprove = async () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const email = searchParams.get("email");
+
+    if (!email) {
+      alert("Se requiere verificación de correo para realizar esta acción.");
+      return;
+    }
+
     if (
       !confirm(
         "¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente."
@@ -63,12 +73,14 @@ export function QuotationDetailView({ quotation }: Props) {
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/approve`, {
         method: "POST",
+        headers: { "X-Client-Email": email },
       });
       if (res.ok) {
         alert("¡Cotización aprobada con éxito! Tu pedido está en camino.");
         router.push("/storefront");
       } else {
-        alert("Hubo un error al aprobar la cotización.");
+        const error = await res.json();
+        alert(error.error || "Hubo un error al aprobar la cotización.");
       }
     } catch (error) {
       console.error(error);
@@ -78,18 +90,30 @@ export function QuotationDetailView({ quotation }: Props) {
   };
 
   const handleCancel = async () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const email = searchParams.get("email");
+
+    if (!email) {
+      alert("Se requiere verificación de correo para realizar esta acción.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/cancel`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Client-Email": email,
+        },
         body: JSON.stringify({ reason: cancelReason }),
       });
       if (res.ok) {
         alert("Cotización cancelada. Gracias por tu tiempo.");
         router.push("/storefront");
       } else {
-        alert("Hubo un error al cancelar la cotización.");
+        const error = await res.json();
+        alert(error.error || "Hubo un error al cancelar la cotización.");
       }
     } catch (error) {
       console.error(error);
@@ -251,7 +275,12 @@ export function QuotationDetailView({ quotation }: Props) {
   ];
 
   return (
-    <div className="max-w-[1240px] mx-auto py-10 px-4 space-y-12">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="max-w-[1240px] mx-auto py-10 px-4 space-y-12"
+    >
       {/* Persistent Search Section */}
       <div className="mb-8">
         <FolioSearch />
@@ -753,6 +782,6 @@ export function QuotationDetailView({ quotation }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

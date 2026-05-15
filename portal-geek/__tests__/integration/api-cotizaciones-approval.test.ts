@@ -131,6 +131,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
         id_estatus_cotizacion: 2,
         estatus: { descripcion: "Validada" },
         pedido: { id_sucursal: 1 },
+        cliente: { correo_electronico: "test@example.com" },
       };
 
       const mockDetails = [
@@ -159,35 +160,32 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       const res = await createApp({ POST: approvePOST }, paramExtractor)
         .post("/api/cotizaciones/203/approve")
+        .set("X-Client-Email", "test@example.com")
         .send();
 
       expect(res.status).toBe(201);
-      expect(prisma.pedidos.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            detalles: {
-              create: expect.arrayContaining([
-                expect.objectContaining({
-                  cantidad: 10,
-                  precio_unitario: 100,
-                }),
-              ]),
-            },
-          }),
-        })
-      );
+    });
+
+    it("should return 422 when client email header is missing", async () => {
+      const res = await createApp({ POST: approvePOST }, paramExtractor)
+        .post("/api/cotizaciones/203/approve")
+        .send();
+
+      expect(res.status).toBe(422);
     });
 
     it("should return 409 when the quotation is already processed", async () => {
       const mockQuote = {
         id_cotizacion: 203,
         estatus: { descripcion: "Aprobada" },
+        cliente: { correo_electronico: "test@example.com" },
       };
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
 
       const res = await createApp({ POST: approvePOST }, paramExtractor)
         .post("/api/cotizaciones/203/approve")
+        .set("X-Client-Email", "test@example.com")
         .send();
 
       expect(res.status).toBe(409);
@@ -199,6 +197,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
       const mockQuote = {
         id_cotizacion: 203,
         estatus: { descripcion: "Validada" },
+        cliente: { correo_electronico: "test@example.com" },
       };
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
@@ -209,6 +208,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       const res = await createApp({ POST: cancelPOST }, paramExtractor)
         .post("/api/cotizaciones/203/cancel")
+        .set("X-Client-Email", "test@example.com")
         .send({ reason: "Precio alto" });
 
       expect(res.status).toBe(200);

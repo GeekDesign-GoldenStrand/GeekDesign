@@ -10,6 +10,7 @@ import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas
 import {
   ConfigurationError,
   ConflictError,
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "@/lib/utils/errors";
@@ -331,18 +332,24 @@ export async function changeQuotationStatus(
  * Approves a quotation and automatically creates a corresponding Order (Pedido).
  * This is an atomic operation to ensure data consistency between Sales and Production.
  */
-export async function approveQuotation(quotationId: number) {
+export async function approveQuotation(quotationId: number, providedEmail: string) {
   return prisma.$transaction(async (tx) => {
-    // 1. Fetch quotation with details
+    // 1. Fetch quotation with details (include client for email verification)
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
       include: {
         estatus: true,
         pedido: true,
+        cliente: true,
       },
     });
 
     if (!quotation) throw new NotFoundError("Quotation not found");
+
+    // Security Verification: Ensure the provided email matches the quotation's client
+    if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
+      throw new ForbiddenError("You are not authorized to approve this quotation");
+    }
     if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
       throw new ConflictError("Only validated quotations can be approved");
     }
@@ -373,12 +380,17 @@ export async function approveQuotation(quotationId: number) {
       return !notas.includes("[ESTADO:rechazado]");
     });
 
+    const branchId = quotation.pedido?.id_sucursal;
+    if (!branchId) {
+      throw new ValidationError("No se pudo determinar la sucursal para este pedido. Por favor, contacta a soporte.");
+    }
+
     // 4. Create the Pedido (Order)
     // Starts with 0% progress as requested.
     const pedido = await tx.pedidos.create({
       data: {
         id_cliente: quotation.id_cliente,
-        id_sucursal: quotation.pedido?.id_sucursal || 1,
+        id_sucursal: branchId,
         id_estatus: initialPedidoStatus.id_estatus,
         fecha_creacion: new Date(),
         factura: false,
@@ -404,7 +416,9 @@ export async function approveQuotation(quotationId: number) {
       },
     });
 
-    // 5. Update Quotation
+    // 5. Update Quotation and Cleanup Draft Pedido
+    const oldPedidoId = quotation.id_pedido;
+
     const updatedQuotation = await tx.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: {
@@ -413,6 +427,13 @@ export async function approveQuotation(quotationId: number) {
         fecha_aprobacion: new Date(),
       },
     });
+
+    // Cleanup the old draft pedido (validation artifacts)
+    if (oldPedidoId) {
+      await tx.historialEstadosPedidos.deleteMany({ where: { id_pedido: oldPedidoId } });
+      await tx.detallePedido.deleteMany({ where: { id_pedido: oldPedidoId } });
+      await tx.pedidos.delete({ where: { id_pedido: oldPedidoId } });
+    }
 
     // 6. Log status history
     await tx.historialEstadosCotizacion.create({
@@ -433,14 +454,23 @@ export async function approveQuotation(quotationId: number) {
 /**
  * Cancels a quotation by the client and moves it to the cancelled state.
  */
-export async function cancelQuotationByClient(quotationId: number, reason?: string) {
+export async function cancelQuotationByClient(
+  quotationId: number,
+  providedEmail: string,
+  reason?: string
+) {
   return prisma.$transaction(async (tx) => {
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
-      include: { estatus: true },
+      include: { estatus: true, cliente: true },
     });
 
     if (!quotation) throw new NotFoundError("Quotation not found");
+
+    // Security Verification: Ensure the provided email matches the quotation's client
+    if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
+      throw new ForbiddenError("You are not authorized to cancel this quotation");
+    }
 
     if (
       !([QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA] as string[]).includes(
