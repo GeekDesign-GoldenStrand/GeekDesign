@@ -2,11 +2,11 @@
 
 import { useEffect, useReducer, useState } from "react";
 
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import {
   AgregarMaterialModal,
   EditarMaterialModal,
   MaterialesGrid,
-  MaterialesHeader,
   MaterialesToolbar,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
@@ -173,9 +173,9 @@ export function MaterialesView() {
   }
 
   return (
-    <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-[#ececec]">
-      <MaterialesHeader />
-      <main className="p-8">
+    <div className="min-h-screen bg-[#ececec] font-ibm-plex">
+      <AdminHeader title="Materiales" />
+      <main className="px-4 sm:px-8 py-6">
         <MaterialesToolbar
           search={search}
           onSearchChange={setSearch}

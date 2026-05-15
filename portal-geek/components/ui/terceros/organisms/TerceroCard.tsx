@@ -16,6 +16,9 @@ function formatPhone(phone: string) {
   return phone.replace(/^(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3");
 }
 
+const ACTION_BTN =
+  "flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors";
+
 export function TerceroCard({
   id,
   companyName,
@@ -42,10 +45,10 @@ export function TerceroCard({
   );
 
   return (
-    <div className="bg-white rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5 w-full font-['IBM_Plex_Sans_JP',sans-serif]">
-      <h3 className="font-semibold text-xl text-[#1e1e1e] leading-tight">{companyName}</h3>
+    <div className="bg-white rounded-[7px] shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5 w-full font-ibm-plex">
+      <h3 className="font-semibold text-[24px] text-[#1e1e1e] leading-tight">{companyName}</h3>
 
-      <p className="font-medium text-[18px] text-[#1e1e1e]">{contactName}</p>
+      <p className="font-medium text-[18px] text-[#424242]">{contactName}</p>
 
       <div className="flex items-center gap-1 text-[16px] font-light text-[#424242]">
         <MapPinIcon />
@@ -71,48 +74,49 @@ export function TerceroCard({
         <StatusDropdown status={status} onChange={onStatusChange} />
       </div>
 
-      <div className="flex items-center gap-2 text-[#1e1e1e] font-medium text-[18px]">
-        <MailIcon />
-        <a href={`mailto:${email}`} className="underline lowercase hover:opacity-70">
+      <div className="flex items-center gap-2 text-[#1e1e1e] font-medium text-[16px] truncate">
+        <MailIcon size={16} />
+        <a href={`mailto:${email}`} className="lowercase hover:opacity-70 truncate">
           {email}
         </a>
       </div>
 
-      <div className="flex items-center gap-2 text-[#1e1e1e] font-medium text-[18px] lowercase">
-        <PhoneIcon />
+      <div className="flex items-center gap-2 text-[#1e1e1e] font-medium text-[16px] lowercase">
+        <PhoneIcon size={16} />
         <span>{phone ? formatPhone(phone) : "–"}</span>
       </div>
 
-      <div className="flex items-center gap-2 mt-1 flex-wrap">
+      <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
         <a
           href={phone ? `tel:${phone}` : undefined}
           aria-disabled={!phone}
-          className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] aria-disabled:opacity-40 aria-disabled:pointer-events-none"
+          className={`flex-1 min-w-[80px] ${ACTION_BTN} aria-disabled:opacity-40 aria-disabled:pointer-events-none`}
         >
-          <PhoneIcon />
+          <PhoneIcon size={16} />
           Llamar
         </a>
         <a
-          href={`mailto:${email}`}
-          className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+          href={email ? `mailto:${email}` : undefined}
+          aria-disabled={!email}
+          className={`flex-1 min-w-[80px] ${ACTION_BTN} aria-disabled:opacity-40 aria-disabled:pointer-events-none`}
         >
-          <MailIcon />
+          <MailIcon size={16} />
           Mail
         </a>
         <button
           onClick={onEdit}
           aria-label="Editar"
-          className="flex-none flex items-center justify-center border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+          className="flex-none flex items-center justify-center border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors"
         >
-          <EditIcon />
+          <EditIcon size={16} />
         </button>
         {onDelete && (
           <button
             onClick={onDelete}
             aria-label="Eliminar"
-            className="flex items-center justify-center border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+            className="flex-none flex items-center justify-center border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors"
           >
-            <TrashIcon />
+            <TrashIcon size={16} />
           </button>
         )}
       </div>

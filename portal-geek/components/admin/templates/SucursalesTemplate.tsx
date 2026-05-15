@@ -78,7 +78,7 @@ export function SucursalesTemplate({
     <>
       <AdminHeader title="Sucursales" />
 
-      <section className="max-w-[1350px] mx-auto pt-5 space-y-4">
+      <section className="max-w-[1350px] mx-auto px-4 sm:px-8 pt-5 space-y-4 font-ibm-plex">
         {/* Toolbar */}
         <div className="relative">
           <AdminToolbar
@@ -91,7 +91,7 @@ export function SucursalesTemplate({
           {/* Dropdown filtros */}
           {showFilter && (
             <div ref={filterRef} className="absolute right-0 mt-2 z-50">
-              <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ff7f7f] text-black">
+              <div className="bg-white p-6 rounded-[14px] w-[calc(100vw-2rem)] sm:w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ff7f7f] text-black">
                 <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
 
                 {/* Nombre */}
