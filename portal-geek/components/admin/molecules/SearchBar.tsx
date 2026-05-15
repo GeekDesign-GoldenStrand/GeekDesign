@@ -7,7 +7,7 @@ type SearchBarProps = {
 
 export function SearchBar({ value, onChange }: SearchBarProps) {
   return (
-    <div className="relative flex h-[41px] w-[439px] shrink-0 items-center rounded-[4px] border border-[#b9b8b8] bg-white px-3">
+    <div className="relative flex h-[41px] w-full md:w-[439px] shrink-0 md:shrink items-center rounded-[4px] border border-[#b9b8b8] bg-white px-3 transition-all focus-within:border-[#e42200] focus-within:shadow-sm">
       <input
         placeholder="Buscar"
         value={value}

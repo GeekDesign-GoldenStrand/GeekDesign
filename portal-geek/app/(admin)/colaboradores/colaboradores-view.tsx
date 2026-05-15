@@ -326,7 +326,7 @@ export function ColaboradoresView() {
     <div>
       <AdminHeader title="Colaboradores" />
 
-      <div className="px-8 pt-6 pb-4">
+      <div className="px-4 sm:px-8 pt-6 pb-4">
         <div className="relative">
           <AdminToolbar
             search={search}
@@ -353,10 +353,12 @@ export function ColaboradoresView() {
         )}
       </div>
 
-      {loading && <p className="px-8 text-[#8e908f] text-[16px] font-ibm-plex">Cargando...</p>}
+      {loading && (
+        <p className="px-4 sm:px-8 text-[#8e908f] text-[16px] font-ibm-plex">Cargando...</p>
+      )}
 
       {error && !loading && (
-        <div className="px-8 flex flex-col gap-3">
+        <div className="px-4 sm:px-8 flex flex-col gap-3">
           <p className="text-[#e42200] text-[16px] font-ibm-plex">{error}</p>
           <button
             onClick={() => setRetryAttempt((n) => n + 1)}
@@ -368,8 +370,8 @@ export function ColaboradoresView() {
       )}
 
       {!loading && !error && (
-        <div className="px-8 pb-10">
-          <div className="grid grid-cols-4 gap-5">
+        <div className="px-4 sm:px-8 pb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((u) => (
               <UserCard
                 key={u.id_usuario}
@@ -385,7 +387,7 @@ export function ColaboradoresView() {
               />
             ))}
             {filtered.length === 0 && (
-              <p className="col-span-4 py-16 text-center font-ibm-plex text-[#888]">
+              <p className="col-span-full py-16 text-center font-ibm-plex text-[#888]">
                 {q ? "Sin resultados para esa búsqueda." : "No hay colaboradores registrados."}
               </p>
             )}

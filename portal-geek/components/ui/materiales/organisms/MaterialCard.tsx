@@ -58,29 +58,91 @@ export function MaterialCard({
   gridTemplateColumns,
   onEdit,
 }: MaterialCardRowProps) {
+  const onEditClick = () =>
+    onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl });
+
   return (
     <article
-      className="grid items-center gap-4 px-4 py-3 bg-white rounded-[7px] shadow-[0px_2px_7px_0px_rgba(0,0,0,0.14)]"
+      className="flex flex-col md:grid md:items-center gap-3 md:gap-4 p-4 md:px-4 md:py-3 bg-white rounded-[7px] shadow-[0_2px_7px_rgba(0,0,0,0.14)] relative"
       style={{ gridTemplateColumns }}
     >
-      {visibleColumns.name && <p className="text-[16px] text-[#1e1e1e] text-center">{name}</p>}
+      <div className="flex items-center justify-between md:contents">
+        {visibleColumns.name && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Nombre</span>
+            <p className="text-[15px] lg:text-[16px] text-[#1e1e1e] md:text-center font-semibold md:font-normal truncate">
+              {name}
+            </p>
+          </div>
+        )}
+
+        <button
+          onClick={onEditClick}
+          aria-label={`Editar material ${id}`}
+          className="md:hidden text-[#1e1e1e] hover:opacity-70 transition-opacity p-2 -mr-2"
+        >
+          <EditIcon size={20} />
+        </button>
+      </div>
+
       {visibleColumns.description && (
-        <p className="text-[12px] text-[#575757] text-center line-clamp-2">{description || "-"}</p>
+        <div className="flex flex-col md:block">
+          <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">
+            Descripción
+          </span>
+          <p className="text-[12px] text-[#575757] md:text-center line-clamp-2">
+            {description || "-"}
+          </p>
+        </div>
       )}
-      {visibleColumns.unit && <p className="text-[14px] text-[#1e1e1e] text-center">{unit}</p>}
-      {visibleColumns.width && <p className="text-[16px] text-[#1e1e1e] text-center">{width}</p>}
-      {visibleColumns.height && <p className="text-[16px] text-[#1e1e1e] text-center">{height}</p>}
-      {visibleColumns.thickness && (
-        <p className="text-[16px] text-[#1e1e1e] text-center">{thickness}</p>
-      )}
-      {visibleColumns.color && <ColorDescription value={color} />}
-      {visibleColumns.image && <PreviewImage imageUrl={imageUrl} name={name} />}
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:contents gap-3">
+        {visibleColumns.unit && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Unidad</span>
+            <p className="text-[14px] text-[#1e1e1e] md:text-center">{unit}</p>
+          </div>
+        )}
+        {visibleColumns.width && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Ancho</span>
+            <p className="text-[14px] md:text-[16px] text-[#1e1e1e] md:text-center">{width}</p>
+          </div>
+        )}
+        {visibleColumns.height && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Alto</span>
+            <p className="text-[14px] md:text-[16px] text-[#1e1e1e] md:text-center">{height}</p>
+          </div>
+        )}
+        {visibleColumns.thickness && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Grosor</span>
+            <p className="text-[14px] md:text-[16px] text-[#1e1e1e] md:text-center">{thickness}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-6 md:contents">
+        {visibleColumns.color && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Color</span>
+            <ColorDescription value={color} />
+          </div>
+        )}
+
+        {visibleColumns.image && (
+          <div className="flex flex-col md:block">
+            <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Imagen</span>
+            <PreviewImage imageUrl={imageUrl} name={name} />
+          </div>
+        )}
+      </div>
+
       <button
-        onClick={() =>
-          onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl })
-        }
+        onClick={onEditClick}
         aria-label={`Editar material ${id}`}
-        className="text-[#1e1e1e] hover:opacity-70 transition-opacity flex items-center justify-center"
+        className="hidden md:flex text-[#1e1e1e] hover:opacity-70 transition-opacity items-center justify-center"
       >
         <EditIcon size={20} />
       </button>

@@ -30,7 +30,7 @@ export function MaterialesFilterPanel({
 }: MaterialesFilterPanelProps) {
   return (
     // Floating panel that mirrors the visual filter behavior requested for materials.
-    <div className="absolute top-full right-0 mt-2 z-50 w-[21rem] rounded-[14px] border-4 border-[#ff7f7f] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
+    <div className="absolute top-full right-0 mt-2 z-50 w-[calc(100vw-2rem)] sm:w-[21rem] rounded-[14px] border-4 border-[#ff7f7f] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
       <div className="flex gap-5">
         <section className="flex-1 min-w-0">
           {/* Column visibility controls */}

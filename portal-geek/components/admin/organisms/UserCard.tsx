@@ -109,7 +109,9 @@ export function UserCard({
       {user.telefono && (
         <span className="font-ibm-plex font-medium text-[16px] text-[#1e1e1e] flex items-center gap-2">
           <PhoneIcon size={16} aria-hidden />
-          {user.telefono}
+          {/^(55|33|81)/.test(user.telefono)
+            ? user.telefono.replace(/^(\d{2})(\d{4})(\d{4})$/, "$1 $2 $3")
+            : user.telefono.replace(/^(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3")}
         </span>
       )}
 

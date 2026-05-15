@@ -143,7 +143,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Validada" });
 
-    console.error("Response body:", res.body);
     expect(res.status).toBe(401);
   });
 
@@ -154,7 +153,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Validada" });
 
-    console.error("Response body:", res.body);
     expect(res.status).toBe(403);
   });
 
@@ -165,7 +163,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Validada" });
 
-    console.error("Response body:", res.body);
     expect(res.status).toBe(200);
     expect(res.body.data.id_estatus_cotizacion).toBe(2);
   });
@@ -177,7 +174,6 @@ describe("PATCH /api/cotizaciones/:id/estatus", () => {
       .patch("/api/cotizaciones/1/estatus")
       .send({ estatus: "Rechazada" });
 
-    console.error("Response body:", res.body);
     expect(res.status).toBe(200);
     expect(res.body.data.id_estatus_cotizacion).toBe(3);
   });
