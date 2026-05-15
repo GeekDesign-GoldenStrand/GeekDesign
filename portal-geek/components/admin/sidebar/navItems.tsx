@@ -1,14 +1,14 @@
 import {
-  CubeTransparentIcon,
-  BuildingsIcon,
-  CurrencyDollarIcon,
-  GearIcon,
-  HandshakeIcon,
-  HouseIcon,
-  PackageIcon,
-  UserGearIcon,
-  UsersIcon,
-  WrenchIcon,
+  CubeTransparent,
+  Buildings,
+  CurrencyDollar,
+  Gear,
+  Handshake,
+  House,
+  Package,
+  UserGear,
+  Users,
+  Wrench,
 } from "@phosphor-icons/react/dist/ssr";
 
 export type NavItem = {
@@ -17,38 +17,32 @@ export type NavItem = {
   icon: React.ReactNode;
 };
 
-const ICON_SIZE = 44;
-
 export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    icon: <HouseIcon size={ICON_SIZE} />,
+    icon: <House />,
   },
   {
     href: "/finanzas",
     label: "Finanzas",
-    icon: <CurrencyDollarIcon size={ICON_SIZE} />,
+    icon: <CurrencyDollar />,
   },
   {
     href: "/cotizaciones",
     label: "Cotizaciones",
     icon: (
       <svg
-        width="40"
-        height="40"
         viewBox="0 0 40 40"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
+        className="w-full h-full"
       >
-        {/* Outer rectangle like a bill */}
         <rect x="4" y="10" width="32" height="20" rx="3" />
-        {/* Circle in the middle to represent a coin */}
         <circle cx="20" cy="20" r="5" />
-        {/* Small lines for detail */}
         <path d="M8 15h4M28 15h4M8 25h4M28 25h4" />
       </svg>
     ),
@@ -56,41 +50,41 @@ export const navItems: NavItem[] = [
   {
     href: "/pedidos",
     label: "Pedidos",
-    icon: <PackageIcon size={ICON_SIZE} />,
+    icon: <Package />,
   },
   {
     href: "/servicios",
     label: "Servicios",
-    icon: <WrenchIcon size={ICON_SIZE} />,
+    icon: <Wrench />,
   },
   {
     href: "/colaboradores",
     label: "Colaboradores",
-    icon: <UsersIcon size={ICON_SIZE} />,
+    icon: <Users />,
   },
   {
     href: "/terceros",
     label: "Terceros",
-    icon: <UserGearIcon size={ICON_SIZE} />,
+    icon: <UserGear />,
   },
   {
     href: "/clientes",
     label: "Clientes",
-    icon: <HandshakeIcon size={ICON_SIZE} />,
+    icon: <Handshake />,
   },
   {
     href: "/maquinas",
     label: "Máquinas",
-    icon: <GearIcon size={ICON_SIZE} />,
+    icon: <Gear />,
   },
   {
     href: "/materiales",
     label: "Materiales",
-    icon: <CubeTransparentIcon size={44} />,
+    icon: <CubeTransparent />,
   },
   {
     href: "/sucursales",
     label: "Sucursales",
-    icon: <BuildingsIcon size={ICON_SIZE} />,
+    icon: <Buildings />,
   },
 ];

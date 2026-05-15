@@ -117,7 +117,7 @@ export function PedidosTemplate({
     <>
       <AdminHeader title="Pedidos" />
 
-      <section className="max-w-[1350px] mx-auto px-6 pt-5 space-y-4">
+      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
         {/* Toolbar */}
         <div className="relative">
           <AdminToolbar

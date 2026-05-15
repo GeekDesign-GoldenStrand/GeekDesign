@@ -31,25 +31,25 @@ export function MaterialesToolbar({
 }: MaterialesToolbarProps) {
   return (
     // The toolbar acts as the anchor container for the floating filter panel.
-    <div className="flex items-center gap-4 mb-6 flex-wrap relative">
-      <div className="flex items-center gap-2 border border-[#b9b8b8] rounded-sm px-3 py-2 bg-white w-109.75 max-w-full">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6 relative flex-wrap">
+      <div className="flex items-center gap-2 border border-[#b9b8b8] rounded-[4px] px-3 h-[41px] bg-white w-full md:w-[439px]">
         <input
           type="text"
           aria-label="Buscar materiales"
           placeholder="Buscar"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="flex-1 text-[14px] font-medium text-[#1e1e1e] placeholder:text-[#8e908f] outline-none"
+          className="flex-1 text-[14px] font-medium text-[#1e1e1e] placeholder:text-[#8e908f] outline-none bg-transparent"
         />
         <span className="text-[#8e908f]">
           <SearchIcon />
         </span>
       </div>
 
-      <div className="flex items-center gap-3 ml-auto">
+      <div className="flex items-center justify-start sm:justify-end gap-3 flex-wrap sm:flex-nowrap">
         <button
           onClick={onAddClick}
-          className="flex items-center gap-1.5 bg-[#e8e8e8] border border-[#575757] text-[#575757] text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#d8d8d8]"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#575757] bg-[#e8e8e8] font-ibm-plex font-medium text-[13px] text-[#575757] transition-colors hover:bg-[#d8d8d8] whitespace-nowrap"
         >
           <PlusIcon />
           Agregar
@@ -57,7 +57,7 @@ export function MaterialesToolbar({
 
         <button
           onClick={onFilterClick}
-          className="flex items-center gap-1.5 bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[20px] font-medium rounded-[7px] px-4 h-[2.5625rem] hover:bg-[#ffe0dc]"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap"
         >
           <FilterIcon />
           Filtrar
