@@ -10,6 +10,7 @@ import {
 } from "@/lib/services/proveedores";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 
 export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
   try {
@@ -33,7 +34,7 @@ export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequ
   }
 });
 
-export const POST = withRole(["Direccion"], async (req: NextRequest) => {
+export const POST = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
   try {
     const body = CreateProveedorSchema.parse(await req.json());
     return created(await createProveedor(body));

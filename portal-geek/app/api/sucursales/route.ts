@@ -28,7 +28,7 @@ export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequ
   }
 });
 
-export const POST = withRole(["Direccion"], async (req: NextRequest) => {
+export const POST = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
   try {
     const body = CreateSucursalSchema.parse(await req.json());
     return created(await createSucursal(body));

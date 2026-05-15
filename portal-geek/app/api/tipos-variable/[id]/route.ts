@@ -10,7 +10,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Administrador"], async (_req, ctx) => {
+export const GET = withRoleParams<Params>(["Administrador", "Direccion"], async (_req, ctx) => {
   try {
     const { id } = TipoVariableIdParams.parse(await ctx.params);
     return ok(await getTipoVariable(id));
@@ -19,7 +19,7 @@ export const GET = withRoleParams<Params>(["Administrador"], async (_req, ctx) =
   }
 });
 
-export const PUT = withRoleParams<Params>(["Administrador"], async (req, ctx) => {
+export const PUT = withRoleParams<Params>(["Administrador", "Direccion"], async (req, ctx) => {
   try {
     const { id } = TipoVariableIdParams.parse(await ctx.params);
     const body = UpdateTipoVariableSchema.parse(await req.json());
@@ -29,7 +29,7 @@ export const PUT = withRoleParams<Params>(["Administrador"], async (req, ctx) =>
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Administrador"], async (_req, ctx) => {
+export const DELETE = withRoleParams<Params>(["Administrador", "Direccion"], async (_req, ctx) => {
   try {
     const { id } = TipoVariableIdParams.parse(await ctx.params);
     await deleteTipoVariable(id);

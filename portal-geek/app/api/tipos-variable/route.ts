@@ -6,7 +6,7 @@ import { listTiposVariable, createTipoVariable } from "@/lib/services/tipos-vari
 import { ok, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Administrador"], async () => {
+export const GET = withRole(["Administrador", "Direccion"], async () => {
   try {
     return ok(await listTiposVariable());
   } catch (err) {
@@ -14,7 +14,7 @@ export const GET = withRole(["Administrador"], async () => {
   }
 });
 
-export const POST = withRole(["Administrador"], async (req: NextRequest) => {
+export const POST = withRole(["Administrador", "Direccion"], async (req: NextRequest) => {
   try {
     const body = CreateTipoVariableSchema.parse(await req.json());
     return created(await createTipoVariable(body));

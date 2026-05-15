@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<Params> }) {
 }
 
 export const PUT = withRoleParams<Params>(
-  ["Administrador"],
+  ["Administrador", "Direccion"],
   async (req: NextRequest, ctx, session) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
@@ -31,7 +31,7 @@ export const PUT = withRoleParams<Params>(
   }
 );
 
-export const DELETE = withRoleParams<Params>(["Administrador"], async (req: NextRequest, ctx) => {
+export const DELETE = withRoleParams<Params>(["Administrador", "Direccion"], async (req: NextRequest, ctx) => {
   try {
     const { id } = ServicioIdParams.parse(await ctx.params);
     await deleteServicio(id);
