@@ -21,3 +21,30 @@ export function formatPhoneNumber(phone: string | null | undefined): string {
 
   return digits;
 }
+
+/**
+ * Formats a date timestamp string into "dd MMM yyyy" format.
+ */
+export function formatDate(dateString: string): string {
+  const MONTHS = [
+    "ENE",
+    "FEB",
+    "MAR",
+    "ABR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AGO",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DIC",
+  ];
+
+  const date = new Date(dateString);
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = MONTHS[date.getUTCMonth()];
+  const year = date.getUTCFullYear();
+
+  return `${day} ${month} ${year}`;
+}
