@@ -176,8 +176,10 @@ model Servicios {
   opciones          OpcionesProducto[]
   detallesPedido    DetallePedido[]
   formulas          Formulas[]
-  maquinas          ServicioMaquina[]
-  proveedorPrecios  ProveedorPrecios[]
+  maquinas            ServicioMaquina[]
+  serviciosMaquina    ServiciosMaquina[]
+  proveedorPrecios    ProveedorPrecios[]
+  instaladorServicios InstaladorServicios[]
 
   @@map("SERVICIOS")
 }
@@ -280,6 +282,7 @@ model Maquinas {
   sucursales    SucursalesMaquina[]
   pedidoMaquina PedidoMaquina[]
   servicios     ServiciosMaquina[]
+  servicioMaquina ServicioMaquina[]
 
   @@map("MAQUINAS")
 }
@@ -319,7 +322,6 @@ model Proveedores {
   ubicacion             String?  @db.VarChar(255)
   estatus               String   @db.VarChar(20)  // Activo / Inactivo / Baneado
 
-  gastos            Gastos[]
   servicios         Servicios[]
   formulaConstantes FormulaConstantes[]
   proveedorPrecios  ProveedorPrecios[]
@@ -345,6 +347,21 @@ model ProveedorPrecios {
   @@map("PROVEEDORPRECIOS")
 }
 
+model InstaladorServicios {
+  id_instalador_servicio Int     @id @default(autoincrement())
+  id_instalador          Int
+  id_servicio            Int
+  costo                  Decimal @db.Decimal(10, 2)
+  notas                  String? @db.VarChar(500)
+
+  instalador Instaladores @relation(fields: [id_instalador], references: [id_instalador])
+  servicio   Servicios    @relation(fields: [id_servicio], references: [id_servicio])
+  gastos     Gastos[]
+
+  @@unique([id_instalador, id_servicio])
+  @@map("INSTALADORSERVICIOS")
+}
+
 model Instaladores {
   id_instalador     Int     @id @default(autoincrement())
   nombre_instalador String  @db.VarChar(100)
@@ -357,8 +374,9 @@ model Instaladores {
   ubicacion         String? @db.VarChar(255)
   estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
-  servicios         Servicios[]
-  formulaConstantes FormulaConstantes[]
+  servicios           Servicios[]
+  formulaConstantes   FormulaConstantes[]
+  instaladorServicios InstaladorServicios[]
 
   @@map("INSTALADORES")
 }
