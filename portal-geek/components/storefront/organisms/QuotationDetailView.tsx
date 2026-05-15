@@ -48,8 +48,8 @@ const formatPeso = (n: number) =>
 export function QuotationDetailView({ quotation }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const handleApprove = async () => {
     if (
@@ -77,25 +77,25 @@ export function QuotationDetailView({ quotation }: Props) {
     }
   };
 
-  const handleReject = async () => {
+  const handleCancel = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/reject`, {
+      const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: rejectReason }),
+        body: JSON.stringify({ reason: cancelReason }),
       });
       if (res.ok) {
-        alert("Cotización rechazada. Gracias por tu tiempo.");
+        alert("Cotización cancelada. Gracias por tu tiempo.");
         router.push("/storefront");
       } else {
-        alert("Hubo un error al rechazar la cotización.");
+        alert("Hubo un error al cancelar la cotización.");
       }
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-      setShowRejectModal(false);
+      setShowCancelModal(false);
     }
   };
 
@@ -104,7 +104,7 @@ export function QuotationDetailView({ quotation }: Props) {
     0
   );
   const totalNuevo =
-    quotation.estatus === "Rechazada"
+    quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
       ? 0
       : quotation.items.reduce((acc, item) => {
           if (item.estado === "rechazado") return acc;
@@ -118,15 +118,15 @@ export function QuotationDetailView({ quotation }: Props) {
 
   const counts = {
     aprobados:
-      quotation.estatus === "Rechazada"
+      quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
         ? 0
         : quotation.items.filter((i) => i.estado === "sin_cambios").length,
     modificados:
-      quotation.estatus === "Rechazada"
+      quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
         ? 0
         : quotation.items.filter((i) => i.estado === "modificado").length,
     rechazados:
-      quotation.estatus === "Rechazada"
+      quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
         ? quotation.items.length
         : quotation.items.filter((i) => i.estado === "rechazado").length,
   };
@@ -175,6 +175,16 @@ export function QuotationDetailView({ quotation }: Props) {
       buttonText: "Finalizar y seguir comprando",
       buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
     },
+    Cancelada: {
+      bgColor: "bg-gray-50",
+      iconColor: "text-gray-500",
+      icon: <XCircle size={28} weight="bold" />,
+      title: "Cotización cancelada",
+      desc: "Esta cotización ha sido cancelada por el cliente.",
+      nextStep: "Puedes solicitar una nueva cotización si lo deseas.",
+      buttonText: "Volver al inicio",
+      buttonColor: "bg-gray-500 text-white hover:bg-gray-600",
+    },
     Aprobada: {
       bgColor: "bg-green-50",
       iconColor: "text-green-600",
@@ -219,12 +229,22 @@ export function QuotationDetailView({ quotation }: Props) {
             ? "En revisión"
             : "Lista para aceptar",
       date:
-        quotation.estatus === "Validada" || quotation.estatus === "Rechazada" ? "Hoy" : "Pendiente",
+        quotation.estatus === "Validada" ||
+        quotation.estatus === "Rechazada" ||
+        quotation.estatus === "Cancelada"
+          ? "Hoy"
+          : "Pendiente",
       completed: quotation.estatus === "Aprobada",
-      current: quotation.estatus === "Validada" || quotation.estatus === "Rechazada",
+      current:
+        quotation.estatus === "Validada" ||
+        quotation.estatus === "Rechazada" ||
+        quotation.estatus === "Cancelada",
     },
     {
-      label: quotation.estatus === "Rechazada" ? "Finalizado" : "Confirmada",
+      label:
+        quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
+          ? "Finalizado"
+          : "Confirmada",
       date: quotation.estatus === "Aprobada" ? "Hoy" : "Pendiente",
       completed: quotation.estatus === "Aprobada",
     },
@@ -277,9 +297,16 @@ export function QuotationDetailView({ quotation }: Props) {
           <p className="text-[15px] text-[#575757] font-medium mb-6">{bannerConfig.nextStep}</p>
           <button
             onClick={
-              quotation.estatus === "Rechazada" ? () => router.push("/storefront") : handleApprove
+              quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
+                ? () => router.push("/storefront")
+                : handleApprove
             }
-            disabled={(!isActionable && quotation.estatus !== "Rechazada") || loading}
+            disabled={
+              (!isActionable &&
+                quotation.estatus !== "Rechazada" &&
+                quotation.estatus !== "Cancelada") ||
+              loading
+            }
             className={`h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center ${bannerConfig.buttonColor}`}
           >
             {loading ? (
@@ -381,7 +408,8 @@ export function QuotationDetailView({ quotation }: Props) {
                                   </div>
                                 )}
                               {(item.estado === "rechazado" ||
-                                quotation.estatus === "Rechazada") && (
+                                quotation.estatus === "Rechazada" ||
+                                quotation.estatus === "Cancelada") && (
                                 <div className="flex items-center gap-1.5 text-[#DF2646] font-bold text-[10px] uppercase tracking-[0.5px]">
                                   <XCircle size={14} weight="bold" />
                                   <span>Rechazado</span>
@@ -399,12 +427,16 @@ export function QuotationDetailView({ quotation }: Props) {
                               <span className="text-[10px]">MXN</span>
                             </td>
                             <td className="px-4 py-6 text-center align-top font-bold">
-                              {item.estado === "rechazado" || quotation.estatus === "Rechazada"
+                              {item.estado === "rechazado" ||
+                              quotation.estatus === "Rechazada" ||
+                              quotation.estatus === "Cancelada"
                                 ? "—"
                                 : formatPeso(item.precio_total)}{" "}
                               <br />
                               <span className="text-[10px] font-medium">
-                                {item.estado === "rechazado" || quotation.estatus === "Rechazada"
+                                {item.estado === "rechazado" ||
+                                quotation.estatus === "Rechazada" ||
+                                quotation.estatus === "Cancelada"
                                   ? ""
                                   : "MXN"}
                               </span>
@@ -507,7 +539,8 @@ export function QuotationDetailView({ quotation }: Props) {
 
             {(counts.modificados > 0 ||
               counts.rechazados > 0 ||
-              quotation.estatus === "Rechazada") && (
+              quotation.estatus === "Rechazada" ||
+              quotation.estatus === "Cancelada") && (
               <div
                 className={`${diferencia < 0 ? "bg-[#FFF1F1] border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}
               >
@@ -525,13 +558,20 @@ export function QuotationDetailView({ quotation }: Props) {
             <div className="space-y-4">
               <button
                 onClick={
-                  quotation.estatus === "Rechazada"
+                  quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
                     ? () => router.push("/storefront")
                     : handleApprove
                 }
-                disabled={(!isActionable && quotation.estatus !== "Rechazada") || loading}
+                disabled={
+                  (!isActionable &&
+                    quotation.estatus !== "Rechazada" &&
+                    quotation.estatus !== "Cancelada") ||
+                  loading
+                }
                 className={`w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all ${
-                  isActionable || quotation.estatus === "Rechazada"
+                  isActionable ||
+                  quotation.estatus === "Rechazada" ||
+                  quotation.estatus === "Cancelada"
                     ? "bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
                     : "bg-[#F5F5F5] text-[#B9B8B8]"
                 }`}
@@ -545,11 +585,11 @@ export function QuotationDetailView({ quotation }: Props) {
 
               {isActionable && (
                 <button
-                  onClick={() => setShowRejectModal(true)}
+                  onClick={() => setShowCancelModal(true)}
                   className="w-full h-[60px] bg-white border-2 border-[#DF2646] text-[#DF2646] hover:bg-[#FFF1F1] font-bold rounded-[14px] transition-all flex items-center justify-center gap-2"
                 >
                   <XCircle size={20} weight="bold" />
-                  No estoy de acuerdo / Rechazar
+                  Cancelar cotización
                 </button>
               )}
 
@@ -566,38 +606,38 @@ export function QuotationDetailView({ quotation }: Props) {
         </div>
       </div>
 
-      {/* Reject Modal */}
-      {showRejectModal && (
+      {/* Cancel Modal */}
+      {showCancelModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-[24px] max-w-[500px] w-full p-8 shadow-2xl scale-in-center animate-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-6">
               <WarningCircle size={36} weight="bold" />
             </div>
-            <h2 className="text-[26px] font-bold text-[#1e1e1e] mb-4">¿Rechazar cotización?</h2>
+            <h2 className="text-[26px] font-bold text-[#1e1e1e] mb-4">¿Cancelar cotización?</h2>
             <p className="text-[#575757] text-[17px] mb-8 leading-relaxed">
-              Por favor, indícanos el motivo de tu rechazo para ayudarnos a ofrecerte una mejor
-              alternativa.
+              Por favor, indícanos el motivo de la cancelación para ayudarnos a ofrecerte una mejor
+              alternativa en el futuro.
             </p>
 
             <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Ej: El presupuesto es superior a lo esperado..."
               className="w-full h-[140px] border border-[#e8e8e8] rounded-[16px] p-5 mb-8 focus:ring-2 focus:ring-[#df2646] focus:border-transparent outline-none transition-all bg-[#fcfcfc] text-[#1e1e1e]"
             />
 
             <div className="flex gap-4">
               <button
-                onClick={handleReject}
+                onClick={handleCancel}
                 className="flex-1 bg-[#df2646] text-white h-[56px] rounded-[14px] font-bold text-[16px] hover:bg-[#c41e3a] transition-all"
               >
-                Confirmar rechazo
+                Confirmar cancelación
               </button>
               <button
-                onClick={() => setShowRejectModal(false)}
+                onClick={() => setShowCancelModal(false)}
                 className="flex-1 bg-[#f5f5f5] text-[#575757] h-[56px] rounded-[14px] font-bold text-[16px] hover:bg-[#ebebeb] transition-all"
               >
-                Cancelar
+                Cerrar
               </button>
             </div>
           </div>

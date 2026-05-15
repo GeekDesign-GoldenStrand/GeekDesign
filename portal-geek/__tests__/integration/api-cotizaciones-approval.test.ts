@@ -9,12 +9,6 @@ import { prisma } from "@/lib/db/client";
 import type { NextRouteHandler } from "../helpers/next-supertest";
 import { createApp } from "../helpers/next-supertest";
 
-type NextRouteHandlerWithParams = (
-  req: NextRequest,
-  ctx: { params: Promise<Record<string, string>> },
-  session: { id: number; role: string }
-) => Promise<Response>;
-
 // Mock implementation of prisma for integration testing
 jest.mock("@/lib/db/client", () => ({
   prisma: {
@@ -51,26 +45,6 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
-jest.mock("@/lib/auth/guards", () => ({
-  withRole: (roles: string[], handler: NextRouteHandler) => async (req: NextRequest, ctx: any) => {
-    const session = await mockGetSession();
-    if (!session) return new Response(JSON.stringify({ error: "No autenticado" }), { status: 401 });
-    if (!roles.includes(session.role))
-      return new Response(JSON.stringify({ error: "Sin permisos" }), { status: 403 });
-    return handler(req, ctx);
-  },
-  withRoleParams:
-    (roles: string[], handler: NextRouteHandlerWithParams) =>
-    async (req: NextRequest, ctx: any) => {
-      const session = await mockGetSession();
-      if (!session)
-        return new Response(JSON.stringify({ error: "No autenticado" }), { status: 401 });
-      if (!roles.includes(session.role))
-        return new Response(JSON.stringify({ error: "Sin permisos" }), { status: 403 });
-      return handler(req, ctx, session);
-    },
-}));
-
 const paramExtractor = (url: URL) => {
   const parts = url.pathname.split("/");
   return { id: parts[3] };
@@ -79,17 +53,17 @@ const paramExtractor = (url: URL) => {
 describe("Req. ST-08-09 Integration Tests", () => {
   let detailGET: NextRouteHandler;
   let approvePOST: NextRouteHandler;
-  let rejectPOST: NextRouteHandler;
+  let cancelPOST: NextRouteHandler;
 
   beforeAll(async () => {
     // Dynamic imports to ensure mocks are respected
     const detailMod = await import("@/app/api/cotizaciones/[id]/route");
     const approveMod = await import("@/app/api/cotizaciones/[id]/approve/route");
-    const rejectMod = await import("@/app/api/cotizaciones/[id]/reject/route");
+    const cancelMod = await import("@/app/api/cotizaciones/[id]/cancel/route");
 
     detailGET = detailMod.GET as unknown as NextRouteHandler;
     approvePOST = approveMod.POST as unknown as NextRouteHandler;
-    rejectPOST = rejectMod.POST as unknown as NextRouteHandler;
+    cancelPOST = cancelMod.POST as unknown as NextRouteHandler;
   });
 
   beforeEach(() => {
@@ -128,6 +102,26 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       expect(res.status).toBe(404);
     });
+
+    it("should return 401 when no session is present", async () => {
+      mockGetSession.mockResolvedValue(null);
+
+      const res = await createApp({ GET: detailGET }, paramExtractor)
+        .get("/api/cotizaciones/203")
+        .send();
+
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when user role is not Direccion", async () => {
+      mockGetSession.mockResolvedValue({ id: 1, role: "Vendedor" });
+
+      const res = await createApp({ GET: detailGET }, paramExtractor)
+        .get("/api/cotizaciones/203")
+        .send();
+
+      expect(res.status).toBe(403);
+    });
   });
 
   describe("Phase 2: POST /api/cotizaciones/[id]/approve", () => {
@@ -135,10 +129,23 @@ describe("Req. ST-08-09 Integration Tests", () => {
       const mockQuote = {
         id_cotizacion: 203,
         id_cliente: 1,
+        id_pedido: 101,
         id_estatus_cotizacion: 2,
         estatus: { descripcion: "Validada" },
         pedido: { id_sucursal: 1 },
       };
+
+      const mockDetails = [
+        {
+          id_servicio: 1,
+          id_material: 1,
+          id_archivo: 1,
+          cantidad: 10,
+          precio_unitario: 100,
+          subtotal: 1000,
+          notas: "Test item",
+        },
+      ];
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
       (prisma.estatusCotizacion.findUnique as jest.Mock).mockResolvedValue({
@@ -149,7 +156,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
         id_estatus: 1,
         descripcion: "Pendiente",
       });
-      (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue(mockDetails);
       (prisma.pedidos.create as jest.Mock).mockResolvedValue({ id_pedido: 500 });
 
       const res = await createApp({ POST: approvePOST }, paramExtractor)
@@ -157,7 +164,20 @@ describe("Req. ST-08-09 Integration Tests", () => {
         .send();
 
       expect(res.status).toBe(201);
-      expect(prisma.pedidos.create).toHaveBeenCalled();
+      expect(prisma.pedidos.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            detalles: {
+              create: expect.arrayContaining([
+                expect.objectContaining({
+                  cantidad: 10,
+                  precio_unitario: 100,
+                }),
+              ]),
+            },
+          }),
+        })
+      );
     });
 
     it("should return 409 when the quotation is already processed", async () => {
@@ -176,8 +196,8 @@ describe("Req. ST-08-09 Integration Tests", () => {
     });
   });
 
-  describe("Phase 3: POST /api/cotizaciones/[id]/reject", () => {
-    it("should successfully reject a quotation (200)", async () => {
+  describe("Phase 3: POST /api/cotizaciones/[id]/cancel", () => {
+    it("should successfully cancel a quotation (200)", async () => {
       const mockQuote = {
         id_cotizacion: 203,
         estatus: { descripcion: "Validada" },
@@ -185,13 +205,13 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
       (prisma.estatusCotizacion.findUnique as jest.Mock).mockResolvedValue({
-        id_estatus: 3,
-        descripcion: "Rechazada",
+        id_estatus: 5,
+        descripcion: "Cancelada",
       });
 
-      const res = await createApp({ POST: rejectPOST }, paramExtractor)
-        .post("/api/cotizaciones/203/reject")
-        .send({ motivo: "Precio alto" });
+      const res = await createApp({ POST: cancelPOST }, paramExtractor)
+        .post("/api/cotizaciones/203/cancel")
+        .send({ reason: "Precio alto" });
 
       expect(res.status).toBe(200);
     });

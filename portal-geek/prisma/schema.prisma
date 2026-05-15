@@ -102,9 +102,10 @@ model Clientes {
   numero_telefono    String  @db.VarChar(20)
   categoria          String? @db.VarChar(30) // Black / Silver / Gold / Emprendedor / Baneado
 
-  pedidos      Pedidos[]
-  cotizaciones Cotizaciones[]
-  notas        NotasCliente[]
+  pedidos               Pedidos[]
+  cotizaciones          Cotizaciones[]
+  notas                 NotasCliente[]
+  historialCotizaciones HistorialEstadosCotizacion[]
 
   @@map("CLIENTES")
 }
@@ -499,14 +500,17 @@ model CotizacionesRechazadas {
 model HistorialEstadosCotizacion {
   id_historial        Int      @id @default(autoincrement())
   id_cotizacion       Int
-  id_usuario          Int
-  id_estado_anterior  Int? // NULL on first assignment
+  id_usuario          Int?     // Nullable for client actions
+  id_cliente          Int?     // Traceability for client actions
+  id_estado_anterior  Int?     // NULL on first assignment
   id_estado_nuevo     Int
-  id_estatus_servicio String? // subproceso name when state is "En proceso"
+  id_estatus_servicio String?  // subproceso name when state is "En proceso"
   fecha_cambio        DateTime @default(now())
+  actor_tipo          String   @default("Direccion") // Sistema | Direccion | Cliente
 
   cotizacion Cotizaciones @relation(fields: [id_cotizacion], references: [id_cotizacion])
-  usuario    Usuarios     @relation(fields: [id_usuario], references: [id_usuario])
+  usuario    Usuarios?    @relation(fields: [id_usuario], references: [id_usuario])
+  cliente    Clientes?    @relation(fields: [id_cliente], references: [id_cliente])
 
   @@map("HISTORIALESTADOSCOTIZACION")
 }

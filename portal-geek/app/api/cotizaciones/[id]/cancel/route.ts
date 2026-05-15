@@ -2,27 +2,27 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
-import { rejectQuotation } from "@/lib/services/cotizaciones";
+import { cancelQuotationByClient } from "@/lib/services/cotizaciones";
 import { ok } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-const RejectSchema = z.object({
+const CancelSchema = z.object({
   reason: z.string().optional(),
 });
 
 /**
- * POST /api/cotizaciones/[id]/reject
- * Publicly accessible endpoint for clients to reject a quotation.
+ * POST /api/cotizaciones/[id]/cancel
+ * Publicly accessible endpoint for clients to cancel their quotation.
  */
 export async function POST(req: NextRequest, ctx: { params: Promise<Params> }) {
   try {
     const { id } = CotizacionIdParams.parse(await ctx.params);
-    const body = RejectSchema.parse(await req.json());
+    const body = CancelSchema.parse(await req.json());
 
-    // Rejection uses System User (ID 1) for history when triggered by client.
-    const result = await rejectQuotation(id, 1, body.reason);
+    // Cancellation uses id_cliente for history traceability when triggered by client.
+    const result = await cancelQuotationByClient(id, body.reason);
 
     return ok(result);
   } catch (err) {

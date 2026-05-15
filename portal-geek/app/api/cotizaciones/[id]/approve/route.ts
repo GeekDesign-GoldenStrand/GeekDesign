@@ -16,8 +16,8 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<Params> }) 
   try {
     const { id } = CotizacionIdParams.parse(await ctx.params);
 
-    // Approve and create Pedido. Uses System User (ID 1) for history.
-    const result = await approveQuotation(id, 1);
+    // Approve and create Pedido. Traceability now uses id_cliente automatically.
+    const result = await approveQuotation(id);
 
     return created(result);
   } catch (err) {

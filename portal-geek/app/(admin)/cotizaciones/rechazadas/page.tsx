@@ -40,7 +40,8 @@ export default function CotizacionesRechazadasPage() {
       const params = new URLSearchParams();
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
-      params.set("estatus", "Rechazada"); // Force rejected status
+      params.set("estatus", "Rechazada");
+      params.append("estatus", "Cancelada");
       if (search) params.set("search", search);
 
       const res = await fetch(`/api/cotizaciones?${params.toString()}`);
@@ -86,7 +87,7 @@ export default function CotizacionesRechazadasPage() {
       setFilterCliente={() => {}}
       filterEmpresa=""
       setFilterEmpresa={() => {}}
-      filterEstatus={["Rechazada"]}
+      filterEstatus={["Rechazada", "Cancelada"]}
       setFilterEstatus={() => {}}
       isArchive={true}
     />

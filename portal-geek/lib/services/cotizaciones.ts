@@ -7,7 +7,12 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
-import { ConfigurationError, ConflictError, NotFoundError } from "@/lib/utils/errors";
+import {
+  ConfigurationError,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@/lib/utils/errors";
 
 /**
  * Common include configuration for quotations to ensure consistent typing.
@@ -267,7 +272,9 @@ export async function changeQuotationStatus(
   }
 
   // Transaction ensures atomicity.
-  const isRejected = targetStatus === QUOTATION_STATUS.RECHAZADA;
+  // Register lost opportunities (Rejected or Cancelled)
+  const isLostOpportunity =
+    targetStatus === QUOTATION_STATUS.RECHAZADA || targetStatus === QUOTATION_STATUS.CANCELADA;
 
   const operations: (
     | Prisma.PrismaPromise<Cotizaciones>
@@ -287,12 +294,12 @@ export async function changeQuotationStatus(
         id_estado_anterior: currentQuotation.id_estatus_cotizacion,
         id_estado_nuevo: newStatusId,
         fecha_cambio: new Date(),
+        actor_tipo: "Direccion", // Called from admin side
       },
     }),
   ];
 
-  // Register rejected quotations.
-  if (isRejected) {
+  if (isLostOpportunity) {
     operations.push(
       prisma.cotizacionesRechazadas.upsert({
         where: {
@@ -304,10 +311,8 @@ export async function changeQuotationStatus(
         },
       })
     );
-  }
-
-  // Remove from rejected table if no longer rejected.
-  if (!isRejected) {
+  } else {
+    // Remove from lost opportunities table if it moved back to an active state
     operations.push(
       prisma.cotizacionesRechazadas.deleteMany({
         where: {
@@ -326,7 +331,7 @@ export async function changeQuotationStatus(
  * Approves a quotation and automatically creates a corresponding Order (Pedido).
  * This is an atomic operation to ensure data consistency between Sales and Production.
  */
-export async function approveQuotation(quotationId: number, userId: number) {
+export async function approveQuotation(quotationId: number) {
   return prisma.$transaction(async (tx) => {
     // 1. Fetch quotation with details
     const quotation = await tx.cotizaciones.findUnique({
@@ -340,6 +345,10 @@ export async function approveQuotation(quotationId: number, userId: number) {
     if (!quotation) throw new NotFoundError("Quotation not found");
     if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
       throw new ConflictError("Only validated quotations can be approved");
+    }
+
+    if (!quotation.id_pedido) {
+      throw new ValidationError("Cannot approve a quotation without validated line items");
     }
 
     // 2. Resolve necessary IDs
@@ -409,10 +418,11 @@ export async function approveQuotation(quotationId: number, userId: number) {
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
-        id_usuario: userId,
+        id_cliente: quotation.id_cliente,
         id_estado_anterior: quotation.id_estatus_cotizacion,
         id_estado_nuevo: approvedStatus.id_estatus,
         fecha_cambio: new Date(),
+        actor_tipo: "Cliente",
       },
     });
 
@@ -421,35 +431,45 @@ export async function approveQuotation(quotationId: number, userId: number) {
 }
 
 /**
- * Rejects a quotation and moves it to the rejected archive.
+ * Cancels a quotation by the client and moves it to the cancelled state.
  */
-export async function rejectQuotation(quotationId: number, userId: number, reason?: string) {
+export async function cancelQuotationByClient(quotationId: number, reason?: string) {
   return prisma.$transaction(async (tx) => {
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
       include: { estatus: true },
     });
 
-    if (!quotation) throw new Error("Quotation not found");
+    if (!quotation) throw new NotFoundError("Quotation not found");
 
-    const rejectedStatus = await tx.estatusCotizacion.findUnique({
-      where: { descripcion: QUOTATION_STATUS.RECHAZADA },
+    if (
+      !(
+        [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA] as string[]
+      ).includes(quotation.estatus.descripcion)
+    ) {
+      throw new ConflictError(
+        `Cannot cancel a quotation in '${quotation.estatus.descripcion}' status`
+      );
+    }
+
+    const cancelledStatus = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.CANCELADA },
     });
 
-    if (!rejectedStatus) throw new Error("Rejected status not found");
+    if (!cancelledStatus) throw new Error("Cancelled status not found");
 
-    // Update quote status and add rejection reason to notes
+    // Update quote status and add cancellation reason to notes
     const updatedQuotation = await tx.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: {
-        id_estatus_cotizacion: rejectedStatus.id_estatus,
+        id_estatus_cotizacion: cancelledStatus.id_estatus,
         notas: reason
-          ? `${quotation.notas ?? ""}\n\nMotivo de rechazo: ${reason}`
+          ? `${quotation.notas ?? ""}\n\nMotivo de cancelación: ${reason}`
           : quotation.notas,
       },
     });
 
-    // Ensure it's in the rejected table
+    // Ensure it's in the lost opportunities table
     await tx.cotizacionesRechazadas.upsert({
       where: { id_cotizacion: quotationId },
       update: {},
@@ -460,10 +480,11 @@ export async function rejectQuotation(quotationId: number, userId: number, reaso
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
-        id_usuario: userId,
+        id_cliente: quotation.id_cliente,
         id_estado_anterior: quotation.id_estatus_cotizacion,
-        id_estado_nuevo: rejectedStatus.id_estatus,
+        id_estado_nuevo: cancelledStatus.id_estatus,
         fecha_cambio: new Date(),
+        actor_tipo: "Cliente",
       },
     });
 
