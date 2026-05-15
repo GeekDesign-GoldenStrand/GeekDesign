@@ -162,9 +162,16 @@ export async function createServicio(
 ): Promise<ServicioSimple> {
   const { id_maquinas, formula, ...servicioData } = data;
 
+  const estatusActivo = await prisma.estatusServicio.findFirstOrThrow({
+    where: { descripcion: "Activo" },
+    select: { id_estatus_servicio: true },
+  });
+
   return prisma.$transaction(async (tx) => {
     // 1. Create the service. servicioData now includes id_sucursal and overrides.
-    const servicio = await tx.servicios.create({ data: servicioData });
+    const servicio = await tx.servicios.create({
+      data: { ...servicioData, id_estatus: estatusActivo.id_estatus_servicio },
+    });
 
     // 2. Vinculate machines if provided.
     if (id_maquinas && id_maquinas.length > 0) {

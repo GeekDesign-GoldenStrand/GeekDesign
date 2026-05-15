@@ -125,7 +125,6 @@ export function useNuevoServicioForm() {
         body: JSON.stringify({
           nombre_servicio: form.nombre_servicio,
           descripcion_servicio: form.descripcion_servicio || undefined,
-          id_estatus: 1,
           id_sucursal: form.id_sucursal,
           estatus_servicio: true,
           id_maquinas: form.id_maquinas,
