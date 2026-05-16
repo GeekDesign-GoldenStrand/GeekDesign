@@ -16,9 +16,12 @@
     "db:studio": "prisma studio",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.8.0",
@@ -27,7 +30,7 @@
     "dotenv": "^17.4.2",
     "framer-motion": "^12.38.0",
     "jose": "^6.2.2",
-    "next": "16.2.3",
+    "next": "^16.2.6",
     "pg": "^8.20.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
