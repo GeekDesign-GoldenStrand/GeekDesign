@@ -13,6 +13,8 @@ export interface MaterialProveedor {
   telefono: string;
   correo: string;
   precio: string;
+}
+
 // On read, the `imagen_url` column holds the storage key. Replace it with a
 // fetchable URL (public or short-lived presigned GET) before returning.
 async function withResolvedImagen(material: Materiales): Promise<Materiales> {
