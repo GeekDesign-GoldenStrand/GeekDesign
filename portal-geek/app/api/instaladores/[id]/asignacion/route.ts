@@ -22,7 +22,10 @@ export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   try {
     const { id } = InstaladorIdParams.parse(await ctx.params);
     const body = AssignmentSchema.extend({ type: z.literal("servicio") }).parse(await req.json());
-    await syncInstaladorAssignments(id, body.ids);
+    await syncInstaladorAssignments(
+      id,
+      body.items.map((i) => i.id)
+    );
     return ok({ success: true });
   } catch (err) {
     return handleError(err);
