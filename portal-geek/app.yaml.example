@@ -1,0 +1,55 @@
+# App Engine Standard config — copy to `app.yaml` and fill in real values.
+# `app.yaml` is gitignored. Do NOT commit secrets.
+#
+# Replace every <ANGLE_BRACKET> placeholder before deploying.
+# Connection model: App Engine talks to Cloud SQL over a Unix socket
+# (/cloudsql/<PROJECT>:<REGION>:<INSTANCE>) — no public IP, no TLS layer.
+
+runtime: nodejs22
+entrypoint: npm start
+instance_class: F2
+
+env_variables:
+  NODE_ENV: "production"
+  NEXT_PUBLIC_APP_URL: "https://<PROJECT_ID>.appspot.com"
+
+  # --- Database (Cloud SQL via Unix socket) -----------------------------------
+  # User should be the least-privileged `portal_app`, NOT `postgres`.
+  # Note the host=/cloudsql/... query param — that's how pg connects via socket.
+  DATABASE_URL: "postgresql://portal_app:<DB_PASSWORD>@/postgres?host=/cloudsql/<PROJECT>:<REGION>:<INSTANCE>"
+  # DATABASE_SSL_CA is intentionally unset in production — Unix socket does not
+  # use TLS. It's only needed for local dev over public IP.
+
+  # --- Auth -------------------------------------------------------------------
+  AUTH_SECRET: "<32+_byte_random_string>"
+
+  # --- Object storage (GCS via S3 interop / HMAC) -----------------------------
+  STORAGE_ENDPOINT: "https://storage.googleapis.com"
+  STORAGE_REGION: "auto"
+  STORAGE_BUCKET: "geekdesign-portal-prod"
+  STORAGE_ACCESS_KEY: "<GCS_HMAC_ACCESS_KEY>"
+  STORAGE_SECRET_KEY: "<GCS_HMAC_SECRET>"
+  STORAGE_PUBLIC_BASE_URL: ""
+
+  # --- Email (Resend) ---------------------------------------------------------
+  RESEND_API_KEY: "<resend_api_key>"
+  RESEND_FROM_EMAIL: "noreply@geekdesign.mx"
+
+  # --- MercadoPago (leave blank until checkout is wired) ----------------------
+  MERCADOPAGO_ACCESS_TOKEN: ""
+  MERCADOPAGO_WEBHOOK_SECRET: ""
+
+# Mounts the Cloud SQL socket inside the App Engine instance.
+beta_settings:
+  cloud_sql_instances: <PROJECT>:<REGION>:<INSTANCE>
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 4
+  target_cpu_utilization: 0.65
+
+# Optional: keep responses fast for static assets served by Next.
+handlers:
+  - url: /.*
+    script: auto
+    secure: always
