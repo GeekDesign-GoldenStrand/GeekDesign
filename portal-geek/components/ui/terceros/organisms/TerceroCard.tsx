@@ -13,7 +13,6 @@ import { AsignarItemsModal } from "./AsignarItemsModal";
 const ACTION_BTN =
   "flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors";
 
-
 export function TerceroCard({
   id,
   companyName,
