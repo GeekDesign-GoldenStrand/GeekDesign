@@ -7,7 +7,7 @@ interface MaterialCardRowProps extends MaterialCardProps {
   visibleColumns: MaterialesVisibleColumns;
   gridTemplateColumns: string;
   onEdit: (material: MaterialCardProps) => void;
-  onViewPersonas: (materialId: number, materialName: string) => void;
+  onViewProveedores: (materialId: number, materialName: string) => void;
 }
 
 function ColorDescription({ value }: { value: string }) {
@@ -58,12 +58,12 @@ export function MaterialCard({
   visibleColumns,
   gridTemplateColumns,
   onEdit,
-  onViewPersonas,
+  onViewProveedores,
 }: MaterialCardRowProps) {
   const onEditClick = () =>
     onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl });
 
-  const onPersonasClick = () => onViewPersonas(id, name);
+  const onProveedoresClick = () => onViewProveedores(id, name);
 
   return (
     <article
@@ -141,11 +141,11 @@ export function MaterialCard({
         )}
       </div>
 
-      {visibleColumns.personas && (
+      {visibleColumns.proveedores && (
         <div className="flex items-center justify-center">
           <button
-            onClick={onPersonasClick}
-            aria-label={`Ver personas relacionadas con ${name}`}
+            onClick={onProveedoresClick}
+            aria-label={`Ver proveedores de ${name}`}
             className="inline-flex items-center gap-1.5 px-3 h-8 rounded-[7px] border border-[#575757] bg-[#e8e8e8] text-[#1e1e1e] text-[12px] font-medium hover:bg-[#d8d8d8] transition-colors whitespace-nowrap"
           >
             <UsersIcon size={14} />

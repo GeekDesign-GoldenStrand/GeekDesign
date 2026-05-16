@@ -77,7 +77,7 @@ export function ProveedoresModal({
 
     const abortController = new AbortController();
 
-    fetch(`/api/materiales/${materialId}/terceros`, { signal: abortController.signal })
+    fetch(`/api/materiales/${materialId}/proveedores`, { signal: abortController.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         return res.json();

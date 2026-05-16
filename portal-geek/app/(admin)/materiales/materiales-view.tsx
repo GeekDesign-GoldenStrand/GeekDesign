@@ -25,7 +25,7 @@ const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
   thickness: true,
   color: true,
   image: true,
-  personas: true,
+  proveedores: true,
 };
 
 type FetchState = {
@@ -74,9 +74,9 @@ export function MaterialesView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
-  const [showPersonasModal, setShowPersonasModal] = useState(false);
-  const [personasMaterialId, setPersonasMaterialId] = useState<number | null>(null);
-  const [personasMaterialName, setPersonasMaterialName] = useState("");
+  const [showProveedoresModal, setShowProveedoresModal] = useState(false);
+  const [proveedoresMaterialId, setProveedoresMaterialId] = useState<number | null>(null);
+  const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [visibleColumns, setVisibleColumns] =
     useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
@@ -169,16 +169,16 @@ export function MaterialesView() {
     setSelectedMaterialId(null);
   }
 
-  function handleViewPersonas(materialId: number, materialName: string) {
-    setPersonasMaterialId(materialId);
-    setPersonasMaterialName(materialName);
-    setShowPersonasModal(true);
+  function handleViewProveedores(materialId: number, materialName: string) {
+    setProveedoresMaterialId(materialId);
+    setProveedoresMaterialName(materialName);
+    setShowProveedoresModal(true);
   }
 
-  function handlePersonasClose() {
-    setShowPersonasModal(false);
-    setPersonasMaterialId(null);
-    setPersonasMaterialName("");
+  function handleProveedoresClose() {
+    setShowProveedoresModal(false);
+    setProveedoresMaterialId(null);
+    setProveedoresMaterialName("");
   }
 
   function handleUpdated(row: MaterialCardProps) {
@@ -227,7 +227,7 @@ export function MaterialesView() {
               items={rows}
               visibleColumns={visibleColumns}
               onEditMaterial={handleEditClick}
-              onViewPersonas={handleViewPersonas}
+              onViewProveedores={handleViewProveedores}
               page={page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
@@ -254,10 +254,10 @@ export function MaterialesView() {
       />
 
       <ProveedoresModal
-        isOpen={showPersonasModal}
-        materialId={personasMaterialId}
-        materialName={personasMaterialName}
-        onClose={handlePersonasClose}
+        isOpen={showProveedoresModal}
+        materialId={proveedoresMaterialId}
+        materialName={proveedoresMaterialName}
+        onClose={handleProveedoresClose}
       />
     </div>
   );

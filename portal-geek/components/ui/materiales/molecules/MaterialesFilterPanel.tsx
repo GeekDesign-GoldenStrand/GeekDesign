@@ -18,7 +18,7 @@ const COLUMN_OPTIONS: Array<{ key: keyof MaterialesVisibleColumns; label: string
   { key: "thickness", label: "Grosor" },
   { key: "color", label: "Color" },
   { key: "image", label: "Imagen" },
-  { key: "personas", label: "Proveedores" },
+  { key: "proveedores", label: "Proveedores" },
 ];
 
 export function MaterialesFilterPanel({
