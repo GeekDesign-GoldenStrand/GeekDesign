@@ -1,4 +1,4 @@
-import { metadata } from "@/app/(storefront)/promocionales/page";
+import { metadata } from "@/app/(storefront)/tienda/promocionales/page";
 
 describe("Promocionales Page Unit Tests", () => {
   it("should have correct SEO metadata", () => {

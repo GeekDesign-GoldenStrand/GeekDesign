@@ -7,7 +7,7 @@ export function CTABanner() {
         ¿No sabes qué quieres?
       </h2>
       <Link
-        href="/cotizacion"
+        href="/tienda/cotizacion"
         className="bg-[#e42200] w-[241px] h-[53px] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex items-center justify-center text-[#fffcfc] text-[16.742px] font-medium hover:brightness-95 transition"
       >
         Solicitar cotización

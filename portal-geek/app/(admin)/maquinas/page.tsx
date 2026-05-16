@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth/session";
 
 import MaquinasGrid from "./maquinas-grid";
 
-export const metadata: Metadata = { title: "Máquinas | Geek Design" };
+export const metadata: Metadata = { title: "Máquinas" };
 
 export default async function MaquinasPage() {
   const session = await getSession();

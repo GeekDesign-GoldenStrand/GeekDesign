@@ -9,7 +9,7 @@ interface AnnouncementBarProps {
 export function AnnouncementBar({
   mensaje = "Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el 10 de abril |",
   linkTexto = "Comprar ahora",
-  linkHref = "/storefront",
+  linkHref = "/tienda",
 }: AnnouncementBarProps) {
   return (
     <div className="w-full min-h-[48px] md:h-[67px] bg-black flex items-center justify-center gap-1 px-4 py-2 md:py-0">
