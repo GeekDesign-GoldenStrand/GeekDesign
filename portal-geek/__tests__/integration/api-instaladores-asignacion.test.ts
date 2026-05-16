@@ -86,7 +86,13 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/instaladores/1/asignacion")
-      .send({ type: "servicio", ids: [5, 6] });
+      .send({
+        type: "servicio",
+        items: [
+          { id: 5, precio: 100 },
+          { id: 6, precio: 200 },
+        ],
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.data.success).toBe(true);
@@ -98,7 +104,7 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/instaladores/1/asignacion")
-      .send({ type: "invalido", ids: [1] });
+      .send({ type: "invalido", items: [{ id: 1, precio: 100 }] });
 
     expect(res.status).toBe(422);
   });
@@ -108,7 +114,7 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/instaladores/1/asignacion")
-      .send({ type: "material", ids: [1] });
+      .send({ type: "material", items: [{ id: 1, precio: 100 }] });
 
     expect(res.status).toBe(422);
   });
@@ -117,7 +123,7 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Vendedor" });
     const res = await testApp()
       .put("/api/instaladores/1/asignacion")
-      .send({ type: "servicio", ids: [1] });
+      .send({ type: "servicio", items: [{ id: 1, precio: 100 }] });
 
     expect(res.status).toBe(403);
   });
