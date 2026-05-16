@@ -8,6 +8,7 @@ import {
   EditarMaterialModal,
   MaterialesGrid,
   MaterialesToolbar,
+  ProveedoresModal,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
 import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
@@ -24,6 +25,7 @@ const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
   thickness: true,
   color: true,
   image: true,
+  personas: true,
 };
 
 type FetchState = {
@@ -72,6 +74,9 @@ export function MaterialesView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
+  const [showPersonasModal, setShowPersonasModal] = useState(false);
+  const [personasMaterialId, setPersonasMaterialId] = useState<number | null>(null);
+  const [personasMaterialName, setPersonasMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [visibleColumns, setVisibleColumns] =
     useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
@@ -164,6 +169,18 @@ export function MaterialesView() {
     setSelectedMaterialId(null);
   }
 
+  function handleViewPersonas(materialId: number, materialName: string) {
+    setPersonasMaterialId(materialId);
+    setPersonasMaterialName(materialName);
+    setShowPersonasModal(true);
+  }
+
+  function handlePersonasClose() {
+    setShowPersonasModal(false);
+    setPersonasMaterialId(null);
+    setPersonasMaterialName("");
+  }
+
   function handleUpdated(row: MaterialCardProps) {
     dispatch({ type: "update", row });
   }
@@ -210,6 +227,7 @@ export function MaterialesView() {
               items={rows}
               visibleColumns={visibleColumns}
               onEditMaterial={handleEditClick}
+              onViewPersonas={handleViewPersonas}
               page={page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
@@ -233,6 +251,13 @@ export function MaterialesView() {
         onClose={handleEditClose}
         onUpdated={handleUpdated}
         onDeleted={handleDeleted}
+      />
+
+      <ProveedoresModal
+        isOpen={showPersonasModal}
+        materialId={personasMaterialId}
+        materialName={personasMaterialName}
+        onClose={handlePersonasClose}
       />
     </div>
   );

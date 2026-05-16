@@ -1,12 +1,13 @@
 import Image from "next/image";
 
-import { EditIcon } from "@/components/ui/atoms/icons";
+import { EditIcon, UsersIcon } from "@/components/ui/atoms/icons";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialCardRowProps extends MaterialCardProps {
   visibleColumns: MaterialesVisibleColumns;
   gridTemplateColumns: string;
   onEdit: (material: MaterialCardProps) => void;
+  onViewPersonas: (materialId: number, materialName: string) => void;
 }
 
 function ColorDescription({ value }: { value: string }) {
@@ -57,9 +58,12 @@ export function MaterialCard({
   visibleColumns,
   gridTemplateColumns,
   onEdit,
+  onViewPersonas,
 }: MaterialCardRowProps) {
   const onEditClick = () =>
     onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl });
+
+  const onPersonasClick = () => onViewPersonas(id, name);
 
   return (
     <article
@@ -68,9 +72,9 @@ export function MaterialCard({
     >
       <div className="flex items-center justify-between md:contents">
         {visibleColumns.name && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Nombre</span>
-            <p className="text-[15px] lg:text-[16px] text-[#1e1e1e] md:text-center font-semibold md:font-normal truncate">
+            <p className="text-[15px] lg:text-[16px] text-[#1e1e1e] font-semibold md:font-normal truncate">
               {name}
             </p>
           </div>
@@ -86,11 +90,11 @@ export function MaterialCard({
       </div>
 
       {visibleColumns.description && (
-        <div className="flex flex-col md:block">
+        <div className="flex flex-col md:flex md:items-center md:justify-center">
           <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">
             Descripción
           </span>
-          <p className="text-[12px] text-[#575757] md:text-center line-clamp-2">
+          <p className="text-[12px] text-[#575757] line-clamp-2">
             {description || "-"}
           </p>
         </div>
@@ -98,46 +102,59 @@ export function MaterialCard({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 md:contents gap-3">
         {visibleColumns.unit && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Unidad</span>
-            <p className="text-[14px] text-[#1e1e1e] md:text-center">{unit}</p>
+            <p className="text-[14px] text-[#1e1e1e]">{unit}</p>
           </div>
         )}
         {visibleColumns.width && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Ancho</span>
-            <p className="text-[14px] md:text-[16px] text-[#1e1e1e] md:text-center">{width}</p>
+            <p className="text-[14px] md:text-[16px] text-[#1e1e1e]">{width}</p>
           </div>
         )}
         {visibleColumns.height && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Alto</span>
-            <p className="text-[14px] md:text-[16px] text-[#1e1e1e] md:text-center">{height}</p>
+            <p className="text-[14px] md:text-[16px] text-[#1e1e1e]">{height}</p>
           </div>
         )}
         {visibleColumns.thickness && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Grosor</span>
-            <p className="text-[14px] md:text-[16px] text-[#1e1e1e] md:text-center">{thickness}</p>
+            <p className="text-[14px] md:text-[16px] text-[#1e1e1e]">{thickness}</p>
           </div>
         )}
       </div>
 
       <div className="flex items-center gap-6 md:contents">
         {visibleColumns.color && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Color</span>
             <ColorDescription value={color} />
           </div>
         )}
 
         {visibleColumns.image && (
-          <div className="flex flex-col md:block">
+          <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Imagen</span>
             <PreviewImage imageUrl={imageUrl} name={name} />
           </div>
         )}
       </div>
+
+      {visibleColumns.personas && (
+        <div className="flex items-center justify-center">
+          <button
+            onClick={onPersonasClick}
+            aria-label={`Ver personas relacionadas con ${name}`}
+            className="inline-flex items-center gap-1.5 px-3 h-8 rounded-[7px] border border-[#575757] bg-[#e8e8e8] text-[#1e1e1e] text-[12px] font-medium hover:bg-[#d8d8d8] transition-colors whitespace-nowrap"
+          >
+            <UsersIcon size={14} />
+            Ver proveedores
+          </button>
+        </div>
+      )}
 
       <button
         onClick={onEditClick}

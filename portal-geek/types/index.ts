@@ -95,4 +95,5 @@ export interface MaterialesVisibleColumns {
   thickness: boolean;
   color: boolean;
   image: boolean;
+  personas: boolean;
 }

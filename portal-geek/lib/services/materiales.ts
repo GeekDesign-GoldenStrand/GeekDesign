@@ -4,6 +4,16 @@ import { prisma } from "@/lib/db/client";
 import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/materiales";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
+export interface MaterialProveedor {
+  id: number;
+  nombre: string;
+  tipo: string;
+  estatus: string;
+  telefono: string;
+  correo: string;
+  precio: string;
+}
+
 export async function listMateriales(
   page: number,
   pageSize: number,
@@ -43,6 +53,34 @@ export async function getMaterial(id: number): Promise<Materiales> {
   }
 
   return material;
+}
+
+export async function getMaterialProveedores(id: number): Promise<MaterialProveedor[]> {
+  const rows = await prisma.proveedorPrecios.findMany({
+    where: { id_material: id },
+    include: {
+      proveedor: {
+        select: {
+          id_proveedor: true,
+          nombre_proveedor: true,
+          tipo: true,
+          estatus: true,
+          telefono: true,
+          correo: true,
+        },
+      },
+    },
+  });
+
+  return rows.map((pp) => ({
+    id: pp.proveedor.id_proveedor,
+    nombre: pp.proveedor.nombre_proveedor,
+    tipo: pp.proveedor.tipo,
+    estatus: pp.proveedor.estatus,
+    telefono: pp.proveedor.telefono,
+    correo: pp.proveedor.correo,
+    precio: pp.precio.toString(),
+  }));
 }
 
 export async function createMaterial(data: CreateMaterialInput): Promise<Materiales> {
