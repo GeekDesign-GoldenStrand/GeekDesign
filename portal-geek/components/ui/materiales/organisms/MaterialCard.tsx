@@ -94,9 +94,7 @@ export function MaterialCard({
           <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">
             Descripción
           </span>
-          <p className="text-[12px] text-[#575757] line-clamp-2">
-            {description || "-"}
-          </p>
+          <p className="text-[12px] text-[#575757] line-clamp-2">{description || "-"}</p>
         </div>
       )}
 

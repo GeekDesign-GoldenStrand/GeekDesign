@@ -67,16 +67,13 @@ export function ProveedoresModal({
   materialName,
   onClose,
 }: ProveedoresModalProps) {
-  const [proveedores, setProveedores] = useState<MaterialProveedor[]>([]);
+  const [proveedores, setProveedores] = useState<MaterialProveedor[] | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const isLoading = proveedores === null && !fetchError;
 
   useEffect(() => {
     if (!isOpen || materialId === null) return;
-
-    setProveedores([]);
-    setFetchError(null);
-    setIsLoading(true);
 
     const abortController = new AbortController();
 
@@ -88,12 +85,10 @@ export function ProveedoresModal({
       .then((payload) => {
         if (abortController.signal.aborted) return;
         setProveedores(payload.data as MaterialProveedor[]);
-        setIsLoading(false);
       })
       .catch(() => {
         if (abortController.signal.aborted) return;
         setFetchError("No se pudieron cargar los proveedores. Intenta de nuevo.");
-        setIsLoading(false);
       });
 
     return () => abortController.abort();
@@ -139,13 +134,11 @@ export function ProveedoresModal({
 
         {/* Body */}
         <div className="p-6 overflow-y-auto space-y-2">
-          {isLoading && (
-            <p className="text-[#8e908f] text-[14px]">Cargando proveedores...</p>
-          )}
+          {isLoading && <p className="text-[#8e908f] text-[14px]">Cargando proveedores...</p>}
 
           {fetchError && <p className="text-[#e42200] text-[14px]">{fetchError}</p>}
 
-          {!isLoading && !fetchError && proveedores.length === 0 && (
+          {proveedores?.length === 0 && !fetchError && (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <UsersIcon size={32} className="text-[#c6c6c6]" />
               <p className="text-[14px] text-[#8e908f]">
@@ -154,7 +147,7 @@ export function ProveedoresModal({
             </div>
           )}
 
-          {proveedores.map((p) => (
+          {proveedores?.map((p) => (
             <ProveedorRow key={p.id} proveedor={p} />
           ))}
         </div>
