@@ -6,5 +6,5 @@
 
 */
 -- AlterTable
-ALTER TABLE "INSTALADORES" DROP COLUMN "nombre_proveedor",
-ADD COLUMN     "nombre_instalador" VARCHAR(100) NOT NULL;
+ALTER TABLE "INSTALADORES" DROP COLUMN IF EXISTS"nombre_proveedor",
+ADD COLUMN  IF NOT EXISTS "nombre_instalador" VARCHAR(100) NOT NULL DEFAULT '';
