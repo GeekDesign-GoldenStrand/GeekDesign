@@ -16,7 +16,12 @@ export function FolioSearch() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!folio.trim() || !email.trim()) return;
-    router.push(`/cotizacion/${folio.trim()}?email=${encodeURIComponent(email.trim())}`);
+
+    // Set secure cookies for authentication (12 hours = 43200 seconds)
+    document.cookie = `client_email=${encodeURIComponent(email.trim())}; path=/; max-age=43200; SameSite=Lax; Secure`;
+    document.cookie = `client_folio=${encodeURIComponent(folio.trim())}; path=/; max-age=43200; SameSite=Lax; Secure`;
+
+    router.push(`/cotizacion/${folio.trim()}`);
   };
 
   return (

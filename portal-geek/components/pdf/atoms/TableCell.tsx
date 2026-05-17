@@ -1,0 +1,25 @@
+import React from 'react';
+import { View, Text } from '@react-pdf/renderer';
+import { styles } from '../styles';
+
+interface TableCellProps {
+  children: React.ReactNode;
+  width?: string;
+  isHeader?: boolean;
+}
+
+export const TableCell = ({ children, width, isHeader = false }: TableCellProps) => {
+  const baseStyle = isHeader ? styles.tableColHeader : styles.tableCol;
+  const viewStyle = width ? { ...baseStyle, width } : baseStyle;
+  const textStyle = isHeader ? styles.tableCellHeader : styles.tableCell;
+
+  return (
+    <View style={viewStyle}>
+      {typeof children === 'string' || typeof children === 'number' ? (
+        <Text style={textStyle}>{children}</Text>
+      ) : (
+        children
+      )}
+    </View>
+  );
+};

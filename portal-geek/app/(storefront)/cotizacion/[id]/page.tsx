@@ -1,5 +1,6 @@
 import { WarningCircle, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { cookies } from "next/headers";
 
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
@@ -11,7 +12,13 @@ interface Props {
 
 export default async function CotizacionDetallePage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { email: providedEmail } = await searchParams;
+
+  // Retrieve client email and folio securely from cookies to keep URLs clean and protected
+  const cookieStore = await cookies();
+  const cookieEmail = cookieStore.get("client_email")?.value;
+  const cookieFolio = cookieStore.get("client_folio")?.value;
+  const { email: queryEmail } = await searchParams;
+  const providedEmail = cookieEmail || queryEmail;
 
   // Try lookup by Folio (primary) or ID (fallback)
   let quote = await getCotizacionByFolio(id);
@@ -24,7 +31,17 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
   // We use a generic message for both "Not Found" and "Email Mismatch" to prevent
   // enumeration and information leakage.
   const clientEmail = quote?.cliente.correo_electronico.toLowerCase();
-  const isVerified = quote && providedEmail?.toLowerCase() === clientEmail;
+  
+  // Verify BOTH email and folio cookies match the retrieved quotation
+  const isEmailMatched = quote && providedEmail?.toLowerCase() === clientEmail;
+  const isFolioMatched = quote && (
+    cookieFolio?.trim().toLowerCase() === quote.folio?.trim().toLowerCase() ||
+    cookieFolio?.trim() === String(quote.id_cotizacion) ||
+    id.trim().toLowerCase() === quote.folio?.trim().toLowerCase() ||
+    id.trim() === String(quote.id_cotizacion)
+  );
+
+  const isVerified = isEmailMatched && isFolioMatched;
 
   if (!isVerified || !quote) {
     return (
