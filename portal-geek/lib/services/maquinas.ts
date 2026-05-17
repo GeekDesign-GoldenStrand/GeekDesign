@@ -125,10 +125,10 @@ export async function asignarSucursal(id: number, sucursal: number): Promise<Maq
 
 export async function asignarServicios(id: number, servicios: number[]): Promise<Maquinas> {
   await prisma.$transaction([
-    prisma.serviciosMaquina.deleteMany({
+    prisma.servicioMaquina.deleteMany({
       where: { id_maquina: id },
     }),
-    prisma.serviciosMaquina.createMany({
+    prisma.servicioMaquina.createMany({
       data: servicios.map((id_servicio) => ({
         id_maquina: id,
         id_servicio,
@@ -140,7 +140,7 @@ export async function asignarServicios(id: number, servicios: number[]): Promise
     where: { id_maquina: id },
     include: {
       sucursales: { include: { sucursal: true } },
-      servicios: { include: { servicio: true } },
+      servicioMaquina: { include: { servicio: true } },
     },
   });
 
