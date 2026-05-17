@@ -7,6 +7,7 @@ interface MaterialesFilterPanelProps {
   onSortChange: (order: MaterialSortOrder) => void;
   onReset: () => void;
   onClose: () => void;
+  canViewProveedores?: boolean;
 }
 
 const COLUMN_OPTIONS: Array<{ key: keyof MaterialesVisibleColumns; label: string }> = [
@@ -28,7 +29,11 @@ export function MaterialesFilterPanel({
   onSortChange,
   onReset,
   onClose,
+  canViewProveedores = true,
 }: MaterialesFilterPanelProps) {
+  const columnOptions = canViewProveedores
+    ? COLUMN_OPTIONS
+    : COLUMN_OPTIONS.filter((o) => o.key !== "proveedores");
   return (
     // Floating panel that mirrors the visual filter behavior requested for materials.
     <div className="absolute top-full right-0 mt-2 z-50 w-[calc(100vw-2rem)] sm:w-[21rem] rounded-[14px] border-4 border-[#ff7f7f] bg-white p-3 shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
@@ -37,7 +42,7 @@ export function MaterialesFilterPanel({
           {/* Column visibility controls */}
           <p className="text-[24px] leading-none font-semibold text-[#1e1e1e] mb-2">Tipo</p>
           <div className="space-y-1.5">
-            {COLUMN_OPTIONS.map((option) => (
+            {columnOptions.map((option) => (
               <label
                 key={option.key}
                 className="flex items-center gap-2 text-[13px] text-[#1e1e1e] cursor-pointer"

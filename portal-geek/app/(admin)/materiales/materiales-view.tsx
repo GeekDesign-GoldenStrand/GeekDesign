@@ -11,22 +11,24 @@ import {
   ProveedoresModal,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
-import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
+import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns, UserRole } from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
-const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
-  name: true,
-  description: true,
-  unit: true,
-  width: true,
-  height: true,
-  thickness: true,
-  color: true,
-  image: true,
-  proveedores: true,
-};
+function buildDefaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
+  return {
+    name: true,
+    description: true,
+    unit: true,
+    width: true,
+    height: true,
+    thickness: true,
+    color: true,
+    image: true,
+    proveedores: canViewProveedores,
+  };
+}
 
 type FetchState = {
   loading: boolean;
@@ -60,7 +62,8 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   }
 }
 
-export function MaterialesView() {
+export function MaterialesView({ role }: { role: UserRole }) {
+  const canViewProveedores = role !== "Colaborador";
   const [{ loading, error, rows, totalPages }, dispatch] = useReducer(fetchReducer, {
     loading: true,
     error: null,
@@ -79,7 +82,7 @@ export function MaterialesView() {
   const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [visibleColumns, setVisibleColumns] =
-    useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
+    useState<MaterialesVisibleColumns>(() => buildDefaultColumns(canViewProveedores));
   const [page, setPage] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
@@ -145,7 +148,7 @@ export function MaterialesView() {
   }
 
   function handleResetFilters() {
-    setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
+    setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
     setSearch("");
   }
@@ -206,6 +209,7 @@ export function MaterialesView() {
             onAddClick={() => setShowAddModal(true)}
             onFilterClick={() => setShowFilters((state) => !state)}
             onCloseFilter={() => setShowFilters(false)}
+            canViewProveedores={canViewProveedores}
           />
 
           {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
