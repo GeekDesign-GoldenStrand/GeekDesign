@@ -11,7 +11,12 @@ import {
   ProveedoresModal,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
-import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns, UserRole } from "@/types";
+import type {
+  MaterialCardProps,
+  MaterialSortOrder,
+  MaterialesVisibleColumns,
+  UserRole,
+} from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -81,8 +86,9 @@ export function MaterialesView({ role }: { role: UserRole }) {
   const [proveedoresMaterialId, setProveedoresMaterialId] = useState<number | null>(null);
   const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
-  const [visibleColumns, setVisibleColumns] =
-    useState<MaterialesVisibleColumns>(() => buildDefaultColumns(canViewProveedores));
+  const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(() =>
+    buildDefaultColumns(canViewProveedores)
+  );
   const [page, setPage] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
