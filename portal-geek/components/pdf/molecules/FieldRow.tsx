@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text } from '@react-pdf/renderer';
-import { styles } from '../styles';
+import { View, Text } from "@react-pdf/renderer";
+import React from "react";
 
-export const FieldRow = ({ label, value }: { label: string; value: string | undefined | null }) => {
+import { styles } from "../styles";
+
+export function FieldRow({ label, value }: { label: string; value: string | undefined | null }) {
   if (!value) return null;
   return (
     <View style={styles.row}>
@@ -10,4 +11,4 @@ export const FieldRow = ({ label, value }: { label: string; value: string | unde
       <Text style={styles.value}>{value}</Text>
     </View>
   );
-};
+}

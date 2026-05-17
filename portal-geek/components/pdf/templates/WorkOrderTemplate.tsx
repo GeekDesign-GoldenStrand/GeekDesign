@@ -1,15 +1,16 @@
-import React from 'react';
-import { Document, Page, Text } from '@react-pdf/renderer';
-import { styles } from '../styles';
-import { HeaderSection } from '../organisms/HeaderSection';
-import { ClientDetailsSection } from '../organisms/ClientDetailsSection';
-import { SpecsTableSection } from '../organisms/SpecsTableSection';
-import { TotalsSection } from '../organisms/TotalsSection';
-import { SignatureSection } from '../organisms/SignatureSection';
-import { TermsSection } from '../organisms/TermsSection';
-import { BankInfoSection } from '../organisms/BankInfoSection';
+import { Document, Page, Text } from "@react-pdf/renderer";
+import React from "react";
 
-export const WorkOrderTemplate = ({ context }: { context: any }) => {
+import { BankInfoSection } from "../organisms/BankInfoSection";
+import { ClientDetailsSection } from "../organisms/ClientDetailsSection";
+import { HeaderSection } from "../organisms/HeaderSection";
+import { SignatureSection } from "../organisms/SignatureSection";
+import { SpecsTableSection } from "../organisms/SpecsTableSection";
+import { TermsSection } from "../organisms/TermsSection";
+import { TotalsSection } from "../organisms/TotalsSection";
+import { styles } from "../styles";
+
+export function WorkOrderTemplate({ context }: { context: any }) {
   const { quotation, client, specs, branch } = context;
 
   return (
@@ -22,15 +23,15 @@ export const WorkOrderTemplate = ({ context }: { context: any }) => {
         <SignatureSection />
         <TermsSection />
         <BankInfoSection />
-        
-        <Text 
-          style={styles.pageFooter} 
-          render={({ pageNumber, totalPages }) => (
+
+        <Text
+          style={styles.pageFooter}
+          render={({ pageNumber, totalPages }) =>
             `GEEK DESIGN - Av. Mediterráneo 236 B Fracc. Pirámides. Villa corregidora Querétaro  |  Página ${pageNumber} de ${totalPages}`
-          )} 
-          fixed 
+          }
+          fixed
         />
       </Page>
     </Document>
   );
-};
+}

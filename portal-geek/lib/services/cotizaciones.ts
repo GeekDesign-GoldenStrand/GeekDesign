@@ -15,7 +15,6 @@ import {
   ValidationError,
   DataInconsistencyError,
 } from "@/lib/utils/errors";
-import { generateWorkOrderPDF } from "@/lib/utils/pdf-work-order";
 
 /**
  * Common include configuration for quotations to ensure consistent typing.
@@ -570,7 +569,9 @@ export async function getFullQuotationContext(id: number) {
   // Ensure we have specs
   const specs = quotation.pedido?.detalles || [];
   if (specs.length === 0) {
-    throw new DataInconsistencyError("Quotation has no line items (specs) to generate a Work Order.");
+    throw new DataInconsistencyError(
+      "Quotation has no line items (specs) to generate a Work Order."
+    );
   }
 
   // Fetch branch data. If not tied to an order yet, fallback to a default branch if necessary.
@@ -586,16 +587,4 @@ export async function getFullQuotationContext(id: number) {
     specs,
     branch,
   };
-}
-
-/**
- * Prepares and generates the Work Order PDF document.
- */
-export async function prepareWorkOrderDocument(id: number) {
-  const context = await getFullQuotationContext(id);
-  
-  // Call the external service to generate the PDF stream/buffer
-  const pdfBuffer = await generateWorkOrderPDF(context);
-  
-  return pdfBuffer;
 }

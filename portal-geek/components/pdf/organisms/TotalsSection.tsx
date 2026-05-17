@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text } from '@react-pdf/renderer';
-import { styles } from '../styles';
-import { formatCurrency } from '../constants';
+import { View, Text } from "@react-pdf/renderer";
+import React from "react";
 
-export const TotalsSection = ({ quotation }: { quotation: any }) => {
+import { formatCurrency } from "../constants";
+import { styles } from "../styles";
+
+export function TotalsSection({ quotation }: { quotation: any }) {
   const montoTotal = Number(quotation.monto_total);
   const subtotal = montoTotal / 1.16;
   const iva = montoTotal - subtotal;
@@ -26,4 +27,4 @@ export const TotalsSection = ({ quotation }: { quotation: any }) => {
       </View>
     </View>
   );
-};
+}
