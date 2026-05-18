@@ -3,8 +3,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import type { Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { Pool } from "pg";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+// Same TLS posture as lib/db/client.ts — connect plaintext; rely on the Unix
+// socket (App Engine) or Cloud SQL Auth Proxy (dev) to handle Cloud SQL TLS.
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 // Dev-only default password for the seeded admin.

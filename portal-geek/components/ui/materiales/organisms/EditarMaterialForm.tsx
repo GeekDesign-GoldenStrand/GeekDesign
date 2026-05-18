@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -43,8 +44,11 @@ export function EditarMaterialForm({
     alto: material.height === "-" ? "" : material.height,
     grosor: material.thickness === "-" ? "" : material.thickness,
     color: material.color === "-" ? "" : material.color,
-    imagen_url: material.imageUrl,
   });
+  // Storage key from a fresh upload. null = keep the existing image (omit from PUT).
+  // The server already replaced `material.imageUrl` with a presigned GET URL on
+  // read, so we never send that value back — it isn't a storage key.
+  const [newImageKey, setNewImageKey] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,10 +67,6 @@ export function EditarMaterialForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (key === "imagen_url") {
-        if (!value.trim()) return "";
-        return /^https:\/\//i.test(value.trim()) ? FIELD_SUCCESS : "";
-      }
       if (["ancho", "alto", "grosor"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
@@ -91,6 +91,9 @@ export function EditarMaterialForm({
       return null;
     }
 
+    // Build the payload the schema validates against (requires imagen_url).
+    // For the PUT we'll strip imagen_url back out when the user didn't upload a
+    // new image — UpdateMaterialSchema is partial, so omitting it is valid.
     const payload = {
       nombre_material: form.nombre_material.trim(),
       descripcion_material: form.descripcion_material.trim(),
@@ -99,10 +102,13 @@ export function EditarMaterialForm({
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
       color: form.color.trim(),
-      imagen_url: form.imagen_url.trim(),
+      imagen_url: newImageKey ?? "placeholder-for-validation",
     };
 
-    const result = CreateMaterialSchema.safeParse(payload);
+    const schemaToUse = newImageKey
+      ? CreateMaterialSchema
+      : CreateMaterialSchema.omit({ imagen_url: true });
+    const result = schemaToUse.safeParse(payload);
     if (result.success) {
       setErrors({});
       return payload;
@@ -124,12 +130,18 @@ export function EditarMaterialForm({
     const validatedPayload = validate();
     if (!validatedPayload) return;
 
+    // Only send imagen_url when the user uploaded a new image. Otherwise the
+    // existing storage key on the row is preserved by the partial update.
+    const { imagen_url: _omit, ...rest } = validatedPayload;
+    void _omit;
+    const bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+
     setLoading(true);
     try {
       const res = await fetch(`/api/materiales/${material.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validatedPayload),
+        body: JSON.stringify(bodyPayload),
       });
 
       const responsePayload = await res.json().catch(() => ({}));
@@ -277,31 +289,33 @@ export function EditarMaterialForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={LABEL}>Color *</label>
-          <input
-            type="text"
-            maxLength={50}
-            placeholder="Ej. #d18c59 o Negro"
-            value={form.color}
-            onChange={(e) => setField("color", e.target.value)}
-            className={`${FIELD} ${getFieldClass("color")}`}
-          />
-          {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>Imagen URL *</label>
-          <input
-            type="url"
-            maxLength={500}
-            placeholder="https://..."
-            value={form.imagen_url}
-            onChange={(e) => setField("imagen_url", e.target.value)}
-            className={`${FIELD} ${getFieldClass("imagen_url")}`}
-          />
-          {errors.imagen_url && <p className={ERROR_MSG}>{errors.imagen_url}</p>}
-        </div>
+      <div>
+        <label className={LABEL}>Color *</label>
+        <input
+          type="text"
+          maxLength={50}
+          placeholder="Ej. #d18c59 o Negro"
+          value={form.color}
+          onChange={(e) => setField("color", e.target.value)}
+          className={`${FIELD} ${getFieldClass("color")}`}
+        />
+        {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
+      </div>
+
+      <div>
+        <label className={LABEL}>Imagen</label>
+        <MaterialImageInput
+          initialPreviewUrl={material.imageUrl}
+          onUploaded={(key) => {
+            setNewImageKey(key);
+            setErrors((prev) => ({ ...prev, imagen_url: "" }));
+          }}
+          onError={(message) => {
+            setErrors((prev) => ({ ...prev, imagen_url: message }));
+          }}
+          hasError={Boolean(errors.imagen_url)}
+        />
+        {errors.imagen_url && <p className={ERROR_MSG}>{errors.imagen_url}</p>}
       </div>
 
       <div className="flex justify-between gap-3 mt-2">

@@ -1,0 +1,38 @@
+# Files NOT uploaded to App Engine on `gcloud app deploy`.
+# Keep this list tight — smaller uploads = faster deploys.
+
+.gcloudignore
+.git
+.gitignore
+
+# Dependencies (App Engine will reinstall via package.json)
+node_modules/
+
+# Next.js build cache (the build artifact `.next` is needed; only the cache is heavy)
+.next/cache/
+
+# Tests + coverage
+__tests__/
+**/*.test.ts
+**/*.test.tsx
+coverage/
+
+# Docs and scripts not needed at runtime
+docs/
+scripts/
+
+# Local env / certs / smoke pages
+.env
+.env.*
+!.env.example
+*.pem
+cors.json
+public/cors-test.html
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Example file (real `app.yaml` is the one used at deploy time)
+app.yaml.example

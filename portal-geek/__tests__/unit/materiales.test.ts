@@ -25,6 +25,13 @@ jest.mock("@/lib/db/client", () => ({
   },
 }));
 
+jest.mock("@/lib/services/storage", () => ({
+  resolveImageUrl: jest.fn(async (key: string | null) =>
+    key ? `https://signed.example/${key}` : null
+  ),
+  deleteObject: jest.fn(async () => undefined),
+}));
+
 const mockFindMany = prisma.materiales.findMany as jest.Mock;
 const mockCount = prisma.materiales.count as jest.Mock;
 const mockFindUnique = prisma.materiales.findUnique as jest.Mock;
@@ -32,6 +39,9 @@ const mockCreate = prisma.materiales.create as jest.Mock;
 const mockUpdate = prisma.materiales.update as jest.Mock;
 const mockDelete = prisma.materiales.delete as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
+
+const KEY = "materiales/2026/05/00000000-0000-4000-8000-000000000001.jpg";
+const SIGNED_URL = `https://signed.example/${KEY}`;
 
 const BASE_MATERIAL = {
   id_material: 1,
@@ -42,7 +52,7 @@ const BASE_MATERIAL = {
   alto: 2400,
   grosor: 3,
   color: "Plata",
-  imagen_url: "https://example.com/acrilico.jpg",
+  imagen_url: KEY,
 };
 
 const VALID_INPUT = {
@@ -53,7 +63,7 @@ const VALID_INPUT = {
   alto: 2400,
   grosor: 3,
   color: "Plata",
-  imagen_url: "https://example.com/acrilico.jpg",
+  imagen_url: KEY,
 };
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -127,11 +137,11 @@ describe("listMateriales", () => {
 describe("getMaterial", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("retorna el material cuando existe", async () => {
+  it("retorna el material con imagen resuelta cuando existe", async () => {
     mockFindUnique.mockResolvedValue(BASE_MATERIAL);
 
     const result = await getMaterial(1);
-    expect(result).toEqual(BASE_MATERIAL);
+    expect(result).toEqual({ ...BASE_MATERIAL, imagen_url: SIGNED_URL });
     expect(mockFindUnique).toHaveBeenCalledWith({ where: { id_material: 1 } });
   });
 
@@ -147,11 +157,14 @@ describe("getMaterial", () => {
 describe("createMaterial", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("crea y retorna el nuevo material", async () => {
+  it("crea y retorna el nuevo material con imagen resuelta", async () => {
     mockCreate.mockResolvedValue(BASE_MATERIAL);
 
     const result = await createMaterial(VALID_INPUT);
-    expect(result).toMatchObject({ nombre_material: "Acrílico espejo" });
+    expect(result).toMatchObject({
+      nombre_material: "Acrílico espejo",
+      imagen_url: SIGNED_URL,
+    });
     expect(mockCreate).toHaveBeenCalledWith({ data: VALID_INPUT });
   });
 });
