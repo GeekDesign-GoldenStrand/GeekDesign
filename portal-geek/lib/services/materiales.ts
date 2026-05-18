@@ -5,6 +5,10 @@ import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/mat
 import { deleteObject, resolveImageUrl } from "@/lib/services/storage";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
+export async function getMaterialesOptions(): Promise<Materiales[]> {
+  return prisma.materiales.findMany({ orderBy: { nombre_material: "asc" } });
+}
+
 export interface MaterialProveedor {
   id: number;
   nombre: string;
