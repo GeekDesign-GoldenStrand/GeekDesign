@@ -7,7 +7,8 @@ import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 export async function getMaterialesOptions(): Promise<Materiales[]> {
   return prisma.materiales.findMany({ orderBy: { nombre_material: "asc" } });
-  
+}
+
 // On read, the `imagen_url` column holds the storage key. Replace it with a
 // fetchable URL (public or short-lived presigned GET) before returning.
 async function withResolvedImagen(material: Materiales): Promise<Materiales> {
