@@ -107,7 +107,7 @@ export function CarritoView({ relatedServices }: Props) {
       <div className="flex flex-col items-center justify-center gap-[24px] py-[80px]">
         <p className="text-[#1e1e1e] text-[20px] font-semibold">Tu carrito está vacío</p>
         <Link
-          href="/servicios"
+          href="/tienda/servicios"
           className="bg-[#8b434a] text-white rounded-[10px] px-[32px] h-[52px] flex items-center font-semibold text-[16px] hover:bg-[#7a3a41] transition-colors"
         >
           Explorar catálogo
@@ -169,7 +169,7 @@ export function CarritoView({ relatedServices }: Props) {
                       </div>
 
                       <Link
-                        href={`/servicios/${item.servicioId}?editItemId=${item.id}`}
+                        href={`/tienda/servicios/${item.servicioId}?editItemId=${item.id}`}
                         className="text-[18px] font-medium text-[#1e1e1e] underline"
                       >
                         Editar opciones
@@ -308,7 +308,7 @@ export function CarritoView({ relatedServices }: Props) {
                 {visibleServices.map((s) => (
                   <Link
                     key={s.id_servicio}
-                    href={`/servicios/${s.id_servicio}`}
+                    href={`/tienda/servicios/${s.id_servicio}`}
                     className="bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex-1 h-[200px] flex items-end p-[12px] hover:scale-[1.02] transition-transform"
                   >
                     <p className="font-bold text-[16.742px] text-[#1e1e1e]">{s.nombre_servicio}</p>

@@ -8,7 +8,7 @@ import { MaterialesView } from "./materiales-view";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Materiales — Geek Design" };
+export const metadata: Metadata = { title: "Materiales" };
 
 const ALLOWED_ROLES: UserRole[] = ["Direccion", "Administrador", "Colaborador"];
 

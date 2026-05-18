@@ -8,6 +8,7 @@ import {
   Package,
   UserGear,
   Users,
+  Wrench,
 } from "@phosphor-icons/react/dist/ssr";
 
 export type NavItem = {
@@ -50,6 +51,11 @@ export const navItems: NavItem[] = [
     href: "/pedidos",
     label: "Pedidos",
     icon: <Package />,
+  },
+  {
+    href: "/servicios",
+    label: "Servicios",
+    icon: <Wrench />,
   },
   {
     href: "/colaboradores",

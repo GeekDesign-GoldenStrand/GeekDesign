@@ -23,9 +23,13 @@ const INCLUDE_CONFIG = {
   estatus: true,
   variablesCotizacion: {
     include: {
-      formula: {
+      variable: {
         include: {
-          servicio: true,
+          formula: {
+            include: {
+              servicio: true,
+            },
+          },
         },
       },
     },
@@ -441,7 +445,6 @@ export async function approveQuotation(quotationId: number, providedEmail: strin
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
-        id_cliente: quotation.id_cliente,
         id_estado_anterior: quotation.id_estatus_cotizacion,
         id_estado_nuevo: approvedStatus.id_estatus,
         fecha_cambio: new Date(),
@@ -512,7 +515,6 @@ export async function cancelQuotationByClient(
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
-        id_cliente: quotation.id_cliente,
         id_estado_anterior: quotation.id_estatus_cotizacion,
         id_estado_nuevo: cancelledStatus.id_estatus,
         fecha_cambio: new Date(),

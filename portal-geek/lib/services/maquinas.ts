@@ -39,7 +39,6 @@ export async function listMaquinas(
 }
 
 export async function getMaquina(id: number): Promise<Maquinas> {
-  // TODO: implement — throw new NotFoundError(...) if not found
   void id;
   throw new Error("Not implemented");
 }
@@ -126,10 +125,10 @@ export async function asignarSucursal(id: number, sucursal: number): Promise<Maq
 
 export async function asignarServicios(id: number, servicios: number[]): Promise<Maquinas> {
   await prisma.$transaction([
-    prisma.serviciosMaquina.deleteMany({
+    prisma.servicioMaquina.deleteMany({
       where: { id_maquina: id },
     }),
-    prisma.serviciosMaquina.createMany({
+    prisma.servicioMaquina.createMany({
       data: servicios.map((id_servicio) => ({
         id_maquina: id,
         id_servicio,
@@ -141,11 +140,45 @@ export async function asignarServicios(id: number, servicios: number[]): Promise
     where: { id_maquina: id },
     include: {
       sucursales: { include: { sucursal: true } },
-      servicios: { include: { servicio: true } },
+      servicioMaquina: { include: { servicio: true } },
     },
   });
 
   if (!maquina) throw new NotFoundError(`Máquina ${id} no encontrada`);
 
   return maquina;
+}
+
+// Returns all active machines for dropdowns,
+// After the admin choses a branch in the service form, we need
+// to show only the machines linked to that branch and that are active.
+
+export async function getMaquinasOptionsBySucursal(idSucursal: number): Promise<
+  Array<{
+    id_maquina: number;
+    nombre_maquina: string;
+    apodo_maquina: string;
+    tipo: string;
+  }>
+> {
+  const rows = await prisma.sucursalesMaquina.findMany({
+    where: {
+      id_sucursal: idSucursal,
+      maquina: { estatus: "Activa" },
+    },
+    select: {
+      maquina: {
+        select: {
+          id_maquina: true,
+          nombre_maquina: true,
+          apodo_maquina: true,
+          tipo: true,
+        },
+      },
+    },
+    orderBy: { maquina: { apodo_maquina: "asc" } },
+  });
+
+  // Flatten the nested shape from the pivot.
+  return rows.map((r) => r.maquina);
 }

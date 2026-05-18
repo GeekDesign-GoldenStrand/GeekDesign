@@ -19,6 +19,7 @@ export const CreateInstaladorSchema = z.object({
     .min(1, "El teléfono es requerido.")
     .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   correo: z.email("Correo electrónico inválido.").max(150),
+  costo_instalacion: z.number().nonnegative("El costo de instalación no puede ser negativo."),
   notas: z.string().max(500).optional(),
   ubicacion: z.string().max(255).optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
