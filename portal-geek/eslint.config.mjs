@@ -54,6 +54,7 @@ const eslintConfig = defineConfig([
         "error",
         {
           devDependencies: ["**/*.config.*", "**/*.test.*", "**/*.spec.*", "**/test/**"],
+          packageDir: ["."],
         },
       ],
       "import/order": [

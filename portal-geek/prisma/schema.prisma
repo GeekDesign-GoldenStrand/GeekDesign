@@ -14,6 +14,19 @@ datasource db {
 // AUTH / USERS
 // ─────────────────────────────────────────────
 
+model TokensRecuperacion {
+  id         Int      @id @default(autoincrement())
+  id_usuario Int      @unique
+  token_hash String   @unique @db.VarChar(64)
+  expira_en  DateTime
+  usado      Boolean  @default(false)
+  creado_en  DateTime @default(now())
+
+  usuario Usuarios @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+
+  @@map("TOKENS_RECUPERACION")
+}
+
 model Roles {
   id_rol     Int    @id @default(autoincrement())
   nombre_rol String @unique @db.VarChar(50)
@@ -24,16 +37,18 @@ model Roles {
 }
 
 model Usuarios {
-  id_usuario         Int      @id @default(autoincrement())
-  nombre_completo    String   @db.VarChar(100)
-  correo_electronico String   @unique @db.VarChar(150)
-  contrasena_hash    String   @db.VarChar(255)
+  id_usuario         Int       @id @default(autoincrement())
+  nombre_completo    String    @db.VarChar(100)
+  correo_electronico String    @unique @db.VarChar(150)
+  contrasena_hash    String    @db.VarChar(255)
   id_rol             Int
-  estatus            String   @db.VarChar(20) // Activo / Inactivo
-  fecha_creacion     DateTime @default(now())
+  estatus            String    @db.VarChar(20) // Activo / Inactivo
+  fecha_creacion     DateTime  @default(now())
+  ultimo_acceso      DateTime?
 
-  rol          Roles          @relation(fields: [id_rol], references: [id_rol])
-  colaborador  Colaboradores?
+  rol               Roles               @relation(fields: [id_rol], references: [id_rol])
+  colaborador       Colaboradores?
+  tokenRecuperacion TokensRecuperacion?
 
   matrizModificada      MatrizDePrecios[]
   notasCliente          NotasCliente[]
@@ -46,17 +61,17 @@ model Usuarios {
 }
 
 model Colaboradores {
-  id_colaborador       Int      @id @default(autoincrement())
-  id_usuario           Int      @unique
-  id_sucursal          Int
-  edad                 Int
-  sexo                 String   @db.VarChar(2)  // M / F / NA
-  telefono             String   @db.VarChar(20)
-  estatus_colaborador  String   @db.VarChar(20) // Activo / Inactivo
-  fecha_modificacion   DateTime @updatedAt
+  id_colaborador      Int      @id @default(autoincrement())
+  id_usuario          Int      @unique
+  id_sucursal         Int
+  edad                Int
+  sexo                String   @db.VarChar(2) // M / F / NA
+  telefono            String   @db.VarChar(20)
+  estatus_colaborador String   @db.VarChar(20) // Activo / Inactivo
+  fecha_modificacion  DateTime @updatedAt
 
-  usuario    Usuarios              @relation(fields: [id_usuario], references: [id_usuario])
-  sucursal   Sucursales            @relation(fields: [id_sucursal], references: [id_sucursal])
+  usuario     Usuarios                @relation(fields: [id_usuario], references: [id_usuario])
+  sucursal    Sucursales              @relation(fields: [id_sucursal], references: [id_sucursal])
   asistencias AsistenciaColaborador[]
 
   @@map("COLABORADORES")
@@ -87,9 +102,10 @@ model Clientes {
   numero_telefono    String  @db.VarChar(20)
   categoria          String? @db.VarChar(30) // Black / Silver / Gold / Emprendedor / Baneado
 
-  pedidos      Pedidos[]
-  cotizaciones Cotizaciones[]
-  notas        NotasCliente[]
+  pedidos               Pedidos[]
+  cotizaciones          Cotizaciones[]
+  notas                 NotasCliente[]
+  historialCotizaciones HistorialEstadosCotizacion[]
 
   @@map("CLIENTES")
 }
@@ -123,34 +139,39 @@ model EstatusServicio {
 }
 
 model Servicios {
-  id_servicio       Int     @id @default(autoincrement())
-  id_estatus        Int
-  nombre_servicio   String  @db.VarChar(100)
+  id_servicio          Int     @id @default(autoincrement())
+  id_estatus           Int
+  nombre_servicio      String  @db.VarChar(100)
   descripcion_servicio String?
-  estatus_servicio  Boolean @default(true)
+  estatus_servicio     Boolean @default(true)
+  imagen_url           String? @db.VarChar(500)
 
-  estatusServicio  EstatusServicio    @relation(fields: [id_estatus], references: [id_estatus_servicio])
-  opciones         OpcionesProducto[]
-  formulaVariables FormulaVariables[]
-  detallesPedido   DetallePedido[]
+  estatusServicio      EstatusServicio      @relation(fields: [id_estatus], references: [id_estatus_servicio])
+  opciones             OpcionesProducto[]
+  formulaVariables     FormulaVariables[]
+  detallesPedido       DetallePedido[]
+  instaladorServicios  InstaladorServicios[]
+  proveedorPrecios     ProveedorPrecios[]
+  servicios            ServiciosMaquina[]
 
   @@map("SERVICIOS")
 }
 
 model Materiales {
-  id_material         Int      @id @default(autoincrement())
-  nombre_material     String   @db.VarChar(100)
+  id_material          Int      @id @default(autoincrement())
+  nombre_material      String   @db.VarChar(100)
   descripcion_material String?
-  unidad_medida       String   @db.VarChar(30)
-  ancho               Decimal? @db.Decimal(10, 2)
-  alto                Decimal? @db.Decimal(10, 2)
-  grosor              Decimal? @db.Decimal(10, 2)
-  color               String?  @db.VarChar(50)
-  imagen_url          String?  @db.VarChar(500)
+  unidad_medida        String   @db.VarChar(30)
+  ancho                Decimal? @db.Decimal(10, 2)
+  alto                 Decimal? @db.Decimal(10, 2)
+  grosor               Decimal? @db.Decimal(10, 2)
+  color                String?  @db.VarChar(50)
+  imagen_url           String?  @db.VarChar(500)
 
-  opciones       OpcionesProducto[]
-  detallesPedido DetallePedido[]
-  pedidoMaquinas PedidoMaquina[]
+  opciones         OpcionesProducto[]
+  detallesPedido   DetallePedido[]
+  pedidoMaquinas   PedidoMaquina[]
+  proveedorPrecios ProveedorPrecios[]
 
   @@map("MATERIALES")
 }
@@ -162,8 +183,8 @@ model OpcionesProducto {
   nombre_opcion String  @db.VarChar(100)
   afecta_precio Boolean @default(false)
 
-  servicio Servicios  @relation(fields: [id_servicio], references: [id_servicio])
-  material Materiales @relation(fields: [id_material], references: [id_material])
+  servicio Servicios         @relation(fields: [id_servicio], references: [id_servicio])
+  material Materiales        @relation(fields: [id_material], references: [id_material])
   valores  ValoresOpcion[]
   matriz   MatrizDePrecios[]
 
@@ -195,9 +216,9 @@ model MatrizDePrecios {
   id_usuario_modifico Int
   fecha_modificacion  DateTime @updatedAt
 
-  opcion   OpcionesProducto @relation(fields: [id_opcion], references: [id_opcion])
-  valor    ValoresOpcion    @relation(fields: [id_valor], references: [id_valor])
-  usuario  Usuarios         @relation(fields: [id_usuario_modifico], references: [id_usuario])
+  opcion  OpcionesProducto @relation(fields: [id_opcion], references: [id_opcion])
+  valor   ValoresOpcion    @relation(fields: [id_valor], references: [id_valor])
+  usuario Usuarios         @relation(fields: [id_usuario_modifico], references: [id_usuario])
 
   @@map("MATRIZDEPRECIOS")
 }
@@ -223,22 +244,23 @@ model Sucursales {
 
 model Maquinas {
   id_maquina    Int      @id @default(autoincrement())
-  nombre_maquina String  @db.VarChar(100)
+  nombre_maquina String  @db.VarChar(100) // CO2 100 Watts / Fibra 100 Watts / Happy 15 hilos 1 cabeza
   apodo_maquina  String  @db.VarChar(100)
   tipo           String  @db.VarChar(50)  // Láser CO2 / Láser Fibra / Bordadora
-  descripcion    String?
+  descripcion    String? @db.VarChar(200)
   estatus        String  @db.VarChar(30)  // Activa / Inactiva / En mantenimiento
   fecha_registro DateTime @default(now())
 
   sucursales    SucursalesMaquina[]
   pedidoMaquina PedidoMaquina[]
+  servicios     ServiciosMaquina[]
 
   @@map("MAQUINAS")
 }
 
 model SucursalesMaquina {
   id_sucursal_maquina Int @id @default(autoincrement())
-  id_maquina          Int
+  id_maquina          Int @unique
   id_sucursal         Int
 
   sucursal Sucursales @relation(fields: [id_sucursal], references: [id_sucursal])
@@ -247,33 +269,62 @@ model SucursalesMaquina {
   @@map("SUCURSALESMAQUINA")
 }
 
-model Proveedores {
-  id_proveedor        Int     @id @default(autoincrement())
-  nombre_proveedor    String  @db.VarChar(100)
-  tipo                String  @db.VarChar(50)  // Proveedor de material / Proveedor de servicio
-  telefono            String? @db.VarChar(20)
-  correo              String? @db.VarChar(150)
-  descripcion_proveedor String?
-  costo               Float?
-  ubicacion           String? @db.VarChar(255)
-  estatus             String  @db.VarChar(20)  // Activo / Inactivo / Baneado
+model ServiciosMaquina {
+  id_servicio_maquina Int @id @default(autoincrement())
+  id_servicio         Int
+  id_maquina          Int
 
-  gastos Gastos[]
+  servicio Servicios @relation(fields: [id_servicio], references: [id_servicio])
+  maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
+
+  @@unique([id_servicio, id_maquina])
+  @@map("SERVICIOSMAQUINA")
+}
+
+model Proveedores {
+  id_proveedor          Int     @id @default(autoincrement())
+  nombre_proveedor      String  @db.VarChar(100)
+  apodo                 String? @db.VarChar(100)
+  tipo                  String  @db.VarChar(100) // Proveedor de material / Proveedor de servicio
+  telefono              String  @db.VarChar(20)
+  correo                String  @db.VarChar(150)
+  descripcion_proveedor String?
+  ubicacion             String? @db.VarChar(255)
+  estatus               String  @db.VarChar(20) // Activo / Inactivo / Baneado
+
+  precios ProveedorPrecios[]
 
   @@map("PROVEEDORES")
 }
 
+model ProveedorPrecios {
+  id_proveedor_precio Int     @id @default(autoincrement())
+  id_proveedor        Int
+  id_servicio         Int?
+  id_material         Int?
+  precio              Decimal @db.Decimal(10, 2)
+  notas               String? @db.VarChar(500)
+
+  proveedor Proveedores @relation(fields: [id_proveedor], references: [id_proveedor])
+  servicio  Servicios?  @relation(fields: [id_servicio], references: [id_servicio])
+  material  Materiales? @relation(fields: [id_material], references: [id_material])
+  gastos    Gastos[]
+
+  @@unique([id_proveedor, id_servicio])
+  @@unique([id_proveedor, id_material])
+  @@map("PROVEEDORPRECIOS")
+}
+
 model Instaladores {
   id_instalador     Int     @id @default(autoincrement())
-  nombre_proveedor  String  @db.VarChar(100)
+  nombre_instalador String  @db.VarChar(100)
   apodo             String? @db.VarChar(100)
-  tipo              String  @db.VarChar(50)  // Instalador / Contratista
-  telefono          String? @db.VarChar(20)
-  correo            String? @db.VarChar(150)
-  costo_instalacion String  @db.VarChar(100)
+  tipo              String  @db.VarChar(50) // Instalador / Contratista
+  telefono          String  @db.VarChar(20)
+  correo            String  @db.VarChar(150)
   notas             String? @db.VarChar(500)
   ubicacion         String? @db.VarChar(255)
-  estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
+  estatus           String  @db.VarChar(20) // Activo / Inactivo / Baneado
 
   servicios InstaladorServicios[]
 
@@ -281,11 +332,15 @@ model Instaladores {
 }
 
 model InstaladorServicios {
-  id_instalador_servicio Int    @id @default(autoincrement())
+  id_instalador_servicio Int     @id @default(autoincrement())
   id_instalador          Int
-  servicio               String @db.VarChar(100)
+  id_servicio            Int
+  precio                 Decimal @db.Decimal(10, 2)
+  notas                  String? @db.VarChar(500)
 
   instalador Instaladores @relation(fields: [id_instalador], references: [id_instalador])
+  servicio   Servicios    @relation(fields: [id_servicio], references: [id_servicio])
+  gastos     Gastos[]
 
   @@map("INSTALADORSERVICIOS")
 }
@@ -295,30 +350,40 @@ model InstaladorServicios {
 // ─────────────────────────────────────────────
 
 model EstatusPedidos {
-  id_estatus  Int    @id @default(autoincrement())
-  descripcion String @unique @db.VarChar(50)
-
-  pedidos Pedidos[]
+  id_estatus  Int       @id @default(autoincrement())
+  descripcion String    @unique @db.VarChar(50)
+  pedidos     Pedidos[]
 
   @@map("ESTATUSPEDIDOS")
 }
 
-model Pedidos {
-  id_pedido       Int       @id @default(autoincrement())
-  id_cliente      Int
-  id_estatus      Int
-  id_sucursal     Int?
-  fecha_creacion  DateTime  @default(now())
-  fecha_fin       DateTime?
-  fecha_estimada  DateTime?
-  factura         Boolean   @default(false)
-  facturado       Boolean   @default(false)
-  numero_factura  String?   @db.VarChar(100)
-  notas           String?
+model EstadoFacturaPedido {
+  id_estado_factura Int       @id @default(autoincrement())
+  descripcion       String    @unique @db.VarChar(50)
+  pedidos           Pedidos[]
 
-  cliente        Clientes       @relation(fields: [id_cliente], references: [id_cliente])
-  estatus        EstatusPedidos @relation(fields: [id_estatus], references: [id_estatus])
-  sucursal       Sucursales?    @relation(fields: [id_sucursal], references: [id_sucursal])
+  @@map("ESTADOFACTURAPEDIDO")
+}
+
+model Pedidos {
+  id_pedido         Int       @id @default(autoincrement())
+  id_cliente        Int
+  id_estatus        Int
+  id_sucursal       Int?
+  id_estado_factura Int?
+  fecha_creacion    DateTime  @default(now())
+  fecha_fin         DateTime?
+  fecha_estimada    DateTime?
+  factura           Boolean   @default(false)
+  facturado         Boolean   @default(false)
+  numero_factura    String?   @db.VarChar(100)
+  notas             String?
+
+  cliente        Clientes             @relation(fields: [id_cliente], references: [id_cliente])
+  estatus        EstatusPedidos       @relation(fields: [id_estatus], references: [id_estatus])
+  estado_factura EstadoFacturaPedido? @relation(fields: [id_estado_factura], references: [id_estado_factura])
+
+  sucursal       Sucursales?               @relation(fields: [id_sucursal], references: [id_sucursal])
   detalles       DetallePedido[]
   pagos          Pagos[]
   historial      HistorialEstadosPedidos[]
@@ -330,11 +395,11 @@ model Pedidos {
 }
 
 model ArchivosDisenio {
-  id_archivo    Int      @id @default(autoincrement())
-  nombre_archivo String  @db.VarChar(255)
-  url_archivo   String   @db.VarChar(500)
-  formato       String   @db.VarChar(20)
-  fecha_subida  DateTime @default(now())
+  id_archivo     Int      @id @default(autoincrement())
+  nombre_archivo String   @db.VarChar(255)
+  url_archivo    String   @db.VarChar(500)
+  formato        String   @db.VarChar(20)
+  fecha_subida   DateTime @default(now())
 
   detallesPedido DetallePedido[]
 
@@ -369,17 +434,17 @@ model DetallePedido {
 }
 
 model PedidoMaquina {
-  id_pedido_maquina  Int      @id @default(autoincrement())
-  id_pedido          Int
-  id_maquina         Int
-  id_material        Int
-  fecha_asignacion   DateTime @default(now())
-  id_usuario_asigno  Int
+  id_pedido_maquina Int      @id @default(autoincrement())
+  id_pedido         Int
+  id_maquina        Int
+  id_material       Int
+  fecha_asignacion  DateTime @default(now())
+  id_usuario_asigno Int
 
-  pedido   Pedidos  @relation(fields: [id_pedido], references: [id_pedido])
-  maquina  Maquinas @relation(fields: [id_maquina], references: [id_maquina])
+  pedido   Pedidos    @relation(fields: [id_pedido], references: [id_pedido])
+  maquina  Maquinas   @relation(fields: [id_maquina], references: [id_maquina])
   material Materiales @relation(fields: [id_material], references: [id_material])
-  usuario  Usuarios @relation(fields: [id_usuario_asigno], references: [id_usuario])
+  usuario  Usuarios   @relation(fields: [id_usuario_asigno], references: [id_usuario])
 
   @@map("PEDIDOMAQUINA")
 }
@@ -388,9 +453,9 @@ model HistorialEstadosPedidos {
   id_historial       Int      @id @default(autoincrement())
   id_pedido          Int
   id_usuario         Int
-  id_estado_anterior Int?     // NULL on first assignment
+  id_estado_anterior Int? // NULL on first assignment
   id_estado_nuevo    Int
-  id_estatus_pedido  String?  // subproceso name when state is "En proceso"
+  id_estatus_pedido  String? // subproceso name when state is "En proceso"
   fecha_cambio       DateTime @default(now())
 
   pedido  Pedidos  @relation(fields: [id_pedido], references: [id_pedido])
@@ -413,40 +478,56 @@ model EstatusCotizacion {
 }
 
 model Cotizaciones {
-  id_cotizacion        Int       @id @default(autoincrement())
-  id_pedido            Int?      // NULL for special quotations before order creation
-  id_cliente           Int
+  id_cotizacion         Int       @id @default(autoincrement())
+  id_pedido             Int? // NULL for special quotations before order creation
+  id_cliente            Int
   id_estatus_cotizacion Int
-  monto_total          Decimal   @db.Decimal(10, 2)
-  empresa_cliente      String?   @db.VarChar(100)
-  fecha_creacion       DateTime  @default(now())
-  fecha_fin            DateTime?
-  fecha_validacion     DateTime?
-  fecha_aprobacion     DateTime?
-  pdf_url              String?   @db.VarChar(500)
-  notas                String?
+  folio                 String?   @unique @db.VarChar(50)
+  monto_total           Decimal   @db.Decimal(10, 2)
+  empresa_cliente       String?   @db.VarChar(100)
+  fecha_creacion        DateTime  @default(now())
+  fecha_fin             DateTime?
+  fecha_validacion      DateTime?
+  fecha_aprobacion      DateTime?
+  pdf_url               String?   @db.VarChar(500)
+  notas                 String?
 
-  pedido    Pedidos?          @relation(fields: [id_pedido], references: [id_pedido])
-  cliente   Clientes          @relation(fields: [id_cliente], references: [id_cliente])
-  estatus   EstatusCotizacion @relation(fields: [id_estatus_cotizacion], references: [id_estatus])
+  pedido  Pedidos?          @relation(fields: [id_pedido], references: [id_pedido])
+  cliente Clientes          @relation(fields: [id_cliente], references: [id_cliente])
+  estatus EstatusCotizacion @relation(fields: [id_estatus_cotizacion], references: [id_estatus])
 
   historial           HistorialEstadosCotizacion[]
   variablesCotizacion VariablesCotizacion[]
 
+  rechazada CotizacionesRechazadas?
+
   @@map("COTIZACIONES")
+}
+
+model CotizacionesRechazadas {
+  id_cotizacion Int @id
+
+  fecha_rechazo DateTime @default(now())
+
+  cotizacion Cotizaciones @relation(fields: [id_cotizacion], references: [id_cotizacion], onDelete: Cascade)
+
+  @@map("COTIZACIONESRECHAZADAS")
 }
 
 model HistorialEstadosCotizacion {
   id_historial        Int      @id @default(autoincrement())
   id_cotizacion       Int
-  id_usuario          Int
+  id_usuario          Int?     // Nullable for client actions
+  id_cliente          Int?     // Traceability for client actions
   id_estado_anterior  Int?     // NULL on first assignment
   id_estado_nuevo     Int
   id_estatus_servicio String?  // subproceso name when state is "En proceso"
   fecha_cambio        DateTime @default(now())
+  actor_tipo          String   @default("Direccion") // Sistema | Direccion | Cliente
 
   cotizacion Cotizaciones @relation(fields: [id_cotizacion], references: [id_cotizacion])
-  usuario    Usuarios     @relation(fields: [id_usuario], references: [id_usuario])
+  usuario    Usuarios?    @relation(fields: [id_usuario], references: [id_usuario])
+  cliente    Clientes?    @relation(fields: [id_cliente], references: [id_cliente])
 
   @@map("HISTORIALESTADOSCOTIZACION")
 }
@@ -471,13 +552,13 @@ model FormulaVariables {
 }
 
 model VariablesCotizacion {
-  id_valor           Int      @id @default(autoincrement())
-  id_cotizacion      Int
-  id_detalle         Int?
-  id_formula         Int
-  valor              Decimal  @db.Decimal(10, 4)
-  id_usuario_asigno  Int
-  fecha_asignacion   DateTime @default(now())
+  id_valor          Int      @id @default(autoincrement())
+  id_cotizacion     Int
+  id_detalle        Int?
+  id_formula        Int
+  valor             Decimal  @db.Decimal(10, 4)
+  id_usuario_asigno Int
+  fecha_asignacion  DateTime @default(now())
 
   cotizacion Cotizaciones     @relation(fields: [id_cotizacion], references: [id_cotizacion])
   detalle    DetallePedido?   @relation(fields: [id_detalle], references: [id_detalle])
@@ -506,16 +587,18 @@ model Pagos {
 }
 
 model Gastos {
-  id_costo       Int      @id @default(autoincrement())
-  id_pedido      Int
-  tipo_costo     Int      // 1 = Proveedor, 2 = Instalador, 3 = Mano de obra
-  id_proveedor   Int?
-  monto          Decimal  @db.Decimal(10, 2)
-  descripcion    String?
-  fecha_registro DateTime @default(now())
+  id_costo               Int      @id @default(autoincrement())
+  id_pedido              Int
+  tipo_costo             Int // 1 = Proveedor, 2 = Instalador, 3 = Mano de obra
+  id_proveedor_precio    Int?
+  id_instalador_servicio Int?
+  monto                  Decimal  @db.Decimal(10, 2)
+  descripcion            String?
+  fecha_registro         DateTime @default(now())
 
-  pedido    Pedidos      @relation(fields: [id_pedido], references: [id_pedido])
-  proveedor Proveedores? @relation(fields: [id_proveedor], references: [id_proveedor])
+  pedido             Pedidos              @relation(fields: [id_pedido], references: [id_pedido])
+  proveedorPrecio    ProveedorPrecios?    @relation(fields: [id_proveedor_precio], references: [id_proveedor_precio])
+  instaladorServicio InstaladorServicios? @relation(fields: [id_instalador_servicio], references: [id_instalador_servicio])
 
   @@map("GASTOS")
 }

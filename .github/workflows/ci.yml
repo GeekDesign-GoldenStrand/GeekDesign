@@ -96,7 +96,9 @@ jobs:
       - run: npm run build
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
-          JWT_SECRET: ci-dummy-secret-not-used-in-build
+          AUTH_SECRET: ci-dummy-auth-secret-not-used-in-build-1234
+          RESEND_API_KEY: re_ci_dummy_key_not_used_in_build
+          RESEND_FROM_EMAIL: noreply@geekdesign.mx
 
   links:
     name: Link Check
@@ -111,7 +113,7 @@ jobs:
             --verbose
             --no-progress
             --exclude-loopback
-            --exclude-mail
+            --exclude "^mailto:.*"
             --exclude "^https?://localhost"
             "**/*.md"
         env:

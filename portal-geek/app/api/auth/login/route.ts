@@ -1,15 +1,40 @@
-import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// Step 1 — Redirect the user to the OAuth provider's authorization URL.
-// The provider will redirect back to /api/auth/callback after the user authenticates.
-export function GET() {
-  const params = new URLSearchParams({
-    client_id: process.env.OAUTH_CLIENT_ID!,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
-    response_type: "code",
-    scope: process.env.OAUTH_SCOPE ?? "openid email profile",
-    state: crypto.randomUUID(), // CSRF protection
-  });
+import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
+import { LoginSchema } from "@/lib/schemas/auth";
+import { loginUser } from "@/lib/services/auth";
+import { ok } from "@/lib/utils/api";
+import { UnauthorizedError, handleError } from "@/lib/utils/errors";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
 
-  return NextResponse.redirect(`${process.env.OAUTH_AUTHORIZATION_URL}?${params}`);
+/** 5 attempts per IP in a 15-minute window. */
+const LOGIN_RATE_LIMIT = { maxAttempts: 5, windowMs: 15 * 60_000 };
+
+export async function POST(req: NextRequest) {
+  try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
+    const { allowed } = checkRateLimit(ip, LOGIN_RATE_LIMIT);
+    if (!allowed) {
+      // Same generic message as bad credentials — no info leakage.
+      throw new UnauthorizedError("Credenciales inválidas");
+    }
+
+    const body = await req.json();
+    const { email, password } = LoginSchema.parse(body);
+
+    const { token, user } = await loginUser(email, password);
+
+    const response = ok({ user });
+    response.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+    });
+    return response;
+  } catch (err) {
+    return handleError(err);
+  }
 }
