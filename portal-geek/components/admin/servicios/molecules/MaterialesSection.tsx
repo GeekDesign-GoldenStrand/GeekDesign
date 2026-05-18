@@ -48,7 +48,7 @@ function ColorBadge({ value }: { value: string | null }) {
   );
 }
 
-function MaterialThumb({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+function _MaterialThumb({ imageUrl, name }: { imageUrl: string | null; name: string }) {
   return (
     <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
       {imageUrl && (

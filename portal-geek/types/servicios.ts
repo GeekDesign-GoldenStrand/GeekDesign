@@ -137,5 +137,5 @@ export const initialNuevoServicioState: NuevoServicioFormState = {
     { type: "text", value: "" },
   ],
   variables: [],
-  constantes: [{ nombre_constante: "iva", origen: "global", valor: "0.1600" }],
+  constantes: [{ nombre_constante: "iva", origen: "global", valor: 0.16 }],
 };

@@ -12,7 +12,7 @@ import { Toggle } from "../atoms/Toggle";
 export type ConstanteDraft = {
   nombre_constante: string;
   origen: "global" | "manual";
-  valor?: string;
+  valor?: number;
   id_tipo_variable?: number;
   unidad?: string;
 };
@@ -102,7 +102,7 @@ export function ConstantesSection({
       {
         nombre_constante: nombre,
         origen: "manual",
-        valor: valorParsed.toFixed(4),
+        valor: valorParsed,
         id_tipo_variable: draft.id_tipo_variable,
         unidad: draft.unidad || undefined,
       },
@@ -129,7 +129,7 @@ export function ConstantesSection({
     }
     const partes = [
       c.id_tipo_variable ? tipoNombre(c.id_tipo_variable) : null,
-      c.valor ? `${parseFloat(c.valor)}${c.unidad ? ` ${c.unidad}` : ""}` : null,
+      c.valor != null ? `${c.valor}${c.unidad ? ` ${c.unidad}` : ""}` : null,
     ].filter(Boolean);
     return partes.join(" · ");
   };
@@ -164,9 +164,7 @@ export function ConstantesSection({
                   }`}
                   title={chipDescripcion(c)}
                 >
-                  {c.origen === "global" && (
-                    <Icon LibIcon={LockKeyIcon} size={12} weight="bold" />
-                  )}
+                  {c.origen === "global" && <Icon LibIcon={LockKeyIcon} size={12} weight="bold" />}
                   <span className="font-mono">{c.nombre_constante}</span>
                   <span className="text-sm opacity-70">{chipDescripcion(c)}</span>
                   {c.origen === "manual" && (
@@ -189,7 +187,9 @@ export function ConstantesSection({
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">
                 Nombre de la constante{" "}
-                <span className="text-gray-400 font-normal">(máx. {MAX_NOMBRE_LEN} caracteres)</span>
+                <span className="text-gray-400 font-normal">
+                  (máx. {MAX_NOMBRE_LEN} caracteres)
+                </span>
               </label>
               <input
                 type="text"

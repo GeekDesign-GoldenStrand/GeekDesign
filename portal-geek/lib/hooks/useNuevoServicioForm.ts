@@ -82,7 +82,10 @@ export function useNuevoServicioForm() {
     setSubmitError(null);
 
     try {
-      const expresion = form.formulaChunks.map((c) => c.value).join("").trim();
+      const expresion = form.formulaChunks
+        .map((c) => c.value)
+        .join("")
+        .trim();
       const hasSubstance = form.formulaChunks.some(
         (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
       );
