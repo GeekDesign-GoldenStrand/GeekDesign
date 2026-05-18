@@ -5,6 +5,7 @@ import { ConstantesSection } from "@/components/admin/servicios/molecules/Consta
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
+import { MaterialesSection } from "@/components/admin/servicios/molecules/MaterialesSection";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
@@ -40,6 +41,7 @@ export function ViewNuevoServicio() {
         onSubmit={actions.handleSubmit}
         className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-8 space-y-6"
       >
+        {/* ── Row 1: Nombre + Sucursal ── */}
         <div className="grid grid-cols-2 gap-6">
           <Input
             label="Nombre del servicio:"
@@ -57,6 +59,7 @@ export function ViewNuevoServicio() {
           />
         </div>
 
+        {/* ── Row 2: Descripción ── */}
         <Textarea
           label="Descripción:"
           value={form.descripcion_servicio}
@@ -65,7 +68,36 @@ export function ViewNuevoServicio() {
           maxLength={500}
         />
 
-        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-200">
+        {/* ── Row 3: Instalador | Proveedor | Máquinas ── */}
+        <div className="grid grid-cols-3 gap-6 pt-4 border-t border-gray-200">
+          <InstaladorToggle
+            opciones={options.instaladores}
+            value={{
+              id: form.id_instalador,
+              costoOverride: form.costo_instalador_override,
+            }}
+            onChange={(v) =>
+              actions.setForm((prev) => ({
+                ...prev,
+                id_instalador: v.id,
+                costo_instalador_override: v.costoOverride,
+              }))
+            }
+          />
+          <ProveedorToggle
+            opciones={options.proveedores}
+            value={{
+              id: form.id_proveedor,
+              costoOverride: form.costo_proveedor_override,
+            }}
+            onChange={(v) =>
+              actions.setForm((prev) => ({
+                ...prev,
+                id_proveedor: v.id,
+                costo_proveedor_override: v.costoOverride,
+              }))
+            }
+          />
           <MaquinasSelector
             opciones={options.maquinas}
             selectedIds={form.id_maquinas}
@@ -73,49 +105,32 @@ export function ViewNuevoServicio() {
             hasSucursal={form.id_sucursal !== null}
             loading={options.maquinasLoading}
           />
-
-          <div className="flex flex-col gap-6">
-            <InstaladorToggle
-              opciones={options.instaladores}
-              value={{
-                id: form.id_instalador,
-                costoOverride: form.costo_instalador_override,
-              }}
-              onChange={(v) =>
-                actions.setForm((prev) => ({
-                  ...prev,
-                  id_instalador: v.id,
-                  costo_instalador_override: v.costoOverride,
-                }))
-              }
-            />
-            <ProveedorToggle
-              opciones={options.proveedores}
-              value={{
-                id: form.id_proveedor,
-                costoOverride: form.costo_proveedor_override,
-              }}
-              onChange={(v) =>
-                actions.setForm((prev) => ({
-                  ...prev,
-                  id_proveedor: v.id,
-                  costo_proveedor_override: v.costoOverride,
-                }))
-              }
-            />
-          </div>
         </div>
 
+        {/* ── Row 4: Materiales (full width) ── */}
+        <div className="pt-4 border-t border-gray-200">
+          <MaterialesSection
+            enabled={form.materialesEnabled}
+            onToggle={(enabled) => actions.updateField("materialesEnabled", enabled)}
+            materiales={form.materiales}
+            opcionesMateriales={options.materiales}
+            onAdd={actions.addMaterial}
+            onRemove={actions.removeMaterial}
+            onUpdateProveedor={actions.updateMaterialProveedor}
+          />
+        </div>
+
+        {/* ── Row 5: Fórmula | Variables | Constantes ── */}
         <div className="grid grid-cols-3 gap-6 pt-4 border-t border-gray-200">
           <FormulaSection
-            enabled={form.formulaEnabled}
-            onToggle={(enabled) => actions.updateField("formulaEnabled", enabled)}
             chunks={form.formulaChunks}
             onChunksChange={(chunks) => actions.updateField("formulaChunks", chunks)}
             variables={form.variables}
             constantes={form.constantes}
             idInstalador={form.id_instalador}
             idProveedor={form.id_proveedor}
+            materiales={form.materiales}
+            opcionesMateriales={options.materiales}
           />
           <VariablesSection
             tiposDisponibles={options.tiposVariable}

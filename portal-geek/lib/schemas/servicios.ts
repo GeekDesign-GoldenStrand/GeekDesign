@@ -39,6 +39,11 @@ const ConstanteSchema = z
     }
   );
 
+const MaterialServicioSchema = z.object({
+  id_material: z.number().int().positive(),
+  id_proveedor_precio: z.number().int().positive().nullable().optional(),
+});
+
 const FormulaSchema = z.object({
   expresion: z.string().min(1).max(500),
   variables: z.array(VariableSchema).default([]),
@@ -66,6 +71,7 @@ export const CreateServicioSchema = z.object({
   costo_proveedor_override: z.number().nonnegative().nullable().optional(),
 
   formula: FormulaSchema.optional(),
+  materiales: z.array(MaterialServicioSchema).optional().default([]),
 });
 
 export const UpdateServicioSchema = CreateServicioSchema.partial();

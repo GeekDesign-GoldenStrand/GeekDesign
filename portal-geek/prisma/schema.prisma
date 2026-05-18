@@ -174,13 +174,14 @@ model Servicios {
   sucursal        Sucursales         @relation(fields: [id_sucursal], references: [id_sucursal])
   instalador      Instaladores?      @relation(fields: [id_instalador], references: [id_instalador])
   proveedor       Proveedores?       @relation(fields: [id_proveedor], references: [id_proveedor])
-  opciones          OpcionesProducto[]
-  detallesPedido    DetallePedido[]
-  formulas          Formulas[]
+  opciones            OpcionesProducto[]
+  detallesPedido      DetallePedido[]
+  formulas            Formulas[]
   maquinas            ServicioMaquina[]
   serviciosMaquina    ServiciosMaquina[]
   proveedorPrecios    ProveedorPrecios[]
   instaladorServicios InstaladorServicios[]
+  servicioMateriales  ServicioMaterial[]
 
   @@map("SERVICIOS")
 }
@@ -196,10 +197,11 @@ model Materiales {
   color                String?  @db.VarChar(50)
   imagen_url           String?  @db.VarChar(500)
 
-  opciones         OpcionesProducto[]
-  detallesPedido   DetallePedido[]
-  pedidoMaquinas   PedidoMaquina[]
-  proveedorPrecios ProveedorPrecios[]
+  opciones           OpcionesProducto[]
+  detallesPedido     DetallePedido[]
+  pedidoMaquinas     PedidoMaquina[]
+  proveedorPrecios   ProveedorPrecios[]
+  servicioMateriales ServicioMaterial[]
 
   @@map("MATERIALES")
 }
@@ -341,7 +343,8 @@ model ProveedorPrecios {
   proveedor Proveedores @relation(fields: [id_proveedor], references: [id_proveedor])
   servicio  Servicios?  @relation(fields: [id_servicio], references: [id_servicio])
   material  Materiales? @relation(fields: [id_material], references: [id_material])
-  gastos    Gastos[]
+  gastos             Gastos[]
+  servicioMateriales ServicioMaterial[]
 
   @@unique([id_proveedor, id_servicio])
   @@unique([id_proveedor, id_material])
@@ -397,6 +400,20 @@ model ServicioMaquina {
 
   @@unique([id_servicio, id_maquina])
   @@map("SERVICIOMAQUINA")
+}
+
+model ServicioMaterial {
+  id_servicio_material Int  @id @default(autoincrement())
+  id_servicio          Int
+  id_material          Int
+  id_proveedor_precio  Int?
+
+  servicio        Servicios         @relation(fields: [id_servicio], references: [id_servicio])
+  material        Materiales        @relation(fields: [id_material], references: [id_material])
+  proveedorPrecio ProveedorPrecios? @relation(fields: [id_proveedor_precio], references: [id_proveedor_precio])
+
+  @@unique([id_servicio, id_material])
+  @@map("SERVICIOMATERIAL")
 }
 
 

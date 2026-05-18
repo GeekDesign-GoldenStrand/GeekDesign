@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db/client";
 import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/materiales";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
+export async function getMaterialesOptions(): Promise<Materiales[]> {
+  return prisma.materiales.findMany({ orderBy: { nombre_material: "asc" } });
+}
+
 export async function listMateriales(
   page: number,
   pageSize: number,

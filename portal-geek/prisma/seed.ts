@@ -559,6 +559,15 @@ async function main() {
 
   console.log(`Seeded ${proveedoresData.length} proveedores`);
 
+  // ── ProveedorPrecios ───────────────────────────────────────────────────────
+  await prisma.proveedorPrecios.upsert({
+    where: { id_proveedor_id_material: { id_proveedor: 1, id_material: material.id_material } },
+    update: {},
+    create: { id_proveedor: 1, id_material: material.id_material, precio: 200 },
+  });
+
+  console.log("Seeded ProveedorPrecios: Maderas del Norte SA → MDF 3mm @ $200");
+
   // ── Demo Cotizaciones ──────────────────────────────────────────────────────
   const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
   const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });

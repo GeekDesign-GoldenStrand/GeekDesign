@@ -160,7 +160,7 @@ export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
 ): Promise<ServicioSimple> {
-  const { id_maquinas, formula, ...servicioData } = data;
+  const { id_maquinas, formula, materiales, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
     // 1. Create the service. servicioData includes id_estatus, id_sucursal and overrides.
@@ -178,7 +178,18 @@ export async function createServicio(
       });
     }
 
-    // 3. Create formula with its variables and constants if provided.
+    // 3. Vinculate materials if provided.
+    if (materiales && materiales.length > 0) {
+      await tx.servicioMaterial.createMany({
+        data: materiales.map((m) => ({
+          id_servicio: servicio.id_servicio,
+          id_material: m.id_material,
+          id_proveedor_precio: m.id_proveedor_precio ?? null,
+        })),
+      });
+    }
+
+    // 4. Create formula with its variables and constants if provided.
     if (formula) {
       const formulaCreada = await tx.formulas.create({
         data: {

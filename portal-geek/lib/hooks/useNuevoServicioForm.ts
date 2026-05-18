@@ -7,6 +7,8 @@ import { useFetch } from "@/lib/hooks/useFetch";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
 import type {
   InstaladorOption,
+  MaterialDraft,
+  MaterialOption,
   MaquinaOption,
   ProveedorOption,
   SucursalOption,
@@ -24,6 +26,7 @@ export function useNuevoServicioForm() {
   const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores?mode=options");
   const proveedores = useFetch<{ data: ProveedorOption[] }>("/api/proveedores?mode=options");
   const tiposVariable = useFetch<{ data: TipoVariableOption[] }>("/api/tipos-variable");
+  const materiales = useFetch<{ data: MaterialOption[] }>("/api/materiales?mode=options");
 
   const maquinasUrl =
     form.id_sucursal !== null ? `/api/maquinas?sucursal=${form.id_sucursal}` : null;
@@ -50,24 +53,42 @@ export function useNuevoServicioForm() {
     setForm((prev) => ({ ...prev, id_sucursal: newId, id_maquinas: [] }));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function addMaterial(draft: MaterialDraft) {
+    setForm((prev) => ({
+      ...prev,
+      materiales: [...prev.materiales, draft],
+    }));
+  }
+
+  function removeMaterial(id_material: number) {
+    setForm((prev) => ({
+      ...prev,
+      materiales: prev.materiales.filter((m) => m.id_material !== id_material),
+    }));
+  }
+
+  function updateMaterialProveedor(id_material: number, id_proveedor_precio: number | null) {
+    setForm((prev) => ({
+      ...prev,
+      materiales: prev.materiales.map((m) =>
+        m.id_material === id_material ? { ...m, id_proveedor_precio } : m
+      ),
+    }));
+  }
+
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setSubmitError(null);
 
     try {
-      // Serialize chunks to a string and validate there's real content beyond IVA.
       const expresion = form.formulaChunks.map((c) => c.value).join("").trim();
       const hasSubstance = form.formulaChunks.some(
         (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
       );
       const formulaPayload =
-        form.formulaEnabled && hasSubstance && expresion.length > 0
-          ? {
-              expresion,
-              variables: form.variables,
-              constantes: form.constantes,
-            }
+        hasSubstance && expresion.length > 0
+          ? { expresion, variables: form.variables, constantes: form.constantes }
           : undefined;
 
       const res = await fetch("/api/servicios", {
@@ -83,6 +104,7 @@ export function useNuevoServicioForm() {
           costo_instalador_override: form.costo_instalador_override,
           id_proveedor: form.id_proveedor,
           costo_proveedor_override: form.costo_proveedor_override,
+          materiales: form.materialesEnabled ? form.materiales : [],
           formula: formulaPayload,
         }),
       });
@@ -101,7 +123,11 @@ export function useNuevoServicioForm() {
   }
 
   const initialLoading =
-    sucursales.loading || instaladores.loading || proveedores.loading || tiposVariable.loading;
+    sucursales.loading ||
+    instaladores.loading ||
+    proveedores.loading ||
+    tiposVariable.loading ||
+    materiales.loading;
 
   const fetchError =
     sucursales.error || instaladores.error || proveedores.error || tiposVariable.error;
@@ -122,10 +148,14 @@ export function useNuevoServicioForm() {
       tiposVariable: tiposVariable.data?.data ?? [],
       maquinas: maquinas.data?.data ?? [],
       maquinasLoading: maquinas.loading,
+      materiales: materiales.data?.data ?? [],
     },
     actions: {
       updateField,
       handleSucursalChange,
+      addMaterial,
+      removeMaterial,
+      updateMaterialProveedor,
       handleSubmit,
       setForm,
       onCancel: () => router.push("/servicios"),

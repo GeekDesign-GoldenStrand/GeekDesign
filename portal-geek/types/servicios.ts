@@ -68,6 +68,32 @@ export type TipoVariableOption = {
   unidad_default: string | null;
 };
 
+// ─── Materials types ──────────────────────────────────
+
+export type MaterialOption = {
+  id_material: number;
+  nombre_material: string;
+  descripcion_material: string | null;
+  unidad_medida: string;
+  ancho: string | null;
+  alto: string | null;
+  grosor: string | null;
+  color: string | null;
+};
+
+export type ProveedorPrecioOption = {
+  id_proveedor_precio: number;
+  id_proveedor: number;
+  precio: string;
+  notas: string | null;
+  proveedor: { nombre_proveedor: string };
+};
+
+export type MaterialDraft = {
+  id_material: number;
+  id_proveedor_precio: number | null;
+};
+
 // ─── Formula builder types ────────────────────────────
 
 export type FormulaChunk = {
@@ -87,7 +113,8 @@ export type NuevoServicioFormState = {
   costo_instalador_override: number | null;
   id_proveedor: number | null;
   costo_proveedor_override: number | null;
-  formulaEnabled: boolean;
+  materialesEnabled: boolean;
+  materiales: MaterialDraft[];
   formulaChunks: FormulaChunk[];
   variables: VariableDraft[];
   constantes: ConstanteDraft[];
@@ -102,8 +129,13 @@ export const initialNuevoServicioState: NuevoServicioFormState = {
   costo_instalador_override: null,
   id_proveedor: null,
   costo_proveedor_override: null,
-  formulaEnabled: false,
-  formulaChunks: [{ type: "text", value: "" }],
+  materialesEnabled: false,
+  materiales: [],
+  formulaChunks: [
+    { type: "text", value: "" },
+    { type: "token", value: "iva", immutable: true },
+    { type: "text", value: "" },
+  ],
   variables: [],
   constantes: [{ nombre_constante: "iva", origen: "global", valor: "0.1600" }],
 };
