@@ -12,12 +12,12 @@ export function SearchBar() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const q = query.trim();
-    router.push(q ? `/storefront?q=${encodeURIComponent(q)}` : "/storefront");
+    router.push(q ? `/tienda?q=${encodeURIComponent(q)}` : "/tienda");
   }
 
   function clearSearch() {
     setQuery("");
-    router.push("/storefront");
+    router.push("/tienda");
     inputRef.current?.focus();
   }
 

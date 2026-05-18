@@ -16,7 +16,7 @@ export function FolioSearch() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!folio.trim() || !email.trim()) return;
-    router.push(`/cotizacion/${folio.trim()}?email=${encodeURIComponent(email.trim())}`);
+    router.push(`/tienda/cotizacion/${folio.trim()}?email=${encodeURIComponent(email.trim())}`);
   };
 
   return (

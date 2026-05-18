@@ -37,7 +37,7 @@ export function ServiceGrid({ services, searchQuery }: ServiceGridProps) {
               No encontramos servicios que coincidan con tu búsqueda.
             </p>
             <a
-              href="/storefront"
+              href="/tienda"
               className="text-[#df2646] text-[16.742px] font-semibold hover:underline transition-all"
             >
               Ver todos los servicios

@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddToCartForm } from "@/components/storefront/molecules/AddToCartForm";
 import { getServicioWithDetails, listServicios } from "@/lib/services/servicios";
+
+export const metadata: Metadata = { title: "Servicio" };
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -87,7 +90,7 @@ export default async function ServicioDetallePage({ params, searchParams }: Prop
                   {otros.map((s) => (
                     <Link
                       key={s.id_servicio}
-                      href={`/servicios/${s.id_servicio}`}
+                      href={`/tienda/servicios/${s.id_servicio}`}
                       className="block group flex-1 min-h-0"
                     >
                       <div className="relative w-full h-full bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] overflow-hidden group-hover:shadow-[0px_8px_24px_0px_rgba(0,0,0,0.18)] group-hover:scale-[1.01] transition-all duration-200">

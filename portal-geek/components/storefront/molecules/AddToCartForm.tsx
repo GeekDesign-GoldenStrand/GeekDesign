@@ -121,7 +121,7 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones, editItemId
       updateItem(editItemId, { configuracion, cantidad, precioCalculado: precioUnitario });
       window.dispatchEvent(new CustomEvent("carrito:updated"));
       setFeedback("Cambios guardados");
-      setTimeout(() => router.push("/carrito"), 1500);
+      setTimeout(() => router.push("/tienda/carrito"), 1500);
       return;
     }
 
@@ -143,7 +143,7 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones, editItemId
     const defaultPrecio = calcularPrecioUnitario(defaultSelecciones, opciones, 1);
     resetItem(editItemId, defaultConfig, defaultPrecio);
     window.dispatchEvent(new CustomEvent("carrito:updated"));
-    router.push("/carrito");
+    router.push("/tienda/carrito");
   }
 
   if (!hydrated) return null;
@@ -213,7 +213,7 @@ export function AddToCartForm({ servicioId, nombreServicio, opciones, editItemId
       {isEditMode && !confirmingReset && (
         <button
           type="button"
-          onClick={() => router.push("/carrito")}
+          onClick={() => router.push("/tienda/carrito")}
           className="h-[52px] w-full rounded-[10px] border border-[#c2c0c0] bg-white text-[#1e1e1e] font-semibold text-[16px] hover:bg-[#f5f5f5] active:scale-[0.99] transition-all duration-150"
         >
           Cancelar

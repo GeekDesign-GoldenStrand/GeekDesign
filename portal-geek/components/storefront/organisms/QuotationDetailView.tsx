@@ -76,7 +76,7 @@ export function QuotationDetailView({ quotation }: Props) {
       });
       if (res.ok) {
         alert("¡Cotización aprobada con éxito! Tu pedido está en camino.");
-        router.push("/storefront");
+        router.push("/tienda");
       } else {
         const error = await res.json();
         alert(error.error || "Hubo un error al aprobar la cotización.");
@@ -109,7 +109,7 @@ export function QuotationDetailView({ quotation }: Props) {
       });
       if (res.ok) {
         alert("Cotización cancelada. Gracias por tu tiempo.");
-        router.push("/storefront");
+        router.push("/tienda");
       } else {
         const error = await res.json();
         alert(error.error || "Hubo un error al cancelar la cotización.");
@@ -326,7 +326,7 @@ export function QuotationDetailView({ quotation }: Props) {
           <button
             onClick={
               quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
-                ? () => router.push("/storefront")
+                ? () => router.push("/tienda")
                 : handleApprove
             }
             disabled={
@@ -697,7 +697,7 @@ export function QuotationDetailView({ quotation }: Props) {
               <button
                 onClick={
                   quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
-                    ? () => router.push("/storefront")
+                    ? () => router.push("/tienda")
                     : handleApprove
                 }
                 disabled={

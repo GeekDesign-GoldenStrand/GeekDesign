@@ -9,7 +9,7 @@ interface HeroBannerProps {
 export function HeroBanner({
   titulo = "Noticia o información de algo\n(Producto, Oferta, etc.)",
   botonTexto = "Botón a la noticia/producto",
-  botonHref = "/storefront",
+  botonHref = "/tienda",
 }: HeroBannerProps) {
   return (
     <section className="relative w-full h-[240px] sm:h-[300px] md:h-[373px] overflow-hidden">

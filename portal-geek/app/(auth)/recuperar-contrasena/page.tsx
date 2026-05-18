@@ -5,7 +5,7 @@ import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 import { RecuperarForm } from "./recuperar-form";
 
 export const metadata: Metadata = {
-  title: "Recuperar contraseña | Geek Design",
+  title: "Recuperar contraseña",
 };
 
 export default function RecuperarContrasenaPage() {
