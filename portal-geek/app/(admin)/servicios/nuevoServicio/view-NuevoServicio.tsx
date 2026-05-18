@@ -113,8 +113,7 @@ export function ViewNuevoServicio() {
             onChange={(variables) => actions.updateField("variables", variables)}
           />
           <ConstantesSection
-            instaladoresDisponibles={options.instaladores}
-            proveedoresDisponibles={options.proveedores}
+            tiposDisponibles={options.tiposVariable}
             constantes={form.constantes}
             onChange={(c) => actions.updateField("constantes", c)}
           />

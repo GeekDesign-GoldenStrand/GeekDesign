@@ -1,9 +1,6 @@
 import type { ConstanteDraft } from "@/components/admin/servicios/molecules/ConstantesSection";
 import type { VariableDraft } from "@/components/admin/servicios/molecules/VariablesSection";
 
-export const AUTO_INSTALADOR_NAME = "costo_instalador";
-export const AUTO_PROVEEDOR_NAME = "costo_proveedor";
-
 export type MaquinaVinculada = {
   id_maquina: number;
   nombre_maquina: string;
@@ -100,5 +97,5 @@ export const initialNuevoServicioState: NuevoServicioFormState = {
   formulaEnabled: false,
   expresion: "",
   variables: [],
-  constantes: [],
+  constantes: [{ nombre_constante: "iva", origen: "global", valor: "0.1600" }],
 };
