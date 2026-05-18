@@ -25,11 +25,29 @@ type VariablesSectionProps = {
 
 const MAX_NOMBRE_LEN = 30;
 
+const UNIT_OPTIONS = [
+  "$ - pesos",
+  "cm - centímetros",
+  "cm² - centímetros cuadrados",
+  "m - metros",
+  "m² - metros cuadrados",
+  "pz - piezas",
+  "min - minutos",
+  "horas - horas",
+  "% - porcentaje",
+  "unidad - unidades",
+] as const;
+
+const getTipoUnidad = (id: number, tipos: TipoVariableOption[]) => {
+  const tipo = tipos.find((t) => t.id_tipo_variable === id);
+  return tipo?.unidad_default ?? "unidad";
+};
+
 export function VariablesSection({ tiposDisponibles, variables, onChange }: VariablesSectionProps) {
   const [draft, setDraft] = useState({
     etiqueta: "",
     id_tipo_variable: tiposDisponibles[0]?.id_tipo_variable ?? 0,
-    unidad: "",
+    unidad: getTipoUnidad(tiposDisponibles[0]?.id_tipo_variable ?? 0, tiposDisponibles),
     valor_default: "",
     editable_por_cliente: true,
   });
@@ -85,7 +103,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
     setDraft({
       etiqueta: "",
       id_tipo_variable: tiposDisponibles[0]?.id_tipo_variable ?? 0,
-      unidad: "",
+      unidad: getTipoUnidad(tiposDisponibles[0]?.id_tipo_variable ?? 0, tiposDisponibles),
       valor_default: "",
       editable_por_cliente: true,
     });
@@ -189,12 +207,14 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo</label>
             <select
               value={draft.id_tipo_variable}
-              onChange={(e) =>
+              onChange={(e) => {
+                const selectedTypeId = Number(e.target.value);
                 setDraft((d) => ({
                   ...d,
-                  id_tipo_variable: Number(e.target.value),
-                }))
-              }
+                  id_tipo_variable: selectedTypeId,
+                  unidad: getTipoUnidad(selectedTypeId, tiposDisponibles),
+                }));
+              }}
               className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             >
               <option value={0}>Selecciona...</option>
@@ -208,14 +228,17 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
 
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">Unidad</label>
-            <input
-              type="text"
-              placeholder="cm, pz, $"
-              value={draft.unidad}
+            <select
+              value={draft.unidad ?? "unidad"}
               onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
               className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
-              maxLength={20}
-            />
+            >
+              {UNIT_OPTIONS.map((unidad) => (
+                <option key={unidad} value={unidad}>
+                  {unidad}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
