@@ -111,12 +111,12 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-[#1e1e1e]">Variables:</h3>
-        <p className="text-xs text-gray-600 mt-1">
+        <h3 className="text-lg font-semibold text-[#1e1e1e]">Variables:</h3>
+        <p className="text-sm text-gray-600 mt-1">
           Datos numéricos que cambian en cada cotización. El cliente o tú los capturan al momento de
           cotizar.
         </p>
-        <p className="text-xs text-gray-500 italic mt-1">
+        <p className="text-sm text-gray-500 italic mt-1">
           Ejemplos: ancho, altura, cantidad de piezas, perímetro, etc.
         </p>
       </div>
@@ -147,7 +147,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
 
       <div className="flex flex-col gap-3 p-3 bg-gray-50 rounded-md border border-dashed border-gray-300">
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
             Nombre de la variable{" "}
             <span className="text-gray-400 font-normal">(máx. {MAX_NOMBRE_LEN} caracteres)</span>
           </label>
@@ -171,7 +171,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
         </div>
 
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
             Valor de la variable
           </label>
           <input
@@ -186,7 +186,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Tipo</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo</label>
             <select
               value={draft.id_tipo_variable}
               onChange={(e) =>
@@ -207,7 +207,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Unidad</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Unidad</label>
             <input
               type="text"
               placeholder="cm, pz, $"
@@ -219,7 +219,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
           <input
             type="checkbox"
             checked={draft.editable_por_cliente}
@@ -239,7 +239,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
         <button
           type="button"
           onClick={handleAdd}
-          className="self-start bg-[#e42200] text-white hover:bg-[#c41e00] px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          className="h-10 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium transition-colors"
         >
           + Agregar variable
         </button>

@@ -20,7 +20,7 @@ export function Button({
 
   return (
     <button
-      className={`h-10 px-4 rounded-md font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`h-10 px-5 rounded-full font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${fullWidth ? "w-full" : ""} ${className}`}
       {...props}
     >
       {children}

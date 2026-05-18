@@ -14,7 +14,7 @@ export function Textarea({ label, error, required, className = "", ...props }: T
         </label>
       )}
       <textarea
-        className={`min-h-[80px] px-3 py-2 rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-y ${error ? "border-[#e42200]" : ""} ${className}`}
+        className={`min-h-[80px] px-3 py-2 rounded-md border border-gray-300 bg-white text-[#1e1e1e] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-y ${error ? "border-[#e42200]" : ""} ${className}`}
         {...props}
       />
       {error && <span className="text-xs text-[#e42200]">{error}</span>}

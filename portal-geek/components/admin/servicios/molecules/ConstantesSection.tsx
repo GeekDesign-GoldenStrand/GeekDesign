@@ -146,12 +146,12 @@ export function ConstantesSection({
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-[#1e1e1e]">Constantes:</h3>
-        <p className="text-xs text-gray-600 mt-1">
+        <h3 className="text-lg font-semibold text-[#1e1e1e]">Constantes:</h3>
+        <p className="text-sm text-gray-600 mt-1">
           Valores fijos asociados al servicio. Las marcadas con candado se gestionan
           automáticamente. (Ejemplos: costo del instalador, costo del proveedor)
         </p>
-        <p className="text-xs text-gray-500 italic mt-1">Ejemplos:markup, etc.</p>
+        <p className="text-sm text-gray-500 italic mt-1">Ejemplos: markup, etc.</p>
       </div>
 
       {/* Chips list */}
@@ -188,7 +188,7 @@ export function ConstantesSection({
       {/* Inline form to add a manual constante */}
       <div className="flex flex-col gap-3 p-3 bg-gray-50 rounded-md border border-dashed border-gray-300">
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
             Nombre de la constante{" "}
             <span className="text-gray-400 font-normal">(máx. {MAX_NOMBRE_LEN} caracteres)</span>
           </label>
@@ -212,7 +212,7 @@ export function ConstantesSection({
         </div>
 
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
             ¿De dónde viene el valor de esta constante?
           </label>
           <select
@@ -235,7 +235,7 @@ export function ConstantesSection({
 
         {effectiveOrigen === "instalador" && (
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Instalador</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Instalador</label>
             <select
               value={draft.id_instalador ?? ""}
               onChange={(e) =>
@@ -258,7 +258,7 @@ export function ConstantesSection({
 
         {effectiveOrigen === "proveedor" && (
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Proveedor</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Proveedor</label>
             <select
               value={draft.id_proveedor ?? ""}
               onChange={(e) =>
@@ -281,7 +281,7 @@ export function ConstantesSection({
         )}
 
         {effectiveOrigen === "manual" && (
-          <p className="text-xs text-gray-500 italic">
+          <p className="text-sm text-gray-500 italic">
             El valor lo escribes directamente en la fórmula. Ej:{" "}
             <code className="bg-gray-100 px-1 rounded">* 1.4</code> para 40% de comisión.
           </p>
@@ -292,7 +292,7 @@ export function ConstantesSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="self-start bg-[#e42200] text-white hover:bg-[#c41e00] px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          className="h-10 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium transition-colors"
         >
           + Agregar constante
         </button>

@@ -154,27 +154,27 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
                 <>
                   {tieneOverride ? (
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs text-gray-700">
+                      <p className="text-sm text-gray-700">
                         Precio personalizado:{" "}
                         <span className="font-semibold text-[#1e1e1e]">
                           {formatCosto(value.costoOverride!)}
                         </span>
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-500">
                         Precio estándar: {formatCosto(costoMaestro)}
                       </p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={handleStartEdit}
-                          className="text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium text-[#1e1e1e]"
+                          className="h-10 px-5 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e]"
                         >
                           Editar precio
                         </button>
                         <button
                           type="button"
                           onClick={handleRestore}
-                          className="text-xs bg-white border border-[#e42200] text-[#e42200] hover:bg-red-50 px-3 py-1.5 rounded-md font-medium"
+                          className="h-10 px-5 bg-white border border-[#e42200] text-[#e42200] hover:bg-red-50 rounded-full text-sm font-medium"
                         >
                           Restaurar precio original
                         </button>
@@ -195,7 +195,7 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
               {editingPrecio && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600">Precio para este servicio:</span>
+                    <span className="text-sm text-gray-600">Precio para este servicio:</span>
                     <input
                       type="number"
                       min="0"
@@ -231,7 +231,7 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
           )}
 
           {proveedorSeleccionado && costoMaestro === null && (
-            <p className="text-xs text-gray-500 pt-2">
+            <p className="text-sm text-gray-500 pt-2">
               Este proveedor no tiene precio fijo. Se cotizará por proyecto.
             </p>
           )}

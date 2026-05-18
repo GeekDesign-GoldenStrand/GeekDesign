@@ -81,14 +81,14 @@ export function FormulaSection({
     <div className="flex flex-col gap-3">
       <div>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#1e1e1e]">Fórmula de cotización:</h3>
+          <h3 className="text-lg font-semibold text-[#1e1e1e]">Fórmula de cotización:</h3>
           <Toggle checked={enabled} onChange={onToggle} />
         </div>
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-sm text-gray-600 mt-1">
           La expresión matemática que calcula el precio del servicio combinando variables y
           constantes.
         </p>
-        <p className="text-xs text-gray-500 italic mt-1">
+        <p className="text-sm text-gray-500 italic mt-1">
           Ejemplo: <code>(ancho * altura * costo_m2) * iva</code>
         </p>
       </div>
@@ -97,13 +97,13 @@ export function FormulaSection({
         <>
           {(variables.length > 0 || constantes.length > 0) && (
             <div className="flex flex-col gap-2 bg-blue-50 border border-blue-200 rounded-md p-3">
-              <p className="text-xs font-medium text-blue-900">
+              <p className="text-sm font-medium text-blue-900">
                 Click en un identificador para insertarlo en la fórmula:
               </p>
 
               {variables.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs text-blue-700 font-medium">Variables:</span>
+                  <span className="text-sm text-blue-700 font-medium">Variables:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {variables.map((v) => (
                       <button
@@ -122,7 +122,7 @@ export function FormulaSection({
 
               {constantes.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs text-blue-700 font-medium">Constantes:</span>
+                  <span className="text-sm text-blue-700 font-medium">Constantes:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {constantes.map((c) => (
                       <button
@@ -139,7 +139,7 @@ export function FormulaSection({
               )}
 
               <div className="flex flex-col gap-1 pt-2 border-t border-blue-200">
-                <span className="text-xs text-blue-700 font-medium">Operadores:</span>
+                <span className="text-sm text-blue-700 font-medium">Operadores:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {["+", "-", "*", "/", "(", ")"].map((op) => (
                     <button
@@ -157,7 +157,7 @@ export function FormulaSection({
           )}
 
           {variables.length === 0 && constantes.length === 0 && (
-            <p className="text-xs text-gray-500 italic bg-gray-50 border border-gray-200 rounded-md p-3">
+            <p className="text-sm text-gray-500 italic bg-gray-50 border border-gray-200 rounded-md p-3">
               Agrega al menos una variable o constante arriba para empezar a construir la fórmula.
             </p>
           )}
@@ -169,10 +169,10 @@ export function FormulaSection({
             placeholder="Click en los identificadores arriba o escribe la fórmula manualmente..."
             rows={4}
             maxLength={500}
-            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-[#1e1e1e] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent resize-none"
+            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-[#1e1e1e] placeholder:text-gray-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent resize-none"
           />
 
-          <p className="text-xs text-gray-500">
+          <p className="text-sm text-gray-500">
             Máximo 500 caracteres. Operadores soportados: <code>+ - * / ( )</code>
           </p>
         </>
