@@ -296,8 +296,8 @@ describe("getInstaladorAssignments", () => {
   it("retorna los items con precio y notas de los servicios asignados", async () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
     mockServiciosFindMany.mockResolvedValue([
-      { id_servicio: 10, precio: 150, notas: null },
-      { id_servicio: 20, precio: 200, notas: "nota" },
+      { id_servicio: 10, costo: 150, notas: null },
+      { id_servicio: 20, costo: 200, notas: "nota" },
     ]);
 
     const result = await getInstaladorAssignments(1);
@@ -308,7 +308,7 @@ describe("getInstaladorAssignments", () => {
     ]);
     expect(mockServiciosFindMany).toHaveBeenCalledWith({
       where: { id_instalador: 1 },
-      select: { id_servicio: true, precio: true, notas: true },
+      select: { id_servicio: true, costo: true, notas: true },
     });
   });
 
@@ -359,12 +359,12 @@ describe("syncInstaladorAssignments", () => {
 
     expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
     expect(mockTx.instaladorServicios.createMany).toHaveBeenCalledWith({
-      data: [{ id_instalador: 1, id_servicio: 2, precio: 250, notas: null }],
+      data: [{ id_instalador: 1, id_servicio: 2, costo: 250, notas: null }],
       skipDuplicates: true,
     });
     expect(mockTx.instaladorServicios.update).toHaveBeenCalledWith({
       where: { id_instalador_servicio: 10 },
-      data: { precio: 150, notas: null },
+      data: { costo: 150, notas: null },
     });
   });
 
@@ -379,8 +379,8 @@ describe("syncInstaladorAssignments", () => {
 
     expect(mockTx.instaladorServicios.createMany).toHaveBeenCalledWith({
       data: [
-        { id_instalador: 1, id_servicio: 5, precio: 100, notas: null },
-        { id_instalador: 1, id_servicio: 6, precio: 200, notas: null },
+        { id_instalador: 1, id_servicio: 5, costo: 100, notas: null },
+        { id_instalador: 1, id_servicio: 6, costo: 200, notas: null },
       ],
       skipDuplicates: true,
     });
@@ -399,7 +399,7 @@ describe("syncInstaladorAssignments", () => {
     expect(mockTx.instaladorServicios.createMany).not.toHaveBeenCalled();
     expect(mockTx.instaladorServicios.update).toHaveBeenCalledWith({
       where: { id_instalador_servicio: 10 },
-      data: { precio: 300, notas: null },
+      data: { costo: 300, notas: null },
     });
   });
 
