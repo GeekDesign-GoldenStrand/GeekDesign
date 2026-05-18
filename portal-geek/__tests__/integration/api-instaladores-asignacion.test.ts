@@ -51,12 +51,22 @@ describe("GET /api/instaladores/[id]/asignacion", () => {
 
   it("retorna 200 con las asignaciones si es Direccion", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockGetAssignments.mockResolvedValue({ serviceIds: [10, 20] });
+    mockGetAssignments.mockResolvedValue({
+      items: [
+        { id: 10, precio: 150 },
+        { id: 20, precio: 200 },
+      ],
+    });
 
     const res = await testApp().get("/api/instaladores/1/asignacion");
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ serviceIds: [10, 20] });
+    expect(res.body.data).toEqual({
+      items: [
+        { id: 10, precio: 150 },
+        { id: 20, precio: 200 },
+      ],
+    });
     expect(mockGetAssignments).toHaveBeenCalledWith(1);
   });
 });
@@ -96,7 +106,10 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.success).toBe(true);
-    expect(mockSyncAssignments).toHaveBeenCalledWith(1, [5, 6]);
+    expect(mockSyncAssignments).toHaveBeenCalledWith(1, [
+      { id: 5, precio: 100 },
+      { id: 6, precio: 200 },
+    ]);
   });
 
   it("retorna 422 si el body es inválido", async () => {

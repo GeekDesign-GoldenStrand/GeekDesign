@@ -100,16 +100,23 @@ export async function getInstaladorAssignments(id: number) {
   await getInstalador(id);
   const assignments = await prisma.instaladorServicios.findMany({
     where: { id_instalador: id },
-    select: { id_servicio: true },
+    select: { id_servicio: true, precio: true, notas: true },
   });
 
   return {
-    serviceIds: assignments.map((a) => a.id_servicio),
+    items: assignments.map((a) => ({
+      id: a.id_servicio,
+      precio: a.precio,
+      ...(a.notas != null && { notas: a.notas }),
+    })),
   };
 }
 
-export async function syncInstaladorAssignments(id: number, serviceIds: number[]) {
-  const ids = Array.from(new Set(serviceIds));
+export async function syncInstaladorAssignments(
+  id: number,
+  items: Array<{ id: number; precio: number; notas?: string }>
+) {
+  const deduped = Array.from(new Map(items.map((i) => [i.id, i])).values());
   await getInstalador(id);
 
   await prisma.$transaction(async (tx) => {
@@ -118,11 +125,11 @@ export async function syncInstaladorAssignments(id: number, serviceIds: number[]
       select: { id_instalador_servicio: true, id_servicio: true },
     });
 
-    const existingIds = new Set(existing.map((e) => e.id_servicio));
-    const newIds = new Set(ids);
+    const existingMap = new Map(existing.map((e) => [e.id_servicio, e.id_instalador_servicio]));
+    const newMap = new Map(deduped.map((i) => [i.id, i]));
 
     const candidatePkIds = existing
-      .filter((e) => !newIds.has(e.id_servicio))
+      .filter((e) => !newMap.has(e.id_servicio))
       .map((e) => e.id_instalador_servicio);
 
     // Skip assignments referenced by Gastos — deleting them would break cost history
@@ -136,7 +143,8 @@ export async function syncInstaladorAssignments(id: number, serviceIds: number[]
       toDeletePkIds = candidatePkIds.filter((pk) => !referencedSet.has(pk));
     }
 
-    const toAddServiceIds = ids.filter((sid) => !existingIds.has(sid));
+    const toAdd = deduped.filter((i) => !existingMap.has(i.id));
+    const toUpdate = deduped.filter((i) => existingMap.has(i.id));
 
     if (toDeletePkIds.length > 0) {
       await tx.instaladorServicios.deleteMany({
@@ -144,15 +152,25 @@ export async function syncInstaladorAssignments(id: number, serviceIds: number[]
       });
     }
 
-    if (toAddServiceIds.length > 0) {
+    if (toAdd.length > 0) {
       await tx.instaladorServicios.createMany({
-        data: toAddServiceIds.map((sid) => ({
+        data: toAdd.map((i) => ({
           id_instalador: id,
-          id_servicio: sid,
-          precio: 0,
+          id_servicio: i.id,
+          precio: i.precio,
+          notas: i.notas ?? null,
         })),
         skipDuplicates: true,
       });
     }
+
+    await Promise.all(
+      toUpdate.map((i) =>
+        tx.instaladorServicios.update({
+          where: { id_instalador_servicio: existingMap.get(i.id)! },
+          data: { precio: i.precio, notas: i.notas ?? null },
+        })
+      )
+    );
   });
 }
