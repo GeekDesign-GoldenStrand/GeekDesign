@@ -14,6 +14,7 @@ export const GET = withRole(["Administrador", "Direccion"], async (req: NextRequ
     const result = await listServicios(page, pageSize);
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {
+    throw err;
     return handleError(err);
   }
 });

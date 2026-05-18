@@ -163,16 +163,8 @@ export async function createServicio(
   const { id_maquinas, formula, materiales, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
-    // 1. Resolve the "Activo" EstatusServicio — frontend does not send id_estatus.
-    const estatusActivo = await tx.estatusServicio.findFirstOrThrow({
-      where: { descripcion: "Activo" },
-    });
-
     const servicio = await tx.servicios.create({
-      data: {
-        ...servicioData,
-        id_estatus: estatusActivo.id_estatus_servicio,
-      } as Prisma.ServiciosUncheckedCreateInput,
+      data: servicioData as Prisma.ServiciosUncheckedCreateInput,
     });
 
     // 2. Vinculate machines if provided.

@@ -16,7 +16,7 @@ jest.mock("@/lib/db/client", () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
-    servicioMaquina: {
+    serviciosMaquina: {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
@@ -205,7 +205,7 @@ describe("POST /api/servicios", () => {
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/servicios")
-      .send({ nombre_servicio: "Corte Láser" });
+      .send({ nombre_servicio: "Corte Láser", id_sucursal: 1 });
 
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("id_estatus");
@@ -242,7 +242,7 @@ describe("POST /api/servicios", () => {
             costo_proveedor_override: null,
           }),
         },
-        servicioMaquina: { createMany: jest.fn() },
+        serviciosMaquina: { createMany: jest.fn() },
         formulas: { create: jest.fn() },
         formulaVariables: { createMany: jest.fn() },
         formulaConstantes: { createMany: jest.fn() },
@@ -284,7 +284,7 @@ describe("POST /api/servicios", () => {
     mockTransaction.mockImplementation(async (callback) => {
       const tx = {
         servicios: txServicios,
-        servicioMaquina: { createMany: jest.fn() },
+        serviciosMaquina: { createMany: jest.fn() },
         formulas: txFormulas,
         formulaVariables: txFormulaVariables,
         formulaConstantes: txFormulaConstantes,
