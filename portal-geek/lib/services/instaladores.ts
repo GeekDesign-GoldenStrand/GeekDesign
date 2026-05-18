@@ -100,13 +100,13 @@ export async function getInstaladorAssignments(id: number) {
   await getInstalador(id);
   const assignments = await prisma.instaladorServicios.findMany({
     where: { id_instalador: id },
-    select: { id_servicio: true, precio: true, notas: true },
+    select: { id_servicio: true, costo: true, notas: true },
   });
 
   return {
     items: assignments.map((a) => ({
       id: a.id_servicio,
-      precio: a.precio,
+      precio: a.costo,
       ...(a.notas != null && { notas: a.notas }),
     })),
   };
@@ -157,7 +157,7 @@ export async function syncInstaladorAssignments(
         data: toAdd.map((i) => ({
           id_instalador: id,
           id_servicio: i.id,
-          precio: i.precio,
+          costo: i.precio,
           notas: i.notas ?? null,
         })),
         skipDuplicates: true,
@@ -168,7 +168,7 @@ export async function syncInstaladorAssignments(
       toUpdate.map((i) =>
         tx.instaladorServicios.update({
           where: { id_instalador_servicio: existingMap.get(i.id)! },
-          data: { precio: i.precio, notas: i.notas ?? null },
+          data: { costo: i.precio, notas: i.notas ?? null },
         })
       )
     );
