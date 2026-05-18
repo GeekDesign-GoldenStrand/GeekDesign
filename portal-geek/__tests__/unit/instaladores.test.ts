@@ -293,16 +293,22 @@ describe("deleteInstalador", () => {
 describe("getInstaladorAssignments", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("retorna los IDs de los servicios asignados", async () => {
+  it("retorna los items con precio y notas de los servicios asignados", async () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
-    mockServiciosFindMany.mockResolvedValue([{ id_servicio: 10 }, { id_servicio: 20 }]);
+    mockServiciosFindMany.mockResolvedValue([
+      { id_servicio: 10, precio: 150, notas: null },
+      { id_servicio: 20, precio: 200, notas: "nota" },
+    ]);
 
     const result = await getInstaladorAssignments(1);
 
-    expect(result.serviceIds).toEqual([10, 20]);
+    expect(result.items).toEqual([
+      { id: 10, precio: 150 },
+      { id: 20, precio: 200, notas: "nota" },
+    ]);
     expect(mockServiciosFindMany).toHaveBeenCalledWith({
       where: { id_instalador: 1 },
-      select: { id_servicio: true },
+      select: { id_servicio: true, precio: true, notas: true },
     });
   });
 
@@ -317,7 +323,12 @@ describe("getInstaladorAssignments", () => {
 // ---------------------------------------------------------------------------
 describe("syncInstaladorAssignments", () => {
   let mockTx: {
-    instaladorServicios: { findMany: jest.Mock; deleteMany: jest.Mock; createMany: jest.Mock };
+    instaladorServicios: {
+      findMany: jest.Mock;
+      deleteMany: jest.Mock;
+      createMany: jest.Mock;
+      update: jest.Mock;
+    };
     gastos: { findMany: jest.Mock };
   };
 
@@ -328,6 +339,7 @@ describe("syncInstaladorAssignments", () => {
         findMany: jest.fn(),
         deleteMany: jest.fn(),
         createMany: jest.fn(),
+        update: jest.fn(),
       },
       gastos: { findMany: jest.fn().mockResolvedValue([]) },
     };
@@ -340,12 +352,19 @@ describe("syncInstaladorAssignments", () => {
       { id_instalador_servicio: 10, id_servicio: 1 },
     ]);
 
-    await syncInstaladorAssignments(1, [1, 2]);
+    await syncInstaladorAssignments(1, [
+      { id: 1, precio: 150 },
+      { id: 2, precio: 250 },
+    ]);
 
     expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
     expect(mockTx.instaladorServicios.createMany).toHaveBeenCalledWith({
-      data: [{ id_instalador: 1, id_servicio: 2, precio: 0 }],
+      data: [{ id_instalador: 1, id_servicio: 2, precio: 250, notas: null }],
       skipDuplicates: true,
+    });
+    expect(mockTx.instaladorServicios.update).toHaveBeenCalledWith({
+      where: { id_instalador_servicio: 10 },
+      data: { precio: 150, notas: null },
     });
   });
 
@@ -353,15 +372,19 @@ describe("syncInstaladorAssignments", () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
     mockTx.instaladorServicios.findMany.mockResolvedValue([]);
 
-    await syncInstaladorAssignments(1, [5, 6]);
+    await syncInstaladorAssignments(1, [
+      { id: 5, precio: 100 },
+      { id: 6, precio: 200 },
+    ]);
 
     expect(mockTx.instaladorServicios.createMany).toHaveBeenCalledWith({
       data: [
-        { id_instalador: 1, id_servicio: 5, precio: 0 },
-        { id_instalador: 1, id_servicio: 6, precio: 0 },
+        { id_instalador: 1, id_servicio: 5, precio: 100, notas: null },
+        { id_instalador: 1, id_servicio: 6, precio: 200, notas: null },
       ],
       skipDuplicates: true,
     });
+    expect(mockTx.instaladorServicios.update).not.toHaveBeenCalled();
   });
 
   it("no llama deleteMany ni createMany cuando la lista es idéntica", async () => {
@@ -370,10 +393,14 @@ describe("syncInstaladorAssignments", () => {
       { id_instalador_servicio: 10, id_servicio: 5 },
     ]);
 
-    await syncInstaladorAssignments(1, [5]);
+    await syncInstaladorAssignments(1, [{ id: 5, precio: 300 }]);
 
     expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
     expect(mockTx.instaladorServicios.createMany).not.toHaveBeenCalled();
+    expect(mockTx.instaladorServicios.update).toHaveBeenCalledWith({
+      where: { id_instalador_servicio: 10 },
+      data: { precio: 300, notas: null },
+    });
   });
 
   it("no borra asignaciones referenciadas por Gastos", async () => {
@@ -384,7 +411,7 @@ describe("syncInstaladorAssignments", () => {
     ]);
     mockTx.gastos.findMany.mockResolvedValue([{ id_instalador_servicio: 11 }]);
 
-    await syncInstaladorAssignments(1, [1]); // wants to remove service 2 (pk 11)
+    await syncInstaladorAssignments(1, [{ id: 1, precio: 150 }]); // wants to remove service 2 (pk 11)
 
     expect(mockTx.instaladorServicios.deleteMany).not.toHaveBeenCalled();
   });
@@ -397,7 +424,7 @@ describe("syncInstaladorAssignments", () => {
     ]);
     mockTx.gastos.findMany.mockResolvedValue([{ id_instalador_servicio: 11 }]);
 
-    await syncInstaladorAssignments(1, [2]); // keep service 2 (pk 11 protected), remove service 1 (pk 10)
+    await syncInstaladorAssignments(1, [{ id: 2, precio: 250 }]); // keep service 2 (pk 11 protected), remove service 1 (pk 10)
 
     expect(mockTx.instaladorServicios.deleteMany).toHaveBeenCalledWith({
       where: { id_instalador_servicio: { in: [10] } },
@@ -406,6 +433,8 @@ describe("syncInstaladorAssignments", () => {
 
   it("lanza NotFoundError si el instalador no existe", async () => {
     mockFindUnique.mockResolvedValue(null);
-    await expect(syncInstaladorAssignments(999, [1])).rejects.toThrow(NotFoundError);
+    await expect(syncInstaladorAssignments(999, [{ id: 1, precio: 100 }])).rejects.toThrow(
+      NotFoundError
+    );
   });
 });
