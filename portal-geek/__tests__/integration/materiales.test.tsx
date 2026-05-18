@@ -15,6 +15,9 @@ jest.mock("@/lib/db/client", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    proveedorPrecios: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   },
 }));
@@ -27,6 +30,7 @@ jest.mock("@/lib/services/storage", () => ({
 }));
 
 const mockFindMany = prisma.materiales.findMany as jest.Mock;
+const mockProveedoresFindMany = prisma.proveedorPrecios.findMany as jest.Mock;
 const mockCount = prisma.materiales.count as jest.Mock;
 const mockFindUnique = prisma.materiales.findUnique as jest.Mock;
 const mockCreate = prisma.materiales.create as jest.Mock;
@@ -498,6 +502,118 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/abc");
+    expect(res.status).toBe(422);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// MAT-06 – GET /api/materiales/[id]/proveedores
+// ──────────────────────────────────────────────────────────────────────────────
+describe("GET /api/materiales/[id]/proveedores — MAT-06 Listar proveedores de un material", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/materiales/[id]/proveedores/route");
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  // /api/materiales/1/proveedores → id is the second-to-last segment
+  function makeApp() {
+    return createApp({ GET: routes.GET }, (url) => {
+      const segments = url.pathname.split("/");
+      return { id: segments[segments.length - 2] };
+    });
+  }
+
+  const BASE_ROW = {
+    id_proveedor_precio: 1,
+    id_material: 1,
+    id_proveedor: 10,
+    precio: 250,
+    proveedor: {
+      id_proveedor: 10,
+      nombre_proveedor: "Acrílicos del Norte SA",
+      tipo: "Proveedor de material",
+      estatus: "Activo",
+      telefono: "4421234567",
+      correo: "norte@example.com",
+    },
+  };
+
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const res = await makeApp().get("/api/materiales/1/proveedores");
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 403 con rol Finanzas", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
+
+    const res = await makeApp().get("/api/materiales/1/proveedores");
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 200 con la lista de proveedores (rol Direccion)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockProveedoresFindMany.mockResolvedValue([BASE_ROW]);
+
+    const res = await makeApp().get("/api/materiales/1/proveedores");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it("retorna 200 con la lista de proveedores (rol Administrador)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockProveedoresFindMany.mockResolvedValue([BASE_ROW]);
+
+    const res = await makeApp().get("/api/materiales/1/proveedores");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it("retorna 200 con la lista de proveedores (rol Colaborador)", async () => {
+    // Colaborador puede llamar al endpoint directamente aunque la columna
+    // esté oculta en la UI — el guard de la ruta lo permite explícitamente.
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    mockProveedoresFindMany.mockResolvedValue([BASE_ROW]);
+
+    const res = await makeApp().get("/api/materiales/1/proveedores");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it("proyecta correctamente los campos del proveedor y el precio", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockProveedoresFindMany.mockResolvedValue([BASE_ROW]);
+
+    const res = await makeApp().get("/api/materiales/1/proveedores");
+    expect(res.body.data[0]).toMatchObject({
+      id: 10,
+      nombre: "Acrílicos del Norte SA",
+      tipo: "Proveedor de material",
+      estatus: "Activo",
+      telefono: "4421234567",
+      correo: "norte@example.com",
+      precio: "250",
+    });
+  });
+
+  it("retorna lista vacía cuando el material no tiene proveedores asignados", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockProveedoresFindMany.mockResolvedValue([]);
+
+    const res = await makeApp().get("/api/materiales/2/proveedores");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it("retorna 422 cuando el id no es un número", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await makeApp().get("/api/materiales/abc/proveedores");
     expect(res.status).toBe(422);
   });
 });

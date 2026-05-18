@@ -17,5 +17,5 @@ export default async function MaterialesPage() {
   if (!session) redirect("/login");
   if (!ALLOWED_ROLES.includes(session.role)) redirect("/dashboard");
 
-  return <MaterialesView />;
+  return <MaterialesView role={session.role} />;
 }
