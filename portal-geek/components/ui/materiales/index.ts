@@ -9,3 +9,4 @@ export { AgregarMaterialModal } from "./organisms/AgregarMaterialModal";
 export { RegistrarMaterialForm } from "./organisms/RegistrarMaterialForm";
 export { EditarMaterialModal } from "./organisms/EditarMaterialModal";
 export { EditarMaterialForm } from "./organisms/EditarMaterialForm";
+export { ProveedoresModal } from "./organisms/ProveedoresModal";
