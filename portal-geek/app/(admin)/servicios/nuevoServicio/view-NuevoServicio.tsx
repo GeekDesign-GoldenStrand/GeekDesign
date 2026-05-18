@@ -106,27 +106,26 @@ export function ViewNuevoServicio() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-3 gap-6 pt-4 border-t border-gray-200">
+          <FormulaSection
+            enabled={form.formulaEnabled}
+            onToggle={(enabled) => actions.updateField("formulaEnabled", enabled)}
+            chunks={form.formulaChunks}
+            onChunksChange={(chunks) => actions.updateField("formulaChunks", chunks)}
+            variables={form.variables}
+            constantes={form.constantes}
+            idInstalador={form.id_instalador}
+            idProveedor={form.id_proveedor}
+          />
           <VariablesSection
             tiposDisponibles={options.tiposVariable}
             variables={form.variables}
-            onChange={(variables) => actions.updateField("variables", variables)}
+            onChange={(v) => actions.updateField("variables", v)}
           />
           <ConstantesSection
             tiposDisponibles={options.tiposVariable}
             constantes={form.constantes}
             onChange={(c) => actions.updateField("constantes", c)}
-          />
-        </div>
-
-        <div className="pt-4 border-t border-gray-200">
-          <FormulaSection
-            enabled={form.formulaEnabled}
-            onToggle={(enabled) => actions.updateField("formulaEnabled", enabled)}
-            expresion={form.expresion}
-            onExpresionChange={(value) => actions.updateField("expresion", value)}
-            variables={form.variables}
-            constantes={form.constantes}
           />
         </div>
 

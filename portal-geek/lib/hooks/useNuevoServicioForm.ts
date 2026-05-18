@@ -56,10 +56,15 @@ export function useNuevoServicioForm() {
     setSubmitError(null);
 
     try {
+      // Serialize chunks to a string and validate there's real content beyond IVA.
+      const expresion = form.formulaChunks.map((c) => c.value).join("").trim();
+      const hasSubstance = form.formulaChunks.some(
+        (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
+      );
       const formulaPayload =
-        form.formulaEnabled && form.expresion.trim().length > 0
+        form.formulaEnabled && hasSubstance && expresion.length > 0
           ? {
-              expresion: form.expresion,
+              expresion,
               variables: form.variables,
               constantes: form.constantes,
             }

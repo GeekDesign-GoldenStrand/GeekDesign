@@ -120,7 +120,7 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-[#1e1e1e]">Proveedor:</label>
+        <label className="text-base font-bold text-[#1e1e1e]">Proveedor:</label>
         <Toggle checked={requiereProveedor} onChange={handleToggle} />
       </div>
 
@@ -129,7 +129,7 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
           <select
             value={value.id ?? ""}
             onChange={(e) => handleSelectProveedor(Number(e.target.value))}
-            className="h-10 px-3 rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
+            className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
           >
             {ordenados.length === 0 && <option value="">No hay proveedores disponibles</option>}
             {ordenados.map((p) => {

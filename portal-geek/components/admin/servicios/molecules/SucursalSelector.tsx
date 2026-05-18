@@ -21,7 +21,7 @@ export function SucursalSelector({
 }: SucursalSelectorProps) {
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-[#1e1e1e]">
+      <label className="text-base font-bold text-[#1e1e1e]">
         Sucursal: <span className="text-[#e42200]">*</span>
       </label>
 
@@ -32,7 +32,7 @@ export function SucursalSelector({
           onChange(value === "" ? null : Number(value));
         }}
         disabled={disabled || opciones.length === 0}
-        className="h-10 px-3 rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
       >
         <option value="">Selecciona una sucursal</option>
         {opciones.map((s) => (

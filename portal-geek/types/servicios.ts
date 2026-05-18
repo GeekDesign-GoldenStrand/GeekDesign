@@ -68,6 +68,14 @@ export type TipoVariableOption = {
   unidad_default: string | null;
 };
 
+// ─── Formula builder types ────────────────────────────
+
+export type FormulaChunk = {
+  type: "token" | "text";
+  value: string;
+  immutable?: boolean;
+};
+
 // ─── Form state types for service creation ────────────
 
 export type NuevoServicioFormState = {
@@ -80,7 +88,7 @@ export type NuevoServicioFormState = {
   id_proveedor: number | null;
   costo_proveedor_override: number | null;
   formulaEnabled: boolean;
-  expresion: string;
+  formulaChunks: FormulaChunk[];
   variables: VariableDraft[];
   constantes: ConstanteDraft[];
 };
@@ -95,7 +103,7 @@ export const initialNuevoServicioState: NuevoServicioFormState = {
   id_proveedor: null,
   costo_proveedor_override: null,
   formulaEnabled: false,
-  expresion: "",
+  formulaChunks: [{ type: "text", value: "" }],
   variables: [],
   constantes: [{ nombre_constante: "iva", origen: "global", valor: "0.1600" }],
 };

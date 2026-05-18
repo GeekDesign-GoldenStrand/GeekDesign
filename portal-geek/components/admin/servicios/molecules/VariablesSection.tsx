@@ -129,7 +129,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-lg font-semibold text-[#1e1e1e]">Variables:</h3>
+        <h3 className="text-lg font-bold text-[#1e1e1e]">Variables:</h3>
         <p className="text-sm text-gray-600 mt-1">
           Datos numéricos que cambian en cada cotización. El cliente o tú los capturan al momento de
           cotizar.

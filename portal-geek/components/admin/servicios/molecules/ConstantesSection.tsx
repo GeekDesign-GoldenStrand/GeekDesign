@@ -138,7 +138,7 @@ export function ConstantesSection({
     <div className="flex flex-col gap-3">
       {/* Toggle header — mismo patrón que InstaladorToggle / ProveedorToggle */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-[#1e1e1e]">Constantes:</h3>
+        <h3 className="text-base font-bold text-[#1e1e1e]">Constantes:</h3>
         <Toggle checked={activarConstantes} onChange={setActivarConstantes} />
       </div>
 

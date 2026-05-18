@@ -59,7 +59,7 @@ export function MaquinasSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-[#1e1e1e]">Máquina(s):</label>
+      <label className="text-base font-bold text-[#1e1e1e]">Máquina(s):</label>
 
       {/* Selected machines as removable chips */}
       {selected.length > 0 && (
@@ -101,7 +101,7 @@ export function MaquinasSelector({
               const id = Number(e.target.value);
               if (id) handleAdd(id);
             }}
-            className="h-10 px-3 rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent flex-1"
+            className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent flex-1"
           >
             <option value="">Selecciona una máquina...</option>
             {available.map((m) => (
