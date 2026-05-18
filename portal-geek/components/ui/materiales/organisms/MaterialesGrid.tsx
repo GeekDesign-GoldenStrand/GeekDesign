@@ -7,6 +7,7 @@ interface MaterialesGridProps {
   items: MaterialCardProps[];
   visibleColumns: MaterialesVisibleColumns;
   onEditMaterial: (material: MaterialCardProps) => void;
+  onViewProveedores: (materialId: number, materialName: string) => void;
   // Server-side pagination state.
   page: number;
   totalPages: number;
@@ -29,12 +30,14 @@ const COLUMN_META: Array<{
   { key: "thickness", label: "Grosor", width: "1fr" },
   { key: "color", label: "Descripción del color", width: "1.2fr" },
   { key: "image", label: "Imagen", width: "1fr" },
+  { key: "proveedores", label: "Proveedores", width: "1.3fr" },
 ];
 
 export function MaterialesGrid({
   items,
   visibleColumns,
   onEditMaterial,
+  onViewProveedores,
   page,
   totalPages,
   onPageChange,
@@ -73,6 +76,7 @@ export function MaterialesGrid({
               visibleColumns={visibleColumns}
               gridTemplateColumns={templateColumns}
               onEdit={onEditMaterial}
+              onViewProveedores={onViewProveedores}
             />
           ))}
         </div>
