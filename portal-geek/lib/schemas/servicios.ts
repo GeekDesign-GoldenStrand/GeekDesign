@@ -30,7 +30,8 @@ const ConstanteSchema = z
     (data) => {
       if (data.origen === "instalador") return data.id_instalador !== undefined;
       if (data.origen === "proveedor") return data.id_proveedor !== undefined;
-      // 'manual' and 'global' don't require a FK or valor at creation time
+      if (data.origen === "manual") return data.valor !== undefined && data.valor !== null;
+      // 'global' constants reference ConstantesGlobales and don't require valor at creation
       return true;
     },
     {

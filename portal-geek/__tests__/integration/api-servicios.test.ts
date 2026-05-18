@@ -319,6 +319,7 @@ describe("POST /api/servicios", () => {
             {
               nombre_constante: "factor_merma",
               origen: "manual",
+              valor: 1.15,
             },
           ],
         },
