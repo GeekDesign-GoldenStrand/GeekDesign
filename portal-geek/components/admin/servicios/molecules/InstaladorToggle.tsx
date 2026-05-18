@@ -220,7 +220,7 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
                       Cancelar
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-500">
                     Precio estándar: {formatCosto(costoMaestro)}
                   </p>
                 </div>

@@ -184,7 +184,7 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
                     <button
                       type="button"
                       onClick={handleStartEdit}
-                      className="self-start text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium text-[#1e1e1e]"
+                      className="h-10 px-5 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e]"
                     >
                       Editar precio para este servicio
                     </button>
@@ -210,19 +210,19 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
                     <button
                       type="button"
                       onClick={handleApplyPrecio}
-                      className="text-xs bg-[#e42200] text-white hover:bg-[#c41e00] px-3 py-1.5 rounded-md font-medium"
+                      className="h-10 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium"
                     >
                       Aplicar precio
                     </button>
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className="text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium text-[#1e1e1e]"
+                      className="h-10 px-5 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e]"
                     >
                       Cancelar
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-500">
                     Precio estándar: {formatCosto(costoMaestro)}
                   </p>
                 </div>

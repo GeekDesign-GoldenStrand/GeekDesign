@@ -169,7 +169,7 @@ export function ConstantesSection({
             >
               {c.auto && <Icon LibIcon={LockKeyIcon} size={12} weight="bold" />}
               <span className="font-mono">{c.nombre_constante}</span>
-              <span className="text-xs opacity-70">{origenDescripcion(c)}</span>
+              <span className="text-sm opacity-70">{origenDescripcion(c)}</span>
               {!c.auto && (
                 <button
                   type="button"
@@ -201,7 +201,7 @@ export function ConstantesSection({
             maxLength={MAX_NOMBRE_LEN}
           />
           {previewNombre && (
-            <div className="mt-1 flex items-center gap-1 text-xs text-blue-700">
+            <div className="mt-1 flex items-center gap-1 text-sm text-blue-700">
               <Icon LibIcon={InfoIcon} size={12} weight="bold" />
               <span>
                 En la fórmula lo escribes:{" "}
@@ -287,7 +287,7 @@ export function ConstantesSection({
           </p>
         )}
 
-        {error && <p className="text-xs text-[#e42200]">{error}</p>}
+        {error && <p className="text-sm text-[#e42200]">{error}</p>}
 
         <button
           type="button"

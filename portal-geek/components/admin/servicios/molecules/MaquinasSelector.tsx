@@ -121,7 +121,7 @@ export function MaquinasSelector({
       )}
 
       {/* Single hint line that adapts to current state */}
-      {buttonHint && <p className="text-xs text-gray-500">{buttonHint}</p>}
+      {buttonHint && <p className="text-sm text-gray-500">{buttonHint}</p>}
     </div>
   );
 }

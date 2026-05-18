@@ -43,7 +43,7 @@ export function SucursalSelector({
       </select>
 
       {opciones.length === 0 && (
-        <p className="text-xs text-gray-500">No hay sucursales disponibles.</p>
+        <p className="text-sm text-gray-500">No hay sucursales disponibles.</p>
       )}
     </div>
   );

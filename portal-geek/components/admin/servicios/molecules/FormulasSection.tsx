@@ -110,7 +110,7 @@ export function FormulaSection({
                         key={v.nombre_variable}
                         type="button"
                         onClick={() => insertarIdentificador(v.nombre_variable)}
-                        className="text-xs bg-white border border-blue-300 hover:bg-blue-100 hover:border-blue-500 transition-colors px-2 py-1 rounded font-mono text-blue-900"
+                        className="text-sm bg-white border border-blue-300 hover:bg-blue-100 hover:border-blue-500 transition-colors px-2 py-1 rounded font-mono text-blue-900"
                         title={v.etiqueta}
                       >
                         {v.nombre_variable}
@@ -129,7 +129,7 @@ export function FormulaSection({
                         key={c.nombre_constante}
                         type="button"
                         onClick={() => insertarIdentificador(c.nombre_constante)}
-                        className="text-xs bg-white border border-blue-300 hover:bg-blue-100 hover:border-blue-500 transition-colors px-2 py-1 rounded font-mono text-blue-900"
+                        className="text-sm bg-white border border-blue-300 hover:bg-blue-100 hover:border-blue-500 transition-colors px-2 py-1 rounded font-mono text-blue-900"
                       >
                         {c.nombre_constante}
                       </button>
@@ -146,7 +146,7 @@ export function FormulaSection({
                       key={op}
                       type="button"
                       onClick={() => insertarSimbolo(op)}
-                      className="text-xs bg-white border border-blue-300 hover:bg-blue-100 hover:border-blue-500 transition-colors px-2.5 py-1 rounded font-mono text-blue-900 min-w-[28px]"
+                      className="text-sm bg-white border border-blue-300 hover:bg-blue-100 hover:border-blue-500 transition-colors px-2.5 py-1 rounded font-mono text-blue-900 min-w-[28px]"
                     >
                       {op}
                     </button>

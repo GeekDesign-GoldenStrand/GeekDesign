@@ -131,7 +131,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
               title={`${v.etiqueta} · ${chipDescripcion(v)}`}
             >
               <span className="font-mono">{v.nombre_variable}</span>
-              <span className="text-xs opacity-70">{chipDescripcion(v)}</span>
+              <span className="text-sm opacity-70">{chipDescripcion(v)}</span>
               <button
                 type="button"
                 onClick={() => handleRemove(v.nombre_variable)}
@@ -160,7 +160,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             maxLength={MAX_NOMBRE_LEN}
           />
           {previewNombre && (
-            <div className="mt-1 flex items-center gap-1 text-xs text-blue-700">
+            <div className="mt-1 flex items-center gap-1 text-sm text-blue-700">
               <Icon LibIcon={InfoIcon} size={12} weight="bold" />
               <span>
                 En la fórmula lo escribes:{" "}
@@ -234,7 +234,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
           El cliente puede editar este valor al cotizar
         </label>
 
-        {error && <p className="text-xs text-[#e42200]">{error}</p>}
+        {error && <p className="text-sm text-[#e42200]">{error}</p>}
 
         <button
           type="button"
