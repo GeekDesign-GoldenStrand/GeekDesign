@@ -101,13 +101,14 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
             const precio = Number(v.valor);
             return {
               id: v.id_valor,
-              nombre: v.formula.servicio.nombre_servicio,
+              nombre: v.variable.formula.servicio.nombre_servicio,
               cantidad: 1,
               precio_unitario: precio,
               precio_total: precio,
               precio_anterior: precio,
               estado: "sin_cambios",
-              descripcion: v.formula.servicio.descripcion_servicio || "Servicio solicitado",
+              descripcion:
+                v.variable.formula.servicio.descripcion_servicio || "Servicio solicitado",
             };
           }),
   };

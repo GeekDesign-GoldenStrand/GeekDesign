@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { PrismaPg } from "@prisma/adapter-pg";
+import type { Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
@@ -42,10 +43,31 @@ async function main() {
 
   console.log(`Seeded ${roles.length} roles`);
 
+  // ── Variable Types for Formulas Engine ───────────────────────────────────────────────────────────
+  const tiposVariable = [
+    { nombre_tipo: "Dimensión", unidad_default: "cm", estatus: "Activo" },
+    { nombre_tipo: "Cantidad", unidad_default: "pz", estatus: "Activo" },
+    { nombre_tipo: "Costo adicional", unidad_default: "$", estatus: "Activo" },
+    { nombre_tipo: "Costo de material", unidad_default: "$", estatus: "Activo" },
+    { nombre_tipo: "Descuento", unidad_default: "%", estatus: "Activo" },
+    { nombre_tipo: "Tiempo", unidad_default: "min", estatus: "Activo" },
+  ];
+
+  for (const tipo of tiposVariable) {
+    await prisma.tiposVariable.upsert({
+      where: { nombre_tipo: tipo.nombre_tipo },
+      update: {},
+      create: tipo,
+    });
+  }
+
+  console.log("✔ Tipos de variable base creados");
+
   // ── Sucursales (needed before Colaboradores) ───────────────────────────────
   const sucursalesData = [
     {
       id_sucursal: 1,
+
       nombre_sucursal: "Sucursal Principal",
       direccion: "Monterrey, NL",
       estatus: "Activo",
@@ -78,7 +100,7 @@ async function main() {
   console.log(`Seeded ${sucursales.length} sucursales`);
 
   // ── Admin user ─────────────────────────────────────────────────────────────
-  const adminRole = roles.find((r) => r.nombre_rol === "Administrador")!;
+  const adminRole = roles.find((r: Roles) => r.nombre_rol === "Administrador")!;
   const adminPasswordHash = await bcrypt.hash(ADMIN_DEFAULT_PASSWORD, 12);
   const adminUser = await prisma.usuarios.upsert({
     where: { correo_electronico: "admin@geekdesign.mx" },
@@ -256,6 +278,7 @@ async function main() {
     update: {},
     create: {
       id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
       nombre_servicio: "Corte Láser",
       descripcion_servicio: "Corte con láser CO2",
       estatus_servicio: true,
@@ -412,6 +435,7 @@ async function main() {
       tipo: "Instalador",
       telefono: "8113456789",
       correo: "carlos.ramirez@instalaciones.mx",
+      costo_instalacion: 350.0,
       notas: "Especialista en viniles y rotulación.",
       ubicacion: "Monterrey, Nuevo León",
       estatus: "Activo",
@@ -423,6 +447,7 @@ async function main() {
       tipo: "Contratista",
       telefono: "8129876543",
       correo: "contacto@grupoinstala.mx",
+      costo_instalacion: 500.0,
       notas: "Cuadrilla de 4 personas. Trabajan fines de semana.",
       ubicacion: "San Nicolás de los Garza, Nuevo León",
       estatus: "Activo",
@@ -434,6 +459,7 @@ async function main() {
       tipo: "Instalador",
       telefono: "4423219876",
       correo: "luis.mendoza@correo.mx",
+      costo_instalacion: 280.0,
       notas: null,
       ubicacion: "Querétaro, Querétaro",
       estatus: "Activo",
@@ -445,6 +471,7 @@ async function main() {
       tipo: "Instalador",
       telefono: "5551234567",
       correo: "paty.solis@instala.mx",
+      costo_instalacion: 200.0,
       notas: "Instalación de lonas y toldos.",
       ubicacion: "Ciudad de México, CDMX",
       estatus: "Inactivo",
@@ -460,15 +487,6 @@ async function main() {
   }
 
   console.log(`Seeded ${instaladoresData.length} instaladores`);
-
-  // ── Invoice status map ─────────────────────────────────────────
-  const invoiceStatusRows = await prisma.estadoFacturaPedido.findMany();
-
-  const invoiceStatusMap: Record<string, number> = {};
-
-  invoiceStatusRows.forEach((s) => {
-    invoiceStatusMap[s.descripcion] = s.id_estado_factura;
-  });
 
   // ── Test client ────────────────────────────────────────────────────────────
   await prisma.clientes.upsert({
@@ -546,6 +564,15 @@ async function main() {
 
   console.log(`Seeded ${proveedoresData.length} proveedores`);
 
+  // ── ProveedorPrecios ───────────────────────────────────────────────────────
+  await prisma.proveedorPrecios.upsert({
+    where: { id_proveedor_id_material: { id_proveedor: 1, id_material: material.id_material } },
+    update: {},
+    create: { id_proveedor: 1, id_material: material.id_material, precio: 200 },
+  });
+
+  console.log("Seeded ProveedorPrecios: Maderas del Norte SA → MDF 3mm @ $200");
+
   // ── Demo Cotizaciones ──────────────────────────────────────────────────────
   const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
   const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
@@ -598,11 +625,11 @@ async function main() {
     ];
 
     // ── Invoice status map ─────────────────────────────────────────
-    const invoiceStatuses = await prisma.estadoFacturaPedido.findMany();
+    const invoiceStatusRows = await prisma.estadoFacturaPedido.findMany();
 
     const invoiceStatusMap: Record<string, number> = {};
 
-    invoiceStatuses.forEach((s) => {
+    invoiceStatusRows.forEach((s) => {
       invoiceStatusMap[s.descripcion] = s.id_estado_factura;
     });
 

@@ -5,6 +5,20 @@ import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/mat
 import { deleteObject, resolveImageUrl } from "@/lib/services/storage";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
+export async function getMaterialesOptions(): Promise<Materiales[]> {
+  return prisma.materiales.findMany({ orderBy: { nombre_material: "asc" } });
+}
+
+export interface MaterialProveedor {
+  id: number;
+  nombre: string;
+  tipo: string;
+  estatus: string;
+  telefono: string;
+  correo: string;
+  precio: string;
+}
+
 // On read, the `imagen_url` column holds the storage key. Replace it with a
 // fetchable URL (public or short-lived presigned GET) before returning.
 async function withResolvedImagen(material: Materiales): Promise<Materiales> {
@@ -62,6 +76,34 @@ export async function getMaterial(id: number): Promise<Materiales> {
   }
 
   return withResolvedImagen(material);
+}
+
+export async function getMaterialProveedores(id: number): Promise<MaterialProveedor[]> {
+  const rows = await prisma.proveedorPrecios.findMany({
+    where: { id_material: id },
+    include: {
+      proveedor: {
+        select: {
+          id_proveedor: true,
+          nombre_proveedor: true,
+          tipo: true,
+          estatus: true,
+          telefono: true,
+          correo: true,
+        },
+      },
+    },
+  });
+
+  return rows.map((pp) => ({
+    id: pp.proveedor.id_proveedor,
+    nombre: pp.proveedor.nombre_proveedor,
+    tipo: pp.proveedor.tipo,
+    estatus: pp.proveedor.estatus,
+    telefono: pp.proveedor.telefono,
+    correo: pp.proveedor.correo,
+    precio: pp.precio.toString(),
+  }));
 }
 
 export async function createMaterial(data: CreateMaterialInput): Promise<Materiales> {
