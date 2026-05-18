@@ -55,7 +55,8 @@ const FormulaSchema = z.object({
 
 export const CreateServicioSchema = z.object({
   id_sucursal: z.number().int().positive(),
-  id_estatus: z.number().int().positive(),
+  // id_estatus is not sent by the client; createServicio resolves the
+  // "Activo" EstatusServicio server-side (see lib/services/servicios.ts).
   nombre_servicio: z.string().min(1).max(100),
   descripcion_servicio: z.string().optional(),
   estatus_servicio: z.boolean().default(true),

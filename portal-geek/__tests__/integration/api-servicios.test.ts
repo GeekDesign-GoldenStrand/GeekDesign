@@ -200,15 +200,30 @@ describe("POST /api/servicios", () => {
     expect(res.body.error).toContain("nombre_servicio");
   });
 
-  it("retorna 422 cuando falta id_estatus", async () => {
+  it("resuelve el estatus 'Activo' en el servidor cuando el cliente no envía id_estatus", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const findFirstOrThrow = jest.fn().mockResolvedValue({ id_estatus_servicio: 1 });
+    mockTransaction.mockImplementation(async (callback) => {
+      const tx = {
+        estatusServicio: { findFirstOrThrow },
+        servicios: {
+          create: jest.fn().mockResolvedValue({ id_servicio: 10, id_estatus: 1 }),
+        },
+        serviciosMaquina: { createMany: jest.fn() },
+        formulas: { create: jest.fn() },
+        formulaVariables: { createMany: jest.fn() },
+        formulaConstantes: { createMany: jest.fn() },
+      };
+      return callback(tx);
+    });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/servicios")
-      .send({ nombre_servicio: "Corte Láser", id_sucursal: 1 });
+      .send({ nombre_servicio: "Corte Láser", id_sucursal: 1, estatus_servicio: true });
 
-    expect(res.status).toBe(422);
-    expect(res.body.error).toContain("id_estatus");
+    expect(res.status).toBe(201);
+    expect(findFirstOrThrow).toHaveBeenCalledWith({ where: { descripcion: "Activo" } });
   });
 
   it("retorna 403 cuando un Colaborador intenta crear", async () => {
@@ -241,6 +256,9 @@ describe("POST /api/servicios", () => {
             costo_instalador_override: null,
             costo_proveedor_override: null,
           }),
+        },
+        estatusServicio: {
+          findFirstOrThrow: jest.fn().mockResolvedValue({ id_estatus_servicio: 1 }),
         },
         serviciosMaquina: { createMany: jest.fn() },
         formulas: { create: jest.fn() },
@@ -284,6 +302,9 @@ describe("POST /api/servicios", () => {
     mockTransaction.mockImplementation(async (callback) => {
       const tx = {
         servicios: txServicios,
+        estatusServicio: {
+          findFirstOrThrow: jest.fn().mockResolvedValue({ id_estatus_servicio: 1 }),
+        },
         serviciosMaquina: { createMany: jest.fn() },
         formulas: txFormulas,
         formulaVariables: txFormulaVariables,
