@@ -21,7 +21,7 @@ interface MaquinaRaw {
   estatus: string;
   fecha_registro: string;
   sucursales: { sucursal: { nombre_sucursal: string } }[];
-  serviciosMaquina?: { servicio: { nombre_servicio: string } }[];
+  servicios?: { servicio: { nombre_servicio: string } }[];
 }
 
 interface AsignarServiciosProps {
