@@ -293,7 +293,7 @@ describe("deleteInstalador", () => {
 describe("getInstaladorAssignments", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("retorna los items con precio y notas de los servicios asignados", async () => {
+  it("retorna los serviceIds, servicePrices y serviceNotes de los servicios asignados", async () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
     mockServiciosFindMany.mockResolvedValue([
       { id_servicio: 10, costo: 150, notas: null },
@@ -302,10 +302,9 @@ describe("getInstaladorAssignments", () => {
 
     const result = await getInstaladorAssignments(1);
 
-    expect(result.items).toEqual([
-      { id: 10, precio: 150 },
-      { id: 20, precio: 200, notas: "nota" },
-    ]);
+    expect(result.serviceIds).toEqual([10, 20]);
+    expect(result.servicePrices).toEqual({ 10: 150, 20: 200 });
+    expect(result.serviceNotes).toEqual({ 20: "nota" });
     expect(mockServiciosFindMany).toHaveBeenCalledWith({
       where: { id_instalador: 1 },
       select: { id_servicio: true, costo: true, notas: true },
