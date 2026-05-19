@@ -546,15 +546,46 @@ export async function createCotizacionFromCart(
   // lookup, create, and any downstream comparison all see the same form.
   const correo = normalizeEmail(input.cliente.correo_electronico);
 
+  // KIKW12 review #4: id_sucursal arrives from an anonymous client. Verify
+  // the sucursal exists AND is Activo before using it — bad values would
+  // otherwise produce an FK violation 500 or bind the Pedido to an inactive
+  // branch.
+  const sucursal = await prisma.sucursales.findUnique({
+    where: { id_sucursal: input.id_sucursal },
+    select: { id_sucursal: true, estatus: true },
+  });
+  if (!sucursal || sucursal.estatus !== "Activo") {
+    throw new ValidationError(`Sucursal ${input.id_sucursal} no existe o no está activa`);
+  }
+
   return prisma.$transaction(async (tx) => {
-    // 2. Cliente upsert (D8). Phone/empresa updates on subsequent submissions.
+    // 2. Cliente upsert (D8).
+    //
+    // KIKW12 review #1a (BLOCKER — identity takeover): this endpoint is public
+    // and unauthenticated, so the `update` branch MUST NOT overwrite PII or
+    // anyone who knows an existing cliente's email could rewrite their name /
+    // phone / empresa and (combined with email-only authz on approve/cancel)
+    // impersonate them. PII is set on `create` only; on a repeat submission we
+    // simply reuse the existing row untouched and link the new Pedido/Cotización.
+    //
+    // SECURITY FOLLOW-UPS — intentionally out of scope for this PR.
+    //
+    // The storefront has no cliente login (it's anonymous by design), so the
+    // proof-of-email-control needed for tracker/approve/cancel will be done
+    // out-of-band via an OTP system. That work is OWNED by @KIKW12 in a
+    // dedicated follow-up PR; it covers both items below:
+    //
+    //   - KIKW12 #1b: gate approve / cancel / pedido-status lookup behind an
+    //     OTP that proves the caller controls the email at access time. Model
+    //     after lib/services/password-reset.ts (hashed token + TTL + attempt cap
+    //     + single-use).
+    //   - KIKW12 #2:  once OTP-issued tokens exist, replace `?email=...` in
+    //     lookup URLs with the short-lived signed token so the email isn't
+    //     carried as a bearer credential through referrer headers / logs /
+    //     history / shared links.
     const cliente = await tx.clientes.upsert({
       where: { correo_electronico: correo },
-      update: {
-        nombre_cliente: input.cliente.nombre_cliente,
-        numero_telefono: input.cliente.numero_telefono,
-        empresa: input.cliente.empresa ?? null,
-      },
+      update: {},
       create: {
         nombre_cliente: input.cliente.nombre_cliente,
         correo_electronico: correo,
