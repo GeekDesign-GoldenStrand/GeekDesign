@@ -1,4 +1,5 @@
 import type { UserRole } from "@/types";
+
 import { LogoutButton } from "./atoms/LogoutButton";
 import { SidebarLogo } from "./atoms/SidebarLogo";
 import { SidebarNav } from "./molecules/SidebarNav";

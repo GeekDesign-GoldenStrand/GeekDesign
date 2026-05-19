@@ -1,7 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+
 import type { UserRole } from "@/types";
+
 import { NavLink } from "../atoms/NavLink";
 import { navItems } from "../navItems";
 

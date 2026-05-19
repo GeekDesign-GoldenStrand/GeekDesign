@@ -1,5 +1,3 @@
-import type { UserRole } from "@/types";
-
 import {
   Buildings,
   CubeTransparent,
@@ -13,6 +11,8 @@ import {
   Users,
   Wrench,
 } from "@phosphor-icons/react/dist/ssr";
+
+import type { UserRole } from "@/types";
 
 export type NavItem = {
   href: string;
