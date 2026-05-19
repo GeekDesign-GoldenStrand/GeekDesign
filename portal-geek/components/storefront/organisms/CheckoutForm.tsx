@@ -68,6 +68,9 @@ export function CheckoutForm({ sucursales }: Props) {
           id_servicio: i.servicioId,
           id_material: i.id_material,
           cantidad: i.cantidad,
+          // Copilot review #3: per-item design notes from the cart must reach
+          // DetallePedido.notas — schema already supports it.
+          notas: i.configuracion.notas,
           variables: i.configuracion.variables.map((v) => ({
             nombre_variable: v.nombre_variable,
             valor: v.valor,
