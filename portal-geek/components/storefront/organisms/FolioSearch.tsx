@@ -16,7 +16,16 @@ export function FolioSearch() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!folio.trim() || !email.trim()) return;
-    router.push(`/tienda/cotizacion/${folio.trim()}?email=${encodeURIComponent(email.trim())}`);
+
+    // Set secure cookies for authentication (12 hours = 43200 seconds)
+    // Secure flag is only appended if in a secure context (HTTPS) to allow local development / HTTP QA testing.
+    const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+    const secureFlag = isSecure ? "; Secure" : "";
+
+    document.cookie = `client_email=${encodeURIComponent(email.trim())}; path=/; max-age=43200; SameSite=Lax${secureFlag}`;
+    document.cookie = `client_folio=${encodeURIComponent(folio.trim())}; path=/; max-age=43200; SameSite=Lax${secureFlag}`;
+
+    router.push(`/tienda/cotizacion/${folio.trim()}`);
   };
 
   return (
