@@ -175,7 +175,10 @@ function VariantPicker({
               onClick={() => onConfirm([...checked])}
               className="px-4 py-2 text-[13px] font-medium text-white bg-[#e42200] rounded-[6px] hover:bg-[#c41e00] disabled:opacity-50 transition-colors"
             >
-              Agregar {checked.size > 0 ? `${checked.size} variante${checked.size !== 1 ? "s" : ""}` : "variantes"}
+              Agregar{" "}
+              {checked.size > 0
+                ? `${checked.size} variante${checked.size !== 1 ? "s" : ""}`
+                : "variantes"}
             </button>
           </div>
         </>
@@ -290,12 +293,15 @@ export function MaterialesSection({
 
   // Group selected materials by their parent group for display
   const groupedDisplay = (() => {
-    const result: Array<{
-      type: "group-header";
-      groupId: number;
-      groupName: string;
-      subs: MaterialDraft[];
-    } | { type: "leaf"; draft: MaterialDraft }> = [];
+    const result: Array<
+      | {
+          type: "group-header";
+          groupId: number;
+          groupName: string;
+          subs: MaterialDraft[];
+        }
+      | { type: "leaf"; draft: MaterialDraft }
+    > = [];
 
     const seen = new Set<number>();
 
@@ -309,9 +315,7 @@ export function MaterialesSection({
 
       if (parentId !== null) {
         // Find if we already started a group-header for this parent
-        const existing = result.find(
-          (r) => r.type === "group-header" && r.groupId === parentId
-        ) as
+        const existing = result.find((r) => r.type === "group-header" && r.groupId === parentId) as
           | { type: "group-header"; groupId: number; groupName: string; subs: MaterialDraft[] }
           | undefined;
 
@@ -398,7 +402,11 @@ export function MaterialesSection({
                         onClick={() => setGroupPickerOpen(g.id_material)}
                         className="w-full text-left px-4 py-2.5 hover:bg-[#fce4e4] transition-colors flex items-center gap-3"
                       >
-                        <ArrowCircleDownIcon size={16} weight="bold" className="text-[#575757] shrink-0" />
+                        <ArrowCircleDownIcon
+                          size={16}
+                          weight="bold"
+                          className="text-[#575757] shrink-0"
+                        />
                         <span className="text-[15px] font-semibold text-[#1e1e1e]">
                           {g.nombre_material}
                         </span>
@@ -570,10 +578,7 @@ function MaterialRow({
           <select
             value={draft.id_proveedor_precio ?? ""}
             onChange={(e) =>
-              onUpdateProveedor(
-                draft.id_material,
-                e.target.value ? Number(e.target.value) : null
-              )
+              onUpdateProveedor(draft.id_material, e.target.value ? Number(e.target.value) : null)
             }
             className="h-9 px-2 text-sm rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] w-full"
           >

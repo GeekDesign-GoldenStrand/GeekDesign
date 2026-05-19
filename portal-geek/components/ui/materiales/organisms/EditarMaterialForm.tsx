@@ -84,8 +84,7 @@ export function EditarMaterialForm({
       };
       if (newImageKey) payload.imagen_url = newImageKey;
 
-      const nameError =
-        !payload.nombre_material ? "El nombre es requerido." : "";
+      const nameError = !payload.nombre_material ? "El nombre es requerido." : "";
       if (nameError) {
         setErrors({ nombre_material: nameError });
         return null;
@@ -234,9 +233,7 @@ export function EditarMaterialForm({
           onChange={(e) => setField("descripcion_material", e.target.value)}
           className={`${FIELD} ${getFieldClass("descripcion_material")} resize-none`}
         />
-        {errors.descripcion_material && (
-          <p className={ERROR_MSG}>{errors.descripcion_material}</p>
-        )}
+        {errors.descripcion_material && <p className={ERROR_MSG}>{errors.descripcion_material}</p>}
       </div>
 
       {needsDimensions && (

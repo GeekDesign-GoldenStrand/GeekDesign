@@ -64,7 +64,20 @@ export function MaterialCard({
   onViewProveedores,
 }: MaterialCardRowProps) {
   const onEditClick = () =>
-    onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl, id_material_padre, tipo, subMateriales });
+    onEdit({
+      id,
+      name,
+      unit,
+      color,
+      width,
+      height,
+      thickness,
+      description,
+      imageUrl,
+      id_material_padre,
+      tipo,
+      subMateriales,
+    });
 
   const onProveedoresClick = () => onViewProveedores(id, name);
 

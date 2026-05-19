@@ -72,7 +72,10 @@ export function RegistrarMaterialForm({
     fetch("/api/materiales?mode=grupos")
       .then((r) => r.json())
       .then((payload) => {
-        const data = (payload?.data ?? []) as Array<{ id_material: number; nombre_material: string }>;
+        const data = (payload?.data ?? []) as Array<{
+          id_material: number;
+          nombre_material: string;
+        }>;
         setGrupos(data);
       })
       .catch(() => {});
@@ -283,9 +286,7 @@ export function RegistrarMaterialForm({
           onChange={(e) => setField("descripcion_material", e.target.value)}
           className={`${FIELD} ${getFieldClass("descripcion_material")} resize-none`}
         />
-        {errors.descripcion_material && (
-          <p className={ERROR_MSG}>{errors.descripcion_material}</p>
-        )}
+        {errors.descripcion_material && <p className={ERROR_MSG}>{errors.descripcion_material}</p>}
       </div>
 
       {needsDimensions && (

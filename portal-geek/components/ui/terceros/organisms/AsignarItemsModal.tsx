@@ -91,20 +91,20 @@ export function AsignarItemsModal({
         const currentData = await assignmentsRes.json();
 
         const mappedItems = allCatalogItems.map((item) => {
-            if ("id_material" in item) {
-              return {
-                id: item.id_material,
-                name: item.nombre_material,
-                description: item.descripcion_material,
-              };
-            } else {
-              return {
-                id: item.id_servicio,
-                name: item.nombre_servicio,
-                description: item.descripcion_servicio,
-              };
-            }
-          });
+          if ("id_material" in item) {
+            return {
+              id: item.id_material,
+              name: item.nombre_material,
+              description: item.descripcion_material,
+            };
+          } else {
+            return {
+              id: item.id_servicio,
+              name: item.nombre_servicio,
+              description: item.descripcion_servicio,
+            };
+          }
+        });
 
         setItems(mappedItems);
         const assignedIds: number[] =
