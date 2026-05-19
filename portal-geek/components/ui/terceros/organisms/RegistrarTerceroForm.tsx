@@ -4,22 +4,11 @@ import { useState } from "react";
 import { z } from "zod";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
+import { formatPhoneNumber } from "@/lib/utils/format";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function formatPhone(digits: string): string {
-  const metro = /^(55|33|81)/.test(digits);
-  if (metro) {
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-    return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-  }
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-}
 
 const proveedorSchema = z.object({
   nombre_proveedor: z
@@ -262,6 +251,7 @@ export function RegistrarTerceroForm({
           status: data.estatus as TerceroStatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
+          tipo: data.tipo,
         });
       }
 
@@ -382,7 +372,7 @@ export function RegistrarTerceroForm({
                 type="tel"
                 placeholder="442 123 4567"
                 inputMode="numeric"
-                value={formatPhone(form.telefono)}
+                value={formatPhoneNumber(form.telefono)}
                 onChange={(e) => {
                   const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                   setField("telefono", digits);
@@ -498,7 +488,7 @@ export function RegistrarTerceroForm({
                 type="tel"
                 placeholder="442 123 4567"
                 inputMode="numeric"
-                value={formatPhone(form.telefono)}
+                value={formatPhoneNumber(form.telefono)}
                 onChange={(e) => {
                   const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                   setField("telefono", digits);

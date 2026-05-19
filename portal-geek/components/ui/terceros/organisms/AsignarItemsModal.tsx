@@ -6,29 +6,33 @@ import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 import { AsignacionCard } from "../molecules/AsignacionCard";
 
 interface AsignarItemsModalProps {
-  id_proveedor: number;
+  targetId: number;
   companyName: string;
   contactName: string;
   email: string;
   phone: string;
   role: string;
+  tipo?: string;
   status: string;
   isOpen: boolean;
   itemType: "material" | "servicio";
+  targetType: "proveedor" | "instalador";
   onClose: () => void;
   onSaved: () => void;
 }
 
 export function AsignarItemsModal({
-  id_proveedor,
+  targetId,
   companyName,
   contactName,
   email,
   phone,
   role,
+  tipo,
   status,
   isOpen,
   itemType,
+  targetType,
   onClose,
   onSaved,
 }: AsignarItemsModalProps) {
@@ -82,7 +86,7 @@ export function AsignarItemsModal({
         } while (fetchedItems < totalItems);
 
         // Fetch current assignments
-        const assignmentsRes = await fetch(`/api/proveedores/${id_proveedor}/asignacion`);
+        const assignmentsRes = await fetch(`/api/${targetType}es/${targetId}/asignacion`);
         if (!assignmentsRes.ok) throw new Error("Error fetching assignments");
         const currentData = await assignmentsRes.json();
 
@@ -125,7 +129,7 @@ export function AsignarItemsModal({
     }
 
     fetchData();
-  }, [isOpen, id_proveedor, isMaterial, itemType, itemTypePlural, endpoint]);
+  }, [isOpen, targetId, isMaterial, endpoint, itemType, itemTypePlural, targetType]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
@@ -159,7 +163,7 @@ export function AsignarItemsModal({
         precio: parseFloat(prices[id] ?? "0") || 0,
         notas: notes[id] ?? "",
       }));
-      const res = await fetch(`/api/proveedores/${id_proveedor}/asignacion`, {
+      const res = await fetch(`/api/${targetType}es/${targetId}/asignacion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: itemType, items: itemsPayload }),
@@ -205,10 +209,12 @@ export function AsignarItemsModal({
                 className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
                   role === "Proveedor"
                     ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
-                    : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+                    : tipo === "Contratista"
+                      ? "bg-[rgba(30,58,138,0.08)] border-[#1e3a8a] text-[#1e3a8a]"
+                      : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
                 }`}
               >
-                {role}
+                {tipo === "Contratista" ? "Contratista" : role}
               </span>
               <TerceroTypeTag type={typeLabel} />
               <span
@@ -252,10 +258,14 @@ export function AsignarItemsModal({
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemTypePlural}...</p>
+              <p className="text-[14px] text-[#8e908f] font-medium">
+                Cargando {itemType === "material" ? "materiales" : "servicios"}...
+              </p>
             </div>
           ) : items.length === 0 ? (
-            <p className="text-center py-12 text-[#8e908f]">No hay {itemTypePlural} disponibles.</p>
+            <p className="text-center py-12 text-[#8e908f]">
+              No hay {itemType === "material" ? "materiales" : "servicios"} disponibles.
+            </p>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {items.map((item) => (

@@ -2,7 +2,7 @@ import type { Instaladores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateInstaladorInput, UpdateInstaladorInput } from "@/lib/schemas/instaladores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 export async function listInstaladores(
   page: number,
@@ -71,8 +71,6 @@ export async function deleteInstalador(id: number): Promise<void> {
   }
 }
 
-// Additional helper to the list dropdown in order to not show unactive instaladores.
-
 export async function getInstaladoresOptions(): Promise<
   Array<{
     id_instalador: number;
@@ -92,9 +90,105 @@ export async function getInstaladoresOptions(): Promise<
     orderBy: { costo_instalacion: "asc" },
   });
 
-  // Prisma returns Decimal as a Decimal object; serialize to string for the client component.
   return instaladores.map((i) => ({
     ...i,
     costo_instalacion: i.costo_instalacion.toString(),
   }));
+}
+
+export async function getInstaladorAssignments(id: number) {
+  await getInstalador(id);
+  const assignments = await prisma.instaladorServicios.findMany({
+    where: { id_instalador: id },
+    select: { id_servicio: true, costo: true, notas: true },
+  });
+
+  const servicePrices: Record<number, number> = {};
+  const serviceNotes: Record<number, string> = {};
+  for (const a of assignments) {
+    servicePrices[a.id_servicio] = Number(a.costo);
+    if (a.notas != null) serviceNotes[a.id_servicio] = a.notas;
+  }
+
+  return {
+    serviceIds: assignments.map((a) => a.id_servicio),
+    servicePrices,
+    serviceNotes,
+  };
+}
+
+export async function syncInstaladorAssignments(
+  id: number,
+  items: Array<{ id: number; precio: number; notas?: string }>
+) {
+  const deduped = Array.from(new Map(items.map((i) => [i.id, i])).values());
+  await getInstalador(id);
+
+  if (deduped.length > 0) {
+    const ids = deduped.map((i) => i.id);
+    const valid = await prisma.servicios.findMany({
+      where: { id_servicio: { in: ids }, estatus_servicio: true },
+      select: { id_servicio: true },
+    });
+    if (valid.length !== ids.length) {
+      const validSet = new Set(valid.map((s) => s.id_servicio));
+      const bad = ids.filter((id) => !validSet.has(id));
+      throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.instaladorServicios.findMany({
+      where: { id_instalador: id },
+      select: { id_instalador_servicio: true, id_servicio: true },
+    });
+
+    const existingMap = new Map(existing.map((e) => [e.id_servicio, e.id_instalador_servicio]));
+    const newMap = new Map(deduped.map((i) => [i.id, i]));
+
+    const candidatePkIds = existing
+      .filter((e) => !newMap.has(e.id_servicio))
+      .map((e) => e.id_instalador_servicio);
+
+    // Skip assignments referenced by Gastos — deleting them would break cost history
+    let toDeletePkIds: number[] = candidatePkIds;
+    if (candidatePkIds.length > 0) {
+      const referenced = await tx.gastos.findMany({
+        where: { id_instalador_servicio: { in: candidatePkIds } },
+        select: { id_instalador_servicio: true },
+      });
+      const referencedSet = new Set(referenced.map((g) => g.id_instalador_servicio));
+      toDeletePkIds = candidatePkIds.filter((pk) => !referencedSet.has(pk));
+    }
+
+    const toAdd = deduped.filter((i) => !existingMap.has(i.id));
+    const toUpdate = deduped.filter((i) => existingMap.has(i.id));
+
+    if (toDeletePkIds.length > 0) {
+      await tx.instaladorServicios.deleteMany({
+        where: { id_instalador_servicio: { in: toDeletePkIds } },
+      });
+    }
+
+    if (toAdd.length > 0) {
+      await tx.instaladorServicios.createMany({
+        data: toAdd.map((i) => ({
+          id_instalador: id,
+          id_servicio: i.id,
+          costo: i.precio,
+          notas: i.notas ?? null,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    await Promise.all(
+      toUpdate.map((i) =>
+        tx.instaladorServicios.update({
+          where: { id_instalador_servicio: existingMap.get(i.id)! },
+          data: { costo: i.precio, notas: i.notas ?? null },
+        })
+      )
+    );
+  });
 }

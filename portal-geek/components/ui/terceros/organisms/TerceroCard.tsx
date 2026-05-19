@@ -5,16 +5,10 @@ import { useState } from "react";
 import { EditIcon, MailIcon, MapPinIcon, PhoneIcon, TrashIcon } from "@/components/ui/atoms/icons";
 import { TerceroTypeTag } from "@/components/ui/terceros/atoms/TerceroTypeTag";
 import { StatusDropdown } from "@/components/ui/terceros/molecules/StatusDropdown";
+import { formatPhoneNumber } from "@/lib/utils/format";
 import type { TerceroCardProps } from "@/types";
 
 import { AsignarItemsModal } from "./AsignarItemsModal";
-
-function formatPhone(phone: string) {
-  if (/^(55|33|81)/.test(phone)) {
-    return phone.replace(/^(\d{2})(\d{4})(\d{4})$/, "$1 $2 $3");
-  }
-  return phone.replace(/^(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3");
-}
 
 const ACTION_BTN =
   "flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors";
@@ -60,16 +54,23 @@ export function TerceroCard({
           className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
             role === "Proveedor"
               ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
-              : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+              : tipo === "Contratista"
+                ? "bg-[rgba(30,58,138,0.08)] border-[#1e3a8a] text-[#1e3a8a]"
+                : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
           }`}
         >
-          {role}
+          {tipo === "Contratista" ? "Contratista" : role}
         </span>
 
-        {hasMaterial && (
+        {hasMaterial && role === "Proveedor" && (
           <TerceroTypeTag type="Material" onClick={() => setIsMaterialesOpen(true)} />
         )}
-        {hasServicio && <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />}
+        {hasServicio && role === "Proveedor" && (
+          <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />
+        )}
+        {role === "Instalador" && (
+          <TerceroTypeTag type="Servicio" onClick={() => setIsServiciosOpen(true)} />
+        )}
 
         <StatusDropdown status={status} onChange={onStatusChange} />
       </div>
@@ -83,7 +84,7 @@ export function TerceroCard({
 
       <div className="flex items-center gap-2 text-[#1e1e1e] font-medium text-[16px] lowercase">
         <PhoneIcon size={16} />
-        <span>{phone ? formatPhone(phone) : "–"}</span>
+        <span>{phone ? formatPhoneNumber(phone) : "–"}</span>
       </div>
 
       <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
@@ -121,15 +122,17 @@ export function TerceroCard({
         )}
       </div>
 
-      {role === "Proveedor" && isServiciosOpen && (
+      {isServiciosOpen && (
         <AsignarItemsModal
           itemType="servicio"
-          id_proveedor={id}
+          targetId={id}
+          targetType={role === "Proveedor" ? "proveedor" : "instalador"}
           companyName={companyName}
           contactName={contactName}
           email={email}
           phone={phone}
           role={role}
+          tipo={tipo}
           status={status}
           isOpen={isServiciosOpen}
           onClose={() => setIsServiciosOpen(false)}
@@ -140,12 +143,14 @@ export function TerceroCard({
       {role === "Proveedor" && isMaterialesOpen && (
         <AsignarItemsModal
           itemType="material"
-          id_proveedor={id}
+          targetId={id}
+          targetType="proveedor"
           companyName={companyName}
           contactName={contactName}
           email={email}
           phone={phone}
           role={role}
+          tipo={tipo}
           status={status}
           isOpen={isMaterialesOpen}
           onClose={() => setIsMaterialesOpen(false)}
