@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import CotizacionDetallePage from "@/app/(storefront)/cotizacion/[id]/page";
+import CotizacionDetallePage from "@/app/(storefront)/tienda/cotizacion/[id]/page";
 import { getCotizacionByFolio } from "@/lib/services/cotizaciones";
 
 jest.mock("@/lib/services/cotizaciones", () => ({

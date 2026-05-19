@@ -710,6 +710,30 @@ async function main() {
         fecha_estimada: new Date("2026-05-01"),
         notas: "Pedido demo cancelado",
       },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-22"),
+        fecha_estimada: new Date("2026-04-27"),
+        notas: "Pedido demo pendiente 6",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-23"),
+        fecha_estimada: new Date("2026-04-28"),
+        notas: "Pedido demo pendiente 7",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-24"),
+        fecha_estimada: new Date("2026-04-29"),
+        notas: "Pedido demo pendiente 8",
+      },
     ];
 
     for (const pedido of demoPedidos) {
