@@ -235,6 +235,39 @@ describe("evaluateFormula — errores", () => {
     ).toThrow(/no finito/);
   });
 
+  it("Copilot #5: rechaza dos variables con el mismo nombre", () => {
+    expect(() =>
+      evaluateFormula({
+        expresion: "x + 1",
+        variables: [variable("x", 5), variable("x", 7)],
+        constantes: [],
+        implicits: ZERO_IMPLICITS,
+      })
+    ).toThrow(/duplicado/);
+  });
+
+  it("Copilot #5: rechaza constante que colisiona con una variable", () => {
+    expect(() =>
+      evaluateFormula({
+        expresion: "x + 1",
+        variables: [variable("x", 5)],
+        constantes: [manual("x", 10)],
+        implicits: ZERO_IMPLICITS,
+      })
+    ).toThrow(/duplicado|colisiona/);
+  });
+
+  it("Copilot #5: rechaza dos constantes con el mismo nombre", () => {
+    expect(() =>
+      evaluateFormula({
+        expresion: "k + 1",
+        variables: [],
+        constantes: [manual("k", 10), manual("k", 20)],
+        implicits: ZERO_IMPLICITS,
+      })
+    ).toThrow(/duplicado|colisiona/);
+  });
+
   it("bloquea sintaxis de asignación (parser configurado sin operadores de statement)", () => {
     expect(() =>
       evaluateFormula({

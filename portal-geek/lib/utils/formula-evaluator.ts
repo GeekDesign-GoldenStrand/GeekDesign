@@ -83,6 +83,12 @@ function buildScope(input: EvaluateFormulaInput): Record<string, number> {
     if (!Number.isFinite(v.valor)) {
       throw new EvaluatorError(`La variable "${v.nombre_variable}" tiene un valor no finito`);
     }
+    // Copilot review #5: defend against duplicate variable names colliding in scope.
+    if (Object.prototype.hasOwnProperty.call(scope, v.nombre_variable)) {
+      throw new EvaluatorError(
+        `Identificador duplicado: "${v.nombre_variable}" ya está definido en el scope`
+      );
+    }
     scope[v.nombre_variable] = v.valor;
   }
 
@@ -90,6 +96,12 @@ function buildScope(input: EvaluateFormulaInput): Record<string, number> {
     if ((RESERVED_IDENTIFIERS as readonly string[]).includes(c.nombre_constante)) {
       throw new EvaluatorError(
         `La constante "${c.nombre_constante}" usa un identificador reservado`
+      );
+    }
+    // Copilot review #5: a constante must not shadow a variable (or another constante).
+    if (Object.prototype.hasOwnProperty.call(scope, c.nombre_constante)) {
+      throw new EvaluatorError(
+        `Identificador duplicado: "${c.nombre_constante}" colisiona con una variable o constante previa`
       );
     }
     scope[c.nombre_constante] = resolveConstanteValor(c);
