@@ -39,7 +39,12 @@ const SolicitarItemSchema = z.object({
   variables: z
     .array(
       z.object({
-        nombre_variable: z.string().min(1).max(100),
+        // Copilot review #6: align identifier validation with CalcularPrecioSchema.
+        nombre_variable: z
+          .string()
+          .min(1)
+          .max(100)
+          .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
         valor: z.number().finite(),
       })
     )
