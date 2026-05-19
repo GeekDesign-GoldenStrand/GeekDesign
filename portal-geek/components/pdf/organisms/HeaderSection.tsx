@@ -6,9 +6,22 @@ import React from "react";
 import { CompanySlogan } from "../molecules/CompanySlogan";
 import { styles } from "../styles";
 
+interface Branch {
+  nombre_sucursal: string;
+  direccion: string;
+}
+
+interface Quotation {
+  fecha_aprobacion?: string | Date | null;
+  fecha_validacion?: string | Date | null;
+  fecha_creacion: string | Date;
+  folio?: string | null;
+  id_cotizacion: number;
+}
+
 interface HeaderProps {
-  branch: any;
-  quotation: any;
+  branch: Branch;
+  quotation: Quotation;
 }
 
 export function HeaderSection({ branch, quotation }: HeaderProps) {
@@ -18,6 +31,7 @@ export function HeaderSection({ branch, quotation }: HeaderProps) {
     <View style={styles.header}>
       <View style={styles.companyInfo}>
         <View style={styles.logoContainer}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image style={styles.logo} src={logoPath} />
           <View style={styles.companyTextContainer}>
             <Text style={styles.companyName}>GEEK DESIGN</Text>

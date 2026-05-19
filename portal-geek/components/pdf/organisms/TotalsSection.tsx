@@ -4,7 +4,11 @@ import React from "react";
 import { formatCurrency } from "../constants";
 import { styles } from "../styles";
 
-export function TotalsSection({ quotation }: { quotation: any }) {
+interface TotalsQuotation {
+  monto_total: number | string;
+}
+
+export function TotalsSection({ quotation }: { quotation: TotalsQuotation }) {
   const montoTotal = Number(quotation.monto_total);
   const subtotal = montoTotal / 1.16;
   const iva = montoTotal - subtotal;

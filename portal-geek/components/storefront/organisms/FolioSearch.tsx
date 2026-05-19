@@ -21,7 +21,7 @@ export function FolioSearch() {
     // Secure flag is only appended if in a secure context (HTTPS) to allow local development / HTTP QA testing.
     const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
     const secureFlag = isSecure ? "; Secure" : "";
-    
+
     document.cookie = `client_email=${encodeURIComponent(email.trim())}; path=/; max-age=43200; SameSite=Lax${secureFlag}`;
     document.cookie = `client_folio=${encodeURIComponent(folio.trim())}; path=/; max-age=43200; SameSite=Lax${secureFlag}`;
 

@@ -27,6 +27,7 @@ export function BankInfoSection() {
           </Text>
           <Text style={styles.bankInfoText}>CLABE interbancaria: 030 68090001426699 3</Text>
           <View style={styles.bankInfoFooter}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image src={banbajioLogoPath} style={styles.bankInfoLogoImage} />
             <View style={{ alignItems: "flex-start" }}>
               <Text style={[styles.bankInfoText, { marginBottom: 1 }]}>Geek Design S. de R.L.</Text>

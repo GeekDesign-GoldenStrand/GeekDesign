@@ -10,7 +10,43 @@ import { TermsSection } from "../organisms/TermsSection";
 import { TotalsSection } from "../organisms/TotalsSection";
 import { styles } from "../styles";
 
-export function WorkOrderTemplate({ context }: { context: any }) {
+interface WorkOrderContext {
+  quotation: {
+    fecha_aprobacion?: string | Date | null;
+    fecha_validacion?: string | Date | null;
+    fecha_creacion: string | Date;
+    folio?: string | null;
+    id_cotizacion: number;
+    monto_total: number | string;
+  };
+  client: {
+    nombre_cliente: string;
+    empresa?: string | null;
+    correo_electronico: string;
+    numero_telefono: string;
+  };
+  specs: {
+    servicio?: {
+      nombre_servicio: string;
+    } | null;
+    archivo?: {
+      url_archivo?: string | null;
+    } | null;
+    material?: {
+      nombre_material: string;
+    } | null;
+    notas?: string | null;
+    cantidad: number;
+    precio_unitario: number | string;
+    subtotal: number | string;
+  }[];
+  branch: {
+    nombre_sucursal: string;
+    direccion: string;
+  };
+}
+
+export function WorkOrderTemplate({ context }: { context: WorkOrderContext }) {
   const { quotation, client, specs, branch } = context;
 
   return (

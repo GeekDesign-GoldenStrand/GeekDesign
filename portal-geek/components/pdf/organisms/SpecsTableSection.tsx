@@ -7,7 +7,23 @@ import { formatCurrency } from "../constants";
 import { TableRow } from "../molecules/TableRow";
 import { styles } from "../styles";
 
-export function SpecsTableSection({ specs }: { specs: any[] }) {
+interface ServiceSpec {
+  servicio?: {
+    nombre_servicio: string;
+  } | null;
+  archivo?: {
+    url_archivo?: string | null;
+  } | null;
+  material?: {
+    nombre_material: string;
+  } | null;
+  notas?: string | null;
+  cantidad: number;
+  precio_unitario: number | string;
+  subtotal: number | string;
+}
+
+export function SpecsTableSection({ specs }: { specs: ServiceSpec[] }) {
   return (
     <View style={styles.section}>
       <SectionTitle>Detalles del Servicio</SectionTitle>
@@ -35,13 +51,14 @@ export function SpecsTableSection({ specs }: { specs: any[] }) {
         </TableRow>
 
         {/* Table Body */}
-        {specs.map((spec: any, index: number) => (
+        {specs.map((spec: ServiceSpec, index: number) => (
           <TableRow key={index}>
             <TableCell width="25%">
               <Text style={styles.tableCell}>{spec.servicio?.nombre_servicio}</Text>
             </TableCell>
             <TableCell width="15%">
               {spec.archivo?.url_archivo ? (
+                /* eslint-disable-next-line jsx-a11y/alt-text */
                 <Image
                   src={spec.archivo.url_archivo}
                   style={{ width: 40, height: 40, objectFit: "cover" }}

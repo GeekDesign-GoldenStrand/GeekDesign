@@ -8,6 +8,7 @@ export function SignatureSection() {
 
   return (
     <View style={{ alignItems: "center", marginTop: 30, marginBottom: 20 }} wrap={false}>
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
       <Image src={signaturePath} style={{ width: 180, height: "auto" }} />
     </View>
   );

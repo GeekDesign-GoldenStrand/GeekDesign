@@ -5,7 +5,14 @@ import { SectionTitle } from "../atoms/SectionTitle";
 import { FieldRow } from "../molecules/FieldRow";
 import { styles } from "../styles";
 
-export function ClientDetailsSection({ client }: { client: any }) {
+interface Client {
+  nombre_cliente: string;
+  empresa?: string | null;
+  correo_electronico: string;
+  numero_telefono: string;
+}
+
+export function ClientDetailsSection({ client }: { client: Client }) {
   return (
     <View style={styles.section}>
       <SectionTitle>Datos del Cliente</SectionTitle>

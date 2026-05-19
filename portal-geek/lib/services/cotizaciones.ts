@@ -288,22 +288,22 @@ export async function changeQuotationStatus(
     | Prisma.PrismaPromise<CotizacionesRechazadas>
     | Prisma.PrismaPromise<Prisma.BatchPayload>
   )[] = [
-      prisma.cotizaciones.update({
-        where: { id_cotizacion: quotationId },
-        data: updateData,
-      }),
+    prisma.cotizaciones.update({
+      where: { id_cotizacion: quotationId },
+      data: updateData,
+    }),
 
-      prisma.historialEstadosCotizacion.create({
-        data: {
-          id_cotizacion: quotationId,
-          id_usuario: userId,
-          id_estado_anterior: currentQuotation.id_estatus_cotizacion,
-          id_estado_nuevo: newStatusId,
-          fecha_cambio: new Date(),
-          actor_tipo: "Direccion", // Called from admin side
-        },
-      }),
-    ];
+    prisma.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: quotationId,
+        id_usuario: userId,
+        id_estado_anterior: currentQuotation.id_estatus_cotizacion,
+        id_estado_nuevo: newStatusId,
+        fecha_cambio: new Date(),
+        actor_tipo: "Direccion", // Called from admin side
+      },
+    }),
+  ];
 
   if (isLostOpportunity) {
     operations.push(

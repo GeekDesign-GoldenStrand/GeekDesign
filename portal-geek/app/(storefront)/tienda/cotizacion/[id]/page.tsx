@@ -1,6 +1,6 @@
 import { WarningCircle, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
-import { cookies } from "next/headers";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
@@ -112,49 +112,49 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
     items:
       quote.pedido?.detalles && quote.pedido.detalles.length > 0
         ? quote.pedido.detalles.map((d) => {
-          const notas = d.notas || "";
-          const estadoMatch = notas.match(/\[ESTADO:(.*?)\]/);
-          const antesMatch = notas.match(/\[ANTES:(.*?)\]/);
-          const precioAnterior = antesMatch
-            ? Number(antesMatch[1])
-            : Number(d.precio_unitario) * d.cantidad;
-          const currentTotal = Number(d.precio_unitario) * d.cantidad;
-          const isActuallyModified =
-            estadoMatch &&
-            estadoMatch[1].toLowerCase() === "modificado" &&
-            precioAnterior !== currentTotal;
+            const notas = d.notas || "";
+            const estadoMatch = notas.match(/\[ESTADO:(.*?)\]/);
+            const antesMatch = notas.match(/\[ANTES:(.*?)\]/);
+            const precioAnterior = antesMatch
+              ? Number(antesMatch[1])
+              : Number(d.precio_unitario) * d.cantidad;
+            const currentTotal = Number(d.precio_unitario) * d.cantidad;
+            const isActuallyModified =
+              estadoMatch &&
+              estadoMatch[1].toLowerCase() === "modificado" &&
+              precioAnterior !== currentTotal;
 
-          return {
-            id: d.id_detalle,
-            nombre: d.servicio.nombre_servicio,
-            cantidad: d.cantidad,
-            precio_unitario: Number(d.precio_unitario),
-            precio_total: currentTotal,
-            precio_anterior: precioAnterior,
-            estado: isActuallyModified
-              ? "modificado"
-              : estadoMatch
-                ? estadoMatch[1].toLowerCase() === "modificado"
-                  ? "sin_cambios"
-                  : estadoMatch[1].toLowerCase()
-                : "sin_cambios",
-            descripcion: d.servicio.descripcion_servicio || "Servicio solicitado",
-          };
-        })
+            return {
+              id: d.id_detalle,
+              nombre: d.servicio.nombre_servicio,
+              cantidad: d.cantidad,
+              precio_unitario: Number(d.precio_unitario),
+              precio_total: currentTotal,
+              precio_anterior: precioAnterior,
+              estado: isActuallyModified
+                ? "modificado"
+                : estadoMatch
+                  ? estadoMatch[1].toLowerCase() === "modificado"
+                    ? "sin_cambios"
+                    : estadoMatch[1].toLowerCase()
+                  : "sin_cambios",
+              descripcion: d.servicio.descripcion_servicio || "Servicio solicitado",
+            };
+          })
         : quote.variablesCotizacion.map((v) => {
-          const precio = Number(v.valor);
-          return {
-            id: v.id_valor,
-            nombre: v.variable.formula.servicio.nombre_servicio,
-            cantidad: 1,
-            precio_unitario: precio,
-            precio_total: precio,
-            precio_anterior: precio,
-            estado: "sin_cambios",
-            descripcion:
-              v.variable.formula.servicio.descripcion_servicio || "Servicio solicitado",
-          };
-        }),
+            const precio = Number(v.valor);
+            return {
+              id: v.id_valor,
+              nombre: v.variable.formula.servicio.nombre_servicio,
+              cantidad: 1,
+              precio_unitario: precio,
+              precio_total: precio,
+              precio_anterior: precio,
+              estado: "sin_cambios",
+              descripcion:
+                v.variable.formula.servicio.descripcion_servicio || "Servicio solicitado",
+            };
+          }),
   };
 
   return (
