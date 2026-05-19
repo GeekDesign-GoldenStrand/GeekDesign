@@ -7,7 +7,7 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ title }: AdminHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 flex h-[80px] md:h-[118px] w-full items-center justify-between bg-white px-4 sm:px-8 shadow-[0_4px_7px_rgba(0,0,0,0.05)] border-b border-[#F5F5F5]">
+    <header className="fixed top-0 right-0 left-[64px] md:left-[102px] z-20 flex h-[80px] md:h-[118px] items-center justify-between bg-white px-4 sm:px-8 shadow-[0_4px_7px_rgba(0,0,0,0.05)] border-b border-[#F5F5F5]">
       <h1 className="font-ibm-plex font-semibold text-[22px] sm:text-[24px] md:text-[40px] text-[#1e1e1e] truncate pr-4">
         {title}
       </h1>
