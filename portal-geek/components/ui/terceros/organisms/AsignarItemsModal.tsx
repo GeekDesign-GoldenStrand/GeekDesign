@@ -55,53 +55,56 @@ export function AsignarItemsModal({
     async function fetchData() {
       setLoading(true);
       try {
-        // Fetch all catalog items sequentially to avoid silent cuts
+        // For materials use mode=options (returns all leaves: individuals + sub-materials, excludes groups).
+        // For services paginate normally.
         type CatalogItem =
           | { id_material: number; nombre_material: string; descripcion_material: string | null }
           | { id_servicio: number; nombre_servicio: string; descripcion_servicio: string | null };
 
         const allCatalogItems: CatalogItem[] = [];
-        let page = 1;
-        let totalItems = 0;
-        let fetchedItems = 0;
 
-        do {
-          const res = await fetch(`${endpoint}?activo=true&pageSize=100&page=${page}`);
+        if (isMaterial) {
+          const res = await fetch(`${endpoint}?mode=options`);
           if (!res.ok) throw new Error("Error fetching catalog");
-
           const json = await res.json();
-          const pageItems: CatalogItem[] = json.data ?? [];
-          allCatalogItems.push(...pageItems);
-
-          totalItems = json.total ?? 0;
-          fetchedItems += pageItems.length;
-          page++;
-
-          // Failsafe to prevent infinite loops if API is misbehaving
-          if (pageItems.length === 0) break;
-        } while (fetchedItems < totalItems);
+          allCatalogItems.push(...(json.data ?? []));
+        } else {
+          let page = 1;
+          let totalItems = 0;
+          let fetchedItems = 0;
+          do {
+            const res = await fetch(`${endpoint}?activo=true&pageSize=100&page=${page}`);
+            if (!res.ok) throw new Error("Error fetching catalog");
+            const json = await res.json();
+            const pageItems: CatalogItem[] = json.data ?? [];
+            allCatalogItems.push(...pageItems);
+            totalItems = json.total ?? 0;
+            fetchedItems += pageItems.length;
+            page++;
+            if (pageItems.length === 0) break;
+          } while (fetchedItems < totalItems);
+        }
 
         // Fetch current assignments
         const assignmentsRes = await fetch(`/api/proveedores/${id_proveedor}/asignacion`);
         if (!assignmentsRes.ok) throw new Error("Error fetching assignments");
         const currentData = await assignmentsRes.json();
 
-        // Map data
         const mappedItems = allCatalogItems.map((item) => {
-          if ("id_material" in item) {
-            return {
-              id: item.id_material,
-              name: item.nombre_material,
-              description: item.descripcion_material,
-            };
-          } else {
-            return {
-              id: item.id_servicio,
-              name: item.nombre_servicio,
-              description: item.descripcion_servicio,
-            };
-          }
-        });
+            if ("id_material" in item) {
+              return {
+                id: item.id_material,
+                name: item.nombre_material,
+                description: item.descripcion_material,
+              };
+            } else {
+              return {
+                id: item.id_servicio,
+                name: item.nombre_servicio,
+                description: item.descripcion_servicio,
+              };
+            }
+          });
 
         setItems(mappedItems);
         const assignedIds: number[] =

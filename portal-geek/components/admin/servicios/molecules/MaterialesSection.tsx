@@ -1,6 +1,6 @@
 "use client";
 
-import { XIcon } from "@phosphor-icons/react";
+import { ArrowCircleDownIcon, XIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -398,19 +398,7 @@ export function MaterialesSection({
                         onClick={() => setGroupPickerOpen(g.id_material)}
                         className="w-full text-left px-4 py-2.5 hover:bg-[#fce4e4] transition-colors flex items-center gap-3"
                       >
-                        <svg
-                          className="w-4 h-4 text-[#575757] shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={1.5}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v8.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 16.91a2.25 2.25 0 01-1.07-1.916V6a2.25 2.25 0 012.25-2.25h1.372c.516 0 1.01.206 1.374.57l2.12 2.12"
-                          />
-                        </svg>
+                        <ArrowCircleDownIcon size={16} weight="bold" className="text-[#575757] shrink-0" />
                         <span className="text-[15px] font-semibold text-[#1e1e1e]">
                           {g.nombre_material}
                         </span>
