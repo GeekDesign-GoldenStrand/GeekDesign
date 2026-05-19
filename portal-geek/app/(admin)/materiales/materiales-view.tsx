@@ -14,6 +14,7 @@ import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
 import type {
   MaterialCardProps,
   MaterialSortOrder,
+  MaterialTipoFilter,
   MaterialesVisibleColumns,
   UserRole,
 } from "@/types";
@@ -134,6 +135,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
   const [proveedoresMaterialId, setProveedoresMaterialId] = useState<number | null>(null);
   const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
+  const [tipoFilter, setTipoFilter] = useState<MaterialTipoFilter>("all");
   const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(() =>
     buildDefaultColumns(canViewProveedores)
   );
@@ -203,12 +205,17 @@ export function MaterialesView({ role }: { role: UserRole }) {
   function handleResetFilters() {
     setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
+    setTipoFilter("all");
     setSearch("");
   }
 
   function handleSortChange(order: MaterialSortOrder) {
     setSortOrder(order);
     setPage(1);
+  }
+
+  function handleTipoFilterChange(value: MaterialTipoFilter) {
+    setTipoFilter(value);
   }
 
   function handleCreated(row: MaterialCardProps) {
@@ -274,8 +281,10 @@ export function MaterialesView({ role }: { role: UserRole }) {
             isFilterOpen={showFilters}
             visibleColumns={visibleColumns}
             sortOrder={sortOrder}
+            tipoFilter={tipoFilter}
             onToggleColumn={handleToggleColumn}
             onSortChange={handleSortChange}
+            onTipoFilterChange={handleTipoFilterChange}
             onResetFilters={handleResetFilters}
             onAddClick={handleOpenAddModal}
             onFilterClick={() => setShowFilters((state) => !state)}
@@ -299,7 +308,13 @@ export function MaterialesView({ role }: { role: UserRole }) {
 
           {!loading && !error && (
             <MaterialesGrid
-              items={rows}
+              items={
+                tipoFilter === "grupos"
+                  ? rows.filter((r) => r.tipo === "grupo")
+                  : tipoFilter === "individuales"
+                    ? rows.filter((r) => r.tipo === "individual")
+                    : rows
+              }
               visibleColumns={visibleColumns}
               onEditMaterial={handleEditClick}
               onViewProveedores={handleViewProveedores}
