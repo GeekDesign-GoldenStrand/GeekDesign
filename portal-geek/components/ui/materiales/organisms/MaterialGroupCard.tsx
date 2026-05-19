@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import { EditIcon } from "@/components/ui/atoms/icons";
@@ -59,6 +60,21 @@ export function MaterialGroupCard({
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
+          {visibleColumns.image && (
+            <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
+              {group.imageUrl ? (
+                <Image
+                  src={group.imageUrl}
+                  alt={group.name}
+                  fill
+                  sizes="3.75rem"
+                  unoptimized
+                  referrerPolicy="no-referrer"
+                  className="object-cover"
+                />
+              ) : null}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => onAddSubMaterial(group.id)}
