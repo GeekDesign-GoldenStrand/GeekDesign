@@ -52,20 +52,18 @@ describe("GET /api/instaladores/[id]/asignacion", () => {
   it("retorna 200 con las asignaciones si es Direccion", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockGetAssignments.mockResolvedValue({
-      items: [
-        { id: 10, precio: 150 },
-        { id: 20, precio: 200 },
-      ],
+      serviceIds: [10, 20],
+      servicePrices: { 10: 150, 20: 200 },
+      serviceNotes: {},
     });
 
     const res = await testApp().get("/api/instaladores/1/asignacion");
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      items: [
-        { id: 10, precio: 150 },
-        { id: 20, precio: 200 },
-      ],
+      serviceIds: [10, 20],
+      servicePrices: { 10: 150, 20: 200 },
+      serviceNotes: {},
     });
     expect(mockGetAssignments).toHaveBeenCalledWith(1);
   });

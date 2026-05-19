@@ -103,12 +103,17 @@ export async function getInstaladorAssignments(id: number) {
     select: { id_servicio: true, costo: true, notas: true },
   });
 
+  const servicePrices: Record<number, number> = {};
+  const serviceNotes: Record<number, string> = {};
+  for (const a of assignments) {
+    servicePrices[a.id_servicio] = Number(a.costo);
+    if (a.notas != null) serviceNotes[a.id_servicio] = a.notas;
+  }
+
   return {
-    items: assignments.map((a) => ({
-      id: a.id_servicio,
-      precio: a.costo,
-      ...(a.notas != null && { notas: a.notas }),
-    })),
+    serviceIds: assignments.map((a) => a.id_servicio),
+    servicePrices,
+    serviceNotes,
   };
 }
 
