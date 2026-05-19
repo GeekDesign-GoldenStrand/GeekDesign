@@ -14,6 +14,7 @@ interface MaterialesToolbarProps {
   onAddClick?: () => void;
   onFilterClick?: () => void;
   onCloseFilter: () => void;
+  canViewProveedores?: boolean;
 }
 
 export function MaterialesToolbar({
@@ -28,6 +29,7 @@ export function MaterialesToolbar({
   onAddClick,
   onFilterClick,
   onCloseFilter,
+  canViewProveedores = true,
 }: MaterialesToolbarProps) {
   return (
     // The toolbar acts as the anchor container for the floating filter panel.
@@ -73,6 +75,7 @@ export function MaterialesToolbar({
           onSortChange={onSortChange}
           onReset={onResetFilters}
           onClose={onCloseFilter}
+          canViewProveedores={canViewProveedores}
         />
       )}
     </div>

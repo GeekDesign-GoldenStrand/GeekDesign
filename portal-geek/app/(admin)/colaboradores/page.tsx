@@ -8,7 +8,7 @@ import { ColaboradoresView } from "./colaboradores-view";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Colaboradores | Geek Design" };
+export const metadata: Metadata = { title: "Colaboradores" };
 
 export default async function ColaboradoresPage() {
   const session = await getSession();

@@ -6,9 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-// Branch detail operations require route params and are restricted to Dirección.
-// Keeping access control at route level prevents unauthorized branch management.
-export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const GET = withRoleParams<Params>(["Direccion", "Administrador"], async (_req, ctx) => {
   try {
     // Route params come as strings, so we validate and coerce them before reaching the service layer.
     const { id } = SucursalIdParams.parse(await ctx.params);
@@ -19,7 +17,7 @@ export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
+export const PUT = withRoleParams<Params>(["Direccion", "Administrador"], async (req, ctx) => {
   try {
     const { id } = SucursalIdParams.parse(await ctx.params);
 
@@ -33,7 +31,7 @@ export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const DELETE = withRoleParams<Params>(["Direccion", "Administrador"], async (_req, ctx) => {
   try {
     const { id } = SucursalIdParams.parse(await ctx.params);
 

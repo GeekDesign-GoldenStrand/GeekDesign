@@ -21,7 +21,7 @@ export function FolioSearch() {
     document.cookie = `client_email=${encodeURIComponent(email.trim())}; path=/; max-age=43200; SameSite=Lax; Secure`;
     document.cookie = `client_folio=${encodeURIComponent(folio.trim())}; path=/; max-age=43200; SameSite=Lax; Secure`;
 
-    router.push(`/cotizacion/${folio.trim()}`);
+    router.push(`/tienda/cotizacion/${folio.trim()}`);
   };
 
   return (
