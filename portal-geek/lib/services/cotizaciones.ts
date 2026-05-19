@@ -6,7 +6,13 @@ import type {
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
+import type {
+  CreateCotizacionInput,
+  SolicitarCotizacionInput,
+  UpdateCotizacionInput,
+} from "@/lib/schemas/cotizaciones";
+import { calcularPrecioServicio } from "@/lib/services/formula-pricing";
+import { getPlaceholderArchivoId, getSistemaUserId } from "@/lib/services/sistema";
 import {
   ConfigurationError,
   ConflictError,
@@ -36,6 +42,8 @@ const INCLUDE_CONFIG = {
   },
   pedido: {
     include: {
+      estatus: true,
+      estado_factura: true,
       detalles: {
         include: {
           servicio: true,
@@ -333,118 +341,70 @@ export async function changeQuotationStatus(
 }
 
 /**
- * Approves a quotation and automatically creates a corresponding Order (Pedido).
- * This is an atomic operation to ensure data consistency between Sales and Production.
+ * D5 refactor (ST-23 PR, refactor of ST-08): promotes the draft Pedido in place
+ * instead of deleting and recreating it. The SRS contract for ST-08 is preserved
+ * — "el estatus de la cotización cambia a 'aprobada'" — only the implementation
+ * changes. Keeping the same id_pedido means VariablesCotizacion.id_detalle stays
+ * valid, which matters once ST-23 starts attaching dimensions/cantidades via
+ * those rows (D3).
  */
 export async function approveQuotation(quotationId: number, providedEmail: string) {
   return prisma.$transaction(async (tx) => {
-    // 1. Fetch quotation with details (include client for email verification)
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
-      include: {
-        estatus: true,
-        pedido: true,
-        cliente: true,
-      },
+      include: { estatus: true, pedido: true, cliente: true },
     });
 
     if (!quotation) throw new NotFoundError("Quotation not found");
-
-    // Security Verification: Ensure the provided email matches the quotation's client
     if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
       throw new ForbiddenError("You are not authorized to approve this quotation");
     }
     if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
       throw new ConflictError("Only validated quotations can be approved");
     }
-
     if (!quotation.id_pedido) {
       throw new ValidationError("Cannot approve a quotation without validated line items");
     }
 
-    // 2. Resolve necessary IDs
-    const approvedStatus = await tx.estatusCotizacion.findUnique({
-      where: { descripcion: QUOTATION_STATUS.APROBADA },
-    });
-    const initialPedidoStatus = await tx.estatusPedidos.findUnique({
-      where: { descripcion: "Pendiente" },
-    });
-
-    if (!approvedStatus || !initialPedidoStatus) {
-      throw new Error("Required status catalogs not found");
-    }
-
-    // 3. Fetch current details to promote (filter out rejected items)
-    const currentDetails = await tx.detallePedido.findMany({
-      where: { id_pedido: quotation.id_pedido || 0 },
-    });
-
-    const activeDetails = currentDetails.filter((d) => {
-      const notas = d.notas || "";
-      return !notas.includes("[ESTADO:rechazado]");
-    });
-
-    const branchId = quotation.pedido?.id_sucursal;
-    if (!branchId) {
-      throw new ValidationError(
-        "No se pudo determinar la sucursal para este pedido. Por favor, contacta a soporte."
-      );
-    }
-
-    // 4. Create the Pedido (Order)
-    // Starts with 0% progress as requested.
-    const pedido = await tx.pedidos.create({
-      data: {
-        id_cliente: quotation.id_cliente,
-        id_sucursal: branchId,
-        id_estatus: initialPedidoStatus.id_estatus,
-        fecha_creacion: new Date(),
-        factura: false,
-        notas: quotation.notas,
-        // Promote the active items to the new pedido
-        detalles: {
-          create: activeDetails.map((d) => ({
-            servicio: { connect: { id_servicio: d.id_servicio } },
-            material: { connect: { id_material: d.id_material } },
-            archivo: { connect: { id_archivo: d.id_archivo } },
-            opciones_seleccionadas: d.opciones_seleccionadas || {},
-            cantidad: d.cantidad,
-            responsable_recoleccion: d.responsable_recoleccion,
-            precio_unitario: d.precio_unitario,
-            subtotal: d.subtotal,
-            notas: d.notas,
-            ancho_cm: d.ancho_cm,
-            alto_cm: d.alto_cm,
-            grosor_cm: d.grosor_cm,
-            color: d.color,
-          })),
-        },
+    // D5: drop only the line items the cliente rejected during validation.
+    // Active detalles stay attached to the same pedido — their VariablesCotizacion
+    // links remain valid.
+    await tx.detallePedido.deleteMany({
+      where: {
+        id_pedido: quotation.id_pedido,
+        notas: { contains: "[ESTADO:rechazado]" },
       },
     });
 
-    // 5. Update Quotation and Cleanup Draft Pedido
-    const oldPedidoId = quotation.id_pedido;
+    const approvedStatus = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.APROBADA },
+    });
+    const aprobacionDiseno = await tx.estadoFacturaPedido.findUnique({
+      where: { descripcion: "Aprobacion_diseno" },
+    });
+
+    if (!approvedStatus || !aprobacionDiseno) {
+      throw new ConfigurationError("Required status catalogs not found");
+    }
+
+    // D5: promote the draft pedido in place — same id_pedido, new estado_factura.
+    const pedido = await tx.pedidos.update({
+      where: { id_pedido: quotation.id_pedido },
+      data: { id_estado_factura: aprobacionDiseno.id_estado_factura },
+    });
 
     const updatedQuotation = await tx.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: {
         id_estatus_cotizacion: approvedStatus.id_estatus,
-        id_pedido: pedido.id_pedido,
         fecha_aprobacion: new Date(),
       },
     });
 
-    // Cleanup the old draft pedido (validation artifacts)
-    if (oldPedidoId) {
-      await tx.historialEstadosPedidos.deleteMany({ where: { id_pedido: oldPedidoId } });
-      await tx.detallePedido.deleteMany({ where: { id_pedido: oldPedidoId } });
-      await tx.pedidos.delete({ where: { id_pedido: oldPedidoId } });
-    }
-
-    // 6. Log status history
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
+        id_cliente: quotation.id_cliente,
         id_estado_anterior: quotation.id_estatus_cotizacion,
         id_estado_nuevo: approvedStatus.id_estatus,
         fecha_cambio: new Date(),
@@ -523,5 +483,171 @@ export async function cancelQuotationByClient(
     });
 
     return updatedQuotation;
+  });
+}
+
+/**
+ * ST-23: anonymous cliente submits a cart from the storefront. Atomically:
+ *   1. upserts Cliente by correo_electronico (@unique, D8)
+ *   2. recomputes each item's price server-side (never trusts the client)
+ *   3. creates a draft Pedido + DetallePedido[]
+ *   4. allocates a folio via the folio_seq Postgres sequence
+ *   5. creates the Cotización (Pendiente) + VariablesCotizacion[] (id_usuario_asigno=SISTEMA)
+ *   6. logs HistorialEstadosCotizacion with actor_tipo="Cliente"
+ *
+ * Returns the folio + monto_total + the lookup URL the cliente can use to
+ * return later (also useful to embed in the confirmation email).
+ */
+export async function createCotizacionFromCart(
+  input: SolicitarCotizacionInput
+): Promise<{ folio: string; monto_total: number; id_cotizacion: number; lookup_url: string }> {
+  // 1. Server-side price recomputation outside the tx (read-only) — fails fast
+  //    on invalid material/formula before we open the transaction.
+  const pricedItems = await Promise.all(
+    input.items.map(async (item) => {
+      const precioUnitario = await calcularPrecioServicio({
+        id_servicio: item.id_servicio,
+        id_material: item.id_material,
+        variables: item.variables,
+      });
+      const formula = await prisma.formulas.findFirst({
+        where: { id_servicio: item.id_servicio, estatus: "Activa" },
+        include: { variables: true },
+      });
+      if (!formula) {
+        throw new ValidationError(
+          `Servicio ${item.id_servicio} no tiene una fórmula activa para cotizar`
+        );
+      }
+      return {
+        item,
+        precioUnitario,
+        subtotal: Math.round(precioUnitario * item.cantidad * 100) / 100,
+        formulaVariables: formula.variables,
+      };
+    })
+  );
+
+  const monto_total = Math.round(pricedItems.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+
+  const sistemaUserId = await getSistemaUserId();
+  const placeholderArchivoId = await getPlaceholderArchivoId();
+
+  return prisma.$transaction(async (tx) => {
+    // 2. Cliente upsert (D8). Phone/empresa updates on subsequent submissions.
+    const cliente = await tx.clientes.upsert({
+      where: { correo_electronico: input.cliente.correo_electronico },
+      update: {
+        nombre_cliente: input.cliente.nombre_cliente,
+        numero_telefono: input.cliente.numero_telefono,
+        empresa: input.cliente.empresa ?? null,
+      },
+      create: {
+        nombre_cliente: input.cliente.nombre_cliente,
+        correo_electronico: input.cliente.correo_electronico,
+        numero_telefono: input.cliente.numero_telefono,
+        empresa: input.cliente.empresa ?? null,
+        categoria: "Emprendedor",
+      },
+    });
+
+    // 3. Resolve catalog statuses.
+    const pedidoStatusPendiente = await tx.estatusPedidos.findUnique({
+      where: { descripcion: "Pendiente" },
+    });
+    const estadoFacturaCotizacion = await tx.estadoFacturaPedido.findUnique({
+      where: { descripcion: "Cotizacion" },
+    });
+    const cotizacionStatusPendiente = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.PENDIENTE },
+    });
+
+    if (!pedidoStatusPendiente || !estadoFacturaCotizacion || !cotizacionStatusPendiente) {
+      throw new ConfigurationError("Catálogos de estatus incompletos — ejecuta npm run db:seed");
+    }
+
+    // 4. Create draft Pedido (no detalles yet — we need their IDs to attach variables).
+    const pedido = await tx.pedidos.create({
+      data: {
+        id_cliente: cliente.id_cliente,
+        id_sucursal: input.id_sucursal,
+        id_estatus: pedidoStatusPendiente.id_estatus,
+        id_estado_factura: estadoFacturaCotizacion.id_estado_factura,
+        notas: input.notas ?? null,
+      },
+    });
+
+    // 5. Allocate folio via Postgres sequence (atomic, concurrent-safe).
+    const seqRow = await tx.$queryRaw<Array<{ nextval: bigint }>>`
+      SELECT nextval('folio_seq') AS nextval
+    `;
+    const seq = Number(seqRow[0].nextval);
+    const folio = `GD-${new Date().getFullYear()}-${String(seq).padStart(5, "0")}`;
+
+    // 6. Create Cotización (Pendiente).
+    const cotizacion = await tx.cotizaciones.create({
+      data: {
+        id_cliente: cliente.id_cliente,
+        id_pedido: pedido.id_pedido,
+        id_estatus_cotizacion: cotizacionStatusPendiente.id_estatus,
+        folio,
+        monto_total,
+        empresa_cliente: input.cliente.empresa ?? null,
+        notas: input.notas ?? null,
+      },
+    });
+
+    // 7. Create each DetallePedido and its VariablesCotizacion rows.
+    for (const { item, precioUnitario, subtotal, formulaVariables } of pricedItems) {
+      const detalle = await tx.detallePedido.create({
+        data: {
+          id_pedido: pedido.id_pedido,
+          id_servicio: item.id_servicio,
+          id_material: item.id_material,
+          id_archivo: placeholderArchivoId,
+          cantidad: item.cantidad,
+          precio_unitario: precioUnitario,
+          subtotal,
+          responsable_recoleccion: input.cliente.nombre_cliente,
+          notas: item.notas ?? null,
+        },
+      });
+
+      const variableRows = item.variables
+        .map((v) => {
+          const variable = formulaVariables.find((fv) => fv.nombre_variable === v.nombre_variable);
+          if (!variable) return null;
+          return {
+            id_cotizacion: cotizacion.id_cotizacion,
+            id_detalle: detalle.id_detalle,
+            id_variable: variable.id_variable,
+            valor: v.valor,
+            id_usuario_asigno: sistemaUserId,
+          };
+        })
+        .filter((row): row is NonNullable<typeof row> => row !== null);
+
+      if (variableRows.length > 0) {
+        await tx.variablesCotizacion.createMany({ data: variableRows });
+      }
+    }
+
+    // 8. History entry, actor_tipo="Cliente" (per HistorialEstadosCotizacion schema added by ST-08).
+    await tx.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: cotizacion.id_cotizacion,
+        id_cliente: cliente.id_cliente,
+        id_estado_anterior: null,
+        id_estado_nuevo: cotizacionStatusPendiente.id_estatus,
+        actor_tipo: "Cliente",
+      },
+    });
+
+    return {
+      folio,
+      monto_total,
+      id_cotizacion: cotizacion.id_cotizacion,
+      lookup_url: `/cotizacion/${folio}?email=${encodeURIComponent(cliente.correo_electronico)}`,
+    };
   });
 }
