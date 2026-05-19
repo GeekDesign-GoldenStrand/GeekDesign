@@ -3,7 +3,11 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import type { Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
 import { Pool } from "pg";
+
+dotenv.config({ path: ".env.local" });
+dotenv.config();
 
 // Same TLS posture as lib/db/client.ts — connect plaintext; rely on the Unix
 // socket (App Engine) or Cloud SQL Auth Proxy (dev) to handle Cloud SQL TLS.
@@ -584,6 +588,7 @@ async function main() {
     const demoCotizaciones = [
       {
         id_pedido: 1,
+        folio: "COT-001",
         monto_total: 1500,
         notas: "Cotización pendiente para corte láser",
         fecha_creacion: new Date("2026-04-13"),
@@ -592,6 +597,7 @@ async function main() {
       },
       {
         id_pedido: 2,
+        folio: "COT-002",
         monto_total: 2500,
         notas: "Cotización aprobada para grabado",
         fecha_creacion: new Date("2026-04-15"),
@@ -600,6 +606,7 @@ async function main() {
       },
       {
         id_pedido: 3,
+        folio: "COT-003",
         monto_total: 1800,
         notas: "Cliente rechazó la propuesta",
         fecha_creacion: new Date("2026-04-17"),
@@ -608,6 +615,7 @@ async function main() {
       },
       {
         id_pedido: 4,
+        folio: "COT-004",
         monto_total: 2200,
         notas: "Cotización validada por cambios de requerimiento",
         fecha_creacion: new Date("2026-04-20"),
@@ -616,11 +624,39 @@ async function main() {
       },
       {
         id_pedido: 5,
+        folio: "COT-005",
         monto_total: 3000,
         notas: "Cotización cancelada",
         fecha_creacion: new Date("2026-06-20"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Cancelada"],
+      },
+      {
+        id_pedido: 6,
+        folio: "COT-006",
+        monto_total: 4500,
+        notas: "Cotización pendiente para señalización exterior",
+        fecha_creacion: new Date("2026-04-22"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
+      },
+      {
+        id_pedido: 7,
+        folio: "COT-007",
+        monto_total: 890,
+        notas: "Cotización pendiente para corte de acrílico",
+        fecha_creacion: new Date("2026-04-23"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
+      },
+      {
+        id_pedido: 8,
+        folio: "COT-008",
+        monto_total: 3200,
+        notas: "Cotización pendiente para grabado de placa conmemorativa",
+        fecha_creacion: new Date("2026-04-24"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
       },
     ];
 
@@ -673,6 +709,30 @@ async function main() {
         fecha_creacion: new Date("2026-04-25"),
         fecha_estimada: new Date("2026-05-01"),
         notas: "Pedido demo cancelado",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-22"),
+        fecha_estimada: new Date("2026-04-27"),
+        notas: "Pedido demo pendiente 6",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-23"),
+        fecha_estimada: new Date("2026-04-28"),
+        notas: "Pedido demo pendiente 7",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-24"),
+        fecha_estimada: new Date("2026-04-29"),
+        notas: "Pedido demo pendiente 8",
       },
     ];
 

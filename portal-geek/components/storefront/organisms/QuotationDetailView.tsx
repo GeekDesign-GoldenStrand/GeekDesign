@@ -51,10 +51,18 @@ export function QuotationDetailView({ quotation }: Props) {
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [emailParam, setEmailParam] = useState("");
+
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(^|;)\s*client_email\s*=\s*([^;]+)/);
+      const cookieEmail = match ? decodeURIComponent(match[2]) : "";
+      setEmailParam(cookieEmail || new URLSearchParams(window.location.search).get("email") || "");
+    }
+  }, []);
 
   const handleApprove = async () => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const email = searchParams.get("email");
+    const email = emailParam;
 
     if (!email) {
       alert("Se requiere verificación de correo para realizar esta acción.");
@@ -89,8 +97,7 @@ export function QuotationDetailView({ quotation }: Props) {
   };
 
   const handleCancel = async () => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const email = searchParams.get("email");
+    const email = emailParam;
 
     if (!email) {
       alert("Se requiere verificación de correo para realizar esta acción.");
