@@ -57,6 +57,12 @@ export type CotizacionWithRelations = Prisma.CotizacionesGetPayload<{
   include: typeof INCLUDE_CONFIG;
 }>;
 
+// Copilot review #1: emails must be normalized before any Postgres @unique
+// lookup or comparison. Postgres unique indexes are case-sensitive, and the
+// approve/cancel handlers compare with `.toLowerCase()` on a `.trim()`-less
+// header — keep both sides consistent by routing every email through this.
+const normalizeEmail = (e: string) => e.trim().toLowerCase();
+
 // Centralized catalog of quotation statuses.
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
 export const QUOTATION_STATUS = {
@@ -355,15 +361,15 @@ export async function approveQuotation(quotationId: number, providedEmail: strin
       include: { estatus: true, pedido: true, cliente: true },
     });
 
-    if (!quotation) throw new NotFoundError("Quotation not found");
-    if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
-      throw new ForbiddenError("You are not authorized to approve this quotation");
+    if (!quotation) throw new NotFoundError("Cotización no encontrada");
+    if (normalizeEmail(providedEmail) !== normalizeEmail(quotation.cliente.correo_electronico)) {
+      throw new ForbiddenError("No autorizado para aprobar esta cotización");
     }
     if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
-      throw new ConflictError("Only validated quotations can be approved");
+      throw new ConflictError("Solo se pueden aprobar cotizaciones validadas");
     }
     if (!quotation.id_pedido) {
-      throw new ValidationError("Cannot approve a quotation without validated line items");
+      throw new ValidationError("No se puede aprobar una cotización sin líneas validadas");
     }
 
     // D5: drop only the line items the cliente rejected during validation.
@@ -430,11 +436,11 @@ export async function cancelQuotationByClient(
       include: { estatus: true, cliente: true },
     });
 
-    if (!quotation) throw new NotFoundError("Quotation not found");
+    if (!quotation) throw new NotFoundError("Cotización no encontrada");
 
     // Security Verification: Ensure the provided email matches the quotation's client
-    if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
-      throw new ForbiddenError("You are not authorized to cancel this quotation");
+    if (normalizeEmail(providedEmail) !== normalizeEmail(quotation.cliente.correo_electronico)) {
+      throw new ForbiddenError("No autorizado para cancelar esta cotización");
     }
 
     if (
@@ -443,7 +449,7 @@ export async function cancelQuotationByClient(
       )
     ) {
       throw new ConflictError(
-        `Cannot cancel a quotation in '${quotation.estatus.descripcion}' status`
+        `No se puede cancelar una cotización en estado '${quotation.estatus.descripcion}'`
       );
     }
 
@@ -451,7 +457,8 @@ export async function cancelQuotationByClient(
       where: { descripcion: QUOTATION_STATUS.CANCELADA },
     });
 
-    if (!cancelledStatus) throw new Error("Cancelled status not found");
+    if (!cancelledStatus)
+      throw new ConfigurationError("Estado 'Cancelada' no encontrado en el catálogo");
 
     // Update quote status and add cancellation reason to notes
     const updatedQuotation = await tx.cotizaciones.update({
@@ -533,10 +540,14 @@ export async function createCotizacionFromCart(
   const sistemaUserId = await getSistemaUserId();
   const placeholderArchivoId = await getPlaceholderArchivoId();
 
+  // Copilot review #1: normalize correo once before the tx so the unique
+  // lookup, create, and any downstream comparison all see the same form.
+  const correo = normalizeEmail(input.cliente.correo_electronico);
+
   return prisma.$transaction(async (tx) => {
     // 2. Cliente upsert (D8). Phone/empresa updates on subsequent submissions.
     const cliente = await tx.clientes.upsert({
-      where: { correo_electronico: input.cliente.correo_electronico },
+      where: { correo_electronico: correo },
       update: {
         nombre_cliente: input.cliente.nombre_cliente,
         numero_telefono: input.cliente.numero_telefono,
@@ -544,7 +555,7 @@ export async function createCotizacionFromCart(
       },
       create: {
         nombre_cliente: input.cliente.nombre_cliente,
-        correo_electronico: input.cliente.correo_electronico,
+        correo_electronico: correo,
         numero_telefono: input.cliente.numero_telefono,
         empresa: input.cliente.empresa ?? null,
         categoria: "Emprendedor",
@@ -613,19 +624,40 @@ export async function createCotizacionFromCart(
         },
       });
 
-      const variableRows = item.variables
-        .map((v) => {
-          const variable = formulaVariables.find((fv) => fv.nombre_variable === v.nombre_variable);
-          if (!variable) return null;
-          return {
-            id_cotizacion: cotizacion.id_cotizacion,
-            id_detalle: detalle.id_detalle,
-            id_variable: variable.id_variable,
-            valor: v.valor,
-            id_usuario_asigno: sistemaUserId,
-          };
-        })
-        .filter((row): row is NonNullable<typeof row> => row !== null);
+      // Copilot review #2: source of truth is the formula's variable definitions,
+      // not the client payload. Every formula variable gets a VariablesCotizacion
+      // row (using the submitted value, or the default when missing) so the audit
+      // trail is complete. Unknown names from the client are rejected loudly
+      // rather than silently dropped — that catches client-side typos.
+      const submittedByName = new Map(item.variables.map((v) => [v.nombre_variable, v.valor]));
+      const knownNames = new Set(formulaVariables.map((fv) => fv.nombre_variable));
+      for (const submitted of item.variables) {
+        if (!knownNames.has(submitted.nombre_variable)) {
+          throw new ValidationError(
+            `Variable desconocida "${submitted.nombre_variable}" para servicio ${item.id_servicio}`
+          );
+        }
+      }
+
+      const variableRows = formulaVariables.map((fv) => {
+        const submitted = submittedByName.get(fv.nombre_variable);
+        const valor =
+          submitted !== undefined
+            ? submitted
+            : fv.valor_default !== null
+              ? Number(fv.valor_default)
+              : null;
+        if (valor === null) {
+          throw new ValidationError(`La variable "${fv.nombre_variable}" requiere un valor`);
+        }
+        return {
+          id_cotizacion: cotizacion.id_cotizacion,
+          id_detalle: detalle.id_detalle,
+          id_variable: fv.id_variable,
+          valor,
+          id_usuario_asigno: sistemaUserId,
+        };
+      });
 
       if (variableRows.length > 0) {
         await tx.variablesCotizacion.createMany({ data: variableRows });
@@ -647,7 +679,7 @@ export async function createCotizacionFromCart(
       folio,
       monto_total,
       id_cotizacion: cotizacion.id_cotizacion,
-      lookup_url: `/tienda/cotizacion/${folio}?email=${encodeURIComponent(cliente.correo_electronico)}`,
+      lookup_url: `/tienda/cotizacion/${folio}?email=${encodeURIComponent(correo)}`,
     };
   });
 }
