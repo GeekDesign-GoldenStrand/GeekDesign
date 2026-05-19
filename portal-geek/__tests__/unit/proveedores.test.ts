@@ -3,6 +3,7 @@
  */
 import { prisma } from "@/lib/db/client";
 import { getProviderAssignments, syncProviderAssignments } from "@/lib/services/proveedores";
+import { ValidationError } from "@/lib/utils/errors";
 
 jest.mock("@/lib/db/client", () => ({
   prisma: {
@@ -12,6 +13,12 @@ jest.mock("@/lib/db/client", () => ({
     proveedores: {
       findUnique: jest.fn(),
     },
+    servicios: {
+      findMany: jest.fn(),
+    },
+    materiales: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   },
 }));
@@ -19,6 +26,8 @@ jest.mock("@/lib/db/client", () => ({
 const mockFindMany = prisma.proveedorPrecios.findMany as jest.Mock;
 const mockFindUniqueProveedor = prisma.proveedores.findUnique as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
+const mockServiciosValidate = prisma.servicios.findMany as jest.Mock;
+const mockMaterialesValidate = prisma.materiales.findMany as jest.Mock;
 
 describe("getProviderAssignments", () => {
   beforeEach(() => {
@@ -85,6 +94,14 @@ describe("syncProviderAssignments", () => {
       gastos: { findMany: jest.fn().mockResolvedValue([]) },
     };
     mockTransaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+    // Default: all requested IDs are valid
+    mockServiciosValidate.mockImplementation((args: { where: { id_servicio: { in: number[] } } }) =>
+      Promise.resolve(args.where.id_servicio.in.map((id: number) => ({ id_servicio: id })))
+    );
+    mockMaterialesValidate.mockImplementation(
+      (args: { where: { id_material: { in: number[] } } }) =>
+        Promise.resolve(args.where.id_material.in.map((id: number) => ({ id_material: id })))
+    );
   });
 
   it("agrega servicios nuevos sin tocar los existentes", async () => {
@@ -212,6 +229,24 @@ describe("syncProviderAssignments", () => {
 
     await expect(syncProviderAssignments(1, "servicio", [{ id: 5, precio: 100 }])).rejects.toThrow(
       "Transaction failed"
+    );
+  });
+
+  it("lanza ValidationError si un id_servicio no existe o está inactivo", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockServiciosValidate.mockResolvedValue([]); // none found
+
+    await expect(syncProviderAssignments(1, "servicio", [{ id: 99, precio: 100 }])).rejects.toThrow(
+      ValidationError
+    );
+  });
+
+  it("lanza ValidationError si un id_material no existe", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockMaterialesValidate.mockResolvedValue([]); // none found
+
+    await expect(syncProviderAssignments(1, "material", [{ id: 99, precio: 100 }])).rejects.toThrow(
+      ValidationError
     );
   });
 });

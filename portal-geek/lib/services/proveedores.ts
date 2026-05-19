@@ -2,7 +2,7 @@ import type { Proveedores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateProveedorInput, UpdateProveedorInput } from "@/lib/schemas/proveedores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 export async function listProveedores(
   page: number,
@@ -140,6 +140,31 @@ export async function syncProviderAssignments(
 
   await getProveedor(id);
   const isServicio = type === "servicio";
+
+  if (items.length > 0) {
+    const ids = items.map((i) => i.id);
+    if (isServicio) {
+      const valid = await prisma.servicios.findMany({
+        where: { id_servicio: { in: ids }, estatus_servicio: true },
+        select: { id_servicio: true },
+      });
+      if (valid.length !== ids.length) {
+        const validSet = new Set(valid.map((s) => s.id_servicio));
+        const bad = ids.filter((id) => !validSet.has(id));
+        throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
+      }
+    } else {
+      const valid = await prisma.materiales.findMany({
+        where: { id_material: { in: ids } },
+        select: { id_material: true },
+      });
+      if (valid.length !== ids.length) {
+        const validSet = new Set(valid.map((m) => m.id_material));
+        const bad = ids.filter((id) => !validSet.has(id));
+        throw new ValidationError(`Materiales no encontrados: ${bad.join(", ")}`);
+      }
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     const existing = await tx.proveedorPrecios.findMany({

@@ -11,7 +11,7 @@ import {
   getInstaladorAssignments,
   syncInstaladorAssignments,
 } from "@/lib/services/instaladores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 jest.mock("@/lib/db/client", () => ({
   prisma: {
@@ -26,6 +26,9 @@ jest.mock("@/lib/db/client", () => ({
     instaladorServicios: {
       findMany: jest.fn(),
     },
+    servicios: {
+      findMany: jest.fn(),
+    },
   },
 }));
 
@@ -36,6 +39,7 @@ const mockFindUnique = prisma.instaladores.findUnique as jest.Mock;
 const mockCreate = prisma.instaladores.create as jest.Mock;
 const mockUpdate = prisma.instaladores.update as jest.Mock;
 const mockServiciosFindMany = prisma.instaladorServicios.findMany as jest.Mock;
+const mockServiciosValidate = prisma.servicios.findMany as jest.Mock;
 
 const INSTALADOR = {
   id_instalador: 1,
@@ -343,6 +347,10 @@ describe("syncInstaladorAssignments", () => {
       gastos: { findMany: jest.fn().mockResolvedValue([]) },
     };
     mockTransaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+    // Default: all requested service IDs are valid and active
+    mockServiciosValidate.mockImplementation((args: { where: { id_servicio: { in: number[] } } }) =>
+      Promise.resolve(args.where.id_servicio.in.map((id: number) => ({ id_servicio: id })))
+    );
   });
 
   it("agrega servicios nuevos sin tocar los existentes", async () => {
@@ -435,5 +443,26 @@ describe("syncInstaladorAssignments", () => {
     await expect(syncInstaladorAssignments(999, [{ id: 1, precio: 100 }])).rejects.toThrow(
       NotFoundError
     );
+  });
+
+  it("lanza ValidationError si un id_servicio no existe", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockServiciosValidate.mockResolvedValue([]); // none found
+
+    await expect(syncInstaladorAssignments(1, [{ id: 99, precio: 100 }])).rejects.toThrow(
+      ValidationError
+    );
+  });
+
+  it("lanza ValidationError si un servicio está inactivo (estatus_servicio = false)", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    mockServiciosValidate.mockResolvedValue([{ id_servicio: 1 }]); // only 1 of 2 returned
+
+    await expect(
+      syncInstaladorAssignments(1, [
+        { id: 1, precio: 100 },
+        { id: 2, precio: 200 },
+      ])
+    ).rejects.toThrow(ValidationError);
   });
 });

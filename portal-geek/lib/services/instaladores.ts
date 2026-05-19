@@ -2,7 +2,7 @@ import type { Instaladores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateInstaladorInput, UpdateInstaladorInput } from "@/lib/schemas/instaladores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 export async function listInstaladores(
   page: number,
@@ -123,6 +123,19 @@ export async function syncInstaladorAssignments(
 ) {
   const deduped = Array.from(new Map(items.map((i) => [i.id, i])).values());
   await getInstalador(id);
+
+  if (deduped.length > 0) {
+    const ids = deduped.map((i) => i.id);
+    const valid = await prisma.servicios.findMany({
+      where: { id_servicio: { in: ids }, estatus_servicio: true },
+      select: { id_servicio: true },
+    });
+    if (valid.length !== ids.length) {
+      const validSet = new Set(valid.map((s) => s.id_servicio));
+      const bad = ids.filter((id) => !validSet.has(id));
+      throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     const existing = await tx.instaladorServicios.findMany({
