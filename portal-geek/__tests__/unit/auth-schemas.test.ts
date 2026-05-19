@@ -48,15 +48,21 @@ describe("ResetPasswordSchema", () => {
 
   it("rechaza contraseña sin mayúscula", () => {
     expect(
-      ResetPasswordSchema.safeParse({ ...valid, password: "segura123", confirmPassword: "segura123" })
-        .success
+      ResetPasswordSchema.safeParse({
+        ...valid,
+        password: "segura123",
+        confirmPassword: "segura123",
+      }).success
     ).toBe(false);
   });
 
   it("rechaza contraseña sin número", () => {
     expect(
-      ResetPasswordSchema.safeParse({ ...valid, password: "SeguraPass", confirmPassword: "SeguraPass" })
-        .success
+      ResetPasswordSchema.safeParse({
+        ...valid,
+        password: "SeguraPass",
+        confirmPassword: "SeguraPass",
+      }).success
     ).toBe(false);
   });
 

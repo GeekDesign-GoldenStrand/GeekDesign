@@ -1,9 +1,9 @@
 /**
  * @jest-environment node
  */
-import { prisma } from "@/lib/db/client";
 import { verifyPassword } from "@/lib/auth/password";
 import { generateToken } from "@/lib/auth/tokens";
+import { prisma } from "@/lib/db/client";
 import { loginUser } from "@/lib/services/auth";
 import { UnauthorizedError } from "@/lib/utils/errors";
 
