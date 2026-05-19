@@ -16,7 +16,6 @@ import { getPlaceholderArchivoId, getSistemaUserId } from "@/lib/services/sistem
 import {
   ConfigurationError,
   ConflictError,
-  ForbiddenError,
   NotFoundError,
   ValidationError,
   DataInconsistencyError,
@@ -355,7 +354,10 @@ export async function changeQuotationStatus(
  * valid, which matters once ST-23 starts attaching dimensions/cantidades via
  * those rows (D3).
  */
-export async function approveQuotation(quotationId: number, providedEmail: string) {
+// KIKW12 review #1b: caller authorization (cliente proves email control via
+// magic-link session cookie) is enforced at the route layer; the service runs
+// only after the cookie has been verified against this quotationId.
+export async function approveQuotation(quotationId: number) {
   return prisma.$transaction(async (tx) => {
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
@@ -363,9 +365,6 @@ export async function approveQuotation(quotationId: number, providedEmail: strin
     });
 
     if (!quotation) throw new NotFoundError("Cotización no encontrada");
-    if (normalizeEmail(providedEmail) !== normalizeEmail(quotation.cliente.correo_electronico)) {
-      throw new ForbiddenError("No autorizado para aprobar esta cotización");
-    }
     if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
       throw new ConflictError("Solo se pueden aprobar cotizaciones validadas");
     }
@@ -426,11 +425,10 @@ export async function approveQuotation(quotationId: number, providedEmail: strin
 /**
  * Cancels a quotation by the client and moves it to the cancelled state.
  */
-export async function cancelQuotationByClient(
-  quotationId: number,
-  providedEmail: string,
-  reason?: string
-) {
+// KIKW12 review #1b: caller authorization handled at the route layer (see
+// approveQuotation above). The service trusts that the route only invokes it
+// after the magic-link session cookie has been verified.
+export async function cancelQuotationByClient(quotationId: number, reason?: string) {
   return prisma.$transaction(async (tx) => {
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
@@ -438,11 +436,6 @@ export async function cancelQuotationByClient(
     });
 
     if (!quotation) throw new NotFoundError("Cotización no encontrada");
-
-    // Security Verification: Ensure the provided email matches the quotation's client
-    if (normalizeEmail(providedEmail) !== normalizeEmail(quotation.cliente.correo_electronico)) {
-      throw new ForbiddenError("No autorizado para cancelar esta cotización");
-    }
 
     if (
       !([QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA] as string[]).includes(
@@ -561,28 +554,14 @@ export async function createCotizacionFromCart(
   return prisma.$transaction(async (tx) => {
     // 2. Cliente upsert (D8).
     //
-    // KIKW12 review #1a (BLOCKER — identity takeover): this endpoint is public
+    // KIKW12 review #1a (identity takeover, closed): this endpoint is public
     // and unauthenticated, so the `update` branch MUST NOT overwrite PII or
     // anyone who knows an existing cliente's email could rewrite their name /
-    // phone / empresa and (combined with email-only authz on approve/cancel)
-    // impersonate them. PII is set on `create` only; on a repeat submission we
-    // simply reuse the existing row untouched and link the new Pedido/Cotización.
-    //
-    // SECURITY FOLLOW-UPS — intentionally out of scope for this PR.
-    //
-    // The storefront has no cliente login (it's anonymous by design), so the
-    // proof-of-email-control needed for tracker/approve/cancel will be done
-    // out-of-band via an OTP system. That work is OWNED by @KIKW12 in a
-    // dedicated follow-up PR; it covers both items below:
-    //
-    //   - KIKW12 #1b: gate approve / cancel / pedido-status lookup behind an
-    //     OTP that proves the caller controls the email at access time. Model
-    //     after lib/services/password-reset.ts (hashed token + TTL + attempt cap
-    //     + single-use).
-    //   - KIKW12 #2:  once OTP-issued tokens exist, replace `?email=...` in
-    //     lookup URLs with the short-lived signed token so the email isn't
-    //     carried as a bearer credential through referrer headers / logs /
-    //     history / shared links.
+    // phone / empresa and impersonate them. PII is set on `create` only; on a
+    // repeat submission we reuse the existing row untouched and link the new
+    // Pedido/Cotización. Proof-of-email-control for approve/cancel/tracker is
+    // now enforced by the magic-link session cookie (see lib/services/
+    // cotizacion-access.ts) issued by the submit handler.
     const cliente = await tx.clientes.upsert({
       where: { correo_electronico: correo },
       update: {},
@@ -712,7 +691,11 @@ export async function createCotizacionFromCart(
       folio,
       monto_total,
       id_cotizacion: cotizacion.id_cotizacion,
-      lookup_url: `/tienda/cotizacion/${folio}?email=${encodeURIComponent(correo)}`,
+      // KIKW12 review #2: lookup URL no longer carries the email as a bearer
+      // credential. The cliente reaches the tracker by clicking the magic link
+      // we email them (issued out-of-band by the submit route handler) — that
+      // link consumes a single-use token and sets a JWT session cookie.
+      lookup_url: `/tienda/cotizacion/confirmacion?folio=${encodeURIComponent(folio)}`,
     };
   });
 }

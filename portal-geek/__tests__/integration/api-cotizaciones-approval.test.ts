@@ -50,6 +50,15 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
+// KIKW12 review #1b: approve/cancel are gated by a magic-link session cookie.
+// Mock the verifier so tests can simulate authorized/unauthorized requests
+// without minting real JWTs (and without pulling jose into the jest env).
+const mockVerifySessionFor = jest.fn();
+jest.mock("@/lib/services/cotizacion-access", () => ({
+  SESSION_COOKIE_NAME: "cotizacion_session",
+  verifySessionFor: (...args: unknown[]) => mockVerifySessionFor(...args),
+}));
+
 const paramExtractor = (url: URL) => {
   const parts = url.pathname.split("/");
   return { id: parts[3] };
@@ -74,6 +83,8 @@ describe("Req. ST-08-09 Integration Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    // Default: cliente session cookie is valid for whichever cotización is hit.
+    mockVerifySessionFor.mockResolvedValue(true);
   });
 
   describe("Phase 1: GET /api/cotizaciones/[folio]", () => {
@@ -163,7 +174,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       const res = await createApp({ POST: approvePOST }, paramExtractor)
         .post("/api/cotizaciones/203/approve")
-        .set("X-Client-Email", "test@example.com")
+        .set("Cookie", "cotizacion_session=stub")
         .send();
 
       expect(res.status).toBe(201);
@@ -190,12 +201,22 @@ describe("Req. ST-08-09 Integration Tests", () => {
       });
     });
 
-    it("should return 422 when client email header is missing", async () => {
+    it("should return 403 when the magic-link session cookie is missing", async () => {
       const res = await createApp({ POST: approvePOST }, paramExtractor)
         .post("/api/cotizaciones/203/approve")
         .send();
 
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(403);
+    });
+
+    it("should return 403 when the session cookie does not authorize this cotización", async () => {
+      mockVerifySessionFor.mockResolvedValueOnce(false);
+      const res = await createApp({ POST: approvePOST }, paramExtractor)
+        .post("/api/cotizaciones/203/approve")
+        .set("Cookie", "cotizacion_session=stub")
+        .send();
+
+      expect(res.status).toBe(403);
     });
 
     it("should return 409 when the quotation is already processed", async () => {
@@ -209,7 +230,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       const res = await createApp({ POST: approvePOST }, paramExtractor)
         .post("/api/cotizaciones/203/approve")
-        .set("X-Client-Email", "test@example.com")
+        .set("Cookie", "cotizacion_session=stub")
         .send();
 
       expect(res.status).toBe(409);
@@ -232,7 +253,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
 
       const res = await createApp({ POST: cancelPOST }, paramExtractor)
         .post("/api/cotizaciones/203/cancel")
-        .set("X-Client-Email", "test@example.com")
+        .set("Cookie", "cotizacion_session=stub")
         .send({ reason: "Precio alto" });
 
       expect(res.status).toBe(200);

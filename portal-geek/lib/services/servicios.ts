@@ -126,9 +126,10 @@ export async function listServicios(
 }
 
 // Storefront detail loader. Returns the servicio plus its Activa formula
-// (with variables/constantes) and the list of materials available for the
-// customer to pick. D1: throws NotFoundError if no Activa formula exists —
-// the storefront refuses to render servicios without a configured formula.
+// (if one exists) and the list of materials available for the customer.
+// KIKW12 review #5: empty formulas array is a valid state — the page renders
+// a "Cotización en línea no disponible" fallback instead of 404'ing, so the
+// catalog card still resolves and the cliente can request a manual quote.
 export async function getServicioWithDetails(
   id: number
 ): Promise<{ servicio: ServicioConDetalles }> {
@@ -153,11 +154,6 @@ export async function getServicioWithDetails(
 
   if (!servicio) {
     throw new NotFoundError(`Servicio con id ${id} no encontrado`);
-  }
-  if (servicio.formulas.length === 0) {
-    throw new NotFoundError(
-      `Servicio con id ${id} no está disponible para cotizar (sin fórmula activa)`
-    );
   }
 
   return { servicio };

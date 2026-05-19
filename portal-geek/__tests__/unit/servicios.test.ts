@@ -292,11 +292,17 @@ describe("getServicioWithDetails", () => {
     await expect(getServicioWithDetails(999)).rejects.toThrow(NotFoundError);
   });
 
-  it("D1: lanza NotFoundError cuando el servicio no tiene fórmula Activa", async () => {
+  // KIKW12 review #5: when a servicio has no Activa formula the loader now
+  // returns the servicio (with formulas: []) instead of throwing. The detail
+  // page renders a "Cotización en línea no disponible" fallback in place of
+  // the variables form so the catalog card still resolves.
+  it("returns servicio with empty formulas[] when no Activa formula exists (no longer throws)", async () => {
     const sinFormula = { ...SERVICIO_CON_DETALLES, formulas: [] };
     mockFindFirst.mockResolvedValue(sinFormula);
 
-    await expect(getServicioWithDetails(1)).rejects.toThrow(/sin fórmula activa/);
+    const result = await getServicioWithDetails(1);
+    expect(result.servicio.formulas).toEqual([]);
+    expect(result.servicio.id_servicio).toBe(1);
   });
 });
 

@@ -575,7 +575,28 @@ model Cotizaciones {
 
   rechazada CotizacionesRechazadas?
 
+  tokensAcceso TokensAccesoCotizacion[]
+
   @@map("COTIZACIONES")
+}
+
+// KIKW12 review #1b/#2: magic-link tokens that prove the cliente controls the
+// email tied to a cotización. Issued at submit time (and on demand via
+// /api/storefront/cotizaciones/[folio]/access-link), consumed once to mint a
+// short-lived JWT session cookie scoped to the cotización. Replaces the old
+// pattern where ?email=… in the URL was the bearer credential.
+model TokensAccesoCotizacion {
+  id            Int      @id @default(autoincrement())
+  id_cotizacion Int
+  token_hash    String   @unique @db.VarChar(64)
+  expira_en     DateTime
+  usado         Boolean  @default(false)
+  creado_en     DateTime @default(now())
+
+  cotizacion Cotizaciones @relation(fields: [id_cotizacion], references: [id_cotizacion], onDelete: Cascade)
+
+  @@index([id_cotizacion])
+  @@map("TOKENSACCESOCOTIZACION")
 }
 
 model CotizacionesRechazadas {

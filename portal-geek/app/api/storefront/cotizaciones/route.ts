@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { SolicitarCotizacionSchema } from "@/lib/schemas/cotizaciones";
+import { issueAccessToken } from "@/lib/services/cotizacion-access";
 import { createCotizacionFromCart } from "@/lib/services/cotizaciones";
 import { created } from "@/lib/utils/api";
 import { handleError, RateLimitError } from "@/lib/utils/errors";
@@ -26,6 +27,18 @@ export async function POST(req: NextRequest) {
     }
     const body = SolicitarCotizacionSchema.parse(await req.json());
     const result = await createCotizacionFromCart(body);
+
+    // KIKW12 review #1b/#2: email the cliente a magic-link to the tracker.
+    // issueAccessToken swallows its own errors (anti-enumeration), so a Resend
+    // outage doesn't break the submit response — the cliente can re-request
+    // the link from /tienda/cotizacion.
+    await issueAccessToken({
+      id_cotizacion: result.id_cotizacion,
+      folio: result.folio,
+      correo_destino: body.cliente.correo_electronico,
+      nombre_cliente: body.cliente.nombre_cliente,
+    });
+
     return created(result);
   } catch (err) {
     return handleError(err);

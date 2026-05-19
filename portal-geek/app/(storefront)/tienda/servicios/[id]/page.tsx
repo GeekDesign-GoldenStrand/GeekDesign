@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { FormulaVariablesForm } from "@/components/storefront/organisms/FormulaVariablesForm";
@@ -23,21 +24,26 @@ export default async function ServicioDetallePage({ params }: Props) {
   }
 
   const { servicio } = result;
+  // KIKW12 review #5: servicio may not have an Activa formula yet.
+  // Render the same product info, but swap the variables form for a contact CTA.
   const formula = servicio.formulas[0];
+  const puedeCotizarEnLinea = formula !== undefined;
 
   const materiales = servicio.servicioMateriales.map((sm) => ({
     id_material: sm.id_material,
     nombre_material: sm.material.nombre_material,
   }));
 
-  const variables = formula.variables.map((v) => ({
-    id_variable: v.id_variable,
-    nombre_variable: v.nombre_variable,
-    etiqueta: v.etiqueta,
-    unidad: v.unidad,
-    valor_default: v.valor_default !== null ? Number(v.valor_default) : 0,
-    editable_por_cliente: v.editable_por_cliente,
-  }));
+  const variables = formula
+    ? formula.variables.map((v) => ({
+        id_variable: v.id_variable,
+        nombre_variable: v.nombre_variable,
+        etiqueta: v.etiqueta,
+        unidad: v.unidad,
+        valor_default: v.valor_default !== null ? Number(v.valor_default) : 0,
+        editable_por_cliente: v.editable_por_cliente,
+      }))
+    : [];
 
   const materialesText = materiales.map((m) => m.nombre_material).join(", ");
 
@@ -91,12 +97,30 @@ export default async function ServicioDetallePage({ params }: Props) {
               )}
             </div>
 
-            <FormulaVariablesForm
-              servicioId={servicio.id_servicio}
-              nombreServicio={servicio.nombre_servicio}
-              materiales={materiales}
-              variables={variables}
-            />
+            {puedeCotizarEnLinea ? (
+              <FormulaVariablesForm
+                servicioId={servicio.id_servicio}
+                nombreServicio={servicio.nombre_servicio}
+                materiales={materiales}
+                variables={variables}
+              />
+            ) : (
+              <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px] flex flex-col gap-[12px]">
+                <h2 className="font-bold text-[18px] text-[#1e1e1e]">
+                  Cotización en línea no disponible
+                </h2>
+                <p className="text-[14px] text-[#1e1e1e] leading-relaxed">
+                  Este servicio requiere una cotización personalizada. Contáctanos y un asesor
+                  preparará una propuesta para tu proyecto.
+                </p>
+                <Link
+                  href="/tienda/cotizacion"
+                  className="self-start bg-[#8b434a] text-white font-semibold text-[14px] rounded-[10px] px-[20px] h-[44px] flex items-center justify-center hover:bg-[#7a3a41] transition-colors"
+                >
+                  Solicitar cotización personalizada
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

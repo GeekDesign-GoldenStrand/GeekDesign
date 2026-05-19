@@ -170,7 +170,11 @@ describe("GET /api/servicios/[id]", () => {
     expect(res.body.error).toContain("no encontrado");
   });
 
-  it("D1: retorna 404 cuando el servicio no tiene fórmula activa", async () => {
+  // KIKW12 review #5: a servicio without an Activa formula is a valid state.
+  // The endpoint returns 200 with the servicio (formulas: []); the storefront
+  // detail page renders a "Cotización en línea no disponible" fallback in
+  // place of the variables form.
+  it("returns 200 with empty formulas[] when servicio has no Activa formula", async () => {
     mockFindFirst.mockResolvedValue({
       id_servicio: 1,
       nombre_servicio: "Servicio Sin Fórmula",
@@ -180,8 +184,8 @@ describe("GET /api/servicios/[id]", () => {
 
     const res = await detailApp().get("/api/servicios/1");
 
-    expect(res.status).toBe(404);
-    expect(res.body.error).toContain("sin fórmula activa");
+    expect(res.status).toBe(200);
+    expect(res.body.data.servicio.formulas).toEqual([]);
   });
 
   it("retorna 422 cuando el id no es un número válido", async () => {

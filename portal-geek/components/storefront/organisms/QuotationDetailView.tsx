@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { FolioSearch } from "./FolioSearch";
 
@@ -90,24 +90,13 @@ export function QuotationDetailView({ quotation }: Props) {
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [emailParam, setEmailParam] = useState("");
 
-  React.useEffect(() => {
-    if (typeof document !== "undefined") {
-      const match = document.cookie.match(/(^|;)\s*client_email\s*=\s*([^;]+)/);
-      const cookieEmail = match ? decodeURIComponent(match[2]) : "";
-      setEmailParam(cookieEmail || new URLSearchParams(window.location.search).get("email") || "");
-    }
-  }, []);
+  // KIKW12 review #1b: no client-side email/cookie reading. The HTTP-only
+  // cotizacion_session cookie set by the magic-link consume handler is
+  // automatically sent with these requests; the server verifies it matches
+  // this cotización.
 
   const handleApprove = async () => {
-    const email = emailParam;
-
-    if (!email) {
-      alert("Se requiere verificación de correo para realizar esta acción.");
-      return;
-    }
-
     if (
       !confirm(
         "¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente."
@@ -119,7 +108,6 @@ export function QuotationDetailView({ quotation }: Props) {
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/approve`, {
         method: "POST",
-        headers: { "X-Client-Email": email },
       });
       if (res.ok) {
         alert("¡Cotización aprobada con éxito! Tu pedido está en camino.");
@@ -136,21 +124,11 @@ export function QuotationDetailView({ quotation }: Props) {
   };
 
   const handleCancel = async () => {
-    const email = emailParam;
-
-    if (!email) {
-      alert("Se requiere verificación de correo para realizar esta acción.");
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/cancel`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Client-Email": email,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: cancelReason }),
       });
       if (res.ok) {
@@ -477,7 +455,7 @@ export function QuotationDetailView({ quotation }: Props) {
                 <tbody className="divide-y divide-[#F0F0F0]">
                   {quotation.items.length > 0 ? (
                     quotation.items.map((item) => (
-                      <React.Fragment key={item.id}>
+                      <Fragment key={item.id}>
                         <tr className="text-[14px] text-[#1e1e1e]">
                           <td className="px-8 py-6 align-top">
                             <p className="font-bold">{item.nombre}</p>
@@ -565,7 +543,7 @@ export function QuotationDetailView({ quotation }: Props) {
                             </>
                           )}
                         </tr>
-                      </React.Fragment>
+                      </Fragment>
                     ))
                   ) : (
                     <tr>
