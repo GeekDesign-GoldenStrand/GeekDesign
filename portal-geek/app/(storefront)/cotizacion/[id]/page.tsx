@@ -62,6 +62,15 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
       nombre_cliente: quote.cliente.nombre_cliente,
       empresa: quote.cliente.empresa,
     },
+    // ST-16: surface pedido production status to the cliente once the cotización
+    // is approved. Pre-approval we leave it null so the existing UI is unaffected.
+    pedido: quote.pedido
+      ? {
+          id_pedido: quote.pedido.id_pedido,
+          estatus: quote.pedido.estatus.descripcion,
+          estado_factura: quote.pedido.estado_factura?.descripcion ?? null,
+        }
+      : null,
     items:
       quote.pedido?.detalles && quote.pedido.detalles.length > 0
         ? quote.pedido.detalles.map((d) => {
