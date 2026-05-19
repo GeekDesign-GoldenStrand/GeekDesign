@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
+import { ConfirmarEliminarServicioModal } from "@/components/admin/servicios/organisms/ConfirmarEliminarServicioModal";
 import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
 import type { PaginatedResponse, ServicioListadoItem } from "@/types/servicios";
 
@@ -10,6 +11,13 @@ export function ViewServicios() {
   const [servicios, setServicios] = useState<ServicioListadoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [servicioAEliminar, setServicioAEliminar] = useState<{
+    id: number;
+    nombre: string;
+  } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchServicios() {
@@ -28,17 +36,36 @@ export function ViewServicios() {
     fetchServicios();
   }, []);
 
-  // Counts active services for the toolbar badge.
   const activosCount = servicios.filter((s) => s.estatus_servicio).length;
 
-  // Card action handlers — placeholders until ADMIN-03 (delete) and detail US ship.
   const handleVerDetalle = (id: number) => {
     console.warn("TODO: Ver detalle del servicio", id);
   };
 
   const handleEliminar = (id: number) => {
-    console.warn("TODO: Eliminar servicio", id);
+    const servicio = servicios.find((s) => s.id_servicio === id);
+    if (!servicio) return;
+    setDeleteError(null);
+    setServicioAEliminar({ id, nombre: servicio.nombre_servicio });
   };
+
+  async function handleDeleteConfirm() {
+    if (!servicioAEliminar) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/servicios/${servicioAEliminar.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setDeleteError((payload as { error?: string }).error ?? `Error ${res.status}`);
+        return;
+      }
+      setServicios((prev) => prev.filter((s) => s.id_servicio !== servicioAEliminar.id));
+      setServicioAEliminar(null);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   return (
     <div className="p-8">
@@ -68,6 +95,15 @@ export function ViewServicios() {
           ))}
         </div>
       )}
+
+      <ConfirmarEliminarServicioModal
+        isOpen={servicioAEliminar !== null}
+        servicioNombre={servicioAEliminar?.nombre ?? ""}
+        loading={deleteLoading}
+        serverError={deleteError}
+        onClose={() => setServicioAEliminar(null)}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }
