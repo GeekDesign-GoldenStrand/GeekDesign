@@ -1,10 +1,13 @@
+import type { UserRole } from "@/types";
+
 import {
-  CubeTransparent,
   Buildings,
+  CubeTransparent,
   CurrencyDollar,
   Gear,
   Handshake,
   House,
+  Money,
   Package,
   UserGear,
   Users,
@@ -15,76 +18,76 @@ export type NavItem = {
   href: string;
   label: string;
   icon: React.ReactNode;
+  roles: UserRole[];
 };
+
+const ICON_SIZE = 32;
 
 export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    icon: <House />,
+    icon: <House size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/finanzas",
     label: "Finanzas",
-    icon: <CurrencyDollar />,
+    icon: <CurrencyDollar size={ICON_SIZE} />,
+    roles: ["Finanzas"],
   },
   {
     href: "/cotizaciones",
     label: "Cotizaciones",
-    icon: (
-      <svg
-        viewBox="0 0 40 40"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-full h-full"
-      >
-        <rect x="4" y="10" width="32" height="20" rx="3" />
-        <circle cx="20" cy="20" r="5" />
-        <path d="M8 15h4M28 15h4M8 25h4M28 25h4" />
-      </svg>
-    ),
+    icon: <Money size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/pedidos",
     label: "Pedidos",
-    icon: <Package />,
+    icon: <Package size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador", "Colaborador"],
   },
   {
     href: "/servicios",
     label: "Servicios",
-    icon: <Wrench />,
+    icon: <Wrench size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/colaboradores",
     label: "Colaboradores",
-    icon: <Users />,
+    icon: <Users size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/terceros",
     label: "Terceros",
-    icon: <UserGear />,
+    icon: <UserGear size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/clientes",
     label: "Clientes",
-    icon: <Handshake />,
+    icon: <Handshake size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/maquinas",
     label: "Máquinas",
-    icon: <Gear />,
+    icon: <Gear size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/materiales",
     label: "Materiales",
-    icon: <CubeTransparent />,
+    icon: <CubeTransparent size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador", "Colaborador"],
   },
   {
     href: "/sucursales",
     label: "Sucursales",
-    icon: <Buildings />,
+    icon: <Buildings size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
 ];
