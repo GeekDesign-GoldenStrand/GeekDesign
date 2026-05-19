@@ -20,9 +20,11 @@ jest.mock("@/lib/db/client", () => ({
     estatusPedidos: {
       findUnique: jest.fn(),
     },
+    estadoFacturaPedido: {
+      findUnique: jest.fn(),
+    },
     pedidos: {
-      create: jest.fn(),
-      delete: jest.fn(),
+      update: jest.fn(),
     },
     detallePedido: {
       findMany: jest.fn(),
@@ -127,8 +129,8 @@ describe("Req. ST-08-09 Integration Tests", () => {
     });
   });
 
-  describe("Phase 2: POST /api/cotizaciones/[id]/approve", () => {
-    it("should successfully approve a quotation and create a pedido (201)", async () => {
+  describe("Phase 2: POST /api/cotizaciones/[id]/approve (D5 promote-draft)", () => {
+    it("D5: promotes draft pedido in place (no delete/recreate) and returns 201", async () => {
       const mockQuote = {
         id_cotizacion: 203,
         id_cliente: 1,
@@ -139,29 +141,25 @@ describe("Req. ST-08-09 Integration Tests", () => {
         cliente: { correo_electronico: "test@example.com" },
       };
 
-      const mockDetails = [
-        {
-          id_servicio: 1,
-          id_material: 1,
-          id_archivo: 1,
-          cantidad: 10,
-          precio_unitario: 100,
-          subtotal: 1000,
-          notas: "Test item",
-        },
-      ];
-
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
       (prisma.estatusCotizacion.findUnique as jest.Mock).mockResolvedValue({
         id_estatus: 4,
         descripcion: "Aprobada",
       });
-      (prisma.estatusPedidos.findUnique as jest.Mock).mockResolvedValue({
-        id_estatus: 1,
-        descripcion: "Pendiente",
+      (prisma.estadoFacturaPedido.findUnique as jest.Mock).mockResolvedValue({
+        id_estado_factura: 4,
+        descripcion: "Aprobacion_diseno",
       });
-      (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue(mockDetails);
-      (prisma.pedidos.create as jest.Mock).mockResolvedValue({ id_pedido: 500 });
+      (prisma.detallePedido.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (prisma.pedidos.update as jest.Mock).mockResolvedValue({
+        id_pedido: 101,
+        id_estado_factura: 4,
+      });
+      (prisma.cotizaciones.update as jest.Mock).mockResolvedValue({
+        id_cotizacion: 203,
+        id_estatus_cotizacion: 4,
+        id_pedido: 101,
+      });
 
       const res = await createApp({ POST: approvePOST }, paramExtractor)
         .post("/api/cotizaciones/203/approve")
@@ -169,18 +167,25 @@ describe("Req. ST-08-09 Integration Tests", () => {
         .send();
 
       expect(res.status).toBe(201);
-      expect(prisma.pedidos.create).toHaveBeenCalledWith({
+
+      // Promote in place — same id_pedido, no .create call.
+      expect(prisma.pedidos.update).toHaveBeenCalledWith({
+        where: { id_pedido: 101 },
+        data: { id_estado_factura: 4 },
+      });
+      // Only rejected items are deleted, not the whole pedido.
+      expect(prisma.detallePedido.deleteMany).toHaveBeenCalledWith({
+        where: {
+          id_pedido: 101,
+          notas: { contains: "[ESTADO:rechazado]" },
+        },
+      });
+      // History entry attributed to cliente.
+      expect(prisma.historialEstadosCotizacion.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          id_cliente: 1,
-          id_sucursal: 1,
-          detalles: {
-            create: [
-              expect.objectContaining({
-                precio_unitario: 100,
-                subtotal: 1000,
-              }),
-            ],
-          },
+          id_cotizacion: 203,
+          actor_tipo: "Cliente",
+          id_estado_nuevo: 4,
         }),
       });
     });
