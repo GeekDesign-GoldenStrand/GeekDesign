@@ -140,7 +140,7 @@ export async function asignarServicios(id: number, servicios: number[]): Promise
     where: { id_maquina: id },
     include: {
       sucursales: { include: { sucursal: true } },
-      servicios: { include: { servicio: true } },  // ← fixed
+      servicios: { include: { servicio: true } }, // ← fixed
     },
   });
 
