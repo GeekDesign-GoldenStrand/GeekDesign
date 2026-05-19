@@ -13,6 +13,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
+  DataInconsistencyError,
 } from "@/lib/utils/errors";
 
 /**
@@ -524,4 +525,68 @@ export async function cancelQuotationByClient(
 
     return updatedQuotation;
   });
+}
+
+/**
+ * Fetches the complete context required to generate a Work Order PDF.
+ * This includes the Quotation, its Line Items (Specs), Branch Data, and Client Data.
+ */
+export async function getFullQuotationContext(id: number) {
+  const quotation = await prisma.cotizaciones.findUnique({
+    where: { id_cotizacion: id },
+    include: {
+      cliente: true,
+      estatus: true,
+      pedido: {
+        include: {
+          sucursal: true,
+          detalles: {
+            include: {
+              servicio: true,
+              material: true,
+              archivo: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!quotation) {
+    throw new NotFoundError("Quotation not found");
+  }
+
+  // Ensure the quotation is validated and approved (status must be 'Aprobada')
+  if (quotation.estatus.descripcion !== QUOTATION_STATUS.APROBADA) {
+    throw new ConflictError(
+      `No se puede generar la orden de trabajo. La cotización debe estar en estado 'Aprobada' (estado actual: '${quotation.estatus.descripcion}').`
+    );
+  }
+
+  // Ensure contact data is present (Cliente)
+  if (!quotation.cliente || !quotation.cliente.nombre_cliente) {
+    throw new DataInconsistencyError("Client contact data is missing or incomplete.");
+  }
+
+  // Ensure we have specs
+  const specs = quotation.pedido?.detalles || [];
+  if (specs.length === 0) {
+    throw new DataInconsistencyError(
+      "Quotation has no line items (specs) to generate a Work Order."
+    );
+  }
+
+  // Fetch branch data. If not tied to an order yet, fallback to a default branch if necessary.
+  // For now, assuming standard process dictates an order exists when Work Order is generated.
+  const branch = quotation.pedido?.sucursal;
+  if (!branch) {
+    throw new DataInconsistencyError("Branch data is missing for this quotation's order.");
+  }
+
+  return {
+    quotation,
+    client: quotation.cliente,
+    specs,
+    branch,
+  };
 }

@@ -54,6 +54,14 @@ export class ConfigurationError extends Error {
   }
 }
 
+// 500 helper for inconsistent database states.
+export class DataInconsistencyError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+    this.name = "DataInconsistencyError";
+  }
+}
+
 // 409 helper for resources that cannot be modified because they are referenced.
 export class ConflictError extends AppError {
   constructor(message: string) {
