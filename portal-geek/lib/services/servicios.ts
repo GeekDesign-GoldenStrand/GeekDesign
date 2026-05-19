@@ -68,6 +68,11 @@ export async function listServicios(
   // Prisma's `mode: "insensitive"` lowercases but does NOT strip diacritics
   // ("Láser" stays accented), so a search for "laser" misses it. We use the
   // unaccent() Postgres extension on both column and term to normalize them.
+  //
+  // Copilot review #7 (deferred): for large catalogs this loads all matching IDs
+  // into memory and then runs a `WHERE id IN (...)` hydrate. Once the catalog
+  // grows past ~1k active servicios, migrate to a single $queryRaw that does
+  // LIMIT/OFFSET in SQL + a separate COUNT(*) query, then hydrate by id range.
   if (query && query.trim().length > 0) {
     const trimmed = query.trim();
     // lower(unaccent(…)) — unaccent first (strips diacritics to ASCII) THEN
