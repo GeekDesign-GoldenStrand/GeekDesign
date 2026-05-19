@@ -36,20 +36,20 @@ export function EditarMaterialForm({
   onDeleted,
   onClose,
 }: EditarMaterialFormProps) {
+  const isGrupo = material.tipo === "grupo";
+  const needsDimensions = !isGrupo;
+
   const [form, setForm] = useState({
     nombre_material: material.name,
     descripcion_material: material.description,
-    unidad_medida: material.unit,
+    unidad_medida: material.unit === "-" ? "" : material.unit,
     ancho: material.width === "-" ? "" : material.width,
     alto: material.height === "-" ? "" : material.height,
     grosor: material.thickness === "-" ? "" : material.thickness,
     color: material.color === "-" ? "" : material.color,
   });
-  // Storage key from a fresh upload. null = keep the existing image (omit from PUT).
-  // The server already replaced `material.imageUrl` with a presigned GET URL on
-  // read, so we never send that value back — it isn't a storage key.
-  const [newImageKey, setNewImageKey] = useState<string | null>(null);
 
+  const [newImageKey, setNewImageKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -71,17 +71,30 @@ export function EditarMaterialForm({
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
       }
-      if (key === "unidad_medida") {
-        return value.trim() ? FIELD_SUCCESS : "";
-      }
       return value.trim() ? FIELD_SUCCESS : "";
     }
     return "";
   }
 
   function validate() {
-    // Guard empty numeric fields explicitly so undefined values are never
-    // silently dropped by JSON.stringify before reaching the API.
+    if (isGrupo) {
+      const payload: Record<string, unknown> = {
+        nombre_material: form.nombre_material.trim(),
+        descripcion_material: form.descripcion_material.trim() || undefined,
+      };
+      if (newImageKey) payload.imagen_url = newImageKey;
+
+      const nameError =
+        !payload.nombre_material ? "El nombre es requerido." : "";
+      if (nameError) {
+        setErrors({ nombre_material: nameError });
+        return null;
+      }
+      setErrors({});
+      return payload;
+    }
+
+    // individual / sub — require numeric fields
     const numericErrors: Record<string, string> = {};
     for (const key of REQUIRED_NUMERIC) {
       if (!form[key].trim()) numericErrors[key] = "Campo requerido";
@@ -91,9 +104,6 @@ export function EditarMaterialForm({
       return null;
     }
 
-    // Build the payload the schema validates against (requires imagen_url).
-    // For the PUT we'll strip imagen_url back out when the user didn't upload a
-    // new image — UpdateMaterialSchema is partial, so omitting it is valid.
     const payload = {
       nombre_material: form.nombre_material.trim(),
       descripcion_material: form.descripcion_material.trim(),
@@ -130,11 +140,15 @@ export function EditarMaterialForm({
     const validatedPayload = validate();
     if (!validatedPayload) return;
 
-    // Only send imagen_url when the user uploaded a new image. Otherwise the
-    // existing storage key on the row is preserved by the partial update.
-    const { imagen_url: _omit, ...rest } = validatedPayload;
-    void _omit;
-    const bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+    // For individual/sub: strip the placeholder imagen_url unless a new image was uploaded
+    let bodyPayload: Record<string, unknown>;
+    if (isGrupo) {
+      bodyPayload = validatedPayload;
+    } else {
+      const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
+      void _omit;
+      bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+    }
 
     setLoading(true);
     try {
@@ -164,9 +178,7 @@ export function EditarMaterialForm({
     setDeleting(true);
 
     try {
-      const res = await fetch(`/api/materiales/${material.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/materiales/${material.id}`, { method: "DELETE" });
 
       if (!res.ok) {
         const responsePayload = await res.json().catch(() => ({}));
@@ -191,6 +203,14 @@ export function EditarMaterialForm({
         </div>
       )}
 
+      {isGrupo && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#fff3e0] border border-[#ffb74d] rounded-[6px]">
+          <span className="text-[13px] text-[#e65100]">
+            Grupo de materiales — edita el nombre, descripción e imagen del grupo.
+          </span>
+        </div>
+      )}
+
       <div>
         <label className={LABEL}>Nombre *</label>
         <input
@@ -205,7 +225,7 @@ export function EditarMaterialForm({
       </div>
 
       <div>
-        <label className={LABEL}>Descripción *</label>
+        <label className={LABEL}>Descripción {isGrupo ? "" : "*"}</label>
         <textarea
           rows={3}
           maxLength={500}
@@ -214,93 +234,99 @@ export function EditarMaterialForm({
           onChange={(e) => setField("descripcion_material", e.target.value)}
           className={`${FIELD} ${getFieldClass("descripcion_material")} resize-none`}
         />
-        {errors.descripcion_material && <p className={ERROR_MSG}>{errors.descripcion_material}</p>}
+        {errors.descripcion_material && (
+          <p className={ERROR_MSG}>{errors.descripcion_material}</p>
+        )}
       </div>
 
-      <div>
-        <label className={LABEL}>Unidad de medida *</label>
-        <select
-          value={form.unidad_medida}
-          onChange={(e) => setField("unidad_medida", e.target.value)}
-          className={`${SELECT_FIELD} ${getFieldClass("unidad_medida")}`}
-        >
-          <option value="">Seleccionar unidad</option>
-          {UNIDADES_MEDIDA.map((unit) => (
-            <option key={unit} value={unit}>
-              {unit === "mm" && "Milímetros (mm)"}
-              {unit === "in" && "Pulgadas (in)"}
-              {unit === "cm" && "Centímetros (cm)"}
-              {unit === "mu" && "Micras (mu)"}
-              {unit === "pt" && "Puntos (pt)"}
-            </option>
-          ))}
-        </select>
-        {errors.unidad_medida && <p className={ERROR_MSG}>{errors.unidad_medida}</p>}
-      </div>
+      {needsDimensions && (
+        <>
+          <div>
+            <label className={LABEL}>Unidad de medida *</label>
+            <select
+              value={form.unidad_medida}
+              onChange={(e) => setField("unidad_medida", e.target.value)}
+              className={`${SELECT_FIELD} ${getFieldClass("unidad_medida")}`}
+            >
+              <option value="">Seleccionar unidad</option>
+              {UNIDADES_MEDIDA.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit === "mm" && "Milímetros (mm)"}
+                  {unit === "in" && "Pulgadas (in)"}
+                  {unit === "cm" && "Centímetros (cm)"}
+                  {unit === "mu" && "Micras (mu)"}
+                  {unit === "pt" && "Puntos (pt)"}
+                </option>
+              ))}
+            </select>
+            {errors.unidad_medida && <p className={ERROR_MSG}>{errors.unidad_medida}</p>}
+          </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className={LABEL}>Ancho *</label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0.00"
-            value={form.ancho}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-            }}
-            onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
-            className={`${FIELD} ${getFieldClass("ancho")}`}
-          />
-          {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>Alto *</label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0.00"
-            value={form.alto}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-            }}
-            onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
-            className={`${FIELD} ${getFieldClass("alto")}`}
-          />
-          {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>Grosor *</label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0.00"
-            value={form.grosor}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-            }}
-            onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
-            className={`${FIELD} ${getFieldClass("grosor")}`}
-          />
-          {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
-        </div>
-      </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={LABEL}>Ancho *</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+                value={form.ancho}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
+                className={`${FIELD} ${getFieldClass("ancho")}`}
+              />
+              {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
+            </div>
+            <div>
+              <label className={LABEL}>Alto *</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+                value={form.alto}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
+                className={`${FIELD} ${getFieldClass("alto")}`}
+              />
+              {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
+            </div>
+            <div>
+              <label className={LABEL}>Grosor *</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+                value={form.grosor}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
+                className={`${FIELD} ${getFieldClass("grosor")}`}
+              />
+              {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
+            </div>
+          </div>
 
-      <div>
-        <label className={LABEL}>Color *</label>
-        <input
-          type="text"
-          maxLength={50}
-          placeholder="Ej. #d18c59 o Negro"
-          value={form.color}
-          onChange={(e) => setField("color", e.target.value)}
-          className={`${FIELD} ${getFieldClass("color")}`}
-        />
-        {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
-      </div>
+          <div>
+            <label className={LABEL}>Color *</label>
+            <input
+              type="text"
+              maxLength={50}
+              placeholder="Ej. #d18c59 o Negro"
+              value={form.color}
+              onChange={(e) => setField("color", e.target.value)}
+              className={`${FIELD} ${getFieldClass("color")}`}
+            />
+            {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
+          </div>
+        </>
+      )}
 
       <div>
         <label className={LABEL}>Imagen</label>
@@ -310,9 +336,7 @@ export function EditarMaterialForm({
             setNewImageKey(key);
             setErrors((prev) => ({ ...prev, imagen_url: "" }));
           }}
-          onError={(message) => {
-            setErrors((prev) => ({ ...prev, imagen_url: message }));
-          }}
+          onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
           hasError={Boolean(errors.imagen_url)}
         />
         {errors.imagen_url && <p className={ERROR_MSG}>{errors.imagen_url}</p>}
@@ -350,11 +374,13 @@ export function EditarMaterialForm({
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">¿Eliminar material?</h3>
+            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">
+              {isGrupo ? "¿Eliminar grupo?" : "¿Eliminar material?"}
+            </h3>
             <p className="text-[14px] text-[#575757] mb-6">
-              Esta acción no se puede deshacer. El material &quot;{material.name}&quot; será
-              eliminado permanentemente. Si está asociado a opciones de producto, la eliminación
-              será bloqueada.
+              {isGrupo
+                ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
+                : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`}
             </p>
             <div className="flex justify-end gap-3">
               <button

@@ -72,13 +72,20 @@ export type TipoVariableOption = {
 
 export type MaterialOption = {
   id_material: number;
+  id_material_padre: number | null;
+  es_grupo: boolean;
   nombre_material: string;
   descripcion_material: string | null;
-  unidad_medida: string;
+  unidad_medida: string | null;
   ancho: string | null;
   alto: string | null;
   grosor: string | null;
   color: string | null;
+  subMateriales?: Array<{
+    id_material: number;
+    nombre_material: string;
+    id_material_padre: number;
+  }>;
 };
 
 export type ProveedorPrecioOption = {
