@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import PedidoDetailModal from "@/components/admin/organisms/PedidoDetailModal";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
 
 // Frontend type for an order
@@ -77,6 +78,7 @@ export function PedidosTemplate({
   setCliente,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
@@ -245,7 +247,17 @@ export function PedidosTemplate({
         </div>
 
         {/* Table */}
-        <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
+        <PedidosTable
+          pedidos={pedidos}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+          onShowDetail={setDetailId}
+        />
+
+        {/* PE-05 — Detalle del pedido */}
+        {detailId != null && (
+          <PedidoDetailModal key={detailId} pedidoId={detailId} onClose={() => setDetailId(null)} />
+        )}
 
         {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">

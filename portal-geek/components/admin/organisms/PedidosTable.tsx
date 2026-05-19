@@ -2,6 +2,7 @@
 
 import {
   PencilSimple,
+  Info,
   CheckCircle,
   WarningCircle,
   StopCircle,
@@ -136,9 +137,10 @@ interface Props {
   pedidos: Pedido[];
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
+  onShowDetail: (id: number) => void;
 }
 
-export function PedidosTable({ pedidos, onStatusChange }: Props) {
+export function PedidosTable({ pedidos, onStatusChange, onShowDetail }: Props) {
   if (pedidos.length === 0) {
     return (
       <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron pedidos.</div>
@@ -228,7 +230,16 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                   {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
                 </div>
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onShowDetail(p.id_pedido)}
+                  title="Ver detalles"
+                  aria-label={`Ver detalles del pedido ${p.id_pedido}`}
+                  className="text-black hover:text-[#e42200] p-2"
+                >
+                  <Info size={18} />
+                </button>
                 <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
                   <PencilSimple size={18} />
                 </a>
@@ -332,12 +343,22 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <a
-                  href={`/pedidos/${p.id_pedido}`}
-                  className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
-                >
-                  <PencilSimple size={18} />
-                </a>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onShowDetail(p.id_pedido)}
+                    aria-label={`Ver detalles del pedido ${p.id_pedido}`}
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
+                  >
+                    <Info size={18} />
+                  </button>
+                  <a
+                    href={`/pedidos/${p.id_pedido}`}
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
+                  >
+                    <PencilSimple size={18} />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

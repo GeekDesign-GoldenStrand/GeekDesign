@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
+import { NotFoundError } from "@/lib/utils/errors";
 
 // Type for pedidos including frontend-required relations
 type PedidoWithRelations = Prisma.PedidosGetPayload<{
@@ -174,9 +175,96 @@ export async function listPedidos(
   return { items, total };
 }
 
-export async function getPedido(id: number): Promise<Pedidos> {
-  void id;
-  throw new Error("Not implemented");
+// Shape returned by getPedido — mirrors the PE-05 sequence diagram:
+// { pedido, detalle[], pagos[], historial[] }
+export type PedidoDetalleResponse = {
+  pedido: Prisma.PedidosGetPayload<{
+    include: {
+      cliente: true;
+      estatus: true;
+      estado_factura: true;
+      sucursal: true;
+    };
+  }>;
+  detalle: Prisma.DetallePedidoGetPayload<{
+    include: {
+      servicio: { select: { nombre_servicio: true } };
+      material: { select: { nombre_material: true } };
+      archivo: { select: { nombre_archivo: true; url_archivo: true; formato: true } };
+    };
+  }>[];
+  pagos: Prisma.PagosGetPayload<true>[];
+  historial: {
+    fecha_cambio: Date;
+    estatus_anterior: string | null;
+    estatus_nuevo: string;
+    cambiado_por: string;
+  }[];
+};
+
+// PE-05 — Dirección consulta los detalles de un pedido específico.
+// Aggregates the order header, its line items, payments and status history.
+export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
+  const pedido = await prisma.pedidos.findUnique({
+    where: { id_pedido: id },
+    include: {
+      cliente: true,
+      estatus: true,
+      estado_factura: true,
+      sucursal: true,
+      detalles: {
+        include: {
+          servicio: { select: { nombre_servicio: true } },
+          material: { select: { nombre_material: true } },
+          archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+        },
+        orderBy: { id_detalle: "asc" },
+      },
+      pagos: { orderBy: { fecha: "asc" } },
+      historial: {
+        include: { usuario: { select: { nombre_completo: true } } },
+        orderBy: { fecha_cambio: "asc" },
+      },
+    },
+  });
+
+  if (!pedido) {
+    throw new NotFoundError("Pedido no encontrado");
+  }
+
+  const { detalles, pagos, historial, ...header } = pedido;
+
+  // HistorialEstadosPedidos stores plain status IDs (no relations), so resolve
+  // their descriptions from the catalog in a single lookup.
+  const statusIds = Array.from(
+    new Set(
+      historial.flatMap((h) =>
+        h.id_estado_anterior != null
+          ? [h.id_estado_anterior, h.id_estado_nuevo]
+          : [h.id_estado_nuevo]
+      )
+    )
+  );
+
+  const statuses = await prisma.estatusPedidos.findMany({
+    where: { id_estatus: { in: statusIds } },
+    select: { id_estatus: true, descripcion: true },
+  });
+
+  const statusById = new Map(statuses.map((s) => [s.id_estatus, s.descripcion]));
+
+  return {
+    pedido: header,
+    detalle: detalles,
+    pagos,
+    historial: historial.map((h) => ({
+      fecha_cambio: h.fecha_cambio,
+      estatus_anterior:
+        h.id_estado_anterior != null ? (statusById.get(h.id_estado_anterior) ?? null) : null,
+      estatus_nuevo: statusById.get(h.id_estado_nuevo) ?? "Desconocido",
+      cambiado_por: h.usuario.nombre_completo,
+    })),
+  };
 }
 
 export async function createPedido(data: CreatePedidoInput): Promise<Pedidos> {
