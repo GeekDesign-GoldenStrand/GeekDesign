@@ -117,7 +117,7 @@ model Clientes {
   nombre_cliente     String  @db.VarChar(100)
   empresa            String? @db.VarChar(100)
   rfc                String? @db.VarChar(13)
-  correo_electronico String  @db.VarChar(150)
+  correo_electronico String  @unique @db.VarChar(150) // D8: @unique enables atomic upsert in ST-23 cotizacion submit
   numero_telefono    String  @db.VarChar(20)
   categoria          String? @db.VarChar(30) // Black / Silver / Gold / Emprendedor / Baneado
 
@@ -489,12 +489,9 @@ model DetallePedido {
   id_servicio             Int
   id_material             Int
   id_archivo              Int
-  opciones_seleccionadas  Json
   cantidad                Int
-  ancho_cm                Decimal? @db.Decimal(10, 2)
-  alto_cm                 Decimal? @db.Decimal(10, 2)
-  grosor_cm               Decimal? @db.Decimal(10, 2)
-  color                   String?  @db.VarChar(50)
+  // D3: ancho_cm/alto_cm/grosor_cm/color/opciones_seleccionadas removed.
+  // Source of truth for dimensions/sizing is VariablesCotizacion (linked by id_detalle).
   responsable_recoleccion String   @db.VarChar(100)
   notas                   String?
   precio_unitario         Decimal  @db.Decimal(10, 2)
