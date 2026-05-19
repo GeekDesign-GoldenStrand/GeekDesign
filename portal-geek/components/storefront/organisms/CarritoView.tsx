@@ -24,13 +24,17 @@ interface Props {
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
-function getSelecciones(configuracion: Record<string, unknown>) {
-  const raw = configuracion?.selecciones;
-  if (!Array.isArray(raw)) return [];
-  return (raw as Record<string, unknown>[]).map((s) => ({
-    opcionNombre: (s?.opcionNombre as string) ?? `Opción ${s?.opcionId ?? ""}`,
-    valorNombre: (s?.valorNombre as string) ?? String(s?.valorId ?? ""),
-  }));
+function getEspecificaciones(item: CarritoItem) {
+  const rows: Array<{ etiqueta: string; valor: string }> = [
+    { etiqueta: "Material", valor: item.nombreMaterial },
+  ];
+  for (const v of item.configuracion.variables ?? []) {
+    rows.push({
+      etiqueta: v.etiqueta,
+      valor: v.unidad ? `${v.valor} ${v.unidad}` : String(v.valor),
+    });
+  }
+  return rows;
 }
 
 function ChevronLeft() {
@@ -138,7 +142,7 @@ export function CarritoView({ relatedServices }: Props) {
             <div className="h-px bg-[#c2c0c0]" />
 
             {items.map((item) => {
-              const selecciones = getSelecciones(item.configuracion);
+              const especificaciones = getEspecificaciones(item);
               const specsOpen = openSpecs.has(item.id);
 
               return (
@@ -169,14 +173,11 @@ export function CarritoView({ relatedServices }: Props) {
                       </div>
 
                       <Link
-                        href={`/servicios/${item.servicioId}?editItemId=${item.id}`}
+                        href={`/servicios/${item.servicioId}`}
                         className="text-[18px] font-medium text-[#1e1e1e] underline"
                       >
-                        Editar opciones
+                        Ver servicio
                       </Link>
-                      <button className="text-[18px] font-medium text-[#1e1e1e] underline text-left">
-                        Editar diseño
-                      </button>
                     </div>
 
                     {/* Item details */}
@@ -224,15 +225,15 @@ export function CarritoView({ relatedServices }: Props) {
                         )}
                       </button>
 
-                      {specsOpen && selecciones.length > 0 && (
+                      {specsOpen && especificaciones.length > 0 && (
                         <div className="flex flex-col gap-[4px]">
-                          {selecciones.map((s, i) => (
+                          {especificaciones.map((s, i) => (
                             <div
                               key={i}
                               className="flex justify-between text-[18px] text-[#1e1e1e]"
                             >
-                              <span>{s.opcionNombre}</span>
-                              <span>{s.valorNombre}</span>
+                              <span>{s.etiqueta}</span>
+                              <span>{s.valor}</span>
                             </div>
                           ))}
                         </div>
@@ -281,9 +282,12 @@ export function CarritoView({ relatedServices }: Props) {
               <span>{formatPeso(subtotal)}</span>
             </div>
 
-            <button className="bg-[#8b434a] h-[61px] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] text-[#fffcfc] font-bold text-[16.742px] hover:bg-[#7a3a41] transition-colors w-full">
-              Ir a pantalla de compra
-            </button>
+            <Link
+              href="/cotizacion/checkout"
+              className="bg-[#8b434a] h-[61px] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] text-[#fffcfc] font-bold text-[16.742px] hover:bg-[#7a3a41] transition-colors w-full flex items-center justify-center"
+            >
+              Solicitar cotización
+            </Link>
           </div>
         </div>
 
