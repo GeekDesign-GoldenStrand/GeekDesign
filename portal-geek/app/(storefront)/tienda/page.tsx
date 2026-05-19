@@ -1,4 +1,5 @@
 import type { Servicios } from "@prisma/client";
+import type { Metadata } from "next";
 
 import { ServiceCatalogCard } from "@/components/storefront/atoms/ServiceCatalogCard";
 import { AnnouncementBar } from "@/components/storefront/molecules/AnnouncementBar";
@@ -6,6 +7,8 @@ import { CTABanner } from "@/components/storefront/molecules/CTABanner";
 import { HeroBanner } from "@/components/storefront/organisms/HeroBanner";
 import { ServiceGrid } from "@/components/storefront/organisms/ServiceGrid";
 import { listServicios } from "@/lib/services/servicios";
+
+export const metadata: Metadata = { title: "Tienda" };
 
 export const revalidate = 60;
 

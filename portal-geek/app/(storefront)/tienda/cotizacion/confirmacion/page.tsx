@@ -8,7 +8,7 @@ export default async function ConfirmacionPage({ searchParams }: Props) {
   const { folio, email } = await searchParams;
   const lookupUrl =
     folio && email
-      ? `/cotizacion/${encodeURIComponent(folio)}?email=${encodeURIComponent(email)}`
+      ? `/tienda/cotizacion/${encodeURIComponent(folio)}?email=${encodeURIComponent(email)}`
       : null;
 
   return (
@@ -35,8 +35,8 @@ export default async function ConfirmacionPage({ searchParams }: Props) {
             </Link>
             <p className="text-[13px] text-[#666]">
               Guarda este enlace o búscala más tarde en{" "}
-              <Link href="/cotizacion" className="underline">
-                /cotizacion
+              <Link href="/tienda/cotizacion" className="underline">
+                /tienda/cotizacion
               </Link>
               .
             </p>

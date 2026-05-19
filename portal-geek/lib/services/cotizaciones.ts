@@ -647,7 +647,7 @@ export async function createCotizacionFromCart(
       folio,
       monto_total,
       id_cotizacion: cotizacion.id_cotizacion,
-      lookup_url: `/cotizacion/${folio}?email=${encodeURIComponent(cliente.correo_electronico)}`,
+      lookup_url: `/tienda/cotizacion/${folio}?email=${encodeURIComponent(cliente.correo_electronico)}`,
     };
   });
 }

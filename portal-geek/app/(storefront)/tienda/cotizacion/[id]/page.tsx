@@ -1,8 +1,11 @@
 import { WarningCircle, MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
+
+export const metadata: Metadata = { title: "Detalle de cotización" };
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -39,7 +42,7 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
             nuevo.
           </p>
           <Link
-            href="/storefront"
+            href="/tienda"
             className="inline-flex items-center justify-center gap-3 h-[64px] px-8 bg-[#DF2646] text-white rounded-[12px] font-bold text-[16px] hover:bg-[#C41E3A] transition-all shadow-lg shadow-[#DF2646]/20"
           >
             <MagnifyingGlass size={22} weight="bold" />

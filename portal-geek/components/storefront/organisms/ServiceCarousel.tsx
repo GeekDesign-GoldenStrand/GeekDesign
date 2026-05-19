@@ -72,7 +72,7 @@ export function ServiceCarousel({ services }: ServiceCarouselProps) {
         {tripled.map((s, i) => (
           <Link
             key={`${s.id_servicio}-${i}`}
-            href={`/servicios/${s.id_servicio}`}
+            href={`/tienda/servicios/${s.id_servicio}`}
             className="shrink-0 block w-[calc((100%_-_24px)_/_3_-_0.5px)] md:w-[calc((100%_-_100px)_/_6_-_0.5px)]"
           >
             <ServiceCard nombre_servicio={s.nombre_servicio} />

@@ -91,7 +91,7 @@ export function CheckoutForm({ sucursales }: Props) {
       window.dispatchEvent(new CustomEvent("carrito:updated"));
       const folio = json.data.folio as string;
       router.push(
-        `/cotizacion/confirmacion?folio=${encodeURIComponent(folio)}&email=${encodeURIComponent(correo.trim())}`
+        `/tienda/cotizacion/confirmacion?folio=${encodeURIComponent(folio)}&email=${encodeURIComponent(correo.trim())}`
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red");

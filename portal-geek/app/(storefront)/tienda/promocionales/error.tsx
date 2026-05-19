@@ -39,7 +39,7 @@ export default function PromocionalesError({
           </button>
 
           <Link
-            href="/storefront"
+            href="/tienda"
             className="flex items-center gap-2 text-black font-bold text-sm hover:underline"
           >
             <ArrowLeft size={20} />

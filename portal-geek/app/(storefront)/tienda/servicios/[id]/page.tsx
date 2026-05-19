@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { FormulaVariablesForm } from "@/components/storefront/organisms/FormulaVariablesForm";
 import { getServicioWithDetails } from "@/lib/services/servicios";
+
+export const metadata: Metadata = { title: "Servicio" };
 
 interface Props {
   params: Promise<{ id: string }>;

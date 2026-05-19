@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
+
 import { CarritoView } from "@/components/storefront/organisms/CarritoView";
 import { listServicios } from "@/lib/services/servicios";
+
+export const metadata: Metadata = { title: "Carrito" };
 
 export default async function CarritoPage() {
   let relatedServices: { id_servicio: number; nombre_servicio: string }[] = [];
