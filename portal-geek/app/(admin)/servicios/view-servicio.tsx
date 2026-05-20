@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
-import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ConfirmarEliminarServicioModal } from "@/components/admin/servicios/organisms/ConfirmarEliminarServicioModal";
 import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { PaginatedResponse, ServicioListadoItem } from "@/types/servicios";
 
 export function ViewServicios() {
@@ -65,7 +65,6 @@ export function ViewServicios() {
       setServicios((prev) => prev.filter((s) => s.id_servicio !== servicioAEliminar.id));
       setServicioAEliminar(null);
       setDeleteSuccess(true);
-      setTimeout(() => setDeleteSuccess(false), 3000);
     } finally {
       setDeleteLoading(false);
     }
@@ -78,9 +77,10 @@ export function ViewServicios() {
       <ServiciosToolbar activosCount={activosCount} />
 
       {deleteSuccess && (
-        <div className="mb-4">
-          <SuccessModal message="Servicio eliminado correctamente." />
-        </div>
+        <SuccessModal
+          message="Servicio eliminado correctamente."
+          onClose={() => setDeleteSuccess(false)}
+        />
       )}
 
       {loading && <div className="text-center py-12 text-gray-500">Cargando servicios...</div>}

@@ -119,7 +119,6 @@ export function useNuevoServicioForm() {
       }
 
       setSubmitSuccess(true);
-      setTimeout(() => router.push("/servicios"), 1500);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -165,6 +164,7 @@ export function useNuevoServicioForm() {
       handleSubmit,
       setForm,
       onCancel: () => router.push("/servicios"),
+      onSuccessRedirect: () => router.push("/servicios"),
     },
   };
 }
