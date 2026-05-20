@@ -22,7 +22,7 @@ export function ViewServicios() {
   useEffect(() => {
     async function fetchServicios() {
       try {
-        const res = await fetch("/api/servicios");
+        const res = await fetch("/api/servicios?activo=true");
         if (!res.ok) throw new Error("Error al cargar servicios");
         const json: PaginatedResponse<ServicioListadoItem> = await res.json();
         setServicios(json.data);
