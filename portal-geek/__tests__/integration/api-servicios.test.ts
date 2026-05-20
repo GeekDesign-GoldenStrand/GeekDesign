@@ -1,6 +1,8 @@
 /**
  * @jest-environment node
  */
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db/client";
 
 import { createApp } from "../helpers/next-supertest";
@@ -37,6 +39,7 @@ const mockFindMany = prisma.servicios.findMany as jest.Mock;
 const mockCount = prisma.servicios.count as jest.Mock;
 const mockFindFirst = prisma.servicios.findFirst as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
+const mockUpdate = prisma.servicios.update as jest.Mock;
 
 const mockGetSession = jest.fn();
 jest.mock("@/lib/auth/session", () => ({
@@ -417,6 +420,87 @@ describe("POST /api/servicios", () => {
           ],
         },
       });
+
+    expect(res.status).toBe(422);
+  });
+});
+
+describe("DELETE /api/servicios/[id] — ADMIN-03 Eliminar servicio (soft delete)", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/servicios/[id]/route");
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  function deleteApp() {
+    return createApp({ DELETE: routes.DELETE }, (url) => {
+      const segments = url.pathname.split("/");
+      return { id: segments[segments.length - 1] };
+    });
+  }
+
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const res = await deleteApp().delete("/api/servicios/1");
+
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 403 cuando el rol no es Administrador ni Direccion", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await deleteApp().delete("/api/servicios/1");
+
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 204 y llama update con estatus_servicio: false (Administrador)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockUpdate.mockResolvedValue({ id_servicio: 1, estatus_servicio: false });
+
+    const res = await deleteApp().delete("/api/servicios/1");
+
+    expect(res.status).toBe(204);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id_servicio: 1 },
+        data: { estatus_servicio: false },
+      })
+    );
+  });
+
+  it("acepta rol Direccion como equivalente a Administrador", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockUpdate.mockResolvedValue({ id_servicio: 1, estatus_servicio: false });
+
+    const res = await deleteApp().delete("/api/servicios/1");
+
+    expect(res.status).toBe(204);
+  });
+
+  it("retorna 404 cuando el servicio no existe (P2025)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockUpdate.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Record not found", {
+        code: "P2025",
+        clientVersion: "7.8.0",
+      })
+    );
+
+    const res = await deleteApp().delete("/api/servicios/999");
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toContain("no encontrado");
+  });
+
+  it("retorna 422 cuando el id no es un número válido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const res = await deleteApp().delete("/api/servicios/abc");
 
     expect(res.status).toBe(422);
   });

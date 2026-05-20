@@ -21,6 +21,7 @@ export function useNuevoServicioForm() {
   const [form, setForm] = useState<NuevoServicioFormState>(initialNuevoServicioState);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const sucursales = useFetch<{ data: SucursalOption[] }>("/api/sucursales?mode=options");
   const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores?mode=options");
@@ -117,7 +118,7 @@ export function useNuevoServicioForm() {
         throw new Error(errorData?.error ?? "Error al crear servicio");
       }
 
-      router.push("/servicios");
+      setSubmitSuccess(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -141,6 +142,7 @@ export function useNuevoServicioForm() {
     form,
     submitting,
     submitError,
+    submitSuccess,
     initialLoading,
     fetchError,
     canSubmit,
@@ -162,6 +164,7 @@ export function useNuevoServicioForm() {
       handleSubmit,
       setForm,
       onCancel: () => router.push("/servicios"),
+      onSuccessRedirect: () => router.push("/servicios"),
     },
   };
 }
