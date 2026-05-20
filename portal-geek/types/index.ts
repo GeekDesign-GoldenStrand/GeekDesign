@@ -82,9 +82,14 @@ export interface MaterialCardProps {
   thickness: string;
   description: string;
   imageUrl: string;
+  id_material_padre: number | null;
+  tipo: "individual" | "grupo" | "sub";
+  subMateriales?: MaterialCardProps[];
 }
 
 export type MaterialSortOrder = "az" | "za";
+
+export type MaterialTipoFilter = "all" | "grupos" | "individuales";
 
 export interface MaterialesVisibleColumns {
   name: boolean;

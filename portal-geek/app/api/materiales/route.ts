@@ -2,8 +2,19 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { withRole } from "@/lib/auth/guards";
-import { CreateMaterialSchema } from "@/lib/schemas/materiales";
-import { listMateriales, createMaterial, getMaterialesOptions } from "@/lib/services/materiales";
+import {
+  CreateGrupoMaterialSchema,
+  CreateMaterialSchema,
+  CreateSubMaterialSchema,
+} from "@/lib/schemas/materiales";
+import {
+  createGrupo,
+  createMaterial,
+  createSubMaterial,
+  getMaterialesGrupos,
+  getMaterialesOptions,
+  listMateriales,
+} from "@/lib/services/materiales";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
@@ -16,6 +27,11 @@ export const GET = withRole(
 
       if (mode === "options") {
         const data = await getMaterialesOptions();
+        return NextResponse.json({ data });
+      }
+
+      if (mode === "grupos") {
+        const data = await getMaterialesGrupos();
         return NextResponse.json({ data });
       }
 
@@ -33,8 +49,22 @@ export const GET = withRole(
 
 export const POST = withRole(["Direccion"], async (req: NextRequest) => {
   try {
-    const body = CreateMaterialSchema.parse(await req.json());
-    return created(await createMaterial(body));
+    const body = await req.json();
+    const tipo = body?.tipo;
+
+    if (tipo === "grupo") {
+      const parsed = CreateGrupoMaterialSchema.parse(body);
+      return created(await createGrupo(parsed));
+    }
+
+    if (tipo === "sub") {
+      const parsed = CreateSubMaterialSchema.parse(body);
+      return created(await createSubMaterial(parsed));
+    }
+
+    // Default: individual material (backward-compatible, tipo absent or "individual")
+    const parsed = CreateMaterialSchema.parse(body);
+    return created(await createMaterial(parsed));
   } catch (err) {
     return handleError(err);
   }

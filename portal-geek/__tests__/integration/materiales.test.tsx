@@ -55,6 +55,8 @@ const KEY = "materiales/2026/05/00000000-0000-4000-8000-000000000001.jpg";
 
 const BASE_MATERIAL = {
   id_material: 1,
+  id_material_padre: null,
+  es_grupo: false,
   nombre_material: "Acrílico espejo",
   descripcion_material: "Material de alta reflectividad",
   unidad_medida: "mm",
@@ -63,6 +65,7 @@ const BASE_MATERIAL = {
   grosor: 3,
   color: "Plata",
   imagen_url: KEY,
+  subMateriales: [],
 };
 
 const VALID_PAYLOAD = {
@@ -170,6 +173,34 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
     await createApp({ GET: routes.GET }).get("/api/materiales?pageSize=9999");
     expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
   });
+
+  it("retorna 200 con materiales no-grupo al pasar ?mode=options", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    mockFindMany.mockResolvedValue([BASE_MATERIAL]);
+
+    const res = await createApp({ GET: routes.GET }).get("/api/materiales?mode=options");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { es_grupo: false } })
+    );
+  });
+
+  it("retorna 200 con grupos al pasar ?mode=grupos", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    const GRUPO = { ...BASE_MATERIAL, es_grupo: true, unidad_medida: null, subMateriales: [] };
+    mockFindMany.mockResolvedValue([GRUPO]);
+
+    const res = await createApp({ GET: routes.GET }).get("/api/materiales?mode=grupos");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { es_grupo: true },
+        include: { subMateriales: true },
+      })
+    );
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -207,7 +238,7 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     expect(res.status).toBe(201);
   });
 
-  it("retorna 201 con el material creado (rol Direccion)", async () => {
+  it("retorna 201 con el material individual creado (rol Direccion)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockCreate.mockResolvedValue(BASE_MATERIAL);
 
@@ -263,6 +294,63 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
       .send({ ...VALID_PAYLOAD, ancho: 123456789 });
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("ancho");
+  });
+
+  // ── Grupos ──────────────────────────────────────────────────────────────────
+
+  it("retorna 201 al crear un grupo (tipo=grupo)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const GRUPO = { ...BASE_MATERIAL, es_grupo: true, unidad_medida: null, subMateriales: [] };
+    mockCreate.mockResolvedValue(GRUPO);
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ tipo: "grupo", nombre_material: "Acrílicos de colores" });
+    expect(res.status).toBe(201);
+    expect(res.body.data.es_grupo).toBe(true);
+  });
+
+  it("retorna 422 cuando tipo=grupo y falta nombre_material", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ tipo: "grupo" });
+    expect(res.status).toBe(422);
+  });
+
+  // ── Sub-materiales ──────────────────────────────────────────────────────────
+
+  it("retorna 201 al crear un sub-material (tipo=sub)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({ es_grupo: true });
+    const SUB = { ...BASE_MATERIAL, id_material: 3, id_material_padre: 2, subMateriales: [] };
+    mockCreate.mockResolvedValue(SUB);
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ ...VALID_PAYLOAD, tipo: "sub", id_material_padre: 2 });
+    expect(res.status).toBe(201);
+    expect(res.body.data.id_material_padre).toBe(2);
+  });
+
+  it("retorna 422 cuando tipo=sub y falta id_material_padre", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ ...VALID_PAYLOAD, tipo: "sub" });
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 409 cuando tipo=sub y el padre no es un grupo", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({ es_grupo: false });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ ...VALID_PAYLOAD, tipo: "sub", id_material_padre: 2 });
+    expect(res.status).toBe(409);
   });
 });
 
@@ -438,6 +526,9 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockFindUnique.mockResolvedValue({
       id_material: 1,
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
       opciones: [],
       detallesPedido: [],
       pedidoMaquinas: [],
@@ -452,6 +543,9 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue({
       id_material: 1,
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
       opciones: [],
       detallesPedido: [],
       pedidoMaquinas: [],
@@ -471,10 +565,30 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     expect(res.body.error).toContain("no encontrado");
   });
 
+  it("retorna 409 cuando el grupo tiene sub-materiales activos", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      imagen_url: null,
+      es_grupo: true,
+      subMateriales: [{ id_material: 2 }],
+      opciones: [],
+      detallesPedido: [],
+      pedidoMaquinas: [],
+    });
+
+    const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/1");
+    expect(res.status).toBe(409);
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
   it("retorna 409 cuando el material está asociado a opciones de producto", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue({
       id_material: 1,
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
       opciones: [{ id_opcion: 1 }],
       detallesPedido: [],
       pedidoMaquinas: [],
@@ -489,6 +603,9 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue({
       id_material: 1,
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
       opciones: [],
       detallesPedido: [{ id_detalle: 1 }],
       pedidoMaquinas: [],

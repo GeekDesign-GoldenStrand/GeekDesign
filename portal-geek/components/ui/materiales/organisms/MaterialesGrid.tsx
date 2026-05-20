@@ -1,6 +1,7 @@
 import { MaterialesEmptyState } from "@/components/ui/materiales/molecules/MaterialesEmptyState";
 import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
+import { MaterialGroupCard } from "@/components/ui/materiales/organisms/MaterialGroupCard";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialesGridProps {
@@ -8,6 +9,7 @@ interface MaterialesGridProps {
   visibleColumns: MaterialesVisibleColumns;
   onEditMaterial: (material: MaterialCardProps) => void;
   onViewProveedores: (materialId: number, materialName: string) => void;
+  onAddSubMaterial: (groupId: number) => void;
   // Server-side pagination state.
   page: number;
   totalPages: number;
@@ -38,6 +40,7 @@ export function MaterialesGrid({
   visibleColumns,
   onEditMaterial,
   onViewProveedores,
+  onAddSubMaterial,
   page,
   totalPages,
   onPageChange,
@@ -47,10 +50,14 @@ export function MaterialesGrid({
   const enabledColumns = COLUMN_META.filter((column) => visibleColumns[column.key]);
   const templateColumns = `${enabledColumns.map((column) => column.width).join(" ")} auto`;
 
+  const groups = items.filter((item) => item.tipo === "grupo");
+  const individuals = items.filter((item) => item.tipo !== "grupo");
+  const hasItems = items.length > 0;
+
   return (
     <section className="space-y-3">
       {/* Column headers — hidden on mobile and when there are no rows */}
-      {items.length > 0 && (
+      {hasItems && (
         <div
           className="hidden md:grid items-center gap-4 px-4 py-2 rounded-[6px] bg-[#c6c6c6] text-[#1e1e1e] text-[14px] lg:text-[16px] font-bold"
           style={{ gridTemplateColumns: templateColumns }}
@@ -65,11 +72,25 @@ export function MaterialesGrid({
       )}
 
       {/* Empty state when search or filters produce zero results */}
-      {items.length === 0 ? (
+      {!hasItems ? (
         <MaterialesEmptyState hasSearch={hasSearch} onClearFilters={onClearFilters} />
       ) : (
         <div className="space-y-2">
-          {items.map((item) => (
+          {/* Groups first */}
+          {groups.map((group) => (
+            <MaterialGroupCard
+              key={group.id}
+              group={group}
+              visibleColumns={visibleColumns}
+              gridTemplateColumns={templateColumns}
+              onEdit={onEditMaterial}
+              onViewProveedores={onViewProveedores}
+              onAddSubMaterial={onAddSubMaterial}
+            />
+          ))}
+
+          {/* Individual materials after groups */}
+          {individuals.map((item) => (
             <MaterialCard
               key={item.id}
               {...item}
@@ -82,7 +103,7 @@ export function MaterialesGrid({
         </div>
       )}
 
-      {/* Pagination controls — rendered below the rows when catalog spans multiple pages */}
+      {/* Pagination controls */}
       <PaginacionControles page={page} totalPages={totalPages} onPageChange={onPageChange} />
     </section>
   );

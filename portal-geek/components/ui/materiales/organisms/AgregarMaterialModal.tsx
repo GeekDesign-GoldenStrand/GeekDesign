@@ -3,14 +3,32 @@
 import { RegistrarMaterialForm } from "@/components/ui/materiales/organisms/RegistrarMaterialForm";
 import type { MaterialCardProps } from "@/types";
 
+type Tipo = "individual" | "grupo" | "sub";
+
 interface AgregarMaterialModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated: (row: MaterialCardProps) => void;
+  initialTipo?: Tipo;
+  initialPadreId?: number;
 }
 
-export function AgregarMaterialModal({ isOpen, onClose, onCreated }: AgregarMaterialModalProps) {
+const TITLES: Record<Tipo, string> = {
+  individual: "Agregar Material",
+  grupo: "Crear Grupo de Materiales",
+  sub: "Agregar Variante",
+};
+
+export function AgregarMaterialModal({
+  isOpen,
+  onClose,
+  onCreated,
+  initialTipo = "individual",
+  initialPadreId,
+}: AgregarMaterialModalProps) {
   if (!isOpen) return null;
+
+  const title = TITLES[initialTipo];
 
   return (
     <div
@@ -27,7 +45,7 @@ export function AgregarMaterialModal({ isOpen, onClose, onCreated }: AgregarMate
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <h2 id="agregar-material-title" className="text-[20px] font-medium text-[#1e1e1e]">
-            Agregar Material
+            {title}
           </h2>
           <button
             onClick={onClose}
@@ -52,7 +70,12 @@ export function AgregarMaterialModal({ isOpen, onClose, onCreated }: AgregarMate
         </div>
 
         <div className="p-6 overflow-y-auto">
-          <RegistrarMaterialForm onCreated={onCreated} onClose={onClose} />
+          <RegistrarMaterialForm
+            onCreated={onCreated}
+            onClose={onClose}
+            initialTipo={initialTipo}
+            initialPadreId={initialPadreId}
+          />
         </div>
       </div>
     </div>

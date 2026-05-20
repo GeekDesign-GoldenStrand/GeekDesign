@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "MATERIALES" ADD COLUMN     "es_grupo" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "id_material_padre" INTEGER,
+ALTER COLUMN "unidad_medida" DROP NOT NULL;
+
+-- AddForeignKey
+ALTER TABLE "MATERIALES" ADD CONSTRAINT "MATERIALES_id_material_padre_fkey" FOREIGN KEY ("id_material_padre") REFERENCES "MATERIALES"("id_material") ON DELETE SET NULL ON UPDATE CASCADE;

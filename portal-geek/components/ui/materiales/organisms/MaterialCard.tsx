@@ -55,13 +55,29 @@ export function MaterialCard({
   thickness,
   description,
   imageUrl,
+  id_material_padre,
+  tipo,
+  subMateriales,
   visibleColumns,
   gridTemplateColumns,
   onEdit,
   onViewProveedores,
 }: MaterialCardRowProps) {
   const onEditClick = () =>
-    onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl });
+    onEdit({
+      id,
+      name,
+      unit,
+      color,
+      width,
+      height,
+      thickness,
+      description,
+      imageUrl,
+      id_material_padre,
+      tipo,
+      subMateriales,
+    });
 
   const onProveedoresClick = () => onViewProveedores(id, name);
 
