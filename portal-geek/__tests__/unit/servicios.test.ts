@@ -9,6 +9,7 @@ import {
   getServicio,
   getServicioWithDetails,
   deleteServicio,
+  updateServicio,
 } from "@/lib/services/servicios";
 import { NotFoundError } from "@/lib/utils/errors";
 
@@ -287,5 +288,68 @@ describe("deleteServicio (soft delete)", () => {
     mockUpdate.mockRejectedValue(new Error("Error de base de datos"));
 
     await expect(deleteServicio(1)).rejects.toThrow("Error de base de datos");
+  });
+});
+
+describe("updateServicio — stale FormulaVariables.estatus", () => {
+  const mockTx = {
+    servicios: { update: jest.fn() },
+    servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+    formulas: { findMany: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
+    formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
+    formulaConstantes: { createMany: jest.fn() },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTransaction.mockImplementation(async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+      callback(mockTx)
+    );
+    mockTx.servicios.update.mockResolvedValue(SERVICIO);
+    mockTx.formulas.create.mockResolvedValue({ id_formula: 99, estatus: "Activa" });
+  });
+
+  it("deactiva las FormulaVariables de las fórmulas activas antes de deactivarlas", async () => {
+    mockTx.formulas.findMany.mockResolvedValue([{ id_formula: 1 }, { id_formula: 2 }]);
+
+    await updateServicio(1, { formula: { expresion: "x", variables: [], constantes: [] } }, 1);
+
+    expect(mockTx.formulaVariables.updateMany).toHaveBeenCalledWith({
+      where: { id_formula: { in: [1, 2] } },
+      data: { estatus: "Inactivo" },
+    });
+    expect(mockTx.formulas.updateMany).toHaveBeenCalledWith({
+      where: { id_servicio: 1, estatus: "Activa" },
+      data: { estatus: "Inactiva" },
+    });
+  });
+
+  it("no llama formulaVariables.updateMany si no hay fórmulas activas", async () => {
+    mockTx.formulas.findMany.mockResolvedValue([]);
+
+    await updateServicio(1, { formula: { expresion: "x", variables: [], constantes: [] } }, 1);
+
+    expect(mockTx.formulaVariables.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("el orden correcto: deactiva variables → deactiva fórmulas → crea nueva fórmula", async () => {
+    const calls: string[] = [];
+    mockTx.formulas.findMany.mockResolvedValue([{ id_formula: 5 }]);
+    mockTx.formulaVariables.updateMany.mockImplementation(() => {
+      calls.push("variables.updateMany");
+      return Promise.resolve({ count: 2 });
+    });
+    mockTx.formulas.updateMany.mockImplementation(() => {
+      calls.push("formulas.updateMany");
+      return Promise.resolve({ count: 1 });
+    });
+    mockTx.formulas.create.mockImplementation(() => {
+      calls.push("formulas.create");
+      return Promise.resolve({ id_formula: 99 });
+    });
+
+    await updateServicio(1, { formula: { expresion: "x", variables: [], constantes: [] } }, 1);
+
+    expect(calls).toEqual(["variables.updateMany", "formulas.updateMany", "formulas.create"]);
   });
 });
