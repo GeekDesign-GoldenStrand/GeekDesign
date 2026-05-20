@@ -156,10 +156,10 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
           }}
         >
           <span className="whitespace-nowrap">Fecha</span>
-          <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
           <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Estatus</span>
           <span className="whitespace-nowrap">Estado factura</span>
           <span className="whitespace-nowrap">Acciones</span>
@@ -175,24 +175,38 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                 gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
               }}
             >
+              {/* Fecha */}
               <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
-              <span className="whitespace-nowrap">
-                {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
-              </span>
+
+              {/* Entrega */}
               <span className="whitespace-nowrap">
                 {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
               </span>
+
+              {/* Empresa */}
               <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
+
+              {/* Cliente */}
               <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
+
+              {/* Monto */}
+              <span className="whitespace-nowrap">
+                {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
+              </span>
+
+              {/* Estatus */}
               <div className="flex justify-center">
                 <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(p.estatus?.descripcion)}`}
+                  className={`relative flex items-center rounded-full ${getStatusStyle(
+                    p.estatus?.descripcion
+                  )}`}
                 >
                   <select
                     value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
                     onChange={(e) => {
                       const uiValue = e.target.value;
                       const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
+
                       onStatusChange(p.id_pedido, apiValue);
                     }}
                     className="pl-4 pr-7 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
@@ -203,6 +217,7 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                       <option key={status}>{status}</option>
                     ))}
                   </select>
+
                   <CaretDown
                     size={14}
                     weight="bold"
@@ -210,9 +225,12 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                   />
                 </div>
               </div>
+
+              {/* Estado factura */}
               <div className="flex flex-col items-center px-2 min-w-[180px]">
                 <div className="flex items-center gap-2 w-full">
                   <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
+
                   <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-300"
@@ -223,11 +241,14 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                     />
                   </div>
                 </div>
+
                 <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
                   <span className="text-[#6f6f6f]">Factura:</span>
                   {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
                 </div>
               </div>
+
+              {/* Acciones */}
               <div className="flex justify-center">
                 <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
                   <PencilSimple size={18} />
