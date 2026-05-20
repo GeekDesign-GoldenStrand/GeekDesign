@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ConstantesSection } from "@/components/admin/servicios/molecules/ConstantesSection";
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
@@ -12,8 +13,17 @@ import { VariablesSection } from "@/components/admin/servicios/molecules/Variabl
 import { useNuevoServicioForm } from "@/lib/hooks/useNuevoServicioForm";
 
 export function ViewNuevoServicio() {
-  const { form, submitting, submitError, initialLoading, fetchError, canSubmit, options, actions } =
-    useNuevoServicioForm();
+  const {
+    form,
+    submitting,
+    submitError,
+    submitSuccess,
+    initialLoading,
+    fetchError,
+    canSubmit,
+    options,
+    actions,
+  } = useNuevoServicioForm();
 
   if (initialLoading) {
     return (
@@ -150,15 +160,19 @@ export function ViewNuevoServicio() {
           </div>
         )}
 
+        {submitSuccess && (
+          <SuccessModal message="Servicio registrado correctamente. Redirigiendo..." />
+        )}
+
         <div className="flex gap-3 pt-4 border-t border-gray-200">
-          <Button type="submit" variant="primary" disabled={submitting || !canSubmit}>
+          <Button type="submit" variant="primary" disabled={submitting || submitSuccess || !canSubmit}>
             {submitting ? "Guardando..." : "Guardar servicio"}
           </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={actions.onCancel}
-            disabled={submitting}
+            disabled={submitting || submitSuccess}
           >
             Cancelar
           </Button>

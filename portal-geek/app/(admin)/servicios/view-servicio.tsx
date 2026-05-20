@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ConfirmarEliminarServicioModal } from "@/components/admin/servicios/organisms/ConfirmarEliminarServicioModal";
 import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
 import type { PaginatedResponse, ServicioListadoItem } from "@/types/servicios";
@@ -18,6 +19,7 @@ export function ViewServicios() {
   } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   useEffect(() => {
     async function fetchServicios() {
@@ -62,6 +64,8 @@ export function ViewServicios() {
       }
       setServicios((prev) => prev.filter((s) => s.id_servicio !== servicioAEliminar.id));
       setServicioAEliminar(null);
+      setDeleteSuccess(true);
+      setTimeout(() => setDeleteSuccess(false), 3000);
     } finally {
       setDeleteLoading(false);
     }
@@ -72,6 +76,12 @@ export function ViewServicios() {
       <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">Servicios</h1>
 
       <ServiciosToolbar activosCount={activosCount} />
+
+      {deleteSuccess && (
+        <div className="mb-4">
+          <SuccessModal message="Servicio eliminado correctamente." />
+        </div>
+      )}
 
       {loading && <div className="text-center py-12 text-gray-500">Cargando servicios...</div>}
 
