@@ -268,7 +268,7 @@ export function RegistrarMaterialForm({
         <input
           type="text"
           maxLength={100}
-          placeholder={tipo === "grupo" ? "Ej. PIELES" : "Ej. Acrílico espejo"}
+          placeholder={tipo === "grupo" ? "Ej. Acrílicos" : "Ej. Acrílico espejo"}
           value={form.nombre_material}
           onChange={(e) => setField("nombre_material", e.target.value)}
           className={`${FIELD} ${getFieldClass("nombre_material")}`}

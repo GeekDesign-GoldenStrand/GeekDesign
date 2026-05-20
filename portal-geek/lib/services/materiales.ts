@@ -184,13 +184,40 @@ export async function updateMaterial(
   data: UpdateMaterialInput
 ): Promise<MaterialesConSubs> {
   try {
-    const existing =
-      data.imagen_url !== undefined
-        ? await prisma.materiales.findUnique({
-            where: { id_material: id },
-            select: { imagen_url: true },
-          })
-        : null;
+    const needsExisting = data.imagen_url !== undefined || data.id_material_padre !== undefined;
+    const existing = needsExisting
+      ? await prisma.materiales.findUnique({
+          where: { id_material: id },
+          select: { imagen_url: true, es_grupo: true },
+        })
+      : null;
+
+    if (needsExisting && !existing) {
+      throw new NotFoundError(`Material ${id} no encontrado`);
+    }
+
+    if (data.id_material_padre !== undefined && data.id_material_padre !== null) {
+      if (data.id_material_padre === id) {
+        throw new ConflictError("Un material no puede ser su propio padre");
+      }
+
+      if (existing!.es_grupo) {
+        throw new ConflictError("Un grupo no puede tener material padre");
+      }
+
+      const padre = await prisma.materiales.findUnique({
+        where: { id_material: data.id_material_padre },
+        select: { es_grupo: true },
+      });
+
+      if (!padre) {
+        throw new NotFoundError(`Material padre ${data.id_material_padre} no encontrado`);
+      }
+
+      if (!padre.es_grupo) {
+        throw new ConflictError("El material padre debe ser un grupo");
+      }
+    }
 
     const updated = await prisma.materiales.update({
       where: { id_material: id },
