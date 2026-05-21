@@ -4,66 +4,53 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
+import { SESSION_COOKIE_NAME, readSessionCotizacionId } from "@/lib/services/cotizacion-access";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
 
 export const metadata: Metadata = { title: "Detalle de cotización" };
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ email?: string }>;
 }
 
-export default async function CotizacionDetallePage({ params, searchParams }: Props) {
+export default async function CotizacionDetallePage({ params }: Props) {
   const { id } = await params;
 
-  // Retrieve client email and folio securely from cookies to keep URLs clean and protected
+  // KIKW12 review #1b/#2: the magic-link consume handler set a signed JWT
+  // session cookie; we read it server-side and only render when its
+  // id_cotizacion matches the cotización being requested. No email or token
+  // in the URL anymore.
   const cookieStore = await cookies();
-  const cookieEmail = cookieStore.get("client_email")?.value;
-  const cookieFolio = cookieStore.get("client_folio")?.value;
-  const { email: queryEmail } = await searchParams;
-  const providedEmail = cookieEmail || queryEmail;
+  const session = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const sessionCotId = session ? await readSessionCotizacionId(session) : null;
 
-  // Try lookup by Folio (primary) or ID (fallback)
   let quote = await getCotizacionByFolio(id);
-
   if (!quote && /^\d+$/.test(id)) {
     quote = await getCotizacion(Number(id));
   }
 
-  // Security Verification requires Email + Folio for public access.
-  // We use a generic message for both "Not Found" and "Email Mismatch" to prevent
-  // enumeration and information leakage.
-  const clientEmail = quote?.cliente.correo_electronico.toLowerCase();
+  const isAuthorized = !!quote && sessionCotId === quote.id_cotizacion;
 
-  // Verify BOTH email and folio cookies match the retrieved quotation
-  const isEmailMatched = quote && providedEmail?.toLowerCase() === clientEmail;
-  const isFolioMatched =
-    quote &&
-    (cookieFolio?.trim().toLowerCase() === quote.folio?.trim().toLowerCase() ||
-      cookieFolio?.trim() === String(quote.id_cotizacion) ||
-      id.trim().toLowerCase() === quote.folio?.trim().toLowerCase() ||
-      id.trim() === String(quote.id_cotizacion));
-
-  const isVerified = isEmailMatched && isFolioMatched;
-
-  if (!isVerified || !quote) {
+  // Generic message for both "no session" and "session mismatch" to avoid
+  // disclosing whether the folio exists.
+  if (!isAuthorized || !quote) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
         <div className="max-w-[500px] w-full bg-white rounded-[24px] border border-[#E8E8E8] p-10 text-center shadow-[0_12px_40px_rgba(0,0,0,0.04)]">
           <div className="w-20 h-20 rounded-full bg-[#FFF1F1] flex items-center justify-center text-[#DF2646] mx-auto mb-8">
             <WarningCircle size={44} weight="bold" />
           </div>
-          <h2 className="text-[28px] font-black text-[#1e1e1e] mb-4">Datos incorrectos</h2>
+          <h2 className="text-[28px] font-black text-[#1e1e1e] mb-4">Acceso requerido</h2>
           <p className="text-[#575757] text-[18px] font-medium leading-relaxed mb-10">
-            Los datos ingresados no son coincidentes. Por favor, verifica tus datos e intenta de
-            nuevo.
+            Para ver tu cotización necesitas el enlace que enviamos a tu correo. Si lo perdiste,
+            puedes solicitar uno nuevo.
           </p>
           <Link
-            href="/tienda"
+            href="/tienda/cotizacion"
             className="inline-flex items-center justify-center gap-3 h-[64px] px-8 bg-[#DF2646] text-white rounded-[12px] font-bold text-[16px] hover:bg-[#C41E3A] transition-all shadow-lg shadow-[#DF2646]/20"
           >
             <MagnifyingGlass size={22} weight="bold" />
-            Volver a buscar
+            Solicitar enlace de acceso
           </Link>
         </div>
       </div>
@@ -109,6 +96,15 @@ export default async function CotizacionDetallePage({ params, searchParams }: Pr
       nombre_cliente: quote.cliente.nombre_cliente,
       empresa: quote.cliente.empresa,
     },
+    // ST-16: surface pedido production status to the cliente once the cotización
+    // is approved. Pre-approval we leave it null so the existing UI is unaffected.
+    pedido: quote.pedido
+      ? {
+          id_pedido: quote.pedido.id_pedido,
+          estatus: quote.pedido.estatus.descripcion,
+          estado_factura: quote.pedido.estado_factura?.descripcion ?? null,
+        }
+      : null,
     items:
       quote.pedido?.detalles && quote.pedido.detalles.length > 0
         ? quote.pedido.detalles.map((d) => {

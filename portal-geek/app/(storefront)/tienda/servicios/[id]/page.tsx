@@ -2,19 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AddToCartForm } from "@/components/storefront/molecules/AddToCartForm";
-import { getServicioWithDetails, listServicios } from "@/lib/services/servicios";
+import { FormulaVariablesForm } from "@/components/storefront/organisms/FormulaVariablesForm";
+import { getServicioWithDetails } from "@/lib/services/servicios";
 
 export const metadata: Metadata = { title: "Servicio" };
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ editItemId?: string }>;
 }
 
-export default async function ServicioDetallePage({ params, searchParams }: Props) {
+export default async function ServicioDetallePage({ params }: Props) {
   const { id } = await params;
-  const { editItemId } = await searchParams;
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId < 1) notFound();
 
@@ -26,103 +24,124 @@ export default async function ServicioDetallePage({ params, searchParams }: Prop
   }
 
   const { servicio } = result;
+  // KIKW12 review #5: servicio may not have an Activa formula yet.
+  // Render the same product info, but swap the variables form for a contact CTA.
+  const formula = servicio.formulas[0];
+  const puedeCotizarEnLinea = formula !== undefined;
 
-  const materiales = [...new Set(servicio.opciones.map((o) => o.material.nombre_material))];
+  const materiales = servicio.servicioMateriales.map((sm) => ({
+    id_material: sm.id_material,
+    nombre_material: sm.material.nombre_material,
+  }));
 
-  const { items: otrosServicios } = await listServicios(1, 5, true);
-  const otros = otrosServicios.filter((s) => s.id_servicio !== numId).slice(0, 2);
+  const variables = formula
+    ? formula.variables.map((v) => ({
+        id_variable: v.id_variable,
+        nombre_variable: v.nombre_variable,
+        etiqueta: v.etiqueta,
+        unidad: v.unidad,
+        valor_default: v.valor_default !== null ? Number(v.valor_default) : 0,
+        editable_por_cliente: v.editable_por_cliente,
+      }))
+    : [];
+
+  const materialesText = materiales.map((m) => m.nombre_material).join(", ");
 
   return (
-    <div className="bg-[#fff8f9] lg:h-[calc(100vh-106px)] lg:overflow-hidden">
-      <div className="max-w-[1440px] mx-auto px-[42px] py-[25px] h-full">
-        <div className="flex flex-col lg:flex-row gap-[40px] h-full">
-          {/* ── LEFT COLUMN ── */}
-          <div className="flex flex-col lg:w-[601px] lg:shrink-0 h-full lg:overflow-y-auto scrollbar-hide">
-            <h1 className="font-bold text-[30px] text-[#1e1e1e] leading-tight">
-              {servicio.nombre_servicio}
-            </h1>
+    <div className="bg-[#fff8f9] min-h-[calc(100vh-106px)]">
+      <div className="max-w-[1280px] mx-auto px-[42px] py-[32px]">
+        <p className="text-[14px] text-[#666] mb-[20px]">Detalle del Servicio</p>
 
-            {servicio.descripcion_servicio && (
-              <p className="mt-[20px] text-[#1e1e1e] text-[16.742px] leading-normal">
-                {servicio.descripcion_servicio}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px]">
+          {/* ── LEFT: image gallery + upload placeholder ── */}
+          <div className="flex flex-col gap-[16px]">
+            <div className="bg-[#ffd9e2] rounded-[14px] aspect-square flex items-center justify-center">
+              <span className="font-medium text-[16px] text-[#1e1e1e]">
+                Imagen principal del producto
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-[12px]">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="bg-[#ffd9e2] rounded-[10px] aspect-square flex items-center justify-center"
+                />
+              ))}
+            </div>
+
+            <div className="border-2 border-dashed border-[#8b434a] rounded-[10px] py-[28px] text-center bg-[#fff8f9]">
+              <p className="font-semibold text-[15px] text-[#1e1e1e]">Sube tu diseño</p>
+              <p className="text-[12px] text-[#666] mt-[4px]">
+                Arrastra tu archivo aquí o selecciónalo desde tu equipo.
               </p>
-            )}
+              <p className="text-[12px] text-[#666]">Formatos sugeridos: SVG, PNG, JPG.</p>
+            </div>
+          </div>
 
-            {materiales.length > 0 && (
-              <p className="mt-[16px] text-[16.742px] text-[#1e1e1e]">
-                <span className="font-semibold">Materiales disponibles:</span>{" "}
-                {materiales.join(", ")}.
-              </p>
-            )}
+          {/* ── RIGHT: header + price + form ── */}
+          <div className="flex flex-col gap-[20px]">
+            <div className="flex flex-col gap-[8px]">
+              <h1 className="font-bold text-[32px] leading-tight text-[#1e1e1e]">
+                {servicio.nombre_servicio}
+              </h1>
+              {servicio.descripcion_servicio && (
+                <p className="text-[14px] text-[#1e1e1e] leading-normal">
+                  {servicio.descripcion_servicio}
+                </p>
+              )}
+              {materialesText && (
+                <p className="text-[14px] text-[#1e1e1e] mt-[4px]">
+                  <span className="font-semibold">Materiales disponibles:</span> {materialesText}.
+                </p>
+              )}
+            </div>
 
-            {/*
-              Pricing matrix is sent as props for client-side calculation (<200ms NF requirement).
-              TODO ADMIN-04/05: when the formula system is live, remove the `matriz` mapping
-              below and point AddToCartForm to POST /api/servicios/[id]/calcular-precio instead.
-            */}
-            <AddToCartForm
-              servicioId={servicio.id_servicio}
-              nombreServicio={servicio.nombre_servicio}
-              editItemId={editItemId}
-              opciones={servicio.opciones.map((o) => ({
-                id_opcion: o.id_opcion,
-                nombre_opcion: o.nombre_opcion,
-                valores: o.valores.map((v) => ({
-                  id_valor: v.id_valor,
-                  valor: v.valor,
-                  es_default: v.es_default,
-                  matriz: v.matriz.map((m) => ({
-                    cantidad_minima: m.cantidad_minima,
-                    cantidad_maxima: m.cantidad_maxima ?? null,
-                    precio_unitario: Number(m.precio_unitario),
-                  })),
-                })),
-              }))}
-            />
-
-            {/* Otros Servicios */}
-            {otros.length > 0 && (
-              <div className="mt-[30px] flex-1 flex flex-col min-h-0">
-                <h2 className="font-bold text-[30px] text-[#1e1e1e] mb-[16px] shrink-0">
-                  Otros Servicios
+            {puedeCotizarEnLinea ? (
+              <FormulaVariablesForm
+                servicioId={servicio.id_servicio}
+                nombreServicio={servicio.nombre_servicio}
+                materiales={materiales}
+                variables={variables}
+              />
+            ) : (
+              <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px] flex flex-col gap-[12px]">
+                <h2 className="font-bold text-[18px] text-[#1e1e1e]">
+                  Cotización en línea no disponible
                 </h2>
-                <div className="flex flex-col gap-[11px] flex-1 min-h-0">
-                  {otros.map((s) => (
-                    <Link
-                      key={s.id_servicio}
-                      href={`/tienda/servicios/${s.id_servicio}`}
-                      className="block group flex-1 min-h-0"
-                    >
-                      <div className="relative w-full h-full bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] overflow-hidden group-hover:shadow-[0px_8px_24px_0px_rgba(0,0,0,0.18)] group-hover:scale-[1.01] transition-all duration-200">
-                        <p className="absolute bottom-[13px] left-[17px] font-bold text-[16.742px] text-[#1e1e1e]">
-                          {s.nombre_servicio}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                <p className="text-[14px] text-[#1e1e1e] leading-relaxed">
+                  Este servicio requiere una cotización personalizada. Contáctanos y un asesor
+                  preparará una propuesta para tu proyecto.
+                </p>
+                <Link
+                  href="/tienda/cotizacion"
+                  className="self-start bg-[#8b434a] text-white font-semibold text-[14px] rounded-[10px] px-[20px] h-[44px] flex items-center justify-center hover:bg-[#7a3a41] transition-colors"
+                >
+                  Solicitar cotización personalizada
+                </Link>
               </div>
             )}
           </div>
+        </div>
 
-          {/* ── RIGHT COLUMN — image gallery (56.8% main, 43.2% bottom = Figma ratio 463:351) ── */}
-          <div className="flex-1 flex flex-col gap-[12px] min-w-0 h-full">
-            <div className="w-full flex-[463] bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] overflow-hidden flex items-center justify-center min-h-0">
-              <span className="font-bold text-[16.742px] text-[#1e1e1e]">Ejemplo de Servicio</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-[13px] flex-[351] min-h-0">
-              {[1, 2].map((n) => (
-                <div
-                  key={n}
-                  className="w-full h-full bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] overflow-hidden flex items-center justify-center"
-                >
-                  <span className="font-bold text-[16.742px] text-[#1e1e1e]">
-                    Ejemplo de Servicio
-                  </span>
-                </div>
-              ))}
-            </div>
+        {/* ── BOTTOM: info cards ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[24px] mt-[32px]">
+          <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px]">
+            <h2 className="font-bold text-[18px] text-[#1e1e1e] mb-[12px]">
+              Detalles del producto
+            </h2>
+            <p className="text-[14px] text-[#1e1e1e] leading-relaxed">
+              Este producto está pensado para personalización rápida y producción precisa. Puedes
+              adaptar medidas, material y acabado según las necesidades de tu proyecto.
+            </p>
+          </div>
+          <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px]">
+            <h2 className="font-bold text-[18px] text-[#1e1e1e] mb-[12px]">Recomendaciones</h2>
+            <ul className="text-[14px] text-[#1e1e1e] leading-relaxed list-disc pl-[20px] flex flex-col gap-[4px]">
+              <li>Sube archivos en buena resolución.</li>
+              <li>Verifica dimensiones antes de confirmar.</li>
+              <li>Para pedidos especiales, agrega notas claras.</li>
+            </ul>
           </div>
         </div>
       </div>
