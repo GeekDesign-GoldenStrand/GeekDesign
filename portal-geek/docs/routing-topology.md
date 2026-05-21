@@ -1,7 +1,7 @@
 # App Router Topology & the Route-Collision Refactor (as-built)
 
 Owner: Enrique Ayala (`KIKW12` / `enayala`). Documents how the Next.js App
-Router is organized and *why*, so the structure isn't accidentally broken by
+Router is organized and _why_, so the structure isn't accidentally broken by
 future feature work.
 
 Related: [auth](./auth.md) (route groups are where page-level auth is enforced),
@@ -12,11 +12,11 @@ Related: [auth](./auth.md) (route groups are where page-level auth is enforced),
 The app is split into three [route groups](https://nextjs.org/docs/app/building-your-application/routing/route-groups)
 (parenthesized folders don't appear in the URL):
 
-| Group | URL prefix | Layout enforces | Audience |
-| --- | --- | --- | --- |
-| `app/(auth)/` | `/login`, `/recuperar-contrasena`, `/cambiar-contrasena` | — (public) | Anyone |
-| `app/(admin)/` | `/dashboard`, `/clientes`, `/pedidos`, … | `getSession()` → redirect `/login` | Staff |
-| `app/(storefront)/` | `/tienda/...` | — (public storefront) | Customers |
+| Group               | URL prefix                                               | Layout enforces                    | Audience  |
+| ------------------- | -------------------------------------------------------- | ---------------------------------- | --------- |
+| `app/(auth)/`       | `/login`, `/recuperar-contrasena`, `/cambiar-contrasena` | — (public)                         | Anyone    |
+| `app/(admin)/`      | `/dashboard`, `/clientes`, `/pedidos`, …                 | `getSession()` → redirect `/login` | Staff     |
+| `app/(storefront)/` | `/tienda/...`                                            | — (public storefront)              | Customers |
 
 Each group owns its own `layout.tsx` and `icon.ico`, so the admin portal,
 the auth screens, and the public storefront have independent chrome and
@@ -24,8 +24,8 @@ independent auth posture.
 
 ## The collision that was fixed
 
-Commit `f6da4af` — *"move storefront routes under /tienda and fix
-admin/storefront namespace collision"*.
+Commit `f6da4af` — _"move storefront routes under /tienda and fix
+admin/storefront namespace collision"_.
 
 **The problem:** route groups are invisible in the URL. So
 `app/(admin)/servicios/` and `app/(storefront)/servicios/` both resolved to
@@ -73,7 +73,9 @@ storefront copy is namespaced under `/tienda`.
   storefront-facing, unauthenticated API route. See storage docs.
 
 Auth on API routes is **per-handler** via guards (`withAuth`/`withRole`), not
-via the route group — there is no `middleware.ts`. See [auth.md](./auth.md).
+via the route group. There is an edge middleware (`proxy.ts` — Next 16's rename
+of `middleware.ts`), but it only gates **page** paths listed in its matcher, not
+`/api/*`; API auth is always the guard. See [auth.md](./auth.md).
 
 ## Layouts inventory
 

@@ -1,7 +1,7 @@
 # Object Storage Architecture (as-built)
 
 Owner: Enrique Ayala (`KIKW12` / `enayala`). This is the **as-built** doc for
-the implemented storage layer. (`storage.md` is the original *planning* doc and
+the implemented storage layer. (`storage.md` is the original _planning_ doc and
 is now out of date — the code described below all exists.)
 
 Related: [auth](./auth.md) (uploads sit behind `withAuth` + rate limit),
@@ -23,14 +23,14 @@ route).
 
 ## Files
 
-| File | Responsibility |
-| --- | --- |
-| `lib/storage/client.ts` | Lazy `S3Client` singleton, `getBucket()`, `getPublicBaseUrl()`. |
-| `lib/storage/keys.ts` | Key construction/validation, mime↔ext mapping, categories. |
-| `lib/services/storage.ts` | `uploadBuffer`, `deleteObject`, `objectExists`, `presignPut`, `presignGet`, `publicUrl`, `publicImageUrl`, `resolveImageUrl`. |
-| `lib/schemas/upload.ts` | `PresignUploadSchema`, per-category `UPLOAD_LIMITS`. |
-| `app/api/upload/route.ts` | `POST` → presigned PUT (auth + rate-limited + validated). |
-| `app/api/images/[...key]/route.ts` | `GET` public proxy → 302 to presigned/public URL. |
+| File                               | Responsibility                                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `lib/storage/client.ts`            | Lazy `S3Client` singleton, `getBucket()`, `getPublicBaseUrl()`.                                                               |
+| `lib/storage/keys.ts`              | Key construction/validation, mime↔ext mapping, categories.                                                                    |
+| `lib/services/storage.ts`          | `uploadBuffer`, `deleteObject`, `objectExists`, `presignPut`, `presignGet`, `publicUrl`, `publicImageUrl`, `resolveImageUrl`. |
+| `lib/schemas/upload.ts`            | `PresignUploadSchema`, per-category `UPLOAD_LIMITS`.                                                                          |
+| `app/api/upload/route.ts`          | `POST` → presigned PUT (auth + rate-limited + validated).                                                                     |
+| `app/api/images/[...key]/route.ts` | `GET` public proxy → 302 to presigned/public URL.                                                                             |
 
 ## Environment
 
@@ -86,12 +86,12 @@ identical header or GCS rejects the PUT.
 
 ### Per-category limits (`UPLOAD_LIMITS`)
 
-| Category | Max | Allowed |
-| --- | --- | --- |
-| `materiales`, `servicios` | 10 MB | jpeg, png, webp |
-| `disenios` | 25 MB | svg, ai, eps, dxf, pdf (ext-validated) |
-| `notas` | 10 MB | jpeg, png, pdf |
-| `cotizaciones` | 10 MB | pdf — **server-generated only**, browser PUT blocked |
+| Category                  | Max   | Allowed                                              |
+| ------------------------- | ----- | ---------------------------------------------------- |
+| `materiales`, `servicios` | 10 MB | jpeg, png, webp                                      |
+| `disenios`                | 25 MB | svg, ai, eps, dxf, pdf (ext-validated)               |
+| `notas`                   | 10 MB | jpeg, png, pdf                                       |
+| `cotizaciones`            | 10 MB | pdf — **server-generated only**, browser PUT blocked |
 
 ## Read flows
 
@@ -107,6 +107,7 @@ identical header or GCS rejects the PUT.
 ### The public proxy (`/api/images/[...key]`)
 
 The **only** unauthenticated storage route. It:
+
 1. Joins the catch-all segments into a key and runs `isValidKey` (422 if not).
 2. Allows only `PUBLIC_CATEGORIES = { materiales, servicios }` (404 otherwise) —
    so `disenios` (client IP), `notas` (client-private), and `cotizaciones`
