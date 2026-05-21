@@ -1,22 +1,21 @@
 "use client";
 
+import Link from "next/link";
+
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
   servicio: ServicioListadoItem;
-  onVerDetalle?: (id: number) => void;
   onEliminar?: (id: number) => void;
 };
 
-export function ServicioCard({ servicio, onVerDetalle, onEliminar }: ServicioCardProps) {
-  //Date Format to "D de MMMM de YYYY"
+export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
   const fechaFormateada = new Date(servicio.fecha_modificacion).toLocaleDateString("es-MX", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  // Machines list as comma-separated string or "Sin máquinas asignadas" if empty
   const maquinasTexto =
     servicio.maquinas.length === 0
       ? "Sin máquinas asignadas"
@@ -41,13 +40,12 @@ export function ServicioCard({ servicio, onVerDetalle, onEliminar }: ServicioCar
       </div>
 
       <div className="flex items-center gap-3 ml-4">
-        <button
-          type="button"
-          onClick={() => onVerDetalle?.(servicio.id_servicio)}
-          className="bg-gray-300 text-gray-700 hover:bg-gray-400 h-9 px-5 rounded-full font-medium text-sm transition-all"
+        <Link
+          href={`/servicios/${servicio.id_servicio}`}
+          className="bg-gray-300 text-gray-700 hover:bg-gray-400 h-9 px-5 rounded-full font-medium text-sm transition-all inline-flex items-center"
         >
           Ver detalle
-        </button>
+        </Link>
         <button
           type="button"
           onClick={() => onEliminar?.(servicio.id_servicio)}
