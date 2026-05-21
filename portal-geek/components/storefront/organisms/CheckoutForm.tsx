@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { clearCarrito, getCarrito, getSubtotal, type CarritoItem } from "@/lib/cart/storage";
 
@@ -32,6 +32,12 @@ export function CheckoutForm({ sucursales }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // reAchi301 review: `submitting` is React state, so two fast clicks both
+  // capture the stale `false` in their closures before the re-render disables
+  // the button — that double-submits and creates two identical cotizaciones.
+  // A ref flips synchronously, closing the race window.
+  const submittingRef = useRef(false);
+
   useEffect(() => {
     const hydrate = () => {
       setItems(getCarrito().items);
@@ -42,6 +48,7 @@ export function CheckoutForm({ sucursales }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
 
     if (items.length === 0) {
@@ -53,6 +60,7 @@ export function CheckoutForm({ sucursales }: Props) {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const payload = {
@@ -86,6 +94,7 @@ export function CheckoutForm({ sucursales }: Props) {
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? "Error al enviar la cotización");
+        submittingRef.current = false;
         setSubmitting(false);
         return;
       }
@@ -98,6 +107,7 @@ export function CheckoutForm({ sucursales }: Props) {
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red");
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
