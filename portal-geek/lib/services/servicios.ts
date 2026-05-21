@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 import type { ServicioAdminDetalle } from "@/types/servicios";
 
 // ─── Types ─────────────────────────────────────────────────────────────
@@ -357,97 +357,143 @@ export async function createServicio(
   });
 }
 
+async function validateServicioFKs(
+  tx: Prisma.TransactionClient,
+  data: UpdateServicioInput
+): Promise<void> {
+  if (data.id_sucursal !== undefined) {
+    const found = await tx.sucursales.findFirst({ where: { id_sucursal: data.id_sucursal } });
+    if (!found) throw new ValidationError(`Sucursal con id ${data.id_sucursal} no encontrada`);
+  }
+  if (data.id_instalador != null) {
+    const found = await tx.instaladores.findFirst({ where: { id_instalador: data.id_instalador } });
+    if (!found) throw new ValidationError(`Instalador con id ${data.id_instalador} no encontrado`);
+  }
+  if (data.id_proveedor != null) {
+    const found = await tx.proveedores.findFirst({ where: { id_proveedor: data.id_proveedor } });
+    if (!found) throw new ValidationError(`Proveedor con id ${data.id_proveedor} no encontrado`);
+  }
+  if (data.id_maquinas && data.id_maquinas.length > 0) {
+    const found = await tx.maquinas.findMany({
+      where: { id_maquina: { in: data.id_maquinas } },
+      select: { id_maquina: true },
+    });
+    if (found.length !== data.id_maquinas.length) {
+      const foundIds = new Set(found.map((m) => m.id_maquina));
+      const missing = data.id_maquinas.filter((id_maq) => !foundIds.has(id_maq));
+      throw new ValidationError(`Máquinas no encontradas: ${missing.join(", ")}`);
+    }
+  }
+  if (data.materiales && data.materiales.length > 0) {
+    const ids = data.materiales.map((m) => m.id_material);
+    const found = await tx.materiales.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_material: true },
+    });
+    if (found.length !== ids.length) {
+      const foundIds = new Set(found.map((m) => m.id_material));
+      const missing = ids.filter((id_mat) => !foundIds.has(id_mat));
+      throw new ValidationError(`Materiales no encontrados: ${missing.join(", ")}`);
+    }
+  }
+}
+
 export async function updateServicio(
   id: number,
   data: UpdateServicioInput,
   id_usuario: number
-): Promise<ServicioSimple> {
-  const { id_maquinas, formula, ...servicioData } = data;
+): Promise<ServicioAdminDetalle> {
+  const existing = await prisma.servicios.findFirst({
+    where: { id_servicio: id, estatus_servicio: true },
+  });
+  if (!existing) throw new NotFoundError(`Servicio con id ${id} no encontrado`);
 
-  try {
-    return await prisma.$transaction(async (tx) => {
-      const servicio = await tx.servicios.update({
-        where: { id_servicio: id },
-        data: servicioData,
+  const { id_maquinas, formula, materiales, ...servicioData } = data;
+
+  await prisma.$transaction(async (tx) => {
+    await validateServicioFKs(tx, data);
+
+    await tx.servicios.update({ where: { id_servicio: id }, data: servicioData });
+
+    if (id_maquinas !== undefined) {
+      await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });
+      if (id_maquinas.length > 0) {
+        await tx.servicioMaquina.createMany({
+          data: id_maquinas.map((id_maquina) => ({ id_servicio: id, id_maquina })),
+        });
+      }
+    }
+
+    if (materiales !== undefined) {
+      await tx.servicioMaterial.deleteMany({ where: { id_servicio: id } });
+      if (materiales.length > 0) {
+        await tx.servicioMaterial.createMany({
+          data: materiales.map((m) => ({
+            id_servicio: id,
+            id_material: m.id_material,
+            id_proveedor_precio: m.id_proveedor_precio ?? null,
+          })),
+        });
+      }
+    }
+
+    if (formula !== undefined) {
+      const formulasActivas = await tx.formulas.findMany({
+        where: { id_servicio: id, estatus: "Activa" },
+        select: { id_formula: true },
+      });
+      if (formulasActivas.length > 0) {
+        await tx.formulaVariables.updateMany({
+          where: { id_formula: { in: formulasActivas.map((f) => f.id_formula) } },
+          data: { estatus: "Inactivo" },
+        });
+      }
+      await tx.formulas.updateMany({
+        where: { id_servicio: id, estatus: "Activa" },
+        data: { estatus: "Inactiva" },
       });
 
-      // Resync machines: drop old vinculations and create new ones.
-      if (id_maquinas !== undefined) {
-        await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });
-        if (id_maquinas.length > 0) {
-          await tx.servicioMaquina.createMany({
-            data: id_maquinas.map((id_maquina) => ({
-              id_servicio: id,
-              id_maquina,
-            })),
-          });
-        }
+      const formulaCreada = await tx.formulas.create({
+        data: {
+          id_servicio: id,
+          expresion: formula.expresion,
+          estatus: "Activa",
+          id_usuario_creo: id_usuario,
+        },
+      });
+
+      if (formula.variables.length > 0) {
+        await tx.formulaVariables.createMany({
+          data: formula.variables.map((v) => ({
+            id_formula: formulaCreada.id_formula,
+            id_tipo_variable: v.id_tipo_variable,
+            nombre_variable: v.nombre_variable,
+            etiqueta: v.etiqueta,
+            valor_default: v.valor_default ?? null,
+            editable_por_cliente: v.editable_por_cliente,
+            unidad: v.unidad ?? null,
+            estatus: "Activo",
+          })),
+        });
       }
 
-      // Replace formula: deactivate the previous one and create a new active one.
-      if (formula !== undefined) {
-        const formulasActivas = await tx.formulas.findMany({
-          where: { id_servicio: id, estatus: "Activa" },
-          select: { id_formula: true },
+      if (formula.constantes.length > 0) {
+        await tx.formulaConstantes.createMany({
+          data: formula.constantes.map((c) => ({
+            id_formula: formulaCreada.id_formula,
+            nombre_constante: c.nombre_constante,
+            origen: c.origen,
+            valor: c.valor ?? null,
+            id_instalador: c.id_instalador ?? null,
+            id_proveedor: c.id_proveedor ?? null,
+            estatus: "Activo",
+          })),
         });
-        if (formulasActivas.length > 0) {
-          await tx.formulaVariables.updateMany({
-            where: { id_formula: { in: formulasActivas.map((f) => f.id_formula) } },
-            data: { estatus: "Inactivo" },
-          });
-        }
-        await tx.formulas.updateMany({
-          where: { id_servicio: id, estatus: "Activa" },
-          data: { estatus: "Inactiva" },
-        });
-
-        const formulaCreada = await tx.formulas.create({
-          data: {
-            id_servicio: id,
-            expresion: formula.expresion,
-            estatus: "Activa",
-            id_usuario_creo: id_usuario,
-          },
-        });
-
-        if (formula.variables.length > 0) {
-          await tx.formulaVariables.createMany({
-            data: formula.variables.map((v) => ({
-              id_formula: formulaCreada.id_formula,
-              id_tipo_variable: v.id_tipo_variable,
-              nombre_variable: v.nombre_variable,
-              etiqueta: v.etiqueta,
-              valor_default: v.valor_default ?? null,
-              editable_por_cliente: v.editable_por_cliente,
-              unidad: v.unidad ?? null,
-              estatus: "Activo",
-            })),
-          });
-        }
-
-        if (formula.constantes.length > 0) {
-          await tx.formulaConstantes.createMany({
-            data: formula.constantes.map((c) => ({
-              id_formula: formulaCreada.id_formula,
-              nombre_constante: c.nombre_constante,
-              origen: c.origen,
-              valor: c.valor ?? null,
-              id_instalador: c.id_instalador ?? null,
-              id_proveedor: c.id_proveedor ?? null,
-              estatus: "Activo",
-            })),
-          });
-        }
       }
-
-      return servicio;
-    });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
-    throw error;
-  }
+  });
+
+  return toServicioAdminDetalle(await getServicioParaAdmin(id));
 }
 
 export async function deleteServicio(id: number): Promise<void> {
