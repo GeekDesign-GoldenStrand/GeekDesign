@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+import { randomBytes } from "node:crypto";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import type { Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
@@ -157,6 +159,23 @@ async function main() {
   });
 
   console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
+
+  // ── SISTEMA user (audit trail for system-initiated writes) ────────────────
+  // Used as id_usuario_asigno on VariablesCotizacion when a Cliente (no session)
+  // submits a quote via the public storefront endpoint. Login disabled.
+  const sistemaPasswordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 12);
+  const sistemaUser = await prisma.usuarios.upsert({
+    where: { correo_electronico: "sistema@geekdesign.mx" },
+    update: {},
+    create: {
+      nombre_completo: "Sistema",
+      correo_electronico: "sistema@geekdesign.mx",
+      contrasena_hash: sistemaPasswordHash,
+      id_rol: colaboradorRoleForSistema(roles).id_rol,
+      estatus: "Inactivo",
+    },
+  });
+  console.log(`Seeded SISTEMA user: ${sistemaUser.correo_electronico}`);
 
   console.log("Seeded admin colaborador");
 
@@ -577,6 +596,98 @@ async function main() {
 
   console.log("Seeded ProveedorPrecios: Maderas del Norte SA → MDF 3mm @ $200");
 
+  const proveedorPrecioMDF = await prisma.proveedorPrecios.findUnique({
+    where: { id_proveedor_id_material: { id_proveedor: 1, id_material: material.id_material } },
+  });
+
+  // ── ServicioMaterial: link Corte Láser to MDF 3mm at MDF supplier price ──
+  if (proveedorPrecioMDF) {
+    await prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioCorte.id_servicio,
+          id_material: material.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioCorte.id_servicio,
+        id_material: material.id_material,
+        id_proveedor_precio: proveedorPrecioMDF.id_proveedor_precio,
+      },
+    });
+    console.log("Seeded ServicioMaterial: Corte Láser ↔ MDF 3mm");
+  }
+
+  // ── Active Formula on Corte Láser ──────────────────────────────────────────
+  // Reuses the Dimensión tipoVariable for ancho/alto, a manual constante
+  // costo_laser, and the implicit precio_material from the selected material.
+  // Expression: cm² × $/cm² + $ material → unit price.
+  const tipoDimension = await prisma.tiposVariable.findUnique({
+    where: { nombre_tipo: "Dimensión" },
+  });
+  if (tipoDimension) {
+    const existingFormula = await prisma.formulas.findFirst({
+      where: { id_servicio: servicioCorte.id_servicio, estatus: "Activa" },
+    });
+    if (!existingFormula) {
+      const formula = await prisma.formulas.create({
+        data: {
+          id_servicio: servicioCorte.id_servicio,
+          expresion: "ancho * alto * costo_laser + precio_material",
+          estatus: "Activa",
+          id_usuario_creo: adminUser.id_usuario,
+        },
+      });
+      await prisma.formulaVariables.createMany({
+        data: [
+          {
+            id_formula: formula.id_formula,
+            id_tipo_variable: tipoDimension.id_tipo_variable,
+            nombre_variable: "ancho",
+            etiqueta: "Ancho (cm)",
+            valor_default: 50,
+            editable_por_cliente: true,
+            unidad: "cm",
+            estatus: "Activo",
+          },
+          {
+            id_formula: formula.id_formula,
+            id_tipo_variable: tipoDimension.id_tipo_variable,
+            nombre_variable: "alto",
+            etiqueta: "Alto (cm)",
+            valor_default: 30,
+            editable_por_cliente: true,
+            unidad: "cm",
+            estatus: "Activo",
+          },
+        ],
+      });
+      await prisma.formulaConstantes.create({
+        data: {
+          id_formula: formula.id_formula,
+          nombre_constante: "costo_laser",
+          origen: "manual",
+          valor: 2.5,
+          estatus: "Activo",
+        },
+      });
+      console.log("Seeded Formula on Corte Láser: ancho × alto × costo_laser + precio_material");
+    }
+  }
+
+  // ── Placeholder ArchivosDisenio (used until ST-06 ships file upload) ──────
+  await prisma.archivosDisenio.upsert({
+    where: { id_archivo: 1 },
+    update: {},
+    create: {
+      nombre_archivo: "__PLACEHOLDER__",
+      url_archivo: "https://placeholder.invalid/no-design-yet",
+      formato: "n/a",
+    },
+  });
+  console.log("Seeded placeholder ArchivosDisenio (id=1)");
+
   // ── Demo Cotizaciones ──────────────────────────────────────────────────────
   const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
   const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
@@ -807,6 +918,12 @@ async function resyncSequences(): Promise<void> {
     END $$;
   `);
   console.log("Resynced autoincrement sequences");
+}
+
+function colaboradorRoleForSistema(roles: Roles[]): Roles {
+  const r = roles.find((x) => x.nombre_rol === "Colaborador");
+  if (!r) throw new Error("Rol Colaborador no existe — seed roles primero");
+  return r;
 }
 
 main()

@@ -6,11 +6,16 @@ import type {
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import type { CreateCotizacionInput, UpdateCotizacionInput } from "@/lib/schemas/cotizaciones";
+import type {
+  CreateCotizacionInput,
+  SolicitarCotizacionInput,
+  UpdateCotizacionInput,
+} from "@/lib/schemas/cotizaciones";
+import { calcularPrecioServicio } from "@/lib/services/formula-pricing";
+import { getPlaceholderArchivoId, getSistemaUserId } from "@/lib/services/sistema";
 import {
   ConfigurationError,
   ConflictError,
-  ForbiddenError,
   NotFoundError,
   ValidationError,
   DataInconsistencyError,
@@ -37,6 +42,8 @@ const INCLUDE_CONFIG = {
   },
   pedido: {
     include: {
+      estatus: true,
+      estado_factura: true,
       detalles: {
         include: {
           servicio: true,
@@ -49,6 +56,12 @@ const INCLUDE_CONFIG = {
 export type CotizacionWithRelations = Prisma.CotizacionesGetPayload<{
   include: typeof INCLUDE_CONFIG;
 }>;
+
+// Copilot review #1: emails must be normalized before any Postgres @unique
+// lookup or comparison. Postgres unique indexes are case-sensitive, and the
+// approve/cancel handlers compare with `.toLowerCase()` on a `.trim()`-less
+// header — keep both sides consistent by routing every email through this.
+const normalizeEmail = (e: string) => e.trim().toLowerCase();
 
 // Centralized catalog of quotation statuses.
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
@@ -334,118 +347,70 @@ export async function changeQuotationStatus(
 }
 
 /**
- * Approves a quotation and automatically creates a corresponding Order (Pedido).
- * This is an atomic operation to ensure data consistency between Sales and Production.
+ * D5 refactor (ST-23 PR, refactor of ST-08): promotes the draft Pedido in place
+ * instead of deleting and recreating it. The SRS contract for ST-08 is preserved
+ * — "el estatus de la cotización cambia a 'aprobada'" — only the implementation
+ * changes. Keeping the same id_pedido means VariablesCotizacion.id_detalle stays
+ * valid, which matters once ST-23 starts attaching dimensions/cantidades via
+ * those rows (D3).
  */
-export async function approveQuotation(quotationId: number, providedEmail: string) {
+// KIKW12 review #1b: caller authorization (cliente proves email control via
+// magic-link session cookie) is enforced at the route layer; the service runs
+// only after the cookie has been verified against this quotationId.
+export async function approveQuotation(quotationId: number) {
   return prisma.$transaction(async (tx) => {
-    // 1. Fetch quotation with details (include client for email verification)
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
-      include: {
-        estatus: true,
-        pedido: true,
-        cliente: true,
+      include: { estatus: true, pedido: true, cliente: true },
+    });
+
+    if (!quotation) throw new NotFoundError("Cotización no encontrada");
+    if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
+      throw new ConflictError("Solo se pueden aprobar cotizaciones validadas");
+    }
+    if (!quotation.id_pedido) {
+      throw new ValidationError("No se puede aprobar una cotización sin líneas validadas");
+    }
+
+    // D5: drop only the line items the cliente rejected during validation.
+    // Active detalles stay attached to the same pedido — their VariablesCotizacion
+    // links remain valid.
+    await tx.detallePedido.deleteMany({
+      where: {
+        id_pedido: quotation.id_pedido,
+        notas: { contains: "[ESTADO:rechazado]" },
       },
     });
 
-    if (!quotation) throw new NotFoundError("Quotation not found");
-
-    // Security Verification: Ensure the provided email matches the quotation's client
-    if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
-      throw new ForbiddenError("You are not authorized to approve this quotation");
-    }
-    if (quotation.estatus.descripcion !== QUOTATION_STATUS.VALIDADA) {
-      throw new ConflictError("Only validated quotations can be approved");
-    }
-
-    if (!quotation.id_pedido) {
-      throw new ValidationError("Cannot approve a quotation without validated line items");
-    }
-
-    // 2. Resolve necessary IDs
     const approvedStatus = await tx.estatusCotizacion.findUnique({
       where: { descripcion: QUOTATION_STATUS.APROBADA },
     });
-    const initialPedidoStatus = await tx.estatusPedidos.findUnique({
-      where: { descripcion: "Pendiente" },
+    const aprobacionDiseno = await tx.estadoFacturaPedido.findUnique({
+      where: { descripcion: "Aprobacion_diseno" },
     });
 
-    if (!approvedStatus || !initialPedidoStatus) {
-      throw new Error("Required status catalogs not found");
+    if (!approvedStatus || !aprobacionDiseno) {
+      throw new ConfigurationError("Required status catalogs not found");
     }
 
-    // 3. Fetch current details to promote (filter out rejected items)
-    const currentDetails = await tx.detallePedido.findMany({
-      where: { id_pedido: quotation.id_pedido || 0 },
+    // D5: promote the draft pedido in place — same id_pedido, new estado_factura.
+    const pedido = await tx.pedidos.update({
+      where: { id_pedido: quotation.id_pedido },
+      data: { id_estado_factura: aprobacionDiseno.id_estado_factura },
     });
-
-    const activeDetails = currentDetails.filter((d) => {
-      const notas = d.notas || "";
-      return !notas.includes("[ESTADO:rechazado]");
-    });
-
-    const branchId = quotation.pedido?.id_sucursal;
-    if (!branchId) {
-      throw new ValidationError(
-        "No se pudo determinar la sucursal para este pedido. Por favor, contacta a soporte."
-      );
-    }
-
-    // 4. Create the Pedido (Order)
-    // Starts with 0% progress as requested.
-    const pedido = await tx.pedidos.create({
-      data: {
-        id_cliente: quotation.id_cliente,
-        id_sucursal: branchId,
-        id_estatus: initialPedidoStatus.id_estatus,
-        fecha_creacion: new Date(),
-        factura: false,
-        notas: quotation.notas,
-        // Promote the active items to the new pedido
-        detalles: {
-          create: activeDetails.map((d) => ({
-            servicio: { connect: { id_servicio: d.id_servicio } },
-            material: { connect: { id_material: d.id_material } },
-            archivo: { connect: { id_archivo: d.id_archivo } },
-            opciones_seleccionadas: d.opciones_seleccionadas || {},
-            cantidad: d.cantidad,
-            responsable_recoleccion: d.responsable_recoleccion,
-            precio_unitario: d.precio_unitario,
-            subtotal: d.subtotal,
-            notas: d.notas,
-            ancho_cm: d.ancho_cm,
-            alto_cm: d.alto_cm,
-            grosor_cm: d.grosor_cm,
-            color: d.color,
-          })),
-        },
-      },
-    });
-
-    // 5. Update Quotation and Cleanup Draft Pedido
-    const oldPedidoId = quotation.id_pedido;
 
     const updatedQuotation = await tx.cotizaciones.update({
       where: { id_cotizacion: quotationId },
       data: {
         id_estatus_cotizacion: approvedStatus.id_estatus,
-        id_pedido: pedido.id_pedido,
         fecha_aprobacion: new Date(),
       },
     });
 
-    // Cleanup the old draft pedido (validation artifacts)
-    if (oldPedidoId) {
-      await tx.historialEstadosPedidos.deleteMany({ where: { id_pedido: oldPedidoId } });
-      await tx.detallePedido.deleteMany({ where: { id_pedido: oldPedidoId } });
-      await tx.pedidos.delete({ where: { id_pedido: oldPedidoId } });
-    }
-
-    // 6. Log status history
     await tx.historialEstadosCotizacion.create({
       data: {
         id_cotizacion: quotationId,
+        id_cliente: quotation.id_cliente,
         id_estado_anterior: quotation.id_estatus_cotizacion,
         id_estado_nuevo: approvedStatus.id_estatus,
         fecha_cambio: new Date(),
@@ -460,23 +425,17 @@ export async function approveQuotation(quotationId: number, providedEmail: strin
 /**
  * Cancels a quotation by the client and moves it to the cancelled state.
  */
-export async function cancelQuotationByClient(
-  quotationId: number,
-  providedEmail: string,
-  reason?: string
-) {
+// KIKW12 review #1b: caller authorization handled at the route layer (see
+// approveQuotation above). The service trusts that the route only invokes it
+// after the magic-link session cookie has been verified.
+export async function cancelQuotationByClient(quotationId: number, reason?: string) {
   return prisma.$transaction(async (tx) => {
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
       include: { estatus: true, cliente: true },
     });
 
-    if (!quotation) throw new NotFoundError("Quotation not found");
-
-    // Security Verification: Ensure the provided email matches the quotation's client
-    if (providedEmail.toLowerCase() !== quotation.cliente.correo_electronico.toLowerCase()) {
-      throw new ForbiddenError("You are not authorized to cancel this quotation");
-    }
+    if (!quotation) throw new NotFoundError("Cotización no encontrada");
 
     if (
       !([QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA] as string[]).includes(
@@ -484,7 +443,7 @@ export async function cancelQuotationByClient(
       )
     ) {
       throw new ConflictError(
-        `Cannot cancel a quotation in '${quotation.estatus.descripcion}' status`
+        `No se puede cancelar una cotización en estado '${quotation.estatus.descripcion}'`
       );
     }
 
@@ -492,7 +451,8 @@ export async function cancelQuotationByClient(
       where: { descripcion: QUOTATION_STATUS.CANCELADA },
     });
 
-    if (!cancelledStatus) throw new Error("Cancelled status not found");
+    if (!cancelledStatus)
+      throw new ConfigurationError("Estado 'Cancelada' no encontrado en el catálogo");
 
     // Update quote status and add cancellation reason to notes
     const updatedQuotation = await tx.cotizaciones.update({
@@ -528,8 +488,221 @@ export async function cancelQuotationByClient(
 }
 
 /**
- * Fetches the complete context required to generate a Work Order PDF.
- * This includes the Quotation, its Line Items (Specs), Branch Data, and Client Data.
+ * ST-23: anonymous cliente submits a cart from the storefront. Atomically:
+ *   1. upserts Cliente by correo_electronico (@unique, D8)
+ *   2. recomputes each item's price server-side (never trusts the client)
+ *   3. creates a draft Pedido + DetallePedido[]
+ *   4. allocates a folio via the folio_seq Postgres sequence
+ *   5. creates the Cotización (Pendiente) + VariablesCotizacion[] (id_usuario_asigno=SISTEMA)
+ *   6. logs HistorialEstadosCotizacion with actor_tipo="Cliente"
+ *
+ * Returns the folio + monto_total + the lookup URL the cliente can use to
+ * return later (also useful to embed in the confirmation email).
+ */
+
+export async function createCotizacionFromCart(
+  input: SolicitarCotizacionInput
+): Promise<{ folio: string; monto_total: number; id_cotizacion: number; lookup_url: string }> {
+  // 1. Server-side price recomputation outside the tx (read-only) — fails fast
+  //    on invalid material/formula before we open the transaction.
+  const pricedItems = await Promise.all(
+    input.items.map(async (item) => {
+      const precioUnitario = await calcularPrecioServicio({
+        id_servicio: item.id_servicio,
+        id_material: item.id_material,
+        variables: item.variables,
+      });
+      const formula = await prisma.formulas.findFirst({
+        where: { id_servicio: item.id_servicio, estatus: "Activa" },
+        include: { variables: true },
+      });
+      if (!formula) {
+        throw new ValidationError(
+          `Servicio ${item.id_servicio} no tiene una fórmula activa para cotizar`
+        );
+      }
+      return {
+        item,
+        precioUnitario,
+        subtotal: Math.round(precioUnitario * item.cantidad * 100) / 100,
+        formulaVariables: formula.variables,
+      };
+    })
+  );
+
+  const monto_total = Math.round(pricedItems.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+
+  const sistemaUserId = await getSistemaUserId();
+  const placeholderArchivoId = await getPlaceholderArchivoId();
+
+  // Copilot review #1: normalize correo once before the tx so the unique
+  // lookup, create, and any downstream comparison all see the same form.
+  const correo = normalizeEmail(input.cliente.correo_electronico);
+
+  // KIKW12 review #4: id_sucursal arrives from an anonymous client. Verify
+  // the sucursal exists AND is Activo before using it — bad values would
+  // otherwise produce an FK violation 500 or bind the Pedido to an inactive
+  // branch.
+  const sucursal = await prisma.sucursales.findUnique({
+    where: { id_sucursal: input.id_sucursal },
+    select: { id_sucursal: true, estatus: true },
+  });
+  if (!sucursal || sucursal.estatus !== "Activo") {
+    throw new ValidationError(`Sucursal ${input.id_sucursal} no existe o no está activa`);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // 2. Cliente upsert (D8).
+    //
+    // KIKW12 review #1a (identity takeover, closed): this endpoint is public
+    // and unauthenticated, so the `update` branch MUST NOT overwrite PII or
+    // anyone who knows an existing cliente's email could rewrite their name /
+    // phone / empresa and impersonate them. PII is set on `create` only; on a
+    // repeat submission we reuse the existing row untouched and link the new
+    // Pedido/Cotización. Proof-of-email-control for approve/cancel/tracker is
+    // now enforced by the magic-link session cookie (see lib/services/
+    // cotizacion-access.ts) issued by the submit handler.
+    const cliente = await tx.clientes.upsert({
+      where: { correo_electronico: correo },
+      update: {},
+      create: {
+        nombre_cliente: input.cliente.nombre_cliente,
+        correo_electronico: correo,
+        numero_telefono: input.cliente.numero_telefono,
+        empresa: input.cliente.empresa ?? null,
+        categoria: "Emprendedor",
+      },
+    });
+
+    // 3. Resolve catalog statuses.
+    const pedidoStatusPendiente = await tx.estatusPedidos.findUnique({
+      where: { descripcion: "Pendiente" },
+    });
+    const estadoFacturaCotizacion = await tx.estadoFacturaPedido.findUnique({
+      where: { descripcion: "Cotizacion" },
+    });
+    const cotizacionStatusPendiente = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.PENDIENTE },
+    });
+
+    if (!pedidoStatusPendiente || !estadoFacturaCotizacion || !cotizacionStatusPendiente) {
+      throw new ConfigurationError("Catálogos de estatus incompletos — ejecuta npm run db:seed");
+    }
+
+    // 4. Create draft Pedido (no detalles yet — we need their IDs to attach variables).
+    const pedido = await tx.pedidos.create({
+      data: {
+        id_cliente: cliente.id_cliente,
+        id_sucursal: input.id_sucursal,
+        id_estatus: pedidoStatusPendiente.id_estatus,
+        id_estado_factura: estadoFacturaCotizacion.id_estado_factura,
+        notas: input.notas ?? null,
+      },
+    });
+
+    // 5. Allocate folio via Postgres sequence (atomic, concurrent-safe).
+    const seqRow = await tx.$queryRaw<Array<{ nextval: bigint }>>`
+      SELECT nextval('folio_seq') AS nextval
+    `;
+    const seq = Number(seqRow[0].nextval);
+    const folio = `GD-${new Date().getFullYear()}-${String(seq).padStart(5, "0")}`;
+
+    // 6. Create Cotización (Pendiente).
+    const cotizacion = await tx.cotizaciones.create({
+      data: {
+        id_cliente: cliente.id_cliente,
+        id_pedido: pedido.id_pedido,
+        id_estatus_cotizacion: cotizacionStatusPendiente.id_estatus,
+        folio,
+        monto_total,
+        empresa_cliente: input.cliente.empresa ?? null,
+        notas: input.notas ?? null,
+      },
+    });
+
+    // 7. Create each DetallePedido and its VariablesCotizacion rows.
+    for (const { item, precioUnitario, subtotal, formulaVariables } of pricedItems) {
+      const detalle = await tx.detallePedido.create({
+        data: {
+          id_pedido: pedido.id_pedido,
+          id_servicio: item.id_servicio,
+          id_material: item.id_material,
+          id_archivo: placeholderArchivoId,
+          cantidad: item.cantidad,
+          precio_unitario: precioUnitario,
+          subtotal,
+          responsable_recoleccion: input.cliente.nombre_cliente,
+          notas: item.notas ?? null,
+        },
+      });
+
+      // Copilot review #2: source of truth is the formula's variable definitions,
+      // not the client payload. Every formula variable gets a VariablesCotizacion
+      // row (using the submitted value, or the default when missing) so the audit
+      // trail is complete. Unknown names from the client are rejected loudly
+      // rather than silently dropped — that catches client-side typos.
+      const submittedByName = new Map(item.variables.map((v) => [v.nombre_variable, v.valor]));
+      const knownNames = new Set(formulaVariables.map((fv) => fv.nombre_variable));
+      for (const submitted of item.variables) {
+        if (!knownNames.has(submitted.nombre_variable)) {
+          throw new ValidationError(
+            `Variable desconocida "${submitted.nombre_variable}" para servicio ${item.id_servicio}`
+          );
+        }
+      }
+
+      const variableRows = formulaVariables.map((fv) => {
+        const submitted = submittedByName.get(fv.nombre_variable);
+        const valor =
+          submitted !== undefined
+            ? submitted
+            : fv.valor_default !== null
+              ? Number(fv.valor_default)
+              : null;
+        if (valor === null) {
+          throw new ValidationError(`La variable "${fv.nombre_variable}" requiere un valor`);
+        }
+        return {
+          id_cotizacion: cotizacion.id_cotizacion,
+          id_detalle: detalle.id_detalle,
+          id_variable: fv.id_variable,
+          valor,
+          id_usuario_asigno: sistemaUserId,
+        };
+      });
+
+      if (variableRows.length > 0) {
+        await tx.variablesCotizacion.createMany({ data: variableRows });
+      }
+    }
+
+    // 8. History entry, actor_tipo="Cliente" (per HistorialEstadosCotizacion schema added by ST-08).
+    await tx.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: cotizacion.id_cotizacion,
+        id_cliente: cliente.id_cliente,
+        id_estado_anterior: null,
+        id_estado_nuevo: cotizacionStatusPendiente.id_estatus,
+        actor_tipo: "Cliente",
+      },
+    });
+
+    return {
+      folio,
+      monto_total,
+      id_cotizacion: cotizacion.id_cotizacion,
+      // KIKW12 review #2: lookup URL no longer carries the email as a bearer
+      // credential. The cliente reaches the tracker by clicking the magic link
+      // we email them (issued out-of-band by the submit route handler) — that
+      // link consumes a single-use token and sets a JWT session cookie.
+      lookup_url: `/tienda/cotizacion/confirmacion?folio=${encodeURIComponent(folio)}`,
+    };
+  });
+}
+
+/**
+ * PR #28 — Fetches the complete context required to generate a Work Order PDF.
+ * Includes the Quotation, its Line Items (Specs), Branch Data, and Client Data.
  */
 export async function getFullQuotationContext(id: number) {
   const quotation = await prisma.cotizaciones.findUnique({
