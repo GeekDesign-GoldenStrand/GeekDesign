@@ -52,6 +52,15 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
 
   useEffect(() => {
     if (idMaterial === null) return;
+    // reAchi301 review: skip the price call while any variable is empty —
+    // an empty field is NaN (see handleVarChange), not a usable 0.
+    const hasEmpty = editables.some((v) => !Number.isFinite(values[v.nombre_variable]));
+    if (hasEmpty) {
+      setPrecioUnitario(null);
+      setCalcError("Completa todos los campos para ver el precio");
+      setCalculating(false);
+      return;
+    }
     const timer = setTimeout(async () => {
       const reqId = ++lastRequestId.current;
       setCalculating(true);
@@ -88,8 +97,11 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
   }, [idMaterial, values, servicioId, editables]);
 
   function handleVarChange(nombre: string, raw: string) {
-    const num = Number(raw);
-    setValues((prev) => ({ ...prev, [nombre]: Number.isFinite(num) ? num : 0 }));
+    // reAchi301 review: an empty input must NOT collapse to 0 — a 0 silently
+    // poisons the formula (divide-by-zero, or a 0× that zeroes the price with
+    // no error). Store NaN as the "empty" sentinel; calc + submit guard on it.
+    const num = raw.trim() === "" ? NaN : Number(raw);
+    setValues((prev) => ({ ...prev, [nombre]: num }));
   }
 
   function handleReset() {
@@ -104,6 +116,10 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
     e.preventDefault();
     if (idMaterial === null) {
       setCalcError("Selecciona un material");
+      return;
+    }
+    if (editables.some((v) => !Number.isFinite(values[v.nombre_variable]))) {
+      setCalcError("Completa todos los campos antes de agregar al carrito");
       return;
     }
     if (precioUnitario === null) {
@@ -220,7 +236,9 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
                   type="number"
                   inputMode="decimal"
                   step="any"
-                  value={values[v.nombre_variable] ?? ""}
+                  value={
+                    Number.isFinite(values[v.nombre_variable]) ? values[v.nombre_variable] : ""
+                  }
                   onChange={(e) => handleVarChange(v.nombre_variable, e.target.value)}
                   className="h-[40px] w-full rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] pr-[44px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
                 />
