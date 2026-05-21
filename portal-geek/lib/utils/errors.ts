@@ -78,6 +78,15 @@ export class RateLimitError extends AppError {
   }
 }
 
+// 422 helper for failures evaluating a service's pricing formula
+// (parse error, unresolved identifier, unsupported origen, non-finite result, etc.).
+export class EvaluatorError extends AppError {
+  constructor(message: string) {
+    super(message, 422);
+    this.name = "EvaluatorError";
+  }
+}
+
 // Zod is a schema validator; it checks input shape and returns detailed issues.
 export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
   if (err instanceof AppError) {

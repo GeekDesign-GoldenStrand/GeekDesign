@@ -36,17 +36,20 @@ export type ServicioCompleto = Prisma.ServiciosGetPayload<{
 
 type ServicioSimple = Prisma.ServiciosGetPayload<object>;
 
+// D1: storefront detail loads formula + servicioMateriales (no more opciones tree).
 export type ServicioConDetalles = Prisma.ServiciosGetPayload<{
   include: {
-    opciones: {
+    sucursal: true;
+    instalador: true;
+    proveedor: true;
+    formulas: {
       include: {
-        material: true;
-        valores: {
-          include: {
-            matriz: true;
-          };
-        };
+        variables: { include: { tipo: true } };
+        constantes: { include: { instalador: true; proveedor: true } };
       };
+    };
+    servicioMateriales: {
+      include: { material: true; proveedorPrecio: true };
     };
   };
 }>;
@@ -61,14 +64,49 @@ export async function listServicios(
 ): Promise<{ items: ServicioListado[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
+  // ST-18: accent + case insensitive search.
+  // Prisma's `mode: "insensitive"` lowercases but does NOT strip diacritics
+  // ("Láser" stays accented), so a search for "laser" misses it. We use the
+  // unaccent() Postgres extension on both column and term to normalize them.
+  //
+  // Copilot review #7 (deferred): for large catalogs this loads all matching IDs
+  // into memory and then runs a `WHERE id IN (...)` hydrate. Once the catalog
+  // grows past ~1k active servicios, migrate to a single $queryRaw that does
+  // LIMIT/OFFSET in SQL + a separate COUNT(*) query, then hydrate by id range.
+  if (query && query.trim().length > 0) {
+    const trimmed = query.trim();
+    // lower(unaccent(…)) — unaccent first (strips diacritics to ASCII) THEN
+    // lower (which works the same on ASCII regardless of locale). The reverse
+    // order misses uppercase-accented inputs ("LÁSER") under some locales.
+    const matchedIds = await prisma.$queryRaw<Array<{ id_servicio: number }>>`
+      SELECT "id_servicio" FROM "SERVICIOS"
+      WHERE (${soloActivos ?? false}::boolean = false OR "estatus_servicio" = true)
+        AND (
+          lower(unaccent("nombre_servicio")) LIKE '%' || lower(unaccent(${trimmed})) || '%'
+          OR (
+            "descripcion_servicio" IS NOT NULL
+            AND lower(unaccent("descripcion_servicio")) LIKE '%' || lower(unaccent(${trimmed})) || '%'
+          )
+        )
+    `;
+    const ids = matchedIds.map((r) => r.id_servicio);
+    if (ids.length === 0) return { items: [], total: 0 };
+
+    const items = await prisma.servicios.findMany({
+      where: { id_servicio: { in: ids } },
+      skip,
+      take: pageSize,
+      orderBy: { fecha_modificacion: "desc" },
+      include: {
+        sucursal: true,
+        maquinas: { include: { maquina: true } },
+      },
+    });
+    return { items, total: ids.length };
+  }
+
   const where: Prisma.ServiciosWhereInput = {};
   if (soloActivos) where.estatus_servicio = true;
-  if (query) {
-    where.OR = [
-      { nombre_servicio: { contains: query, mode: "insensitive" } },
-      { descripcion_servicio: { contains: query, mode: "insensitive" } },
-    ];
-  }
 
   const [items, total] = await Promise.all([
     prisma.servicios.findMany({
@@ -87,22 +125,29 @@ export async function listServicios(
   return { items, total };
 }
 
+// Storefront detail loader. Returns the servicio plus its Activa formula
+// (if one exists) and the list of materials available for the customer.
+// KIKW12 review #5: empty formulas array is a valid state — the page renders
+// a "Cotización en línea no disponible" fallback instead of 404'ing, so the
+// catalog card still resolves and the cliente can request a manual quote.
 export async function getServicioWithDetails(
   id: number
-): Promise<{ servicio: ServicioConDetalles; precioBase: number | null }> {
+): Promise<{ servicio: ServicioConDetalles }> {
   const servicio = await prisma.servicios.findFirst({
     where: { id_servicio: id, estatus_servicio: true },
     include: {
-      opciones: {
+      sucursal: true,
+      instalador: true,
+      proveedor: true,
+      formulas: {
+        where: { estatus: "Activa" },
         include: {
-          material: true,
-          valores: {
-            orderBy: { es_default: "desc" },
-            include: {
-              matriz: { orderBy: { precio_unitario: "asc" } },
-            },
-          },
+          variables: { include: { tipo: true } },
+          constantes: { include: { instalador: true, proveedor: true } },
         },
+      },
+      servicioMateriales: {
+        include: { material: true, proveedorPrecio: true },
       },
     },
   });
@@ -111,19 +156,7 @@ export async function getServicioWithDetails(
     throw new NotFoundError(`Servicio con id ${id} no encontrado`);
   }
 
-  let precioBase: number | null = null;
-  for (const opcion of servicio.opciones) {
-    for (const valor of opcion.valores) {
-      for (const precio of valor.matriz) {
-        const p = Number(precio.precio_unitario);
-        if (precioBase === null || p < precioBase) {
-          precioBase = p;
-        }
-      }
-    }
-  }
-
-  return { servicio, precioBase };
+  return { servicio };
 }
 
 export async function getServicio(id: number): Promise<ServicioCompleto> {

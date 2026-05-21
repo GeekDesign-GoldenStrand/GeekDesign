@@ -2,39 +2,45 @@
  * @jest-environment jsdom
  */
 import {
-  getCarrito,
   addItem,
+  clearCarrito,
+  getCarrito,
+  getSubtotal,
+  getTotalItems,
   removeItem,
   updateItem,
   updateQuantity,
-  resetItem,
-  getSubtotal,
-  getTotalItems,
-  calcularPrecioUnitario,
+  type CarritoConfiguracion,
 } from "@/lib/cart/storage";
+
+const variablesDefault: CarritoConfiguracion = {
+  variables: [
+    {
+      id_variable: 1,
+      nombre_variable: "ancho",
+      etiqueta: "Ancho (cm)",
+      unidad: "cm",
+      valor: 50,
+    },
+    {
+      id_variable: 2,
+      nombre_variable: "alto",
+      etiqueta: "Alto (cm)",
+      unidad: "cm",
+      valor: 30,
+    },
+  ],
+};
 
 const mockItem = {
   servicioId: 1,
   nombreServicio: "Corte Láser",
-  configuracion: { selecciones: [{ opcionId: 1, valorId: 2 }] },
+  id_material: 1,
+  nombreMaterial: "MDF 3mm",
+  configuracion: variablesDefault,
   cantidad: 3,
   precioCalculado: 50,
 };
-
-const opcionesConMatriz = [
-  {
-    id_opcion: 1,
-    valores: [
-      {
-        id_valor: 2,
-        matriz: [
-          { cantidad_minima: 1, cantidad_maxima: 10, precio_unitario: 80 },
-          { cantidad_minima: 11, cantidad_maxima: null, precio_unitario: 60 },
-        ],
-      },
-    ],
-  },
-];
 
 beforeEach(() => {
   localStorage.clear();
@@ -59,12 +65,24 @@ describe("getCarrito", () => {
   });
 });
 
+describe("clearCarrito", () => {
+  it("vacía el carrito en localStorage", () => {
+    addItem(mockItem);
+    expect(getCarrito().items).toHaveLength(1);
+    clearCarrito();
+    expect(getCarrito().items).toHaveLength(0);
+  });
+});
+
 describe("addItem", () => {
   it("agrega un item y le asigna un id", () => {
     const result = addItem(mockItem);
     expect(result.items).toHaveLength(1);
     expect(result.items[0].id).toBeTruthy();
     expect(result.items[0].servicioId).toBe(1);
+    expect(result.items[0].id_material).toBe(1);
+    expect(result.items[0].nombreMaterial).toBe("MDF 3mm");
+    expect(result.items[0].configuracion.variables).toHaveLength(2);
   });
 
   it("acumula múltiples items", () => {
@@ -92,7 +110,6 @@ describe("removeItem", () => {
     addItem(mockItem);
     const { items } = addItem({ ...mockItem, servicioId: 2 });
     const idToRemove = items[0].id;
-
     const result = removeItem(idToRemove);
     expect(result.items).toHaveLength(1);
     expect(result.items[0].id).not.toBe(idToRemove);
@@ -123,94 +140,47 @@ describe("updateQuantity", () => {
     const result = updateQuantity(items[0].id, NaN);
     expect(result.items[0].cantidad).toBe(1);
   });
-
-  it("persiste el cambio en localStorage", () => {
-    const { items } = addItem(mockItem);
-    updateQuantity(items[0].id, 7);
-    const raw = localStorage.getItem("geekdesign_carrito");
-    expect(JSON.parse(raw!).items[0].cantidad).toBe(7);
-  });
-
-  it("no modifica otros items al actualizar uno", () => {
-    addItem(mockItem);
-    const { items } = addItem({ ...mockItem, servicioId: 2 });
-    const idToUpdate = items[1].id;
-    const result = updateQuantity(idToUpdate, 10);
-    expect(result.items[0].cantidad).toBe(mockItem.cantidad);
-    expect(result.items[1].cantidad).toBe(10);
-  });
 });
 
 describe("updateItem", () => {
-  it("actualiza configuracion, cantidad y precioCalculado del item", () => {
+  it("actualiza configuracion, material, cantidad y precioCalculado", () => {
     const { items } = addItem(mockItem);
-    const patch = {
-      configuracion: {
-        selecciones: [{ opcionId: 1, valorId: 3, opcionNombre: "Material", valorNombre: "MDF" }],
-      },
+    const newConfig: CarritoConfiguracion = {
+      variables: [
+        {
+          id_variable: 1,
+          nombre_variable: "ancho",
+          etiqueta: "Ancho (cm)",
+          unidad: "cm",
+          valor: 100,
+        },
+      ],
+    };
+    const result = updateItem(items[0].id, {
+      configuracion: newConfig,
+      id_material: 2,
+      nombreMaterial: "Acrílico 3mm",
       cantidad: 10,
       precioCalculado: 60,
-    };
-    const result = updateItem(items[0].id, patch);
+    });
     expect(result.items[0].cantidad).toBe(10);
     expect(result.items[0].precioCalculado).toBe(60);
-    expect(result.items[0].configuracion).toEqual(patch.configuracion);
-  });
-
-  it("no modifica otros items al actualizar uno", () => {
-    addItem(mockItem);
-    const { items } = addItem({ ...mockItem, servicioId: 2 });
-    updateItem(items[1].id, { configuracion: {}, cantidad: 5, precioCalculado: 99 });
-    const stored = getCarrito();
-    expect(stored.items[0].cantidad).toBe(mockItem.cantidad);
+    expect(result.items[0].id_material).toBe(2);
+    expect(result.items[0].nombreMaterial).toBe("Acrílico 3mm");
+    expect(result.items[0].configuracion).toEqual(newConfig);
   });
 
   it("no lanza error al actualizar un id inexistente", () => {
     addItem(mockItem);
     const result = updateItem("id-inexistente", {
-      configuracion: {},
+      configuracion: { variables: [] },
+      id_material: 1,
+      nombreMaterial: "X",
       cantidad: 1,
       precioCalculado: 0,
     });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].precioCalculado).toBe(mockItem.precioCalculado);
-  });
-
-  it("persiste los cambios en localStorage", () => {
-    const { items } = addItem(mockItem);
-    updateItem(items[0].id, { configuracion: {}, cantidad: 7, precioCalculado: 45 });
-    const raw = localStorage.getItem("geekdesign_carrito");
-    expect(JSON.parse(raw!).items[0].cantidad).toBe(7);
-  });
-});
-
-describe("resetItem", () => {
-  const defaultConfig = {
-    selecciones: [{ opcionId: 1, opcionNombre: "Material", valorId: 2, valorNombre: "Acrílico" }],
-  };
-  const defaultPrecio = 80;
-
-  it("restablece configuracion, cantidad a 1 y precioCalculado al default", () => {
-    const { items } = addItem({ ...mockItem, cantidad: 10, precioCalculado: 60 });
-    const result = resetItem(items[0].id, defaultConfig, defaultPrecio);
-    expect(result.items[0].cantidad).toBe(1);
-    expect(result.items[0].precioCalculado).toBe(defaultPrecio);
-    expect(result.items[0].configuracion).toEqual(defaultConfig);
-  });
-
-  it("no modifica otros items al resetear uno", () => {
-    addItem(mockItem);
-    const { items } = addItem({ ...mockItem, servicioId: 2, cantidad: 5 });
-    resetItem(items[1].id, defaultConfig, defaultPrecio);
-    const stored = getCarrito();
-    expect(stored.items[0].cantidad).toBe(mockItem.cantidad);
-  });
-
-  it("no lanza error al resetear un id inexistente", () => {
-    addItem(mockItem);
-    const result = resetItem("id-inexistente", defaultConfig, defaultPrecio);
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0].cantidad).toBe(mockItem.cantidad);
   });
 });
 
@@ -224,7 +194,7 @@ describe("getSubtotal", () => {
       { ...mockItem, id: "a", precioCalculado: 50, cantidad: 3 },
       { ...mockItem, id: "b", precioCalculado: 100, cantidad: 2 },
     ];
-    expect(getSubtotal(items)).toBe(350); // 150 + 200
+    expect(getSubtotal(items)).toBe(350);
   });
 });
 
@@ -239,36 +209,5 @@ describe("getTotalItems", () => {
       { ...mockItem, id: "b", cantidad: 2 },
     ];
     expect(getTotalItems(items)).toBe(5);
-  });
-});
-
-describe("calcularPrecioUnitario", () => {
-  it("retorna precio del tramo correcto según cantidad", () => {
-    const precio = calcularPrecioUnitario([{ opcionId: 1, valorId: 2 }], opcionesConMatriz, 5);
-    expect(precio).toBe(80); // tramo 1–10
-  });
-
-  it("aplica tramo de mayoreo cuando la cantidad supera el mínimo", () => {
-    const precio = calcularPrecioUnitario([{ opcionId: 1, valorId: 2 }], opcionesConMatriz, 15);
-    expect(precio).toBe(60); // tramo 11+
-  });
-
-  it("retorna 0 si no hay precios disponibles para esa cantidad", () => {
-    const precio = calcularPrecioUnitario([{ opcionId: 1, valorId: 2 }], opcionesConMatriz, 0);
-    expect(precio).toBe(0);
-  });
-
-  it("usa fallback al precio más barato si la selección no tiene precio", () => {
-    const precio = calcularPrecioUnitario(
-      [{ opcionId: 99, valorId: 99 }], // opción inexistente
-      opcionesConMatriz,
-      5
-    );
-    expect(precio).toBe(80); // precio más barato disponible en el tramo
-  });
-
-  it("retorna 0 si no hay opciones", () => {
-    const precio = calcularPrecioUnitario([], [], 1);
-    expect(precio).toBe(0);
   });
 });

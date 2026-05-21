@@ -16,6 +16,7 @@ import { NotFoundError } from "@/lib/utils/errors";
 jest.mock("@/lib/db/client", () => ({
   prisma: {
     $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
     servicios: {
       findMany: jest.fn(),
       count: jest.fn(),
@@ -27,6 +28,7 @@ jest.mock("@/lib/db/client", () => ({
 }));
 
 const mockTransaction = prisma.$transaction as jest.Mock;
+const mockQueryRaw = prisma.$queryRaw as unknown as jest.Mock;
 const mockFindMany = prisma.servicios.findMany as jest.Mock;
 const mockCount = prisma.servicios.count as jest.Mock;
 const mockFindUnique = prisma.servicios.findUnique as jest.Mock;
@@ -59,22 +61,45 @@ const SERVICIO_COMPLETO = {
 
 const SERVICIO_CON_DETALLES = {
   ...SERVICIO,
-  opciones: [
+  instalador: null,
+  proveedor: null,
+  formulas: [
     {
-      id_opcion: 1,
-      nombre_opcion: "Tamaño",
-      material: { id_material: 1, nombre_material: "MDF 3mm" },
-      valores: [
+      id_formula: 1,
+      id_servicio: 1,
+      expresion: "ancho * alto * costo_laser",
+      estatus: "Activa",
+      id_usuario_creo: 1,
+      variables: [
         {
-          id_valor: 1,
-          valor: "chico",
-          es_default: true,
-          matriz: [
-            { id_precio: 1, precio_unitario: 25.0 },
-            { id_precio: 2, precio_unitario: 20.0 },
-          ],
+          id_variable: 1,
+          nombre_variable: "ancho",
+          etiqueta: "Ancho (cm)",
+          unidad: "cm",
+          valor_default: "50",
+          editable_por_cliente: true,
+          tipo: { nombre_tipo: "Dimensión", unidad_default: "cm" },
         },
       ],
+      constantes: [
+        {
+          id_constante: 1,
+          nombre_constante: "costo_laser",
+          origen: "manual",
+          valor: "2.5",
+          instalador: null,
+          proveedor: null,
+        },
+      ],
+    },
+  ],
+  servicioMateriales: [
+    {
+      id_servicio_material: 1,
+      id_material: 1,
+      id_proveedor_precio: 1,
+      material: { id_material: 1, nombre_material: "MDF 3mm" },
+      proveedorPrecio: { id_proveedor_precio: 1, precio: "200" },
     },
   ],
 };
@@ -136,22 +161,40 @@ describe("listServicios", () => {
     );
   });
 
-  it("aplica búsqueda por query en nombre y descripción (case-insensitive)", async () => {
+  it("ST-18: usa $queryRaw con unaccent para búsqueda accent/case-insensitive", async () => {
+    mockQueryRaw.mockResolvedValue([{ id_servicio: 1 }]);
+    mockFindMany.mockResolvedValue([SERVICIO]);
+
+    const result = await listServicios(1, 20, false, "láser");
+
+    expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id_servicio: { in: [1] } },
+      })
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it("ST-18: retorna vacío y NO llama findMany cuando no hay matches", async () => {
+    mockQueryRaw.mockResolvedValue([]);
+
+    const result = await listServicios(1, 20, false, "xyz");
+
+    expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+    expect(mockFindMany).not.toHaveBeenCalled();
+    expect(result).toEqual({ items: [], total: 0 });
+  });
+
+  it("ST-18: query con solo espacios cae al path no-query (no llama $queryRaw)", async () => {
     mockFindMany.mockResolvedValue([SERVICIO]);
     mockCount.mockResolvedValue(1);
 
-    await listServicios(1, 20, false, "láser");
+    await listServicios(1, 20, false, "   ");
 
-    expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          OR: [
-            { nombre_servicio: { contains: "láser", mode: "insensitive" } },
-            { descripcion_servicio: { contains: "láser", mode: "insensitive" } },
-          ],
-        }),
-      })
-    );
+    expect(mockQueryRaw).not.toHaveBeenCalled();
+    expect(mockFindMany).toHaveBeenCalled();
   });
 
   it("ordena por fecha_modificacion descendente", async () => {
@@ -222,22 +265,14 @@ describe("getServicio", () => {
 describe("getServicioWithDetails", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("retorna el servicio y calcula precioBase como el mínimo de la matriz", async () => {
+  it("retorna el servicio con su formula activa y materiales", async () => {
     mockFindFirst.mockResolvedValue(SERVICIO_CON_DETALLES);
 
     const result = await getServicioWithDetails(1);
 
     expect(result.servicio).toEqual(SERVICIO_CON_DETALLES);
-    expect(result.precioBase).toBe(20.0);
-  });
-
-  it("retorna precioBase null cuando no hay matriz de precios", async () => {
-    const sinPrecios = { ...SERVICIO_CON_DETALLES, opciones: [] };
-    mockFindFirst.mockResolvedValue(sinPrecios);
-
-    const result = await getServicioWithDetails(1);
-
-    expect(result.precioBase).toBeNull();
+    expect(result.servicio.formulas).toHaveLength(1);
+    expect(result.servicio.servicioMateriales).toHaveLength(1);
   });
 
   it("filtra por estatus_servicio: true (no devuelve eliminados lógicamente)", async () => {
@@ -256,6 +291,19 @@ describe("getServicioWithDetails", () => {
     mockFindFirst.mockResolvedValue(null);
 
     await expect(getServicioWithDetails(999)).rejects.toThrow(NotFoundError);
+  });
+
+  // KIKW12 review #5: when a servicio has no Activa formula the loader now
+  // returns the servicio (with formulas: []) instead of throwing. The detail
+  // page renders a "Cotización en línea no disponible" fallback in place of
+  // the variables form so the catalog card still resolves.
+  it("returns servicio with empty formulas[] when no Activa formula exists (no longer throws)", async () => {
+    const sinFormula = { ...SERVICIO_CON_DETALLES, formulas: [] };
+    mockFindFirst.mockResolvedValue(sinFormula);
+
+    const result = await getServicioWithDetails(1);
+    expect(result.servicio.formulas).toEqual([]);
+    expect(result.servicio.id_servicio).toBe(1);
   });
 });
 

@@ -135,14 +135,23 @@ describe("GET /api/servicios/[id]", () => {
     });
   }
 
-  it("retorna 200 con detalle del servicio (ruta pública)", async () => {
+  it("retorna 200 con detalle del servicio (ruta pública, formula + materiales)", async () => {
     mockFindFirst.mockResolvedValue({
       id_servicio: 1,
       nombre_servicio: "Corte Láser",
-      opciones: [
+      formulas: [
         {
-          material: { id_material: 1 },
-          valores: [{ es_default: true, matriz: [{ precio_unitario: 100 }] }],
+          id_formula: 1,
+          expresion: "ancho * 2",
+          variables: [],
+          constantes: [],
+        },
+      ],
+      servicioMateriales: [
+        {
+          id_material: 1,
+          material: { id_material: 1, nombre_material: "MDF 3mm" },
+          proveedorPrecio: null,
         },
       ],
     });
@@ -151,7 +160,8 @@ describe("GET /api/servicios/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.servicio.id_servicio).toBe(1);
-    expect(res.body.data.precioBase).toBe(100);
+    expect(res.body.data.servicio.formulas).toHaveLength(1);
+    expect(res.body.data.servicio.servicioMateriales).toHaveLength(1);
   });
 
   it("retorna 404 cuando el servicio no existe", async () => {
@@ -161,6 +171,24 @@ describe("GET /api/servicios/[id]", () => {
 
     expect(res.status).toBe(404);
     expect(res.body.error).toContain("no encontrado");
+  });
+
+  // KIKW12 review #5: a servicio without an Activa formula is a valid state.
+  // The endpoint returns 200 with the servicio (formulas: []); the storefront
+  // detail page renders a "Cotización en línea no disponible" fallback in
+  // place of the variables form.
+  it("returns 200 with empty formulas[] when servicio has no Activa formula", async () => {
+    mockFindFirst.mockResolvedValue({
+      id_servicio: 1,
+      nombre_servicio: "Servicio Sin Fórmula",
+      formulas: [],
+      servicioMateriales: [],
+    });
+
+    const res = await detailApp().get("/api/servicios/1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.servicio.formulas).toEqual([]);
   });
 
   it("retorna 422 cuando el id no es un número válido", async () => {
