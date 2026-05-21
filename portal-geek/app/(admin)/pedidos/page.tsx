@@ -2,7 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
+import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
+
+interface PedidoDetalle {
+  id_detalle: number;
+  id_servicio: number;
+
+  estatus?: {
+    descripcion: string;
+  } | null;
+
+  servicio?: {
+    nombre_servicio: string;
+  };
+}
 
 // Frontend type for a single order (pedido)
 interface Pedido {
@@ -10,6 +25,7 @@ interface Pedido {
   fecha_creacion: string;
   fecha_estimada?: string | null;
   monto_total?: number | null;
+  folio?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -23,6 +39,9 @@ interface Pedido {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  detalles?: PedidoDetalle[];
+  serviceStatusSummary?: ServiceStatusSummary;
 }
 
 // Raw API response type
@@ -32,6 +51,7 @@ interface PedidoApi {
   fecha_estimada?: string | null;
 
   cotizaciones?: {
+    folio?: string | null;
     monto_total: string | number;
   }[];
 
@@ -47,6 +67,9 @@ interface PedidoApi {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  detalles?: PedidoDetalle[];
+  serviceStatusSummary?: ServiceStatusSummary;
 }
 
 export default function PedidosPage() {
@@ -64,6 +87,8 @@ export default function PedidosPage() {
   const [cliente, setCliente] = useState<string | null>(null);
 
   const pageSize = 10;
+
+  const [services, setServices] = useState<PedidoServiceOption[]>([]);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
@@ -90,15 +115,14 @@ export default function PedidosPage() {
         id_pedido: p.id_pedido,
         fecha_creacion: p.fecha_creacion,
         fecha_estimada: p.fecha_estimada ?? null,
-
+        folio: p.cotizaciones?.[0]?.folio ?? null,
         // Take latest quotation amount if it exists
         monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
-
         cliente: p.cliente,
-
         estatus: p.estatus,
-
         estado_factura: p.estado_factura ?? null,
+        detalles: p.detalles ?? [],
+        serviceStatusSummary: p.serviceStatusSummary,
       }));
 
       setPedidos(mapped);
@@ -117,6 +141,26 @@ export default function PedidosPage() {
     load();
   }, [fetchPedidos]);
 
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        const res = await fetch("/api/pedidos/servicios");
+
+        if (!res.ok) {
+          throw new Error("Error loading services");
+        }
+
+        const json = await res.json();
+
+        setServices(json.data ?? []);
+      } catch {
+        console.error("Error loading pedido services");
+      }
+    }
+
+    fetchServices();
+  }, []);
+
   // Delete an order and refresh list
   async function handleDelete(id: number) {
     await fetch(`/api/pedidos/${id}`, { method: "DELETE" });
@@ -128,6 +172,23 @@ export default function PedidosPage() {
     await fetch(`/api/pedidos/${id}/estatus`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estatus: status }),
+    });
+
+    fetchPedidos();
+  }
+
+  function handleServiceSelect(id: number | null) {
+    setPage(1);
+    setServiceIds(id === null ? [] : [id]);
+  }
+
+  async function handleDetalleStatusChange(detalleId: number, status: string) {
+    await fetch(`/api/pedidos/detalles/${detalleId}/estatus`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ estatus: status }),
     });
 
@@ -155,6 +216,10 @@ export default function PedidosPage() {
       setEmpresa={setEmpresa}
       cliente={cliente}
       setCliente={setCliente}
+      services={services}
+      selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
+      onServiceSelect={handleServiceSelect}
+      onDetalleStatusChange={handleDetalleStatusChange}
     />
   );
 }

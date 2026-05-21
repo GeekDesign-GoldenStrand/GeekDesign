@@ -2,7 +2,7 @@
 import { randomBytes } from "node:crypto";
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import type { Roles } from "@prisma/client";
+import type { Pedidos, Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
@@ -308,6 +308,44 @@ async function main() {
     },
   });
 
+  const servicioGrabado = await prisma.servicios.upsert({
+    where: { id_servicio: 2 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Grabado Láser",
+      descripcion_servicio: "Grabado láser sobre madera, acrílico o metal",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioBordado = await prisma.servicios.upsert({
+    where: { id_servicio: 3 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Bordado",
+      descripcion_servicio: "Bordado personalizado en textiles",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioRotulacion = await prisma.servicios.upsert({
+    where: { id_servicio: 4 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Rotulación de vinil",
+      descripcion_servicio: "Rotulación y aplicación de vinil decorativo o publicitario",
+      estatus_servicio: true,
+    },
+  });
+
+  console.log("Seeded demo services: Corte Láser, Grabado Láser, Bordado, Rotulación de vinil");
+
   const material = await prisma.materiales.upsert({
     where: { id_material: 1 },
     update: {},
@@ -318,6 +356,49 @@ async function main() {
       grosor: 3.0,
     },
   });
+
+  const materialAcrilico = await prisma.materiales.upsert({
+    where: { id_material: 2 },
+    update: {},
+    create: {
+      nombre_material: "Acrílico transparente 3mm",
+      descripcion_material: "Acrílico transparente para corte y grabado láser",
+      unidad_medida: "hoja",
+      grosor: 3.0,
+    },
+  });
+
+  const materialTela = await prisma.materiales.upsert({
+    where: { id_material: 3 },
+    update: {},
+    create: {
+      nombre_material: "Tela algodón",
+      descripcion_material: "Tela base para bordado personalizado",
+      unidad_medida: "pieza",
+    },
+  });
+
+  const materialVinil = await prisma.materiales.upsert({
+    where: { id_material: 4 },
+    update: {},
+    create: {
+      nombre_material: "Vinil adhesivo",
+      descripcion_material: "Vinil para rotulación y señalética",
+      unidad_medida: "metro",
+    },
+  });
+
+  const materialMetal = await prisma.materiales.upsert({
+    where: { id_material: 5 },
+    update: {},
+    create: {
+      nombre_material: "Placa metálica",
+      descripcion_material: "Placa metálica para grabado láser",
+      unidad_medida: "pieza",
+    },
+  });
+
+  console.log("Seeded demo materials for PE-03");
 
   const opcion = await prisma.opcionesProducto.upsert({
     where: { id_opcion: 1 },
@@ -416,6 +497,14 @@ async function main() {
   }
 
   console.log(`Seeded ${orderStatuses.length} order statuses`);
+
+  const orderStatusRows = await prisma.estatusPedidos.findMany();
+
+  const orderStatusMap: Record<string, number> = {};
+
+  orderStatusRows.forEach((s) => {
+    orderStatusMap[s.descripcion] = s.id_estatus;
+  });
 
   // ── Invoice statuses ─────────────────────────────────────────
   const invoiceStatuses = [
@@ -618,6 +707,66 @@ async function main() {
     });
     console.log("Seeded ServicioMaterial: Corte Láser ↔ MDF 3mm");
   }
+
+  await Promise.all([
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioGrabado.id_servicio,
+          id_material: material.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioGrabado.id_servicio,
+        id_material: material.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioGrabado.id_servicio,
+          id_material: materialAcrilico.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioGrabado.id_servicio,
+        id_material: materialAcrilico.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioBordado.id_servicio,
+          id_material: materialTela.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioBordado.id_servicio,
+        id_material: materialTela.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioRotulacion.id_servicio,
+          id_material: materialVinil.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioRotulacion.id_servicio,
+        id_material: materialVinil.id_material,
+      },
+    }),
+  ]);
+
+  console.log("Seeded ServicioMaterial relations for demo PE-03 services");
 
   // ── Active Formula on Corte Láser ──────────────────────────────────────────
   // Reuses the Dimensión tipoVariable for ancho/alto, a manual constante
@@ -847,8 +996,10 @@ async function main() {
       },
     ];
 
+    const createdPedidos: Pedidos[] = [];
+
     for (const pedido of demoPedidos) {
-      await prisma.pedidos.create({
+      const createdPedido = await prisma.pedidos.create({
         data: {
           cliente: {
             connect: {
@@ -879,9 +1030,181 @@ async function main() {
           notas: pedido.notas,
         },
       });
+
+      createdPedidos.push(createdPedido);
     }
 
-    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
+    const demoDetallesPedido = [
+      // Pedido 1: mezcla de servicios pendientes y en producción
+      {
+        pedidoIndex: 0,
+        servicio: servicioCorte.id_servicio,
+        material: material.id_material,
+        estatus: "Pendiente",
+        cantidad: 10,
+        precio_unitario: 150,
+        subtotal: 1500,
+        notas: "Corte inicial de piezas MDF",
+      },
+      {
+        pedidoIndex: 0,
+        servicio: servicioGrabado.id_servicio,
+        material: material.id_material,
+        estatus: "En producción",
+        cantidad: 10,
+        precio_unitario: 80,
+        subtotal: 800,
+        notas: "Grabado de logotipo",
+      },
+
+      // Pedido 2: varios servicios en distintos estatus
+      {
+        pedidoIndex: 1,
+        servicio: servicioCorte.id_servicio,
+        material: materialAcrilico.id_material,
+        estatus: "Finalizado",
+        cantidad: 5,
+        precio_unitario: 180,
+        subtotal: 900,
+        notas: "Corte de acrílico transparente",
+      },
+      {
+        pedidoIndex: 1,
+        servicio: servicioRotulacion.id_servicio,
+        material: materialVinil.id_material,
+        estatus: "Pendiente",
+        cantidad: 3,
+        precio_unitario: 250,
+        subtotal: 750,
+        notas: "Vinil para señalética",
+      },
+
+      // Pedido 3: pedido con bordado
+      {
+        pedidoIndex: 2,
+        servicio: servicioBordado.id_servicio,
+        material: materialTela.id_material,
+        estatus: "En producción",
+        cantidad: 20,
+        precio_unitario: 90,
+        subtotal: 1800,
+        notas: "Bordado de playeras",
+      },
+
+      // Pedido 4: servicios entregados/finalizados
+      {
+        pedidoIndex: 3,
+        servicio: servicioGrabado.id_servicio,
+        material: materialMetal.id_material,
+        estatus: "Entregado",
+        cantidad: 4,
+        precio_unitario: 300,
+        subtotal: 1200,
+        notas: "Grabado en placas metálicas",
+      },
+      {
+        pedidoIndex: 3,
+        servicio: servicioRotulacion.id_servicio,
+        material: materialVinil.id_material,
+        estatus: "Finalizado",
+        cantidad: 2,
+        precio_unitario: 500,
+        subtotal: 1000,
+        notas: "Rotulación finalizada",
+      },
+
+      // Pedido 5: cancelado
+      {
+        pedidoIndex: 4,
+        servicio: servicioCorte.id_servicio,
+        material: material.id_material,
+        estatus: "Cancelado",
+        cantidad: 12,
+        precio_unitario: 120,
+        subtotal: 1440,
+        notas: "Servicio cancelado por el cliente",
+      },
+
+      // Pedido 6
+      {
+        pedidoIndex: 5,
+        servicio: servicioRotulacion.id_servicio,
+        material: materialVinil.id_material,
+        estatus: "Pendiente",
+        cantidad: 6,
+        precio_unitario: 350,
+        subtotal: 2100,
+        notas: "Rotulación exterior",
+      },
+      {
+        pedidoIndex: 5,
+        servicio: servicioGrabado.id_servicio,
+        material: materialAcrilico.id_material,
+        estatus: "Pendiente",
+        cantidad: 6,
+        precio_unitario: 120,
+        subtotal: 720,
+        notas: "Grabado complementario",
+      },
+
+      // Pedido 7
+      {
+        pedidoIndex: 6,
+        servicio: servicioCorte.id_servicio,
+        material: materialAcrilico.id_material,
+        estatus: "En producción",
+        cantidad: 8,
+        precio_unitario: 110,
+        subtotal: 880,
+        notas: "Corte de acrílico para prototipo",
+      },
+
+      // Pedido 8
+      {
+        pedidoIndex: 7,
+        servicio: servicioGrabado.id_servicio,
+        material: materialMetal.id_material,
+        estatus: "Pendiente",
+        cantidad: 10,
+        precio_unitario: 320,
+        subtotal: 3200,
+        notas: "Grabado de placa conmemorativa",
+      },
+    ];
+
+    await prisma.detallePedido.createMany({
+      data: demoDetallesPedido.map((detalle) => ({
+        id_pedido: createdPedidos[detalle.pedidoIndex].id_pedido,
+        id_servicio: detalle.servicio,
+        id_material: detalle.material,
+        id_archivo: 1,
+        id_estatus: orderStatusMap[detalle.estatus],
+        cantidad: detalle.cantidad,
+        responsable_recoleccion: "Cliente Demo",
+        notas: detalle.notas,
+        precio_unitario: detalle.precio_unitario,
+        subtotal: detalle.subtotal,
+      })),
+    });
+
+    console.log(`Seeded ${demoDetallesPedido.length} demo detalles de pedido`);
+
+    await prisma.cotizaciones.createMany({
+      data: demoCotizaciones
+        .map((cotizacion, index) => {
+          const pedido = createdPedidos[index];
+
+          if (!pedido) {
+            return null;
+          }
+
+          return {
+            ...cotizacion,
+            id_pedido: pedido.id_pedido,
+          };
+        })
+        .filter((cotizacion): cotizacion is NonNullable<typeof cotizacion> => cotizacion !== null),
+    });
     console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
 

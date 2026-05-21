@@ -3,6 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
+import {
+  PedidosServiceTabs,
+  type PedidoServiceOption,
+} from "@/components/admin/molecules/PedidosServiceTabs";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
 
@@ -54,6 +58,11 @@ type Props = {
 
   cliente: string | null;
   setCliente: (v: string | null) => void;
+
+  services: PedidoServiceOption[];
+  selectedServiceId: number | null;
+  onServiceSelect: (id: number | null) => void;
+  onDetalleStatusChange: (detalleId: number, status: string) => void;
 };
 
 export function PedidosTemplate({
@@ -75,6 +84,10 @@ export function PedidosTemplate({
   setEmpresa,
   cliente,
   setCliente,
+  services,
+  selectedServiceId,
+  onServiceSelect,
+  onDetalleStatusChange,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -116,6 +129,12 @@ export function PedidosTemplate({
   return (
     <>
       <AdminHeader title="Pedidos" />
+
+      <PedidosServiceTabs
+        services={services}
+        selectedServiceId={selectedServiceId}
+        onSelectService={onServiceSelect}
+      />
 
       <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
         {/* Toolbar */}
@@ -245,7 +264,13 @@ export function PedidosTemplate({
         </div>
 
         {/* Table */}
-        <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
+        <PedidosTable
+          pedidos={pedidos}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+          selectedServiceId={selectedServiceId}
+          onDetalleStatusChange={onDetalleStatusChange}
+        />
 
         {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">

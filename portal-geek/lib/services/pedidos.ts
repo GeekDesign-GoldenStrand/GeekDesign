@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
+import { NotFoundError } from "@/lib/utils/errors";
 
 // Type for pedidos including frontend-required relations
 type PedidoWithRelations = Prisma.PedidosGetPayload<{
@@ -10,8 +11,10 @@ type PedidoWithRelations = Prisma.PedidosGetPayload<{
     cliente: true;
     sucursal: true;
     estatus: true;
+    estado_factura: true;
     cotizaciones: {
       select: {
+        folio: true;
         monto_total: true;
       };
     };
@@ -20,10 +23,17 @@ type PedidoWithRelations = Prisma.PedidosGetPayload<{
         servicio: true;
         material: true;
         archivo: true;
+        estatus: true;
       };
     };
   };
 }>;
+
+export type PedidoServiceStatusSummary = Record<PedidoStatus, number>;
+
+export type PedidoListItem = PedidoWithRelations & {
+  serviceStatusSummary: PedidoServiceStatusSummary;
+};
 
 // Centralized catalog of order statuses.
 // Using constants avoids scattered "magic strings" and makes refactoring safer.
@@ -36,6 +46,30 @@ export const PEDIDO_STATUS = {
 } as const;
 
 export type PedidoStatus = (typeof PEDIDO_STATUS)[keyof typeof PEDIDO_STATUS];
+
+const EMPTY_SERVICE_STATUS_SUMMARY: PedidoServiceStatusSummary = {
+  [PEDIDO_STATUS.PENDIENTE]: 0,
+  [PEDIDO_STATUS.EN_PRODUCCION]: 0,
+  [PEDIDO_STATUS.FINALIZADO]: 0,
+  [PEDIDO_STATUS.ENTREGADO]: 0,
+  [PEDIDO_STATUS.CANCELADO]: 0,
+};
+
+function buildServiceStatusSummary(detalles: PedidoWithRelations["detalles"]) {
+  const summary: PedidoServiceStatusSummary = {
+    ...EMPTY_SERVICE_STATUS_SUMMARY,
+  };
+
+  for (const detalle of detalles) {
+    const status = (detalle.estatus?.descripcion ?? PEDIDO_STATUS.PENDIENTE) as PedidoStatus;
+
+    if (status in summary) {
+      summary[status] += 1;
+    }
+  }
+
+  return summary;
+}
 
 // Helper to resolve status IDs by description.
 // Avoids "magic strings" and ensures filters remain valid if catalog descriptions change.
@@ -61,7 +95,7 @@ export async function listPedidos(
   empresa?: string | null,
   cliente?: string | null,
   search?: string | null
-): Promise<{ items: PedidoWithRelations[]; total: number }> {
+): Promise<{ items: PedidoListItem[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
   // Build dynamic filter conditions
@@ -146,6 +180,7 @@ export async function listPedidos(
         // Pull latest quotation amount for frontend "Monto" column
         cotizaciones: {
           select: {
+            folio: true,
             monto_total: true,
           },
           orderBy: {
@@ -159,6 +194,7 @@ export async function listPedidos(
             servicio: true,
             material: true,
             archivo: true,
+            estatus: true,
           },
         },
       },
@@ -171,7 +207,12 @@ export async function listPedidos(
     prisma.pedidos.count({ where }),
   ]);
 
-  return { items, total };
+  const mappedItems = items.map((pedido) => ({
+    ...pedido,
+    serviceStatusSummary: buildServiceStatusSummary(pedido.detalles),
+  }));
+
+  return { items: mappedItems, total };
 }
 
 export async function getPedido(id: number): Promise<Pedidos> {
@@ -208,6 +249,21 @@ export async function getPedidoStatusId(description: string) {
   }
 
   return status.id_estatus;
+}
+
+export async function listActivePedidoServices() {
+  return prisma.servicios.findMany({
+    where: {
+      estatus_servicio: true,
+    },
+    select: {
+      id_servicio: true,
+      nombre_servicio: true,
+    },
+    orderBy: {
+      nombre_servicio: "asc",
+    },
+  });
 }
 
 const PEDIDO_STATUS_API_TO_DB: Record<PedidoStatus, string> = {
@@ -272,4 +328,42 @@ export async function changePedidoStatus(
   ]);
 
   return updatedPedido;
+}
+
+export async function changeDetallePedidoStatus(detalleId: number, targetStatus: PedidoStatus) {
+  const currentDetalle = await prisma.detallePedido.findUnique({
+    where: {
+      id_detalle: detalleId,
+    },
+    include: {
+      estatus: true,
+    },
+  });
+
+  if (!currentDetalle) {
+    throw new NotFoundError("Detalle de pedido not found");
+  }
+
+  const currentStatus = (currentDetalle.estatus?.descripcion ??
+    PEDIDO_STATUS.PENDIENTE) as PedidoStatus;
+
+  const isFinalStatus =
+    currentStatus === PEDIDO_STATUS.ENTREGADO || currentStatus === PEDIDO_STATUS.CANCELADO;
+
+  if (isFinalStatus && targetStatus !== currentStatus) {
+    throw new Error(`No se puede cambiar el estatus de un servicio que ya está '${currentStatus}'`);
+  }
+
+  const dbStatus = PEDIDO_STATUS_API_TO_DB[targetStatus];
+
+  const newStatusId = await getPedidoStatusId(dbStatus);
+
+  return prisma.detallePedido.update({
+    where: {
+      id_detalle: detalleId,
+    },
+    data: {
+      id_estatus: newStatusId,
+    },
+  });
 }
