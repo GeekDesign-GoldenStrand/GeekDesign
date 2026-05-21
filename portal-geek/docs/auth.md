@@ -100,9 +100,7 @@ renders. It:
 - `proxy()` also no-ops if `AUTH_SECRET` is unset (pre-config bootstrap).
 
 The fine-grained "who can do what" rules live at the API layer (`withRole`),
-not at the edge. The per-role / per-path access model required by the SRS — and
-the gap between it and the current implementation — is tracked separately in
-[`rbac.md`](./rbac.md).
+not at the edge.
 
 ### Roles
 
