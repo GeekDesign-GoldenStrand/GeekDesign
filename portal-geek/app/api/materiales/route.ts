@@ -40,8 +40,7 @@ export const GET = withRole(
       const q = searchParams.get("q")?.trim() || undefined;
       const sort = searchParams.get("sort") === "desc" ? "desc" : "asc";
       const rawTipo = searchParams.get("tipo");
-      const tipo =
-        rawTipo === "grupos" || rawTipo === "individuales" ? rawTipo : undefined;
+      const tipo = rawTipo === "grupos" || rawTipo === "individuales" ? rawTipo : undefined;
       const result = await listMateriales(page, pageSize, q, sort, tipo);
       return paginated(result.items, result.total, page, pageSize);
     } catch (err) {

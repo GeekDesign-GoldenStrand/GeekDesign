@@ -290,6 +290,12 @@ describe("createGrupo", () => {
 // createSubMaterial
 // ──────────────────────────────────────────────────────────────────────────────
 describe("createSubMaterial", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
+
   const SUB_INPUT = {
     tipo: "sub" as const,
     id_material_padre: 2,
@@ -302,8 +308,6 @@ describe("createSubMaterial", () => {
     color: "Verde",
     imagen_url: KEY,
   };
-
-  beforeEach(() => jest.clearAllMocks());
 
   it("crea el sub-material cuando el padre es un grupo válido", async () => {
     mockFindUnique.mockResolvedValue({ es_grupo: true });
@@ -339,7 +343,11 @@ describe("createSubMaterial", () => {
 // updateMaterial
 // ──────────────────────────────────────────────────────────────────────────────
 describe("updateMaterial", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
 
   it("actualiza y retorna el material modificado", async () => {
     const updated = { ...BASE_MATERIAL, nombre_material: "Acrílico opaco" };

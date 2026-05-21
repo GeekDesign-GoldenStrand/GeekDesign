@@ -214,7 +214,11 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     routes = await import("@/app/api/materiales/route");
   });
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
@@ -418,7 +422,11 @@ describe("PUT /api/materiales/[id] — MAT-04 Modificar material", () => {
     routes = await import("@/app/api/materiales/[id]/route");
   });
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
