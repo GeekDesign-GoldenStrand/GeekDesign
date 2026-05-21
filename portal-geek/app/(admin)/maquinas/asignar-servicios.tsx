@@ -21,7 +21,7 @@ interface MaquinaRaw {
   estatus: string;
   fecha_registro: string;
   sucursales: { sucursal: { nombre_sucursal: string } }[];
-  servicioMaquina?: { servicio: { nombre_servicio: string } }[];
+  servicios?: { servicio: { nombre_servicio: string } }[];
 }
 
 interface AsignarServiciosProps {
@@ -106,7 +106,7 @@ export default function AsignarServicios({
         type: data.tipo,
         store: data.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") || "Sin asignar",
         description: data.descripcion ?? "",
-        services: (data.servicioMaquina ?? []).map((s) => s.servicio.nombre_servicio),
+        services: (data.servicios ?? []).map((s) => s.servicio.nombre_servicio),
         creation_date: data.fecha_registro,
         status: data.estatus,
         onDelete: () => {},

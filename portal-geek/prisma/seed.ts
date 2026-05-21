@@ -773,6 +773,40 @@ async function main() {
     await prisma.cotizaciones.createMany({ data: demoCotizaciones });
     console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
+
+  await resyncSequences();
+}
+
+// Seeding with explicit primary keys (id_*: 1, 2, ...) does NOT advance
+// Postgres' autoincrement sequences, so the next sequence-driven INSERT
+// collides with a seeded row (P2002 on the PK). Realign every owned
+// sequence to MAX(id) of its column so subsequent creates pick fresh IDs.
+async function resyncSequences(): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    DECLARE
+      r RECORD;
+      maxid BIGINT;
+    BEGIN
+      FOR r IN
+        SELECT
+          quote_ident(sn.nspname) || '.' || quote_ident(s.relname) AS seqfqn,
+          t.relname AS tablename,
+          a.attname AS colname
+        FROM pg_class s
+        JOIN pg_namespace sn ON sn.oid = s.relnamespace
+        JOIN pg_depend d ON d.objid = s.oid AND d.deptype = 'a'
+        JOIN pg_class t ON t.oid = d.refobjid
+        JOIN pg_namespace tn ON tn.oid = t.relnamespace AND tn.nspname = 'public'
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = d.refobjsubid
+        WHERE s.relkind = 'S' AND t.relkind = 'r'
+      LOOP
+        EXECUTE format('SELECT COALESCE(MAX(%I), 0) FROM %I', r.colname, r.tablename) INTO maxid;
+        EXECUTE format('SELECT setval(%L, %s, %L)', r.seqfqn, GREATEST(maxid, 1), maxid > 0);
+      END LOOP;
+    END $$;
+  `);
+  console.log("Resynced autoincrement sequences");
 }
 
 main()

@@ -17,7 +17,9 @@ type ProveedorToggleProps = {
 };
 
 export function ProveedorToggle({ opciones, value, onChange }: ProveedorToggleProps) {
-  const requiereProveedor = value.id !== null;
+  // Separate user intent (wants a provider) from actual selection (id !== null).
+  // This allows the toggle to respond and show feedback even when opciones is empty.
+  const [wantsProvider, setWantsProvider] = useState(value.id !== null);
   const [editingPrecio, setEditingPrecio] = useState(false);
   const [precioDraft, setPrecioDraft] = useState<string>("");
 
@@ -44,22 +46,22 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
   const precioEfectivo = value.costoOverride !== null ? value.costoOverride : costoMaestro;
 
   useEffect(() => {
-    if (requiereProveedor && value.id === null && primerConCosto !== null) {
+    if (wantsProvider && value.id === null && primerConCosto !== null) {
       onChange({
         id: primerConCosto.id_proveedor,
         costoOverride: null,
       });
     }
-  }, [requiereProveedor, value.id, primerConCosto, onChange]);
+  }, [wantsProvider, value.id, primerConCosto, onChange]);
 
   const handleToggle = (siRequiere: boolean) => {
+    setWantsProvider(siRequiere);
     if (siRequiere) {
       const target = primerConCosto ?? ordenados[0];
       if (target) {
-        onChange({
-          id: target.id_proveedor,
-          costoOverride: null,
-        });
+        onChange({ id: target.id_proveedor, costoOverride: null });
+      } else {
+        onChange({ id: null, costoOverride: null });
       }
     } else {
       onChange({ id: null, costoOverride: null });
@@ -121,17 +123,23 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <label className="text-base font-bold text-[#1e1e1e]">Proveedor:</label>
-        <Toggle checked={requiereProveedor} onChange={handleToggle} />
+        <Toggle checked={wantsProvider} onChange={handleToggle} />
       </div>
 
-      {requiereProveedor && (
+      {wantsProvider && opciones.length === 0 && (
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          No hay proveedores registrados. Agrega uno desde el módulo de Terceros para poder
+          vincularlo a este servicio.
+        </p>
+      )}
+
+      {wantsProvider && opciones.length > 0 && (
         <>
           <select
             value={value.id ?? ""}
             onChange={(e) => handleSelectProveedor(Number(e.target.value))}
             className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
           >
-            {ordenados.length === 0 && <option value="">No hay proveedores disponibles</option>}
             {ordenados.map((p) => {
               const isSelected = p.id_proveedor === value.id;
               const masterCost = p.costo !== null ? parseFloat(p.costo) : null;

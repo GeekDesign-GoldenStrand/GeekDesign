@@ -10,10 +10,7 @@ type ServiciosToolbarProps = {
   onFilterClick?: () => void;
 };
 
-export function ServiciosToolbar({
-  activosCount,
-  onFilterClick: _onFilterClick,
-}: ServiciosToolbarProps) {
+export function ServiciosToolbar({ activosCount }: ServiciosToolbarProps) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">

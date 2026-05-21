@@ -15,7 +15,7 @@ export function NavLink({ href, label, icon, isActive }: NavLinkProps) {
     <Link
       href={href}
       title={label}
-      className={`relative flex items-center justify-center w-full h-12 md:h-16 transition-all ${
+      className={`relative flex items-center justify-center w-full h-20 md:h-12 transition-all ${
         isActive ? "text-[#e42200]" : "text-[#575757] hover:text-[#e42200]"
       }`}
     >
@@ -29,7 +29,6 @@ export function NavLink({ href, label, icon, isActive }: NavLinkProps) {
           ? React.cloneElement(
               icon as React.ReactElement<{ size?: string | number; weight?: string }>,
               {
-                size: "100%",
                 weight: isActive ? "fill" : "regular",
               }
             )

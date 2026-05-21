@@ -6,9 +6,9 @@ const VariableSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(/^[a-zA-Z0-9_]+$/, "Solo minúsculas, números y guiones bajos"),
+    .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido"),
   etiqueta: z.string().min(1).max(100),
-  valor_default: z.string().optional(),
+  valor_default: z.coerce.number().optional(),
   editable_por_cliente: z.boolean().default(false),
   unidad: z.string().optional(),
 });

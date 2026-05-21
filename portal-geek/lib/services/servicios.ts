@@ -270,6 +270,16 @@ export async function updateServicio(
 
       // Replace formula: deactivate the previous one and create a new active one.
       if (formula !== undefined) {
+        const formulasActivas = await tx.formulas.findMany({
+          where: { id_servicio: id, estatus: "Activa" },
+          select: { id_formula: true },
+        });
+        if (formulasActivas.length > 0) {
+          await tx.formulaVariables.updateMany({
+            where: { id_formula: { in: formulasActivas.map((f) => f.id_formula) } },
+            data: { estatus: "Inactivo" },
+          });
+        }
         await tx.formulas.updateMany({
           where: { id_servicio: id, estatus: "Activa" },
           data: { estatus: "Inactiva" },
