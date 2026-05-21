@@ -138,4 +138,19 @@ describe("PUT /api/instaladores/[id]/asignacion", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("retorna 422 con el mensaje si un servicio asignado es inactivo o inválido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const { ValidationError } = await import("@/lib/utils/errors");
+    mockSyncAssignments.mockRejectedValue(
+      new ValidationError("Servicios no válidos o inactivos: 99")
+    );
+
+    const res = await testApp()
+      .put("/api/instaladores/1/asignacion")
+      .send({ type: "servicio", items: [{ id: 99, precio: 100 }] });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe("Servicios no válidos o inactivos: 99");
+  });
 });

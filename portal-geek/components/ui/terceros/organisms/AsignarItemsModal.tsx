@@ -46,6 +46,7 @@ export function AsignarItemsModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isMaterial = itemType === "material";
   const itemTypePlural = isMaterial ? "materiales" : "servicios";
@@ -117,11 +118,16 @@ export function AsignarItemsModal({
           currentData.data?.[isMaterial ? "materialPrices" : "servicePrices"] ?? {};
         const assignedNotes: Record<number, string> =
           currentData.data?.[isMaterial ? "materialNotes" : "serviceNotes"] ?? {};
-        setSelectedIds(assignedIds);
+
+        // Intersect with active catalog so inactive assignments don't get posted back
+        const catalogIds = new Set(mappedItems.map((item) => item.id));
+        const activeAssignedIds = assignedIds.filter((id) => catalogIds.has(id));
+
+        setSelectedIds(activeAssignedIds);
         setPrices(
-          Object.fromEntries(assignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
+          Object.fromEntries(activeAssignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
         );
-        setNotes(Object.fromEntries(assignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
+        setNotes(Object.fromEntries(activeAssignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
       } catch (err) {
         console.error("Error fetching items:", err);
         setError(`Hubo un error al cargar los ${itemTypePlural}. Por favor, intenta de nuevo.`);
@@ -160,6 +166,7 @@ export function AsignarItemsModal({
       return;
     }
     setSaving(true);
+    setSaveError(null);
     try {
       const itemsPayload = selectedIds.map((id) => ({
         id,
@@ -176,7 +183,8 @@ export function AsignarItemsModal({
         onSaved();
         onClose();
       } else {
-        window.alert("Hubo un error al guardar la asignación");
+        const payload = await res.json().catch(() => ({}));
+        setSaveError(payload?.error ?? "Hubo un error al guardar la asignación");
       }
     } finally {
       setSaving(false);
@@ -290,20 +298,27 @@ export function AsignarItemsModal({
           )}
         </div>
 
-        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3 bg-gray-50/30">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[#006aff] hover:bg-[#0056ce] rounded-[7px] transition-all shadow-[0_4px_12px_rgba(0,106,255,0.15)] disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {saving ? "Guardando..." : "Asignar"}
-          </button>
+        <div className="p-6 border-t border-[#e8e8e8] flex flex-col gap-3 bg-gray-50/30">
+          {saveError && (
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
+              {saveError}
+            </div>
+          )}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || loading}
+              className="px-5 py-2 text-[14px] font-medium text-white bg-[#006aff] hover:bg-[#0056ce] rounded-[7px] transition-all shadow-[0_4px_12px_rgba(0,106,255,0.15)] disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {saving ? "Guardando..." : "Asignar"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

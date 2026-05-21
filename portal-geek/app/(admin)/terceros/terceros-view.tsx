@@ -110,16 +110,28 @@ export function TercerosView() {
   );
   const [deleteInstaladorLoading, setDeleteInstaladorLoading] = useState(false);
   const [deleteInstaladorError, setDeleteInstaladorError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/instaladores?pageSize=100").then((r) => r.json()),
-      fetch("/api/proveedores?pageSize=100").then((r) => r.json()),
+      fetch("/api/instaladores?pageSize=100").then((r) => {
+        if (!r.ok) throw new Error(`Error ${r.status} al cargar instaladores`);
+        return r.json();
+      }),
+      fetch("/api/proveedores?pageSize=100").then((r) => {
+        if (!r.ok) throw new Error(`Error ${r.status} al cargar proveedores`);
+        return r.json();
+      }),
     ])
       .then(([instRes, provRes]) => {
         const instaladores = (instRes.data ?? []).map(mapInstalador);
         const proveedores = (provRes.data ?? []).map(mapProveedor);
         setRows([...instaladores, ...proveedores]);
+        setLoadError(null);
+      })
+      .catch((error) => {
+        console.error("Error cargando terceros:", error);
+        setLoadError("No se pudieron cargar los datos de los terceros.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -393,6 +405,8 @@ export function TercerosView() {
         />
         {loading ? (
           <p className="text-[#8e908f] text-[16px]">Cargando...</p>
+        ) : loadError ? (
+          <p className="text-[#e42200] text-[14px]">{loadError}</p>
         ) : (
           <TercerosGrid items={filtered} />
         )}

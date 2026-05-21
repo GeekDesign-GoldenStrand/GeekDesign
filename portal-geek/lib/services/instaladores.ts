@@ -182,13 +182,11 @@ export async function syncInstaladorAssignments(
       });
     }
 
-    await Promise.all(
-      toUpdate.map((i) =>
-        tx.instaladorServicios.update({
-          where: { id_instalador_servicio: existingMap.get(i.id)! },
-          data: { costo: i.precio, notas: i.notas ?? null },
-        })
-      )
-    );
+    for (const i of toUpdate) {
+      await tx.instaladorServicios.update({
+        where: { id_instalador_servicio: existingMap.get(i.id)! },
+        data: { costo: i.precio, notas: i.notas ?? null },
+      });
+    }
   });
 }
