@@ -66,7 +66,8 @@ export async function listMateriales(
   page: number,
   pageSize: number,
   q?: string,
-  sort: "asc" | "desc" = "asc"
+  sort: "asc" | "desc" = "asc",
+  tipo?: "grupos" | "individuales"
 ): Promise<{ items: MaterialesConSubs[]; total: number }> {
   const searchFilter = q
     ? {
@@ -79,8 +80,15 @@ export async function listMateriales(
       }
     : undefined;
 
+  const tipoFilter =
+    tipo === "grupos"
+      ? { es_grupo: true }
+      : tipo === "individuales"
+        ? { es_grupo: false }
+        : undefined;
+
   // Only top-level materials (groups + individuals). Sub-materials are nested.
-  const where = { id_material_padre: null, ...searchFilter };
+  const where = { id_material_padre: null, ...tipoFilter, ...searchFilter };
 
   const [items, total] = await prisma.$transaction([
     prisma.materiales.findMany({
@@ -164,17 +172,19 @@ export async function createGrupo(data: CreateGrupoMaterialInput): Promise<Mater
 export async function createSubMaterial(data: CreateSubMaterialInput): Promise<MaterialesConSubs> {
   const { tipo: _tipo, ...rest } = data;
 
-  const padre = await prisma.materiales.findUnique({
-    where: { id_material: rest.id_material_padre },
-    select: { es_grupo: true },
-  });
-  if (!padre?.es_grupo) {
-    throw new ConflictError("El material padre no es un grupo válido");
-  }
+  const created = await prisma.$transaction(async (tx) => {
+    const padre = await tx.materiales.findUnique({
+      where: { id_material: rest.id_material_padre },
+      select: { es_grupo: true },
+    });
+    if (!padre?.es_grupo) {
+      throw new ConflictError("El material padre no es un grupo válido");
+    }
 
-  const created = await prisma.materiales.create({
-    data: { ...rest, es_grupo: false },
-    include: { subMateriales: true },
+    return tx.materiales.create({
+      data: { ...rest, es_grupo: false },
+      include: { subMateriales: true },
+    });
   });
   return resolveConSubs(created);
 }
@@ -184,51 +194,57 @@ export async function updateMaterial(
   data: UpdateMaterialInput
 ): Promise<MaterialesConSubs> {
   try {
-    const needsExisting = data.imagen_url !== undefined || data.id_material_padre !== undefined;
-    const existing = needsExisting
-      ? await prisma.materiales.findUnique({
-          where: { id_material: id },
-          select: { imagen_url: true, es_grupo: true },
-        })
-      : null;
+    const { updated, oldImagenKey } = await prisma.$transaction(async (tx) => {
+      const needsExisting = data.imagen_url !== undefined || data.id_material_padre !== undefined;
+      const existing = needsExisting
+        ? await tx.materiales.findUnique({
+            where: { id_material: id },
+            select: { imagen_url: true, es_grupo: true },
+          })
+        : null;
 
-    if (needsExisting && !existing) {
-      throw new NotFoundError(`Material ${id} no encontrado`);
-    }
-
-    if (data.id_material_padre !== undefined && data.id_material_padre !== null) {
-      if (data.id_material_padre === id) {
-        throw new ConflictError("Un material no puede ser su propio padre");
+      if (needsExisting && !existing) {
+        throw new NotFoundError(`Material ${id} no encontrado`);
       }
 
-      if (existing!.es_grupo) {
-        throw new ConflictError("Un grupo no puede tener material padre");
+      if (data.id_material_padre !== undefined && data.id_material_padre !== null) {
+        if (data.id_material_padre === id) {
+          throw new ConflictError("Un material no puede ser su propio padre");
+        }
+
+        if (existing!.es_grupo) {
+          throw new ConflictError("Un grupo no puede tener material padre");
+        }
+
+        const padre = await tx.materiales.findUnique({
+          where: { id_material: data.id_material_padre },
+          select: { es_grupo: true },
+        });
+
+        if (!padre) {
+          throw new NotFoundError(`Material padre ${data.id_material_padre} no encontrado`);
+        }
+
+        if (!padre.es_grupo) {
+          throw new ConflictError("El material padre debe ser un grupo");
+        }
       }
 
-      const padre = await prisma.materiales.findUnique({
-        where: { id_material: data.id_material_padre },
-        select: { es_grupo: true },
+      const result = await tx.materiales.update({
+        where: { id_material: id },
+        data,
+        include: { subMateriales: true },
       });
 
-      if (!padre) {
-        throw new NotFoundError(`Material padre ${data.id_material_padre} no encontrado`);
-      }
+      const oldImagenKey =
+        existing?.imagen_url && existing.imagen_url !== result.imagen_url
+          ? existing.imagen_url
+          : null;
 
-      if (!padre.es_grupo) {
-        throw new ConflictError("El material padre debe ser un grupo");
-      }
-    }
-
-    const updated = await prisma.materiales.update({
-      where: { id_material: id },
-      data,
-      include: { subMateriales: true },
+      return { updated: result, oldImagenKey };
     });
 
-    if (existing && existing.imagen_url && existing.imagen_url !== updated.imagen_url) {
-      await safeDelete(existing.imagen_url);
-    }
-
+    await safeDelete(oldImagenKey);
     return resolveConSubs(updated);
   } catch (err) {
     if ((err as { code?: string }).code === "P2025") {

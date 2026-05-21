@@ -448,14 +448,18 @@ export function MaterialesSection({
           )}
 
           {/* ── Group variant picker ── */}
-          {adding && groupPickerOpen !== null && (
-            <VariantPicker
-              grupo={grupos.find((g) => g.id_material === groupPickerOpen)!}
-              selectedIds={selectedIds}
-              onConfirm={handleGroupConfirm}
-              onClose={() => setGroupPickerOpen(null)}
-            />
-          )}
+          {adding && groupPickerOpen !== null && (() => {
+            const grupo = grupos.find((g) => g.id_material === groupPickerOpen);
+            if (!grupo) return null;
+            return (
+              <VariantPicker
+                grupo={grupo}
+                selectedIds={selectedIds}
+                onConfirm={handleGroupConfirm}
+                onClose={() => setGroupPickerOpen(null)}
+              />
+            );
+          })()}
 
           {/* ── Materials grid ── */}
           {materiales.length > 0 && (

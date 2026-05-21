@@ -160,6 +160,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
       sort,
     });
     if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+    if (tipoFilter !== "all") params.set("tipo", tipoFilter);
 
     fetch(`/api/materiales?${params}`, { signal: abortController.signal })
       .then(async (res) => {
@@ -184,7 +185,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
     return () => {
       abortController.abort();
     };
-  }, [page, sortOrder, debouncedSearch, retryAttempt]);
+  }, [page, sortOrder, debouncedSearch, tipoFilter, retryAttempt]);
 
   function handlePageChange(nextPage: number) {
     setPage(nextPage);
@@ -216,6 +217,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
 
   function handleTipoFilterChange(value: MaterialTipoFilter) {
     setTipoFilter(value);
+    setPage(1);
   }
 
   function handleCreated(row: MaterialCardProps) {
@@ -308,13 +310,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
 
           {!loading && !error && (
             <MaterialesGrid
-              items={
-                tipoFilter === "grupos"
-                  ? rows.filter((r) => r.tipo === "grupo")
-                  : tipoFilter === "individuales"
-                    ? rows.filter((r) => r.tipo === "individual")
-                    : rows
-              }
+              items={rows}
               visibleColumns={visibleColumns}
               onEditMaterial={handleEditClick}
               onViewProveedores={handleViewProveedores}
