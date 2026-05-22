@@ -39,13 +39,13 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-use-before-define": ["error", { functions: false, classes: true }],
 
       // --- Console / debugging ---
-      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-console": ["error", { allow: ["warn", "error"] }],
       "no-debugger": "error",
 
       // --- Functions ---
       "prefer-arrow-callback": "error",
       "arrow-body-style": ["error", "as-needed"],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
 
       // --- Imports ---
@@ -68,7 +68,7 @@ const eslintConfig = defineConfig([
 
       // --- React ---
       "react/react-in-jsx-scope": "off", // not needed with React 17+ JSX transform
-      "react/jsx-filename-extension": ["warn", { extensions: [".tsx"] }],
+      "react/jsx-filename-extension": ["error", { extensions: [".tsx"] }],
       "react/jsx-props-no-spreading": "off", // common in Next.js layouts/pages
       "react/prop-types": "off", // TypeScript covers this
       "react/require-default-props": "off", // TypeScript covers this
