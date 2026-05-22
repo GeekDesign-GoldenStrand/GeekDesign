@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { FolioSearch } from "./FolioSearch";
 
@@ -37,6 +37,45 @@ interface Quotation {
     empresa: string | null;
   };
   items: Item[];
+  // ST-16: pedido production status, shown once the cotización is Aprobada.
+  pedido?: {
+    id_pedido: number;
+    estatus: string;
+    estado_factura: string | null;
+  } | null;
+}
+
+// ST-16: map raw EstadoFacturaPedido.descripcion → user-friendly Spanish label.
+// The DB uses snake_case-ish codes (e.g. "Aprobacion_diseno"); cliente sees the label.
+const ESTADO_FACTURA_LABEL: Record<string, string> = {
+  Cotizacion: "Cotización",
+  Pagado: "Pagado",
+  En_cola: "En cola de producción",
+  Aprobacion_diseno: "Aprobación de diseño",
+  En_produccion: "En producción",
+  Entregado: "Entregado",
+  Facturado: "Facturado",
+};
+
+// Order of factura states post-approval; used to compute the "next step" hint.
+const FACTURA_FLOW: string[] = [
+  "Aprobacion_diseno",
+  "En_cola",
+  "En_produccion",
+  "Entregado",
+  "Facturado",
+];
+
+function getEstadoFacturaLabel(raw: string | null | undefined): string {
+  if (!raw) return "Sin estado";
+  return ESTADO_FACTURA_LABEL[raw] ?? raw;
+}
+
+function getSiguientePasoFactura(actual: string | null | undefined): string | null {
+  if (!actual) return null;
+  const idx = FACTURA_FLOW.indexOf(actual);
+  if (idx === -1 || idx === FACTURA_FLOW.length - 1) return null;
+  return ESTADO_FACTURA_LABEL[FACTURA_FLOW[idx + 1]] ?? FACTURA_FLOW[idx + 1];
 }
 
 interface Props {
@@ -52,15 +91,12 @@ export function QuotationDetailView({ quotation }: Props) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
+  // KIKW12 review #1b: no client-side email/cookie reading. The HTTP-only
+  // cotizacion_session cookie set by the magic-link consume handler is
+  // automatically sent with these requests; the server verifies it matches
+  // this cotización.
+
   const handleApprove = async () => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const email = searchParams.get("email");
-
-    if (!email) {
-      alert("Se requiere verificación de correo para realizar esta acción.");
-      return;
-    }
-
     if (
       !confirm(
         "¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente."
@@ -72,11 +108,10 @@ export function QuotationDetailView({ quotation }: Props) {
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/approve`, {
         method: "POST",
-        headers: { "X-Client-Email": email },
       });
       if (res.ok) {
         alert("¡Cotización aprobada con éxito! Tu pedido está en camino.");
-        router.push("/storefront");
+        router.push("/tienda");
       } else {
         const error = await res.json();
         alert(error.error || "Hubo un error al aprobar la cotización.");
@@ -89,27 +124,16 @@ export function QuotationDetailView({ quotation }: Props) {
   };
 
   const handleCancel = async () => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const email = searchParams.get("email");
-
-    if (!email) {
-      alert("Se requiere verificación de correo para realizar esta acción.");
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/cancel`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Client-Email": email,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: cancelReason }),
       });
       if (res.ok) {
         alert("Cotización cancelada. Gracias por tu tiempo.");
-        router.push("/storefront");
+        router.push("/tienda");
       } else {
         const error = await res.json();
         alert(error.error || "Hubo un error al cancelar la cotización.");
@@ -326,7 +350,7 @@ export function QuotationDetailView({ quotation }: Props) {
           <button
             onClick={
               quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
-                ? () => router.push("/storefront")
+                ? () => router.push("/tienda")
                 : handleApprove
             }
             disabled={
@@ -345,6 +369,34 @@ export function QuotationDetailView({ quotation }: Props) {
           </button>
         </div>
       </div>
+
+      {/* ST-16: Pedido production status (only visible once Aprobada) */}
+      {quotation.estatus === "Aprobada" && quotation.pedido && (
+        <div className="bg-white rounded-[16px] border border-[#E8E8E8] shadow-[0_8px_30px_rgba(0,0,0,0.02)] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="w-14 h-14 rounded-full bg-[#FFF1F4] flex items-center justify-center text-[#DF2646] shrink-0">
+            <Clock size={28} weight="bold" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[11px] font-bold text-[#8e908f] uppercase tracking-[1.2px] mb-1">
+              Tu pedido
+            </p>
+            <h3 className="text-[20px] font-bold text-[#1e1e1e]">
+              {quotation.folio ?? `#${quotation.pedido.id_pedido}`} —{" "}
+              <span className="text-[#DF2646]">
+                {getEstadoFacturaLabel(quotation.pedido.estado_factura)}
+              </span>
+            </h3>
+            {getSiguientePasoFactura(quotation.pedido.estado_factura) && (
+              <p className="text-[14px] text-[#575757] font-medium mt-1">
+                Siguiente:{" "}
+                <span className="font-bold text-[#1e1e1e]">
+                  {getSiguientePasoFactura(quotation.pedido.estado_factura)}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stepper */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 max-w-4xl mx-auto">
@@ -403,7 +455,7 @@ export function QuotationDetailView({ quotation }: Props) {
                 <tbody className="divide-y divide-[#F0F0F0]">
                   {quotation.items.length > 0 ? (
                     quotation.items.map((item) => (
-                      <React.Fragment key={item.id}>
+                      <Fragment key={item.id}>
                         <tr className="text-[14px] text-[#1e1e1e]">
                           <td className="px-8 py-6 align-top">
                             <p className="font-bold">{item.nombre}</p>
@@ -491,7 +543,7 @@ export function QuotationDetailView({ quotation }: Props) {
                             </>
                           )}
                         </tr>
-                      </React.Fragment>
+                      </Fragment>
                     ))
                   ) : (
                     <tr>
@@ -697,7 +749,7 @@ export function QuotationDetailView({ quotation }: Props) {
               <button
                 onClick={
                   quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
-                    ? () => router.push("/storefront")
+                    ? () => router.push("/tienda")
                     : handleApprove
                 }
                 disabled={

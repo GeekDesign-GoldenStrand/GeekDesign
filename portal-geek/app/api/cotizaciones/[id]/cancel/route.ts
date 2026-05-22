@@ -2,9 +2,10 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
+import { SESSION_COOKIE_NAME, verifySessionFor } from "@/lib/services/cotizacion-access";
 import { cancelQuotationByClient } from "@/lib/services/cotizaciones";
 import { ok } from "@/lib/utils/api";
-import { handleError, ValidationError } from "@/lib/utils/errors";
+import { handleError, ForbiddenError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
@@ -14,23 +15,22 @@ const CancelSchema = z.object({
 
 /**
  * POST /api/cotizaciones/[id]/cancel
- * Publicly accessible endpoint for clients to cancel their quotation.
+ *
+ * KIKW12 review #1b: gated by the magic-link session cookie (see approve route
+ * for the rationale). The session's id_cotizacion claim must match this route's
+ * id exactly.
  */
 export async function POST(req: NextRequest, ctx: { params: Promise<Params> }) {
   try {
     const { id } = CotizacionIdParams.parse(await ctx.params);
     const body = CancelSchema.parse(await req.json());
 
-    const email = req.headers.get("X-Client-Email");
-
-    if (!email) {
-      return handleError(new ValidationError("Client email is required for this action"));
+    const session = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!session || !(await verifySessionFor(session, id))) {
+      throw new ForbiddenError("Acceso denegado");
     }
 
-    // Cancellation uses id_cliente for history traceability when triggered by client.
-    // Service now verifies the email matches the quotation's client.
-    const result = await cancelQuotationByClient(id, email, body.reason);
-
+    const result = await cancelQuotationByClient(id, body.reason);
     return ok(result);
   } catch (err) {
     return handleError(err);

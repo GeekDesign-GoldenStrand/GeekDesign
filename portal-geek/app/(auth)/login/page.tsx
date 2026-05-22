@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
-  title: "Iniciar sesión | Geek Design",
+  title: "Iniciar sesión",
 };
 
 export default function LoginPage() {

@@ -1,4 +1,4 @@
-import PromocionalesPage from "@/app/(storefront)/promocionales/page";
+import PromocionalesPage from "@/app/(storefront)/tienda/promocionales/page";
 
 describe("Promocionales Integration Tests", () => {
   // Storefront Layout no longer fetches categories, so layout-specific data tests are removed.

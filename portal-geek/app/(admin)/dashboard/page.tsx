@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default function DashboardPage() {
   return (

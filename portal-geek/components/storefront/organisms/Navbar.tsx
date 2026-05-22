@@ -14,7 +14,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
       {/* Row 1 — Logo · Search · Actions */}
       <div className="max-w-[1440px] mx-auto px-4 md:px-[36px] py-4 md:py-6 flex items-center gap-3">
         {/* Logo */}
-        <Link href="/storefront" className="flex items-center gap-[9px] shrink-0">
+        <Link href="/tienda" className="flex items-center gap-[9px] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/storefront/logo.png"
@@ -39,7 +39,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
         {/* Actions — public storefront: Ayuda + cart only */}
         <div className="flex items-center gap-3 md:gap-5 shrink-0">
           <Link
-            href="/promocionales"
+            href="/tienda/promocionales"
             className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
             aria-label="Promocionales"
           >
@@ -50,7 +50,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
           </Link>
 
           <Link
-            href="/cotizacion"
+            href="/tienda/cotizacion"
             className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
             aria-label="Consultar Cotización"
           >
@@ -66,7 +66,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
           </Link>
 
           <Link
-            href="/ayuda"
+            href="/tienda/ayuda"
             className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
             aria-label="Ayuda"
           >
@@ -76,7 +76,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
             </span>
           </Link>
 
-          <Link href="/carrito" className="relative flex items-center gap-1">
+          <Link href="/tienda/carrito" className="relative flex items-center gap-1">
             <ShoppingCart
               size={32}
               weight="light"
@@ -97,7 +97,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
           {categories.map((cat) => (
             <Link
               key={cat.id}
-              href={`/servicios/${cat.id}`}
+              href={`/tienda/servicios/${cat.id}`}
               className="text-[#1e1e1e] text-[14px] md:text-[15px] font-bold whitespace-nowrap hover:text-[#df2646] transition-colors shrink-0 leading-none"
             >
               {cat.name}

@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 import { CambiarForm } from "./cambiar-form";
 
 export const metadata: Metadata = {
-  title: "Nueva contraseña | Geek Design",
+  title: "Nueva contraseña",
 };
 
 interface PageProps {
