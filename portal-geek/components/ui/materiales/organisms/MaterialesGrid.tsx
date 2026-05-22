@@ -7,6 +7,7 @@ interface MaterialesGridProps {
   items: MaterialCardProps[];
   visibleColumns: MaterialesVisibleColumns;
   onEditMaterial: (material: MaterialCardProps) => void;
+  onViewProveedores: (materialId: number, materialName: string) => void;
   // Server-side pagination state.
   page: number;
   totalPages: number;
@@ -29,12 +30,14 @@ const COLUMN_META: Array<{
   { key: "thickness", label: "Grosor", width: "1fr" },
   { key: "color", label: "Descripción del color", width: "1.2fr" },
   { key: "image", label: "Imagen", width: "1fr" },
+  { key: "proveedores", label: "Proveedores", width: "1.3fr" },
 ];
 
 export function MaterialesGrid({
   items,
   visibleColumns,
   onEditMaterial,
+  onViewProveedores,
   page,
   totalPages,
   onPageChange,
@@ -46,10 +49,10 @@ export function MaterialesGrid({
 
   return (
     <section className="space-y-3">
-      {/* Column headers — hidden when there are no rows to avoid orphaned headers */}
+      {/* Column headers — hidden on mobile and when there are no rows */}
       {items.length > 0 && (
         <div
-          className="grid items-center gap-4 px-4 py-2 rounded-[6px] bg-[#c6c6c6] text-[#1e1e1e] text-[20px] font-bold"
+          className="hidden md:grid items-center gap-4 px-4 py-2 rounded-[6px] bg-[#c6c6c6] text-[#1e1e1e] text-[14px] lg:text-[16px] font-bold"
           style={{ gridTemplateColumns: templateColumns }}
         >
           {enabledColumns.map((column) => (
@@ -73,6 +76,7 @@ export function MaterialesGrid({
               visibleColumns={visibleColumns}
               gridTemplateColumns={templateColumns}
               onEdit={onEditMaterial}
+              onViewProveedores={onViewProveedores}
             />
           ))}
         </div>

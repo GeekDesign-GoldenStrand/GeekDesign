@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth/session";
 
 import { CambiarContrasenaForm } from "./cambiar-form";
 
-export const metadata: Metadata = { title: "Mi perfil — Geek Design" };
+export const metadata: Metadata = { title: "Mi perfil" };
 
 export default async function PerfilPage() {
   const session = await getSession();

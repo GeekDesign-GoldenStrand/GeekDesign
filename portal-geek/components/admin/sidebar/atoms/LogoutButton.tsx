@@ -17,9 +17,9 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       aria-label="Cerrar sesión"
-      className="mt-2 text-[#1e1e1e] hover:opacity-70 transition-opacity shrink-0"
+      className="mt-auto text-[#1e1e1e] hover:text-[#e42200] transition-colors shrink-0 pb-4"
     >
-      <SignOutIcon size={32} />
+      <SignOutIcon className="w-6 h-6 md:w-8 md:h-8" />
     </button>
   );
 }

@@ -2,29 +2,38 @@
 
 import { useEffect, useReducer, useState } from "react";
 
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import {
   AgregarMaterialModal,
   EditarMaterialModal,
   MaterialesGrid,
-  MaterialesHeader,
   MaterialesToolbar,
+  ProveedoresModal,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
-import type { MaterialCardProps, MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
+import type {
+  MaterialCardProps,
+  MaterialSortOrder,
+  MaterialesVisibleColumns,
+  UserRole,
+} from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
-const DEFAULT_VISIBLE_COLUMNS: MaterialesVisibleColumns = {
-  name: true,
-  description: true,
-  unit: true,
-  width: true,
-  height: true,
-  thickness: true,
-  color: true,
-  image: true,
-};
+function buildDefaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
+  return {
+    name: true,
+    description: true,
+    unit: true,
+    width: true,
+    height: true,
+    thickness: true,
+    color: true,
+    image: true,
+    proveedores: canViewProveedores,
+  };
+}
 
 type FetchState = {
   loading: boolean;
@@ -58,7 +67,8 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   }
 }
 
-export function MaterialesView() {
+export function MaterialesView({ role }: { role: UserRole }) {
+  const canViewProveedores = role !== "Colaborador";
   const [{ loading, error, rows, totalPages }, dispatch] = useReducer(fetchReducer, {
     loading: true,
     error: null,
@@ -72,9 +82,13 @@ export function MaterialesView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
+  const [showProveedoresModal, setShowProveedoresModal] = useState(false);
+  const [proveedoresMaterialId, setProveedoresMaterialId] = useState<number | null>(null);
+  const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
-  const [visibleColumns, setVisibleColumns] =
-    useState<MaterialesVisibleColumns>(DEFAULT_VISIBLE_COLUMNS);
+  const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(() =>
+    buildDefaultColumns(canViewProveedores)
+  );
   const [page, setPage] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
@@ -140,7 +154,7 @@ export function MaterialesView() {
   }
 
   function handleResetFilters() {
-    setVisibleColumns(DEFAULT_VISIBLE_COLUMNS);
+    setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
     setSearch("");
   }
@@ -164,6 +178,18 @@ export function MaterialesView() {
     setSelectedMaterialId(null);
   }
 
+  function handleViewProveedores(materialId: number, materialName: string) {
+    setProveedoresMaterialId(materialId);
+    setProveedoresMaterialName(materialName);
+    setShowProveedoresModal(true);
+  }
+
+  function handleProveedoresClose() {
+    setShowProveedoresModal(false);
+    setProveedoresMaterialId(null);
+    setProveedoresMaterialName("");
+  }
+
   function handleUpdated(row: MaterialCardProps) {
     dispatch({ type: "update", row });
   }
@@ -173,49 +199,53 @@ export function MaterialesView() {
   }
 
   return (
-    <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-[#ececec]">
-      <MaterialesHeader />
-      <main className="p-8">
-        <MaterialesToolbar
-          search={search}
-          onSearchChange={setSearch}
-          isFilterOpen={showFilters}
-          visibleColumns={visibleColumns}
-          sortOrder={sortOrder}
-          onToggleColumn={handleToggleColumn}
-          onSortChange={handleSortChange}
-          onResetFilters={handleResetFilters}
-          onAddClick={() => setShowAddModal(true)}
-          onFilterClick={() => setShowFilters((state) => !state)}
-          onCloseFilter={() => setShowFilters(false)}
-        />
-
-        {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
-
-        {error && !loading && (
-          <div className="flex flex-col gap-3">
-            <p className="text-[#e42200] text-[16px]">{error}</p>
-            <button
-              onClick={handleRetry}
-              className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <MaterialesGrid
-            items={rows}
+    <div className="min-h-screen bg-[#ececec] font-ibm-plex">
+      <AdminHeader title="Materiales" />
+      <main className="py-6">
+        <section className="max-w-[1350px] mx-auto px-4 sm:px-8 pt-5 space-y-4">
+          <MaterialesToolbar
+            search={search}
+            onSearchChange={setSearch}
+            isFilterOpen={showFilters}
             visibleColumns={visibleColumns}
-            onEditMaterial={handleEditClick}
-            page={page}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            hasSearch={!!debouncedSearch.trim()}
-            onClearFilters={handleResetFilters}
+            sortOrder={sortOrder}
+            onToggleColumn={handleToggleColumn}
+            onSortChange={handleSortChange}
+            onResetFilters={handleResetFilters}
+            onAddClick={() => setShowAddModal(true)}
+            onFilterClick={() => setShowFilters((state) => !state)}
+            onCloseFilter={() => setShowFilters(false)}
+            canViewProveedores={canViewProveedores}
           />
-        )}
+
+          {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
+
+          {error && !loading && (
+            <div className="flex flex-col gap-3">
+              <p className="text-[#e42200] text-[16px]">{error}</p>
+              <button
+                onClick={handleRetry}
+                className="self-start px-4 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[6px] hover:bg-[#f5f5f5] transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <MaterialesGrid
+              items={rows}
+              visibleColumns={visibleColumns}
+              onEditMaterial={handleEditClick}
+              onViewProveedores={handleViewProveedores}
+              page={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              hasSearch={!!debouncedSearch.trim()}
+              onClearFilters={handleResetFilters}
+            />
+          )}
+        </section>
       </main>
 
       <AgregarMaterialModal
@@ -231,6 +261,13 @@ export function MaterialesView() {
         onClose={handleEditClose}
         onUpdated={handleUpdated}
         onDeleted={handleDeleted}
+      />
+
+      <ProveedoresModal
+        isOpen={showProveedoresModal}
+        materialId={proveedoresMaterialId}
+        materialName={proveedoresMaterialName}
+        onClose={handleProveedoresClose}
       />
     </div>
   );

@@ -54,11 +54,36 @@ export class ConfigurationError extends Error {
   }
 }
 
+// 500 helper for inconsistent database states.
+export class DataInconsistencyError extends AppError {
+  constructor(message: string) {
+    super(message, 500);
+    this.name = "DataInconsistencyError";
+  }
+}
+
 // 409 helper for resources that cannot be modified because they are referenced.
 export class ConflictError extends AppError {
   constructor(message: string) {
     super(message, 409);
     this.name = "ConflictError";
+  }
+}
+
+// 429 helper for clients that exceed a rate limit.
+export class RateLimitError extends AppError {
+  constructor(message = "Demasiadas solicitudes. Intenta de nuevo en un momento.") {
+    super(message, 429);
+    this.name = "RateLimitError";
+  }
+}
+
+// 422 helper for failures evaluating a service's pricing formula
+// (parse error, unresolved identifier, unsupported origen, non-finite result, etc.).
+export class EvaluatorError extends AppError {
+  constructor(message: string) {
+    super(message, 422);
+    this.name = "EvaluatorError";
   }
 }
 
@@ -72,12 +97,16 @@ export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
     return NextResponse.json({ data: null, error: message }, { status: 422 });
   }
   if (err instanceof ConfigurationError) {
-    console.error("Configuration issue:", err.message);
+    if (process.env.NODE_ENV !== "test") {
+      console.error("Configuration issue:", err.message);
+    }
     return NextResponse.json(
       { data: null, error: "Internal configuration error" },
       { status: 500 }
     );
   }
-  console.error("[API Error]", err);
+  if (process.env.NODE_ENV !== "test") {
+    console.error("[API Error]", err);
+  }
   return NextResponse.json({ data: null, error: "Error interno del servidor" }, { status: 500 });
 }

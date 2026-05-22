@@ -1,3 +1,5 @@
+"use client";
+
 import {
   CaretDown,
   Check,
@@ -9,6 +11,8 @@ import {
   Phone,
   Plus,
   Trash,
+  Users,
+  X,
 } from "@phosphor-icons/react";
 import React from "react";
 
@@ -56,6 +60,14 @@ export function PlusIcon({ size = 18, className, style }: IconProps) {
 
 export function TrashIcon({ size = 16, className, style }: IconProps) {
   return <Trash size={size} className={className} style={style} />;
+}
+
+export function XIcon({ size = 20, className, style }: IconProps) {
+  return <X size={size} weight="light" className={className} style={style} />;
+}
+
+export function UsersIcon({ size = 16, className, style }: IconProps) {
+  return <Users size={size} className={className} style={style} />;
 }
 
 export function PlusBoxIcon({ size = 16, className, style }: IconProps) {

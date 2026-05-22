@@ -117,7 +117,7 @@ export function PedidosTemplate({
     <>
       <AdminHeader title="Pedidos" />
 
-      <section className="max-w-[1350px] mx-auto px-6 pt-5 space-y-4">
+      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
         {/* Toolbar */}
         <div className="relative">
           <AdminToolbar
@@ -247,7 +247,7 @@ export function PedidosTemplate({
         {/* Table */}
         <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
 
-        {/* Pagination (Figma-style) */}
+        {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">
           <div className="flex items-center gap-2">
             <button

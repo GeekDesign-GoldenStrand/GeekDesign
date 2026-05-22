@@ -8,7 +8,7 @@ import { ClientesView } from "./clientes-view";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Clientes | Geek Design" };
+export const metadata: Metadata = { title: "Clientes" };
 
 export default async function ClientesPage() {
   // Server-side session and role validation (Project best practice)

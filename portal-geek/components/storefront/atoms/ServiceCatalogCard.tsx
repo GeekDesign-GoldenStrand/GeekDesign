@@ -8,7 +8,7 @@ interface ServiceCatalogCardProps {
 
 export function ServiceCatalogCard({ id, nombre, descripcion }: ServiceCatalogCardProps) {
   return (
-    <Link href={`/servicios/${id}`} className="block group">
+    <Link href={`/tienda/servicios/${id}`} className="block group">
       <div className="relative rounded-[10px] overflow-hidden">
         {/* Image */}
         <div className="w-full aspect-[368/176] bg-[#ffd9e2] overflow-hidden rounded-t-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]">

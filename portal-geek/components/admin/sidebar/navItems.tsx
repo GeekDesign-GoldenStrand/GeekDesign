@@ -1,90 +1,107 @@
 import {
-  CubeTransparentIcon,
-  BuildingsIcon,
-  CurrencyDollarIcon,
-  GearIcon,
-  HandshakeIcon,
-  HouseIcon,
-  PackageIcon,
-  UserGearIcon,
-  UsersIcon,
+  Buildings,
+  CubeTransparent,
+  CurrencyDollar,
+  Microscope,
+  Handshake,
+  Briefcase,
+  Package,
+  UserGear,
+  Users,
+  Storefront,
+  PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
 
-export type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-};
+import type { UserRole } from "@/types";
 
-const ICON_SIZE = 44;
+export type NavItem =
+  | {
+      type?: "link";
+      href: string;
+      label: string;
+      icon: React.ReactNode;
+      roles: UserRole[];
+    }
+  | {
+      type: "divider";
+      roles: UserRole[];
+    };
+
+const ICON_SIZE = 30;
 
 export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    icon: <HouseIcon size={ICON_SIZE} />,
-  },
-  {
-    href: "/finanzas",
-    label: "Finanzas",
-    icon: <CurrencyDollarIcon size={ICON_SIZE} />,
+    icon: <PresentationChart size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/cotizaciones",
     label: "Cotizaciones",
-    icon: (
-      <svg
-        width="40"
-        height="40"
-        viewBox="0 0 40 40"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/* Outer rectangle like a bill */}
-        <rect x="4" y="10" width="32" height="20" rx="3" />
-        {/* Circle in the middle to represent a coin */}
-        <circle cx="20" cy="20" r="5" />
-        {/* Small lines for detail */}
-        <path d="M8 15h4M28 15h4M8 25h4M28 25h4" />
-      </svg>
-    ),
+    icon: <Briefcase size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/pedidos",
     label: "Pedidos",
-    icon: <PackageIcon size={ICON_SIZE} />,
+    icon: <Package size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador", "Colaborador"],
   },
   {
-    href: "/colaboradores",
-    label: "Colaboradores",
-    icon: <UsersIcon size={ICON_SIZE} />,
+    href: "/finanzas",
+    label: "Finanzas",
+    icon: <CurrencyDollar size={ICON_SIZE} />,
+    roles: ["Finanzas", "Direccion", "Administrador"],
+  },
+  {
+    type: "divider",
+    roles: ["Direccion", "Administrador"],
+  },
+  {
+    href: "/servicios",
+    label: "Servicios",
+    icon: <Storefront size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/terceros",
     label: "Terceros",
-    icon: <UserGearIcon size={ICON_SIZE} />,
-  },
-  {
-    href: "/clientes",
-    label: "Clientes",
-    icon: <HandshakeIcon size={ICON_SIZE} />,
-  },
-  {
-    href: "/maquinas",
-    label: "Máquinas",
-    icon: <GearIcon size={ICON_SIZE} />,
+    icon: <UserGear size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/materiales",
     label: "Materiales",
-    icon: <CubeTransparentIcon size={44} />,
+    icon: <CubeTransparent size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador", "Colaborador"],
+  },
+  {
+    type: "divider",
+    roles: ["Direccion", "Administrador"],
+  },
+  {
+    href: "/maquinas",
+    label: "Máquinas",
+    icon: <Microscope size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
+  },
+  {
+    href: "/colaboradores",
+    label: "Colaboradores",
+    icon: <Users size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
   {
     href: "/sucursales",
     label: "Sucursales",
-    icon: <BuildingsIcon size={ICON_SIZE} />,
+    icon: <Buildings size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
+  },
+  {
+    href: "/clientes",
+    label: "Clientes",
+    icon: <Handshake size={ICON_SIZE} />,
+    roles: ["Direccion", "Administrador"],
   },
 ];

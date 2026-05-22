@@ -43,6 +43,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# App Engine — keep example only, real config holds secrets
+app.yaml
+!app.yaml.example
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

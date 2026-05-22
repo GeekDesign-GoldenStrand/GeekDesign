@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -52,10 +53,6 @@ export function RegistrarMaterialForm({ onCreated, onClose }: RegistrarMaterialF
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (key === "imagen_url") {
-        if (!value.trim()) return "";
-        return /^https:\/\//i.test(value.trim()) ? FIELD_SUCCESS : "";
-      }
       if (["ancho", "alto", "grosor"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
@@ -231,31 +228,31 @@ export function RegistrarMaterialForm({ onCreated, onClose }: RegistrarMaterialF
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={LABEL}>Color *</label>
-          <input
-            type="text"
-            maxLength={50}
-            placeholder="Ej. #d18c59 o Negro"
-            value={form.color}
-            onChange={(e) => setField("color", e.target.value)}
-            className={`${FIELD} ${getFieldClass("color")}`}
-          />
-          {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>Imagen URL *</label>
-          <input
-            type="url"
-            maxLength={500}
-            placeholder="https://..."
-            value={form.imagen_url}
-            onChange={(e) => setField("imagen_url", e.target.value)}
-            className={`${FIELD} ${getFieldClass("imagen_url")}`}
-          />
-          {errors.imagen_url && <p className={ERROR_MSG}>{errors.imagen_url}</p>}
-        </div>
+      <div>
+        <label className={LABEL}>Color *</label>
+        <input
+          type="text"
+          maxLength={50}
+          placeholder="Ej. #d18c59 o Negro"
+          value={form.color}
+          onChange={(e) => setField("color", e.target.value)}
+          className={`${FIELD} ${getFieldClass("color")}`}
+        />
+        {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
+      </div>
+
+      <div>
+        <label className={LABEL}>Imagen *</label>
+        <MaterialImageInput
+          onUploaded={(key) => {
+            setField("imagen_url", key ?? "");
+          }}
+          onError={(message) => {
+            setErrors((prev) => ({ ...prev, imagen_url: message }));
+          }}
+          hasError={Boolean(errors.imagen_url)}
+        />
+        {errors.imagen_url && <p className={ERROR_MSG}>{errors.imagen_url}</p>}
       </div>
 
       <div className="flex justify-end gap-3 mt-2">

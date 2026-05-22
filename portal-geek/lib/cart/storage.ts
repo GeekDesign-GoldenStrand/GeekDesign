@@ -2,19 +2,28 @@ const CART_KEY = "geekdesign_carrito";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface MatrizEntry {
-  cantidad_minima: number;
-  cantidad_maxima: number | null;
-  precio_unitario: number;
+export interface VariableValor {
+  id_variable: number;
+  nombre_variable: string;
+  etiqueta: string;
+  unidad: string | null;
+  valor: number;
+}
+
+export interface CarritoConfiguracion {
+  variables: VariableValor[];
+  notas?: string;
 }
 
 export interface CarritoItem {
   id: string;
   servicioId: number;
   nombreServicio: string;
-  configuracion: Record<string, unknown>;
+  id_material: number;
+  nombreMaterial: string;
+  configuracion: CarritoConfiguracion;
   cantidad: number;
-  precioCalculado: number; // unit price
+  precioCalculado: number;
 }
 
 // ─── Read / Write ─────────────────────────────────────────────────────────────
@@ -40,6 +49,11 @@ export function getCarrito(): { items: CarritoItem[] } {
 
 function saveCarrito(carrito: { items: CarritoItem[] }): void {
   localStorage.setItem(CART_KEY, JSON.stringify(carrito));
+}
+
+export function clearCarrito(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(CART_KEY);
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
@@ -71,7 +85,13 @@ export function updateQuantity(itemId: string, cantidad: number): { items: Carri
 
 export function updateItem(
   itemId: string,
-  patch: { configuracion: Record<string, unknown>; cantidad: number; precioCalculado: number }
+  patch: {
+    configuracion: CarritoConfiguracion;
+    id_material: number;
+    nombreMaterial: string;
+    cantidad: number;
+    precioCalculado: number;
+  }
 ): { items: CarritoItem[] } {
   const safeCantidad = Number.isFinite(patch.cantidad)
     ? Math.max(1, Math.floor(patch.cantidad))
@@ -86,30 +106,10 @@ export function updateItem(
         ? {
             ...i,
             configuracion: patch.configuracion,
+            id_material: patch.id_material,
+            nombreMaterial: patch.nombreMaterial,
             cantidad: safeCantidad,
             precioCalculado: safePrecio,
-          }
-        : i
-    ),
-  };
-  saveCarrito(updated);
-  return updated;
-}
-
-export function resetItem(
-  itemId: string,
-  defaultConfiguracion: Record<string, unknown>,
-  defaultPrecioCalculado: number
-): { items: CarritoItem[] } {
-  const carrito = getCarrito();
-  const updated = {
-    items: carrito.items.map((i) =>
-      i.id === itemId
-        ? {
-            ...i,
-            configuracion: defaultConfiguracion,
-            cantidad: 1,
-            precioCalculado: defaultPrecioCalculado,
           }
         : i
     ),
@@ -126,50 +126,4 @@ export function getSubtotal(items: CarritoItem[]): number {
 
 export function getTotalItems(items: CarritoItem[]): number {
   return items.reduce((sum, i) => sum + i.cantidad, 0);
-}
-
-// ─── Price lookup (client-side, uses pricing matrix passed as props) ──────────
-
-export function calcularPrecioUnitario(
-  selecciones: { opcionId: number; valorId: number }[],
-  opcionesConMatriz: {
-    id_opcion: number;
-    valores: { id_valor: number; matriz: MatrizEntry[] }[];
-  }[],
-  cantidad: number
-): number {
-  // Try each selected option in order; return the price from the first one
-  // that has a matrix entry covering this quantity. This handles services where
-  // only some options carry pricing (e.g. material does, finish does not).
-  for (const sel of selecciones) {
-    const opcion = opcionesConMatriz.find((o) => o.id_opcion === sel.opcionId);
-    const valor = opcion?.valores.find((v) => v.id_valor === sel.valorId);
-
-    if (valor) {
-      const entry = valor.matriz
-        .filter(
-          (m) =>
-            m.cantidad_minima <= cantidad &&
-            (m.cantidad_maxima === null || m.cantidad_maxima >= cantidad)
-        )
-        .sort((a, b) => b.cantidad_minima - a.cantidad_minima)[0];
-
-      if (entry) return entry.precio_unitario;
-    }
-  }
-
-  // Fallback: cheapest available price at this quantity across all options
-  const allPrices = opcionesConMatriz.flatMap((o) =>
-    o.valores.flatMap((v) =>
-      v.matriz
-        .filter(
-          (m) =>
-            m.cantidad_minima <= cantidad &&
-            (m.cantidad_maxima === null || m.cantidad_maxima >= cantidad)
-        )
-        .map((m) => m.precio_unitario)
-    )
-  );
-
-  return allPrices.length > 0 ? Math.min(...allPrices) : 0;
 }

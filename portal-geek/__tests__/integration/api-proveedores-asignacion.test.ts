@@ -102,11 +102,20 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "servicio", ids: [5, 6] });
+      .send({
+        type: "servicio",
+        items: [
+          { id: 5, precio: 100 },
+          { id: 6, precio: 200 },
+        ],
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.data.success).toBe(true);
-    expect(mockSyncAssignments).toHaveBeenCalledWith(1, "servicio", [5, 6]);
+    expect(mockSyncAssignments).toHaveBeenCalledWith(1, "servicio", [
+      { id: 5, precio: 100 },
+      { id: 6, precio: 200 },
+    ]);
   });
 
   it("retorna 422 si el body es inválido", async () => {
@@ -114,7 +123,7 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "invalido", ids: "no-soy-un-array" });
+      .send({ type: "invalido", items: "no-soy-un-array" });
 
     expect(res.status).toBe(422);
   });
@@ -125,7 +134,7 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "servicio", ids: [1] });
+      .send({ type: "servicio", items: [{ id: 1, precio: 50 }] });
 
     expect(res.status).toBe(200);
   });
@@ -136,7 +145,7 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "material", ids: [] });
+      .send({ type: "material", items: [] });
 
     expect(res.status).toBe(200);
     expect(mockSyncAssignments).toHaveBeenCalledWith(1, "material", []);
@@ -146,7 +155,7 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Vendedor" });
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "servicio", ids: [1] });
+      .send({ type: "servicio", items: [{ id: 1, precio: 50 }] });
 
     expect(res.status).toBe(403);
   });
@@ -157,7 +166,7 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/1/asignacion")
-      .send({ type: "servicio", ids: [1] });
+      .send({ type: "servicio", items: [{ id: 1, precio: 50 }] });
 
     expect(res.status).toBe(500);
   });
@@ -169,7 +178,7 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
 
     const res = await testApp()
       .put("/api/proveedores/999/asignacion")
-      .send({ type: "servicio", ids: [1] });
+      .send({ type: "servicio", items: [{ id: 1, precio: 50 }] });
 
     expect(res.status).toBe(404);
   });
