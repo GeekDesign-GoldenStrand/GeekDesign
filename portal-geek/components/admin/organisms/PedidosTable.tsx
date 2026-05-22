@@ -195,7 +195,6 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
                 }}
               >
-
                 {/* Folio */}
                 <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
 
