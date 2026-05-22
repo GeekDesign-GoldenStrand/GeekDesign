@@ -222,8 +222,8 @@ describe("GET /api/servicios/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.id_servicio).toBe(1);
-    expect(res.body.data.formulas).toHaveLength(1);
-    expect(res.body.data.servicioMateriales).toHaveLength(1);
+    expect(res.body.data.formulaActiva).not.toBeNull();
+    expect(res.body.data.materiales).toHaveLength(1);
   });
 
   it("retorna 404 cuando el servicio no existe", async () => {
@@ -250,7 +250,7 @@ describe("GET /api/servicios/[id]", () => {
     const res = await detailApp().get("/api/servicios/1");
 
     expect(res.status).toBe(200);
-    expect(res.body.data.formulas).toEqual([]);
+    expect(res.body.data.formulaActiva).toBeNull();
   });
 
   it("retorna 422 cuando el id no es un número válido", async () => {
