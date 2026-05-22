@@ -165,12 +165,12 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
             gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
           }}
         >
+          <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">Fecha</span>
           <span className="whitespace-nowrap">Entrega</span>
+          <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Empresa</span>
           <span className="whitespace-nowrap">Cliente</span>
-          <span className="whitespace-nowrap">Folio</span>
-          <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">
             {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}
           </span>
@@ -195,6 +195,10 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
                 }}
               >
+
+                {/* Folio */}
+                <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
+
                 {/* Fecha */}
                 <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
 
@@ -203,19 +207,16 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
                 </span>
 
+                {/* Monto */}
+                <span className="whitespace-nowrap">
+                  {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
+                </span>
+
                 {/* Empresa */}
                 <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
 
                 {/* Cliente */}
                 <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
-
-                {/* Folio */}
-                <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
-
-                {/* Monto */}
-                <span className="whitespace-nowrap">
-                  {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
-                </span>
 
                 {/* Semáforo general o estatus del servicio seleccionado */}
                 <div className="flex justify-center">
