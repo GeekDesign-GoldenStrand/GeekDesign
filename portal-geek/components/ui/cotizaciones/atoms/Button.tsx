@@ -18,23 +18,25 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export function Button({
   variant = "default",
   icon,
   children,
   className = "",
   ...rest
-}) => (
-  <button
-    className={`
-      inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium
-      transition-all duration-100 cursor-pointer
-      ${VARIANT_CLASSES[variant]}
-      ${className}
-    `}
-    {...rest}
-  >
-    {icon && <span className="text-[15px] leading-none">{icon}</span>}
-    {children}
-  </button>
-);
+}: ButtonProps) {
+  return (
+    <button
+      className={`
+        inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium
+        transition-all duration-100 cursor-pointer
+        ${VARIANT_CLASSES[variant]}
+        ${className}
+      `}
+      {...rest}
+    >
+      {icon && <span className="text-[15px] leading-none">{icon}</span>}
+      {children}
+    </button>
+  );
+}

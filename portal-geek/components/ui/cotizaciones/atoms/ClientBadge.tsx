@@ -1,14 +1,13 @@
 import React from "react";
 
 import type { CategoriaCliente } from "@/lib/utils/cotizacion";
-
 import { CLIENT_CATEGORY_COLORS } from "@/lib/utils/cotizacion";
 
 interface ClientBadgeProps {
   categoria: CategoriaCliente;
 }
 
-export const ClientBadge: React.FC<ClientBadgeProps> = ({ categoria }) => {
+export function ClientBadge({ categoria }: ClientBadgeProps) {
   const colorClass = CLIENT_CATEGORY_COLORS[categoria] ?? "bg-gray-100 text-gray-600";
   return (
     <span
@@ -17,4 +16,4 @@ export const ClientBadge: React.FC<ClientBadgeProps> = ({ categoria }) => {
       {categoria}
     </span>
   );
-};
+}

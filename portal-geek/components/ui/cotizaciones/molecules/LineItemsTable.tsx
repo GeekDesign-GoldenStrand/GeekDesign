@@ -11,7 +11,7 @@ function formatAmount(n: number): string {
 
 // ── Variables pill list ───────────────────────────────────────────────────────
 
-const VariablesList: React.FC<{ variables: FormulaVariable[] }> = ({ variables }) => {
+function VariablesList({ variables }: { variables: FormulaVariable[] }) {
   if (variables.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
@@ -29,7 +29,7 @@ const VariablesList: React.FC<{ variables: FormulaVariable[] }> = ({ variables }
       ))}
     </div>
   );
-};
+}
 
 // ── Totals block ──────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ interface TotalsProps {
   iva?: number;
 }
 
-const TotalsBlock: React.FC<TotalsProps> = ({ subtotal, discountAmount, discountLabel, iva }) => {
+function TotalsBlock({ subtotal, discountAmount, discountLabel, iva }: TotalsProps) {
   const discount = discountAmount ?? 0;
   const ivaAmount = iva ?? 0;
   const total = subtotal - discount + ivaAmount;
@@ -71,7 +71,7 @@ const TotalsBlock: React.FC<TotalsProps> = ({ subtotal, discountAmount, discount
       </div>
     </div>
   );
-};
+}
 
 // ── LineItemsTable ────────────────────────────────────────────────────────────
 
@@ -81,11 +81,7 @@ interface LineItemsTableProps {
   discountLabel?: string;
 }
 
-export const LineItemsTable: React.FC<LineItemsTableProps> = ({
-  servicios,
-  discountAmount,
-  discountLabel,
-}) => {
+export function LineItemsTable({ servicios, discountAmount, discountLabel }: LineItemsTableProps) {
   const subtotal = servicios.reduce((acc, p) => acc + p.subtotal, 0);
 
   return (
@@ -154,4 +150,4 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
       />
     </SectionCard>
   );
-};
+}

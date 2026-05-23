@@ -26,10 +26,7 @@ interface CotizacionDetailPageProps {
   onRefetch?: () => Promise<void> | void;
 }
 
-export const CotizacionDetailPage: React.FC<CotizacionDetailPageProps> = ({
-  cotizacion,
-  onRefetch,
-}) => {
+export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetailPageProps) {
   // ── Panel visibility ──────────────────────
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const togglePanel = (panel: ActivePanel) =>
@@ -198,4 +195,4 @@ export const CotizacionDetailPage: React.FC<CotizacionDetailPageProps> = ({
       )}
     </div>
   );
-};
+}

@@ -2,19 +2,18 @@ import { User } from "@phosphor-icons/react";
 import React from "react";
 
 import type { Cliente } from "@/lib/utils/cotizacion";
+import { formatPhoneNumber } from "@/lib/utils/format";
 
 import { ClientBadge } from "../atoms/ClientBadge";
 import { FieldRow } from "../atoms/FieldRow";
 import { SectionCard } from "../atoms/SectionCard";
-
-import { formatPhoneNumber } from "@/lib/utils/format";
 
 interface ClientCardProps {
   cliente: Cliente;
   empresaCotizacion?: string;
 }
 
-export const ClientCard: React.FC<ClientCardProps> = ({ cliente, empresaCotizacion }) => {
+export function ClientCard({ cliente, empresaCotizacion }: ClientCardProps) {
   // When the cotización was placed under an empresa, surface the empresa
   // as the headline and demote the contact name to the byline. Otherwise the
   // person is the headline.
@@ -52,11 +51,11 @@ export const ClientCard: React.FC<ClientCardProps> = ({ cliente, empresaCotizaci
             href={cliente.numero_telefono ? `tel:${cliente.numero_telefono}` : undefined}
             className="font-normal text-gray-500 hover:text-gray-900"
           >
-            {cliente.numero_telefono}
+            {phoneNumber || cliente.numero_telefono}
           </a>
         }
         last
       />
     </SectionCard>
   );
-};
+}

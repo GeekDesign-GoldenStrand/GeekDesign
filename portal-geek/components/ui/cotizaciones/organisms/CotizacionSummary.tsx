@@ -30,7 +30,7 @@ interface CotizacionSummaryProps {
 const CARD_CLASS =
   "bg-white rounded-[7px] border border-gray-100 shadow-[4px_4px_7px_0_rgba(0,0,0,0.1)] flex flex-col min-h-[158px] overflow-hidden";
 
-export const CotizacionSummary: React.FC<CotizacionSummaryProps> = ({
+export function CotizacionSummary({
   montoTotal,
   porcentajeDescuento,
   motivoDescuento,
@@ -38,7 +38,7 @@ export const CotizacionSummary: React.FC<CotizacionSummaryProps> = ({
   fechaEntrega,
   servicios,
   onDeleteDiscount,
-}) => {
+}: CotizacionSummaryProps) {
   const [motivoModalOpen, setMotivoModalOpen] = useState(false);
 
   const descuento = porcentajeDescuento ?? 0;
@@ -136,4 +136,4 @@ export const CotizacionSummary: React.FC<CotizacionSummaryProps> = ({
       </div>
     </>
   );
-};
+}
