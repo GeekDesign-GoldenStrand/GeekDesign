@@ -258,14 +258,14 @@ export default function EditarCotizacion({
                   </td>
                   <td className="py-3 px-2">
                     <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={item.precio_unitario}
-                        onChange={(e) =>
-                            updateServicio(idx, "precio_unitario", parseFloat(e.target.value) || 0)
-                        }
-                        className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={item.precio_unitario}
+                      onChange={(e) =>
+                        updateServicio(idx, "precio_unitario", parseFloat(e.target.value) || 0)
+                      }
+                      className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     />
                   </td>
                   <td className="py-3 px-2 text-right font-medium text-gray-900">

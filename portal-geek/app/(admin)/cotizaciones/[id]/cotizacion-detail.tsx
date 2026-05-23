@@ -51,9 +51,8 @@ export default function CotizacionDetail({ id }: { id: string }) {
 
   return (
     <div>
-      <AdminHeader title={`Cotización ${cotizacion.nombre_oportunidad || 'Sin nombre'}`} />
+      <AdminHeader title={`Cotización ${cotizacion.nombre_oportunidad || "Sin nombre"}`} />
       <CotizacionDetailPage cotizacion={cotizacion} onRefetch={refetch} />
     </div>
-    
   );
 }
