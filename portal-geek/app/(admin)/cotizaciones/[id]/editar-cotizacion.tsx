@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { LineItem } from "@/lib/utils/cotizacion";
@@ -19,6 +19,34 @@ export interface EditableFields {
 
 function formatAmount(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+}
+
+// Returns today's date as YYYY-MM-DD in local time — used as the `min`
+// attribute on the date input so the browser's picker blocks past dates,
+// and also for the validation error message.
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function fieldsAreEqual(a: EditableFields, b: EditableFields): boolean {
+  if (
+    a.id_cliente !== b.id_cliente ||
+    a.nombre_oportunidad !== b.nombre_oportunidad ||
+    a.fecha_fin !== b.fecha_fin ||
+    a.notas !== b.notas ||
+    a.servicios.length !== b.servicios.length
+  ) {
+    return false;
+  }
+  return a.servicios.every((s, i) => {
+    const t = b.servicios[i];
+    return (
+      s.id_detalle === t.id_detalle &&
+      s.cantidad === t.cantidad &&
+      s.precio_unitario === t.precio_unitario
+    );
+  });
 }
 
 interface EditarCotizacionProps {
@@ -50,16 +78,24 @@ export default function EditarCotizacion({
   const [clientesError, setClientesError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Snapshot of initial at the time the modal opened — used to detect
+  // whether anything actually changed before firing the PATCH.
+  const [snapshot, setSnapshot] = useState<EditableFields>(initial);
 
   // Reset fields every time the modal opens
   useEffect(() => {
     if (!isOpen) return;
-    setFields({
+    const fresh = {
       ...initial,
       servicios: initial.servicios.map((p) => ({ ...p })),
-    });
+    };
+    setFields(fresh);
+    setSnapshot(fresh);
     setClientesError(null);
     setServerError(null);
+    setValidationError(null);
   }, [isOpen, initial]);
 
   // Fetch clientes when the modal opens
@@ -89,10 +125,15 @@ export default function EditarCotizacion({
 
   if (!isOpen) return null;
 
-  const setField = <K extends keyof EditableFields>(key: K, value: EditableFields[K]) =>
+  const today = todayISO();
+
+  const setField = <K extends keyof EditableFields>(key: K, value: EditableFields[K]) => {
+    setValidationError(null);
     setFields((prev) => ({ ...prev, [key]: value }));
+  };
 
   const updateServicio = (idx: number, key: "cantidad" | "precio_unitario", value: number) => {
+    setValidationError(null);
     setFields((prev) => {
       const servicios = prev.servicios.map((p, i) => {
         if (i !== idx) return p;
@@ -113,8 +154,20 @@ export default function EditarCotizacion({
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setServerError(null);
-    setIsSubmitting(true);
+    setValidationError(null);
 
+    // ── Client-side validations ───────────────────────────────────────────
+    if (fields.fecha_fin && fields.fecha_fin < today) {
+      setValidationError("La fecha de entrega no puede ser en el pasado.");
+      return;
+    }
+
+    if (fieldsAreEqual(fields, snapshot)) {
+      setValidationError("No has realizado ningún cambio.");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const res = await fetch(`/api/cotizaciones/${idCotizacion}`, {
         method: "PUT",
@@ -160,6 +213,8 @@ export default function EditarCotizacion({
     }
   }
 
+  const displayedError = validationError ?? serverError;
+
   return (
     <ModalShell title="Editar cotización" onClose={onClose}>
       <form onSubmit={handleSubmit}>
@@ -200,10 +255,20 @@ export default function EditarCotizacion({
             <span className="font-medium">Fecha fin (validez)</span>
             <input
               type="date"
+              min={today}
               value={fields.fecha_fin}
               onChange={(e) => setField("fecha_fin", e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className={`border rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 ${
+                fields.fecha_fin && fields.fecha_fin < today
+                  ? "border-red-300 focus:ring-red-100"
+                  : "border-gray-200 focus:ring-blue-100"
+              }`}
             />
+            {fields.fecha_fin && fields.fecha_fin < today && (
+              <span className="text-[11px] text-red-600 mt-0.5">
+                La fecha de entrega no puede ser en el pasado.
+              </span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
@@ -311,12 +376,12 @@ export default function EditarCotizacion({
           </div>
         </div>
 
-        {serverError && (
+        {displayedError && (
           <p
             role="alert"
             className="mb-4 text-[13px] text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2"
           >
-            {serverError}
+            {displayedError}
           </p>
         )}
 
