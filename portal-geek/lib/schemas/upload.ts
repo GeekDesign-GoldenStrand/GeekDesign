@@ -22,17 +22,19 @@ export const UPLOAD_LIMITS: Record<(typeof STORAGE_CATEGORIES)[number], Limits> 
     allowedMime: ["image/jpeg", "image/png", "image/webp"],
   },
   // Client design files attached to a pedido detail (ArchivosDisenio).
-  // SRS line 547: .svg .ai .eps .dxf .pdf
+  // SRS line 547: .svg .ai .eps .dxf .pdf + .png .jpg for raster references.
   disenios: {
-    maxBytes: 25 * 1024 * 1024,
+    maxBytes: 10 * 1024 * 1024,
     allowedMime: [
       "image/svg+xml",
+      "image/png",
+      "image/jpeg",
       "application/postscript",
       "application/pdf",
       "application/octet-stream", // .dxf rarely carries a real mime
       "image/vnd.dxf",
     ],
-    allowedExt: ["svg", "ai", "eps", "dxf", "pdf"],
+    allowedExt: ["svg", "png", "jpg", "jpeg", "ai", "eps", "dxf", "pdf"],
   },
   // File attachments on NotasCliente.
   notas: {

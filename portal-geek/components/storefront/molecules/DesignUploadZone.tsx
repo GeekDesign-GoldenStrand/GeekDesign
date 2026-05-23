@@ -1,9 +1,9 @@
 "use client";
 
 import { CloudArrowUp, File } from "@phosphor-icons/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { deleteFile, uploadFile } from "@/lib/utils/upload";
+import { deleteFile, uploadDesignFile } from "@/lib/utils/upload";
 
 const ACCEPTED = ".svg,.png,.jpg,.jpeg,.ai,.eps,.dxf,.pdf";
 const MB = 1024 * 1024;
@@ -26,13 +26,17 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
   const [dragging, setDragging] = useState(false);
   const [sizeError, setSizeError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Ref para evitar que onKeysChange (arrow fn del padre) cause re-renders innecesarios
+  const onKeysChangeRef = useRef(onKeysChange);
+  useEffect(() => { onKeysChangeRef.current = onKeysChange; });
 
-  function notifyKeys(next: SlotState[]) {
-    const keys = next
+  // Notifica al padre cada vez que cambia la lista de slots — fuera del render
+  useEffect(() => {
+    const keys = slots
       .filter((s): s is Extract<SlotState, { status: "done" }> => s.status === "done")
       .map((s) => s.key);
-    onKeysChange?.(keys);
-  }
+    onKeysChangeRef.current?.(keys);
+  }, [slots]);
 
   async function handleFile(f: File) {
     if (f.size > maxBytes) {
@@ -42,16 +46,13 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
     setSizeError(null);
 
     const index = slots.length;
-    const uploading: SlotState = { status: "uploading", file: f };
-    const next = [...slots, uploading];
-    setSlots(next);
+    setSlots((prev) => [...prev, { status: "uploading", file: f }]);
 
     try {
-      const key = await uploadFile(f, "disenios");
+      const key = await uploadDesignFile(f);
       setSlots((prev) => {
         const updated = [...prev];
         updated[index] = { status: "done", file: f, key };
-        notifyKeys(updated);
         return updated;
       });
     } catch (err) {
@@ -72,11 +73,7 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
         // best-effort: si falla el delete el bucket lo limpiará con GC
       });
     }
-    setSlots((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      notifyKeys(updated);
-      return updated;
-    });
+    setSlots((prev) => prev.filter((_, i) => i !== index));
     if (inputRef.current) inputRef.current.value = "";
     setSizeError(null);
   }

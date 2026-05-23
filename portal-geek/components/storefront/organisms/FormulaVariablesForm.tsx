@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { addItem } from "@/lib/cart/storage";
-import { DesignUploadZone } from "@/components/storefront/molecules/DesignUploadZone";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -26,6 +25,7 @@ interface Props {
   nombreServicio: string;
   materiales: Material[];
   variables: Variable[];
+  disenioKey?: string | null;
 }
 
 const formatPeso = (n: number) =>
@@ -33,7 +33,7 @@ const formatPeso = (n: number) =>
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, variables }: Props) {
+export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, variables, disenioKey: disenioKeyProp }: Props) {
   const editables = useMemo(() => variables.filter((v) => v.editable_por_cliente), [variables]);
   const defaultValues = useMemo(
     () => Object.fromEntries(editables.map((v) => [v.nombre_variable, v.valor_default])),
@@ -44,7 +44,8 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
-  const [disenioKey, setDisenioKey] = useState<string | null>(null);
+  // Key recibido desde el DesignUploadZone de la columna izquierda
+  const disenioKey = disenioKeyProp ?? null;
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -111,7 +112,6 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
     setValues({ ...defaultValues });
     setCantidad(1);
     setNotas("");
-    setDisenioKey(null);
     setFeedback(null);
   }
 
@@ -313,11 +313,6 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
           </button>
         </div>
 
-        <DesignUploadZone
-          maxFiles={1}
-          maxBytes={10 * 1024 * 1024}
-          onKeysChange={(keys) => setDisenioKey(keys[0] ?? null)}
-        />
       </form>
     </div>
   );

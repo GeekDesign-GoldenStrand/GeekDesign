@@ -63,10 +63,28 @@ export async function presignPut(
 }
 
 // Short-lived read URL. Use this for any user-scoped or sensitive object.
-export async function presignGet(key: string, ttlSeconds?: number): Promise<string> {
-  return getSignedUrl(getStorage(), new GetObjectCommand({ Bucket: getBucket(), Key: key }), {
-    expiresIn: clampTtl(ttlSeconds),
-  });
+// Pass `filename` to force a Content-Disposition: attachment header so the
+// browser downloads the file with the original name instead of the UUID key.
+// Especially important for opaque MIME types like application/postscript (.ai/.eps)
+// and application/octet-stream (.dxf) that browsers can't display inline.
+export async function presignGet(
+  key: string,
+  ttlSeconds?: number,
+  filename?: string
+): Promise<string> {
+  return getSignedUrl(
+    getStorage(),
+    new GetObjectCommand({
+      Bucket: getBucket(),
+      Key: key,
+      ...(filename
+        ? {
+            ResponseContentDisposition: `attachment; filename="${encodeURIComponent(filename)}"`,
+          }
+        : {}),
+    }),
+    { expiresIn: clampTtl(ttlSeconds) }
+  );
 }
 
 // Returns a stable public URL when STORAGE_PUBLIC_BASE_URL is configured

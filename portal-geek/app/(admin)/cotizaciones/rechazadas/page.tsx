@@ -13,6 +13,7 @@ type Cotizacion = {
   folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
+  archivos: { id: number; nombre: string }[];
 };
 
 type CotizacionApi = {
@@ -25,6 +26,11 @@ type CotizacionApi = {
   estatus?: { descripcion?: string };
   fecha_fin?: string | null;
   fecha_aprobacion?: string | null;
+  pedido?: {
+    detalles?: {
+      archivo?: { id_archivo: number; nombre_archivo: string; url_archivo: string } | null;
+    }[];
+  } | null;
 };
 
 export default function CotizacionesRechazadasPage() {
@@ -56,6 +62,13 @@ export default function CotizacionesRechazadasPage() {
         folio: c.folio ?? null,
         estatus: c.estatus?.descripcion ?? "",
         fecha_estimada: c.fecha_fin ?? c.fecha_aprobacion ?? null,
+        archivos: (c.pedido?.detalles ?? [])
+          .map((d) => d.archivo)
+          .filter(
+            (a): a is { id_archivo: number; nombre_archivo: string; url_archivo: string } =>
+              a != null && a.url_archivo !== "__PLACEHOLDER__"
+          )
+          .map((a) => ({ id: a.id_archivo, nombre: a.nombre_archivo })),
       }));
 
       setCotizaciones(mapped);

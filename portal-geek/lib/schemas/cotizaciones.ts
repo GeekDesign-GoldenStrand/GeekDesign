@@ -36,6 +36,10 @@ const SolicitarItemSchema = z.object({
   id_material: z.number().int().positive(),
   cantidad: z.number().int().positive().max(9999),
   notas: z.string().max(500).optional(),
+  // Storage key of the design file the client uploaded before adding to cart.
+  // Presence is optional — items without a design file fall back to the
+  // placeholder ArchivosDisenio row so DetallePedido.id_archivo stays NOT NULL.
+  disenio_key: z.string().max(500).optional(),
   variables: z
     .array(
       z.object({

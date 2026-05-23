@@ -1,0 +1,99 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+import { DesignUploadZone } from "@/components/storefront/molecules/DesignUploadZone";
+import { FormulaVariablesForm } from "@/components/storefront/organisms/FormulaVariablesForm";
+import type { Material, Variable } from "@/components/storefront/organisms/FormulaVariablesForm";
+
+interface Props {
+  servicioId: number;
+  nombreServicio: string;
+  descripcionServicio?: string | null;
+  materialesText: string;
+  materiales: Material[];
+  variables: Variable[];
+  puedeCotizarEnLinea: boolean;
+}
+
+export function ServicioDetalleClient({
+  servicioId,
+  nombreServicio,
+  descripcionServicio,
+  materialesText,
+  materiales,
+  variables,
+  puedeCotizarEnLinea,
+}: Props) {
+  const [disenioKey, setDisenioKey] = useState<string | null>(null);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px]">
+      {/* ── Izquierda: galería + upload ── */}
+      <div className="flex flex-col gap-[16px]">
+        <div className="bg-[#ffd9e2] rounded-[14px] aspect-square flex items-center justify-center">
+          <span className="font-medium text-[16px] text-[#1e1e1e]">
+            Imagen principal del producto
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-[12px]">
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className="bg-[#ffd9e2] rounded-[10px] aspect-square flex items-center justify-center"
+            />
+          ))}
+        </div>
+
+        <DesignUploadZone
+          maxFiles={1}
+          maxBytes={10 * 1024 * 1024}
+          onKeysChange={(keys) => setDisenioKey(keys[0] ?? null)}
+        />
+      </div>
+
+      {/* ── Derecha: info + form ── */}
+      <div className="flex flex-col gap-[20px]">
+        <div className="flex flex-col gap-[8px]">
+          <h1 className="font-bold text-[32px] leading-tight text-[#1e1e1e]">{nombreServicio}</h1>
+          {descripcionServicio && (
+            <p className="text-[14px] text-[#1e1e1e] leading-normal">{descripcionServicio}</p>
+          )}
+          {materialesText && (
+            <p className="text-[14px] text-[#1e1e1e] mt-[4px]">
+              <span className="font-semibold">Materiales disponibles:</span> {materialesText}.
+            </p>
+          )}
+        </div>
+
+        {puedeCotizarEnLinea ? (
+          <FormulaVariablesForm
+            servicioId={servicioId}
+            nombreServicio={nombreServicio}
+            materiales={materiales}
+            variables={variables}
+            disenioKey={disenioKey}
+          />
+        ) : (
+          <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px] flex flex-col gap-[12px]">
+            <h2 className="font-bold text-[18px] text-[#1e1e1e]">
+              Cotización en línea no disponible
+            </h2>
+            <p className="text-[14px] text-[#1e1e1e] leading-relaxed">
+              Este servicio requiere una cotización personalizada. Contáctanos y un asesor preparará
+              una propuesta para tu proyecto.
+            </p>
+            <Link
+              href="/tienda/cotizacion"
+              className="self-start bg-[#8b434a] text-white font-semibold text-[14px] rounded-[10px] px-[20px] h-[44px] flex items-center justify-center hover:bg-[#7a3a41] transition-colors"
+            >
+              Solicitar cotización personalizada
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

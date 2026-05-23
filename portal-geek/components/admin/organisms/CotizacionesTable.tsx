@@ -1,6 +1,6 @@
 "use client";
 
-import { PencilSimple, CaretDown } from "@phosphor-icons/react";
+import { PencilSimple, CaretDown, Paperclip } from "@phosphor-icons/react";
 
 import { formatDate } from "@/lib/utils/date";
 
@@ -13,6 +13,7 @@ type Cotizacion = {
   folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
+  archivos: { id: number; nombre: string }[];
 };
 
 type Props = {
@@ -126,7 +127,23 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   />
                 </div>
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-center items-center gap-1">
+                {c.archivos.length > 0 && (
+                  <a
+                    href={`/api/admin/archivos/${c.archivos[0].id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={c.archivos[0].nombre}
+                    className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                  >
+                    <Paperclip size={18} />
+                    {c.archivos.length > 1 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-[#8b434a] text-white text-[9px] font-bold rounded-full w-[14px] h-[14px] flex items-center justify-center leading-none">
+                        {c.archivos.length}
+                      </span>
+                    )}
+                  </a>
+                )}
                 <button
                   className="text-black hover:text-[#e42200] transition-colors p-2"
                   title="Editar cotización"
@@ -202,9 +219,27 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <button className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]">
-                  <PencilSimple size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {c.archivos.length > 0 && (
+                    <a
+                      href={`/api/admin/archivos/${c.archivos[0].id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={c.archivos[0].nombre}
+                      className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                    >
+                      <Paperclip size={18} />
+                      {c.archivos.length > 1 && (
+                        <span className="absolute -top-0.5 -right-0.5 bg-[#8b434a] text-white text-[9px] font-bold rounded-full w-[14px] h-[14px] flex items-center justify-center leading-none">
+                          {c.archivos.length}
+                        </span>
+                      )}
+                    </a>
+                  )}
+                  <button className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]">
+                    <PencilSimple size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>

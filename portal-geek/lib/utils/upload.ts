@@ -9,8 +9,12 @@ type PresignResponse = {
 
 // Uploads a single file via presigned PUT. Returns the storage key the server
 // minted — that's what gets persisted on the owning entity (e.g. Materiales.imagen_url).
-export async function uploadFile(file: File, category: Category): Promise<string> {
-  const presignRes = await fetch("/api/upload", {
+export async function uploadFile(
+  file: File,
+  category: Category,
+  endpoint = "/api/upload"
+): Promise<string> {
+  const presignRes = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -40,6 +44,12 @@ export async function uploadFile(file: File, category: Category): Promise<string
   }
 
   return key;
+}
+
+// Uploads a design file without requiring an authenticated session.
+// Uses the public /api/upload/disenios endpoint (rate-limited by IP).
+export async function uploadDesignFile(file: File): Promise<string> {
+  return uploadFile(file, "disenios", "/api/upload/disenios");
 }
 
 // Removes an orphan upload from the bucket — used when the user clears a

@@ -47,6 +47,7 @@ const INCLUDE_CONFIG = {
       detalles: {
         include: {
           servicio: true,
+          archivo: true,
         },
       },
     },
@@ -622,12 +623,34 @@ export async function createCotizacionFromCart(
 
     // 7. Create each DetallePedido and its VariablesCotizacion rows.
     for (const { item, precioUnitario, subtotal, formulaVariables } of pricedItems) {
+      // Resolve ArchivosDisenio: create a real row when the client uploaded a
+      // design file, otherwise fall back to the seed placeholder so the NOT NULL
+      // FK constraint is always satisfied.
+      let archivoId = placeholderArchivoId;
+      if (item.disenio_key) {
+        const keyParts = item.disenio_key.split("/");
+        const filename = keyParts[keyParts.length - 1] ?? item.disenio_key;
+        const ext = filename.includes(".")
+          ? filename.split(".").pop()!.toLowerCase()
+          : "bin";
+        const archivo = await tx.archivosDisenio.create({
+          data: {
+            nombre_archivo: filename,
+            // Store the bucket key as url_archivo; the admin UI / PDF generator
+            // can build a signed download URL from it on demand.
+            url_archivo: item.disenio_key,
+            formato: ext,
+          },
+        });
+        archivoId = archivo.id_archivo;
+      }
+
       const detalle = await tx.detallePedido.create({
         data: {
           id_pedido: pedido.id_pedido,
           id_servicio: item.id_servicio,
           id_material: item.id_material,
-          id_archivo: placeholderArchivoId,
+          id_archivo: archivoId,
           cantidad: item.cantidad,
           precio_unitario: precioUnitario,
           subtotal,
