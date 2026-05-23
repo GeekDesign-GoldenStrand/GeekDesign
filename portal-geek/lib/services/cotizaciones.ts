@@ -163,9 +163,61 @@ export async function listCotizaciones(
 }
 
 export async function getCotizacion(id: number): Promise<CotizacionWithRelations | null> {
-  return prisma.cotizaciones.findUnique({
-    where: { id_cotizacion: id },
-    include: INCLUDE_CONFIG,
+  return prisma.$transaction(async (tx) => {
+    const cotizacion = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion: id },
+      include: {
+        cliente: true,
+        estatus: true,
+        pedido: {
+          include: {
+            detalles: {
+              include: {
+                servicio: true,
+                material: true,
+                archivo: true,
+              },
+            },
+          },
+        },
+        historial: {
+          include: {
+            usuario: {
+              select: { nombre_completo: true },
+            },
+            cliente: {
+              select: { nombre_cliente: true },
+            },
+          },
+          orderBy: { fecha_cambio: "asc" },
+        },
+        variablesCotizacion: {
+          include: {
+            variable: true,
+            usuario: {
+              select: { nombre_completo: true },
+            },
+          },
+        },
+        rechazada: true,
+      },
+    });
+
+    if (!cotizacion) return null;
+
+    const estatuses = await tx.estatusCotizacion.findMany();
+    const estatusMap = new Map(estatuses.map((e) => [e.id_estatus, e.descripcion]));
+
+    return {
+      ...cotizacion,
+      historial: cotizacion.historial.map((h) => ({
+        ...h,
+        estado_anterior_label: h.id_estado_anterior
+          ? (estatusMap.get(h.id_estado_anterior) ?? String(h.id_estado_anterior))
+          : null,
+        estado_nuevo_label: estatusMap.get(h.id_estado_nuevo) ?? String(h.id_estado_nuevo),
+      })),
+    };
   });
 }
 
@@ -204,15 +256,121 @@ export async function updateCotizacion(
   id: number,
   data: UpdateCotizacionInput
 ): Promise<Cotizaciones> {
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion: id },
+      select: { id_cotizacion: true, id_pedido: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundError(`Cotización ${id} no encontrada`);
+    }
+
+    let computedMontoTotal: number | undefined;
+
+    if (data.servicios && data.servicios.length > 0) {
+      for (const s of data.servicios) {
+        await tx.detallePedido.update({
+          where: { id_detalle: s.id_detalle },
+          data: {
+            cantidad: s.cantidad,
+            precio_unitario: s.precio_unitario,
+            subtotal: s.cantidad * s.precio_unitario,
+          },
+        });
+      }
+
+      if (existing.id_pedido) {
+        const detalles = await tx.detallePedido.findMany({
+          where: { id_pedido: existing.id_pedido },
+          select: { subtotal: true },
+        });
+
+        computedMontoTotal = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
+      }
+    }
+
+    const updateData: any = {};
+
+    if (data.id_cliente !== undefined) updateData.id_cliente = data.id_cliente;
+    if (data.nombre_oportunidad !== undefined)
+      updateData.nombre_oportunidad = data.nombre_oportunidad;
+    if (data.id_estatus_cotizacion !== undefined)
+      updateData.id_estatus_cotizacion = data.id_estatus_cotizacion;
+    if (data.empresa_cliente !== undefined) updateData.empresa_cliente = data.empresa_cliente;
+    if (data.fecha_fin !== undefined) updateData.fecha_fin = data.fecha_fin;
+    if (data.fecha_validacion !== undefined) updateData.fecha_validacion = data.fecha_validacion;
+    if (data.fecha_aprobacion !== undefined) updateData.fecha_aprobacion = data.fecha_aprobacion;
+    if (data.pdf_url !== undefined) updateData.pdf_url = data.pdf_url;
+    if (data.notas !== undefined) updateData.notas = data.notas;
+
+    // Prefer the server-recomputed total over whatever the caller sent.
+    const montoTotal = computedMontoTotal ?? data.monto_total;
+    if (montoTotal !== undefined) updateData.monto_total = montoTotal;
+
+    return tx.cotizaciones.update({
+      where: { id_cotizacion: id },
+      data: updateData,
+    });
+  });
 }
 
 export async function deleteCotizacion(id: number): Promise<void> {
   // Placeholder until implemented.
   void id;
   throw new Error("Not implemented");
+}
+
+export async function aplicarDescuento(id_cotizacion: number, porcentaje: number, motivo?: string) {
+  const cotizacion = await prisma.cotizaciones.findUnique({
+    where: { id_cotizacion },
+    select: {
+      id_cotizacion: true,
+      monto_total: true,
+      porcentaje_descuento: true,
+      id_estatus_cotizacion: true,
+      estatus: { select: { descripcion: true } },
+      pedido: {
+        select: {
+          detalles: { select: { subtotal: true } },
+        },
+      },
+    },
+  });
+
+  if (!cotizacion) {
+    throw new NotFoundError("Cotización no encontrada");
+  }
+
+  const allowed: string[] = [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA];
+  if (!allowed.includes(cotizacion.estatus.descripcion)) {
+    throw new ConflictError(
+      `No se puede modificar una cotización en estatus '${cotizacion.estatus.descripcion}'`
+    );
+  }
+
+  // Decimal arithmetic in JS — convert through Number once and round to 2
+  // decimals so we don't drift on repeated discounts. Cotización amounts
+  // fit well within Number's safe-integer range. If the cotización has no
+  // detalles (very rare — cart-submitted cotizaciones always do), fall back
+  // to the stored monto_total so callers still get *something* sensible.
+  const detalles = cotizacion.pedido?.detalles ?? [];
+  const baseOriginal = detalles.length
+    ? detalles.reduce((acc, d) => acc + Number(d.subtotal), 0)
+    : Number(cotizacion.monto_total);
+  const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
+
+  // Trim then normalize "" → null so the column never holds whitespace-only.
+  const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
+
+  return prisma.cotizaciones.update({
+    where: { id_cotizacion },
+    data: {
+      porcentaje_descuento: porcentaje,
+      motivo_descuento: motivoNormalizado,
+      monto_total: montoConDescuento,
+    },
+  });
 }
 
 export async function getQuotationStatusId(description: string) {
