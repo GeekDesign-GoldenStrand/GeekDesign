@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isValidKey } from "@/lib/storage/keys";
+
 export const CreateCotizacionSchema = z.object({
   id_pedido: z.number().int().positive().optional(),
   id_cliente: z.number().int().positive(),
@@ -39,7 +41,14 @@ const SolicitarItemSchema = z.object({
   // Storage key of the design file the client uploaded before adding to cart.
   // Presence is optional — items without a design file fall back to the
   // placeholder ArchivosDisenio row so DetallePedido.id_archivo stays NOT NULL.
-  disenio_key: z.string().max(500).optional(),
+  // Must be a valid key in the "disenios" category (format: disenios/yyyy/mm/<uuid>.<ext>).
+  disenio_key: z
+    .string()
+    .max(500)
+    .refine((k) => isValidKey(k, "disenios"), {
+      message: "disenio_key must be a valid disenios storage key",
+    })
+    .optional(),
   variables: z
     .array(
       z.object({
