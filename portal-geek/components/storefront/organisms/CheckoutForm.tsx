@@ -79,8 +79,9 @@ export function CheckoutForm({ sucursales }: Props) {
           // Copilot review #3: per-item design notes from the cart must reach
           // DetallePedido.notas — schema already supports it.
           notas: i.configuracion.notas,
-          // Pass the GCS key so the server can create the ArchivosDisenio row.
+          // Pass the GCS key and original filename so the server can create the ArchivosDisenio row.
           disenio_key: i.disenioKey,
+          disenio_nombre: i.disenioNombre,
           variables: i.configuracion.variables.map((v) => ({
             nombre_variable: v.nombre_variable,
             valor: v.valor,

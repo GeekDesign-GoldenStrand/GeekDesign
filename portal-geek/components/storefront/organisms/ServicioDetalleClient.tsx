@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
 import { DesignUploadZone } from "@/components/storefront/molecules/DesignUploadZone";
 import { FormulaVariablesForm } from "@/components/storefront/organisms/FormulaVariablesForm";
 import type { Material, Variable } from "@/components/storefront/organisms/FormulaVariablesForm";
@@ -26,7 +27,7 @@ export function ServicioDetalleClient({
   variables,
   puedeCotizarEnLinea,
 }: Props) {
-  const [disenioKey, setDisenioKey] = useState<string | null>(null);
+  const [disenioFile, setDisenioFile] = useState<UploadedFile | null>(null);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px]">
@@ -50,7 +51,7 @@ export function ServicioDetalleClient({
         <DesignUploadZone
           maxFiles={1}
           maxBytes={10 * 1024 * 1024}
-          onKeysChange={(keys) => setDisenioKey(keys[0] ?? null)}
+          onKeysChange={(files) => setDisenioFile(files[0] ?? null)}
         />
       </div>
 
@@ -74,7 +75,7 @@ export function ServicioDetalleClient({
             nombreServicio={nombreServicio}
             materiales={materiales}
             variables={variables}
-            disenioKey={disenioKey}
+            disenioFile={disenioFile}
           />
         ) : (
           <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px] flex flex-col gap-[12px]">

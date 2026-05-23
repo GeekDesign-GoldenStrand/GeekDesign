@@ -14,11 +14,16 @@ type SlotState =
   | { id: string; status: "done"; file: File; key: string }
   | { id: string; status: "error"; file: File; message: string };
 
+export interface UploadedFile {
+  key: string;
+  filename: string;
+}
+
 interface Props {
   maxFiles?: number;
   maxBytes?: number;
-  // Devuelve los keys ya subidos cada vez que cambia la lista
-  onKeysChange?: (keys: string[]) => void;
+  // Devuelve los archivos ya subidos (key + nombre original) cada vez que cambia la lista
+  onKeysChange?: (files: UploadedFile[]) => void;
 }
 
 export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChange }: Props) {
@@ -34,10 +39,10 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
 
   // Notifica al padre cada vez que cambia la lista de slots — fuera del render
   useEffect(() => {
-    const keys = slots
+    const files = slots
       .filter((s): s is Extract<SlotState, { status: "done" }> => s.status === "done")
-      .map((s) => s.key);
-    onKeysChangeRef.current?.(keys);
+      .map((s) => ({ key: s.key, filename: s.file.name }));
+    onKeysChangeRef.current?.(files);
   }, [slots]);
 
   async function handleFile(f: File) {

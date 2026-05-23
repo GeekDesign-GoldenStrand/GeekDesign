@@ -49,10 +49,12 @@ const SolicitarItemSchema = z.object({
       message: "disenio_key must be a valid disenios storage key",
     })
     .optional(),
+  // Original filename supplied by the client (e.g. "logo_cliente.ai").
+  // Stored as ArchivosDisenio.nombre_archivo so admins see a human-readable name.
+  disenio_nombre: z.string().min(1).max(260).optional(),
   variables: z
     .array(
       z.object({
-        // Copilot review #6: align identifier validation with CalcularPrecioSchema.
         nombre_variable: z
           .string()
           .min(1)

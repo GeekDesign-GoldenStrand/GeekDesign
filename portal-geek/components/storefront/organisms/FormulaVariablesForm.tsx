@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
 import { addItem } from "@/lib/cart/storage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ interface Props {
   nombreServicio: string;
   materiales: Material[];
   variables: Variable[];
-  disenioKey?: string | null;
+  disenioFile?: UploadedFile | null;
 }
 
 const formatPeso = (n: number) =>
@@ -38,7 +39,7 @@ export function FormulaVariablesForm({
   nombreServicio,
   materiales,
   variables,
-  disenioKey: disenioKeyProp,
+  disenioFile,
 }: Props) {
   const editables = useMemo(() => variables.filter((v) => v.editable_por_cliente), [variables]);
   const defaultValues = useMemo(
@@ -50,8 +51,6 @@ export function FormulaVariablesForm({
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
-  // Key recibido desde el DesignUploadZone de la columna izquierda
-  const disenioKey = disenioKeyProp ?? null;
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -155,7 +154,7 @@ export function FormulaVariablesForm({
       },
       cantidad,
       precioCalculado: precioUnitario,
-      ...(disenioKey ? { disenioKey } : {}),
+      ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
     });
     window.dispatchEvent(new CustomEvent("carrito:updated"));
     setFeedback(`${nombreServicio} agregado al carrito`);

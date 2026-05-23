@@ -628,12 +628,13 @@ export async function createCotizacionFromCart(
       // FK constraint is always satisfied.
       let archivoId = placeholderArchivoId;
       if (item.disenio_key) {
-        const keyParts = item.disenio_key.split("/");
-        const filename = keyParts[keyParts.length - 1] ?? item.disenio_key;
-        const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "bin";
+        // Prefer the original filename sent by the client; fall back to the UUID
+        // segment of the key only as a last resort (should never happen in practice).
+        const nombre = item.disenio_nombre ?? item.disenio_key.split("/").pop() ?? item.disenio_key;
+        const ext = nombre.includes(".") ? nombre.split(".").pop()!.toLowerCase() : "bin";
         const archivo = await tx.archivosDisenio.create({
           data: {
-            nombre_archivo: filename,
+            nombre_archivo: nombre,
             // Store the bucket key as url_archivo; the admin UI / PDF generator
             // can build a signed download URL from it on demand.
             url_archivo: item.disenio_key,
