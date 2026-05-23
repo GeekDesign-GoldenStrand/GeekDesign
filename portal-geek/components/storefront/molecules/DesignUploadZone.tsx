@@ -3,51 +3,94 @@
 import { CloudArrowUp, File } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 
+import { deleteFile, uploadFile } from "@/lib/utils/upload";
+
 const ACCEPTED = ".svg,.png,.jpg,.jpeg,.ai,.eps,.dxf,.pdf";
 const MB = 1024 * 1024;
+
+// Estado interno de cada slot de archivo (todos tienen `file`)
+type SlotState =
+  | { status: "uploading"; file: File }
+  | { status: "done"; file: File; key: string }
+  | { status: "error"; file: File; message: string };
 
 interface Props {
   maxFiles?: number;
   maxBytes?: number;
-  onFileChange?: (files: File[]) => void;
+  // Devuelve los keys ya subidos cada vez que cambia la lista
+  onKeysChange?: (keys: string[]) => void;
 }
 
-export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onFileChange }: Props) {
-  const [files, setFiles] = useState<File[]>([]);
+export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChange }: Props) {
+  const [slots, setSlots] = useState<SlotState[]>([]);
   const [dragging, setDragging] = useState(false);
   const [sizeError, setSizeError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function tryAddFile(f: File) {
+  function notifyKeys(next: SlotState[]) {
+    const keys = next
+      .filter((s): s is Extract<SlotState, { status: "done" }> => s.status === "done")
+      .map((s) => s.key);
+    onKeysChange?.(keys);
+  }
+
+  async function handleFile(f: File) {
     if (f.size > maxBytes) {
-      setSizeError(
-        `"${f.name}" supera el límite de ${maxBytes / MB} MB (${(f.size / MB).toFixed(1)} MB).`
-      );
+      setSizeError(`"${f.name}" supera el límite de ${maxBytes / MB} MB (${(f.size / MB).toFixed(1)} MB).`);
       return;
     }
     setSizeError(null);
-    const updated = [...files, f];
-    setFiles(updated);
-    onFileChange?.(updated);
+
+    const index = slots.length;
+    const uploading: SlotState = { status: "uploading", file: f };
+    const next = [...slots, uploading];
+    setSlots(next);
+
+    try {
+      const key = await uploadFile(f, "disenios");
+      setSlots((prev) => {
+        const updated = [...prev];
+        updated[index] = { status: "done", file: f, key };
+        notifyKeys(updated);
+        return updated;
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al subir el archivo";
+      setSlots((prev) => {
+        const updated = [...prev];
+        updated[index] = { status: "error", file: f, message };
+        return updated;
+      });
+    }
   }
 
-  function removeFile(index: number) {
-    setSizeError(null);
-    const updated = files.filter((_, i) => i !== index);
-    setFiles(updated);
-    onFileChange?.(updated);
+  async function removeSlot(index: number) {
+    const slot = slots[index];
+    // Si ya subió, borrar el orphan del bucket
+    if (slot.status === "done") {
+      deleteFile(slot.key).catch(() => {
+        // best-effort: si falla el delete el bucket lo limpiará con GC
+      });
+    }
+    setSlots((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      notifyKeys(updated);
+      return updated;
+    });
     if (inputRef.current) inputRef.current.value = "";
+    setSizeError(null);
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
-    if (files.length >= maxFiles) return;
+    if (slots.length >= maxFiles) return;
     const f = e.dataTransfer.files[0];
-    if (f) tryAddFile(f);
+    if (f) handleFile(f);
   }
 
-  const canAddMore = files.length < maxFiles;
+  const canAddMore = slots.length < maxFiles;
+  const showDropZone = slots.length === 0;
 
   return (
     <div className="w-full flex flex-col gap-[8px]">
@@ -58,25 +101,52 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onFileChang
         className="sr-only"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) tryAddFile(f);
+          if (f) handleFile(f);
           if (inputRef.current) inputRef.current.value = "";
         }}
       />
 
-      {/* Archivos seleccionados */}
-      {files.map((f, i) => (
+      {/* Lista de slots */}
+      {slots.map((slot, i) => (
         <div
           key={i}
-          className="border border-dashed border-[#8b434a] rounded-[10px] px-[16px] py-[12px] flex items-center gap-[10px] bg-[#fff5f6]"
+          className={`border border-dashed rounded-[10px] px-[16px] py-[12px] flex items-center gap-[10px] ${
+            slot.status === "error"
+              ? "border-[#c14a4a] bg-[#fff5f5]"
+              : "border-[#8b434a] bg-[#fff5f6]"
+          }`}
         >
-          <File size={20} className="text-[#8b434a] shrink-0" />
-          <span className="text-[13px] text-[#1e1e1e] flex-1 truncate">{f.name}</span>
-          <span className="text-[11px] text-[#999] shrink-0">{(f.size / MB).toFixed(1)} MB</span>
+          {slot.status === "uploading" ? (
+            // Spinner
+            <svg className="animate-spin shrink-0 text-[#8b434a]" width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          ) : (
+            <File size={20} className={slot.status === "error" ? "text-[#c14a4a]" : "text-[#8b434a]"} weight="regular" />
+          )}
+
+          <div className="flex-1 min-w-0">
+            <span className="text-[13px] text-[#1e1e1e] block truncate">{slot.file.name}</span>
+            {slot.status === "uploading" && (
+              <span className="text-[11px] text-[#888]">Subiendo…</span>
+            )}
+            {slot.status === "done" && (
+              <span className="text-[11px] text-[#2e7d32]">✓ Subido</span>
+            )}
+            {slot.status === "error" && (
+              <span className="text-[11px] text-[#c14a4a]">{slot.message}</span>
+            )}
+          </div>
+
+          <span className="text-[11px] text-[#999] shrink-0">{(slot.file.size / MB).toFixed(1)} MB</span>
+
           <button
             type="button"
-            onClick={() => removeFile(i)}
+            onClick={() => removeSlot(i)}
             aria-label="Quitar archivo"
-            className="shrink-0 text-[#999] hover:text-[#1e1e1e] transition-colors"
+            disabled={slot.status === "uploading"}
+            className="shrink-0 text-[#999] hover:text-[#1e1e1e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
               <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -86,12 +156,10 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onFileChang
       ))}
 
       {/* Error de tamaño */}
-      {sizeError && (
-        <p className="text-[12px] text-[#c14a4a]">{sizeError}</p>
-      )}
+      {sizeError && <p className="text-[12px] text-[#c14a4a]">{sizeError}</p>}
 
-      {/* Zona drag & drop — solo cuando no hay archivos todavía */}
-      {files.length === 0 && (
+      {/* Zona drag & drop — solo cuando no hay slots */}
+      {showDropZone && (
         <div
           role="button"
           tabIndex={0}
@@ -113,21 +181,17 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onFileChang
                 }
           }
         >
-          <CloudArrowUp
-            size={30}
-            weight="thin"
-            className={dragging ? "text-[#8b434a]" : "text-[#6b7280]"}
-          />
+          <CloudArrowUp size={30} weight="thin" className={dragging ? "text-[#8b434a]" : "text-[#6b7280]"} />
           <p className="font-semibold text-[14px] text-[#1e1e1e]">Sube tu diseño</p>
           <p className="text-[12px] text-[#555] text-center leading-snug">
             Arrastra tu archivo aquí o selecciónalo desde tu equipo.
           </p>
-          <p className="text-[11px] text-[#888]">Formatos sugeridos: SVG, PNG, JPG.</p>
+          <p className="text-[11px] text-[#888]">Formatos: SVG, PNG, JPG, AI, EPS, DXF, PDF · Máx {maxBytes / MB} MB</p>
         </div>
       )}
 
-      {/* Botón agregar más — solo si maxFiles > 1 y aún se puede */}
-      {files.length > 0 && canAddMore && maxFiles > 1 && (
+      {/* Botón agregar más */}
+      {slots.length > 0 && canAddMore && maxFiles > 1 && (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -137,12 +201,11 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onFileChang
             <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           Agregar otro archivo
-          <span className="text-[#999] font-normal">({files.length}/{maxFiles})</span>
+          <span className="text-[#999] font-normal">({slots.length}/{maxFiles})</span>
         </button>
       )}
 
-      {/* Límite alcanzado */}
-      {files.length === maxFiles && maxFiles > 1 && (
+      {slots.length === maxFiles && maxFiles > 1 && (
         <p className="text-[12px] text-[#888]">Límite de {maxFiles} archivos alcanzado.</p>
       )}
     </div>

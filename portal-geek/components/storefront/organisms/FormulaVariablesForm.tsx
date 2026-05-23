@@ -44,6 +44,7 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
+  const [disenioKey, setDisenioKey] = useState<string | null>(null);
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -110,6 +111,7 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
     setValues({ ...defaultValues });
     setCantidad(1);
     setNotas("");
+    setDisenioKey(null);
     setFeedback(null);
   }
 
@@ -147,6 +149,7 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
       },
       cantidad,
       precioCalculado: precioUnitario,
+      ...(disenioKey ? { disenioKey } : {}),
     });
     window.dispatchEvent(new CustomEvent("carrito:updated"));
     setFeedback(`${nombreServicio} agregado al carrito`);
@@ -310,7 +313,11 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
           </button>
         </div>
 
-        <DesignUploadZone maxFiles={1} maxBytes={10 * 1024 * 1024} />
+        <DesignUploadZone
+          maxFiles={1}
+          maxBytes={10 * 1024 * 1024}
+          onKeysChange={(keys) => setDisenioKey(keys[0] ?? null)}
+        />
       </form>
     </div>
   );
