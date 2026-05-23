@@ -40,17 +40,20 @@ const COTIZACION_PENDIENTE = {
   },
 };
 
-const COTIZACION_VALIDADA = {
+// Underscore prefix marks these as intentionally-unused fixtures — they
+// document the shapes other branches of the service exercise but aren't
+// referenced by the tests currently in this file.
+const _COTIZACION_VALIDADA = {
   ...COTIZACION_PENDIENTE,
   estatus: { descripcion: "Validada" },
 };
 
-const COTIZACION_APROBADA = {
+const _COTIZACION_APROBADA = {
   ...COTIZACION_PENDIENTE,
   estatus: { descripcion: "Aprobada" },
 };
 
-const COTIZACION_CON_DESCUENTO = {
+const _COTIZACION_CON_DESCUENTO = {
   ...COTIZACION_PENDIENTE,
   monto_total: "900.00",
   porcentaje_descuento: "10.00",

@@ -57,6 +57,60 @@ export type CotizacionWithRelations = Prisma.CotizacionesGetPayload<{
   include: typeof INCLUDE_CONFIG;
 }>;
 
+// Detail view used by GET /api/cotizaciones/[id] AND by the storefront
+// page fallback. Designed as a strict superset of INCLUDE_CONFIG so the
+// payload remains assignable to CotizacionWithRelations:
+//   - admin detail needs material + archivo on each detalle, historial
+//     with usuario + cliente, variablesCotizacion.usuario, rechazada
+//   - storefront needs pedido.estatus + estado_factura and the
+//     variable → formula → servicio chain
+// Keeping both unioned in one include keeps a single source of truth and
+// avoids a second `findUnique` per request.
+const DETAIL_INCLUDE = {
+  cliente: true,
+  estatus: true,
+  pedido: {
+    include: {
+      estatus: true,
+      estado_factura: true,
+      detalles: {
+        include: { servicio: true, material: true, archivo: true },
+      },
+    },
+  },
+  historial: {
+    include: {
+      usuario: { select: { nombre_completo: true } },
+      cliente: { select: { nombre_cliente: true } },
+    },
+  },
+  variablesCotizacion: {
+    include: {
+      variable: {
+        include: {
+          formula: { include: { servicio: true } },
+        },
+      },
+      usuario: { select: { nombre_completo: true } },
+    },
+  },
+  rechazada: true,
+} as const;
+
+type CotizacionDetailBase = Prisma.CotizacionesGetPayload<{
+  include: typeof DETAIL_INCLUDE;
+}>;
+
+// Service-enriched: each historial entry gets the resolved label strings
+// looked up against the EstatusCotizacion catalog so the UI doesn't have
+// to hold the catalog itself.
+export type CotizacionDetail = Omit<CotizacionDetailBase, "historial"> & {
+  historial: (CotizacionDetailBase["historial"][number] & {
+    estado_anterior_label: string | null;
+    estado_nuevo_label: string;
+  })[];
+};
+
 // Copilot review #1: emails must be normalized before any Postgres @unique
 // lookup or comparison. Postgres unique indexes are case-sensitive, and the
 // approve/cancel handlers compare with `.toLowerCase()` on a `.trim()`-less
@@ -162,44 +216,18 @@ export async function listCotizaciones(
   return { items, total };
 }
 
-export async function getCotizacion(id: number): Promise<CotizacionWithRelations | null> {
+export async function getCotizacion(id: number): Promise<CotizacionDetail | null> {
   return prisma.$transaction(async (tx) => {
     const cotizacion = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: id },
       include: {
-        cliente: true,
-        estatus: true,
-        pedido: {
-          include: {
-            detalles: {
-              include: {
-                servicio: true,
-                material: true,
-                archivo: true,
-              },
-            },
-          },
-        },
+        ...DETAIL_INCLUDE,
+        // orderBy lives on the live query, not on the include type — keeps
+        // DETAIL_INCLUDE pure structural so GetPayload stays sharp.
         historial: {
-          include: {
-            usuario: {
-              select: { nombre_completo: true },
-            },
-            cliente: {
-              select: { nombre_cliente: true },
-            },
-          },
+          ...DETAIL_INCLUDE.historial,
           orderBy: { fecha_cambio: "asc" },
         },
-        variablesCotizacion: {
-          include: {
-            variable: true,
-            usuario: {
-              select: { nombre_completo: true },
-            },
-          },
-        },
-        rechazada: true,
       },
     });
 
@@ -290,13 +318,17 @@ export async function updateCotizacion(
       }
     }
 
-    const updateData: any = {};
+    // Use Prisma's checked update type so each field write is validated
+    // against the schema (e.g. fecha_* must be Date | string, not arbitrary).
+    const updateData: Prisma.CotizacionesUpdateInput = {};
 
-    if (data.id_cliente !== undefined) updateData.id_cliente = data.id_cliente;
+    if (data.id_cliente !== undefined) {
+      updateData.cliente = { connect: { id_cliente: data.id_cliente } };
+    }
     if (data.nombre_oportunidad !== undefined)
       updateData.nombre_oportunidad = data.nombre_oportunidad;
     if (data.id_estatus_cotizacion !== undefined)
-      updateData.id_estatus_cotizacion = data.id_estatus_cotizacion;
+      updateData.estatus = { connect: { id_estatus: data.id_estatus_cotizacion } };
     if (data.empresa_cliente !== undefined) updateData.empresa_cliente = data.empresa_cliente;
     if (data.fecha_fin !== undefined) updateData.fecha_fin = data.fecha_fin;
     if (data.fecha_validacion !== undefined) updateData.fecha_validacion = data.fecha_validacion;
@@ -321,7 +353,11 @@ export async function deleteCotizacion(id: number): Promise<void> {
   throw new Error("Not implemented");
 }
 
-export async function aplicarDescuento(id_cotizacion: number, porcentaje: number, motivo?: string) {
+export async function aplicarDescuento(
+  id_cotizacion: number,
+  porcentaje: number | null,
+  motivo?: string | null
+) {
   const cotizacion = await prisma.cotizaciones.findUnique({
     where: { id_cotizacion },
     select: {
@@ -358,9 +394,23 @@ export async function aplicarDescuento(id_cotizacion: number, porcentaje: number
   const baseOriginal = detalles.length
     ? detalles.reduce((acc, d) => acc + Number(d.subtotal), 0)
     : Number(cotizacion.monto_total);
+
+  // porcentaje === null is the delete path: clear the discount, drop the
+  // motivo and restore monto_total to the original sum of subtotales.
+  if (porcentaje === null) {
+    return prisma.cotizaciones.update({
+      where: { id_cotizacion },
+      data: {
+        porcentaje_descuento: null,
+        motivo_descuento: null,
+        monto_total: baseOriginal,
+      },
+    });
+  }
+
   const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
 
-  // Trim then normalize "" → null so the column never holds whitespace-only.
+  // Trim then normalize "" / null → null so the column never holds whitespace-only.
   const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
 
   return prisma.cotizaciones.update({

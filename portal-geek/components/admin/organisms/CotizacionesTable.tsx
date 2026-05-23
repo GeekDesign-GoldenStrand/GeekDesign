@@ -1,14 +1,11 @@
 "use client";
 
 import { CaretDown, Info } from "@phosphor-icons/react";
+import Link from "next/link";
 
 import { formatDate } from "@/lib/utils/date";
 
 import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
-
-import { daysUntilDate } from "@/lib/utils/date";
-
-import Link from "next/link";
 
 type Cotizacion = {
   id_cotizacion: number;
