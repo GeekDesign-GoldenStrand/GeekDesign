@@ -13,6 +13,7 @@ export const CreateCotizacionSchema = z.object({
 });
 
 export const UpdateCotizacionSchema = z.object({
+  // Existing fields
   id_estatus_cotizacion: z.number().int().positive().optional(),
   monto_total: z.number().nonnegative().optional(),
   empresa_cliente: z.string().max(100).optional(),
@@ -21,10 +22,37 @@ export const UpdateCotizacionSchema = z.object({
   fecha_aprobacion: z.coerce.date().optional(),
   pdf_url: z.string().url().max(500).optional(),
   notas: z.string().optional(),
+
+  // Added for EditarCotizacion
+  id_cliente: z.number().int().positive().optional(),
+  nombre_oportunidad: z.string().max(255).optional(),
+
+  // Inline DetallePedido edits — cantidad + precio_unitario per line item.
+  // subtotal is recomputed server-side; the client never sends it.
+  servicios: z
+    .array(
+      z.object({
+        id_detalle: z.number().int().positive(),
+        cantidad: z.number().int().positive(),
+        precio_unitario: z.number().nonnegative(),
+      })
+    )
+    .optional(),
 });
 
 export const CotizacionIdParams = z.object({
   id: z.coerce.number().int().positive(),
+});
+
+export const AplicarDescuentoSchema = z.object({
+  porcentaje_descuento: z
+    .number()
+    .int("Ingresa un número entero")
+    .min(5, "El descuento debe ser de al menos 5%")
+    .max(20, "El descuento no puede superar el 20%")
+    .refine((v) => v % 5 === 0, "El descuento debe ser múltiplo de 5")
+    .nullable(),
+  motivo_descuento: z.string().max(255).nullable().optional(),
 });
 
 // ST-23: cliente envía el carrito desde el storefront público.
@@ -68,3 +96,4 @@ export const SolicitarCotizacionSchema = z.object({
 export type CreateCotizacionInput = z.infer<typeof CreateCotizacionSchema>;
 export type UpdateCotizacionInput = z.infer<typeof UpdateCotizacionSchema>;
 export type SolicitarCotizacionInput = z.infer<typeof SolicitarCotizacionSchema>;
+export type AplicarDescuentoInput = z.infer<typeof AplicarDescuentoSchema>;
