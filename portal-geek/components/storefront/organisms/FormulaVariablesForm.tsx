@@ -33,7 +33,13 @@ const formatPeso = (n: number) =>
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, variables, disenioKey: disenioKeyProp }: Props) {
+export function FormulaVariablesForm({
+  servicioId,
+  nombreServicio,
+  materiales,
+  variables,
+  disenioKey: disenioKeyProp,
+}: Props) {
   const editables = useMemo(() => variables.filter((v) => v.editable_por_cliente), [variables]);
   const defaultValues = useMemo(
     () => Object.fromEntries(editables.map((v) => [v.nombre_variable, v.valor_default])),
@@ -312,7 +318,6 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
             Restablecer
           </button>
         </div>
-
       </form>
     </div>
   );

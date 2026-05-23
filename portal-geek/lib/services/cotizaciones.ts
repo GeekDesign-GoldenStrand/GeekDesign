@@ -630,9 +630,7 @@ export async function createCotizacionFromCart(
       if (item.disenio_key) {
         const keyParts = item.disenio_key.split("/");
         const filename = keyParts[keyParts.length - 1] ?? item.disenio_key;
-        const ext = filename.includes(".")
-          ? filename.split(".").pop()!.toLowerCase()
-          : "bin";
+        const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "bin";
         const archivo = await tx.archivosDisenio.create({
           data: {
             nombre_archivo: filename,

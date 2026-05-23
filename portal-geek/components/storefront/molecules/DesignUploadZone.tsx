@@ -28,7 +28,9 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
   const inputRef = useRef<HTMLInputElement>(null);
   // Ref para evitar que onKeysChange (arrow fn del padre) cause re-renders innecesarios
   const onKeysChangeRef = useRef(onKeysChange);
-  useEffect(() => { onKeysChangeRef.current = onKeysChange; });
+  useEffect(() => {
+    onKeysChangeRef.current = onKeysChange;
+  });
 
   // Notifica al padre cada vez que cambia la lista de slots — fuera del render
   useEffect(() => {
@@ -40,7 +42,9 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
 
   async function handleFile(f: File) {
     if (f.size > maxBytes) {
-      setSizeError(`"${f.name}" supera el límite de ${maxBytes / MB} MB (${(f.size / MB).toFixed(1)} MB).`);
+      setSizeError(
+        `"${f.name}" supera el límite de ${maxBytes / MB} MB (${(f.size / MB).toFixed(1)} MB).`
+      );
       return;
     }
     setSizeError(null);
@@ -115,12 +119,33 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
         >
           {slot.status === "uploading" ? (
             // Spinner
-            <svg className="animate-spin shrink-0 text-[#8b434a]" width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            <svg
+              className="animate-spin shrink-0 text-[#8b434a]"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="3"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
             </svg>
           ) : (
-            <File size={20} className={slot.status === "error" ? "text-[#c14a4a]" : "text-[#8b434a]"} weight="regular" />
+            <File
+              size={20}
+              className={slot.status === "error" ? "text-[#c14a4a]" : "text-[#8b434a]"}
+              weight="regular"
+            />
           )}
 
           <div className="flex-1 min-w-0">
@@ -128,15 +153,15 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
             {slot.status === "uploading" && (
               <span className="text-[11px] text-[#888]">Subiendo…</span>
             )}
-            {slot.status === "done" && (
-              <span className="text-[11px] text-[#2e7d32]">✓ Subido</span>
-            )}
+            {slot.status === "done" && <span className="text-[11px] text-[#2e7d32]">✓ Subido</span>}
             {slot.status === "error" && (
               <span className="text-[11px] text-[#c14a4a]">{slot.message}</span>
             )}
           </div>
 
-          <span className="text-[11px] text-[#999] shrink-0">{(slot.file.size / MB).toFixed(1)} MB</span>
+          <span className="text-[11px] text-[#999] shrink-0">
+            {(slot.file.size / MB).toFixed(1)} MB
+          </span>
 
           <button
             type="button"
@@ -146,7 +171,12 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
             className="shrink-0 text-[#999] hover:text-[#1e1e1e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <path
+                d="M12 4L4 12M4 4l8 8"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -162,7 +192,10 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
           tabIndex={0}
           onClick={() => inputRef.current?.click()}
           onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           className={`cursor-pointer select-none rounded-[10px] border-2 border-dashed px-[20px] py-[20px] flex flex-col items-center justify-center gap-[6px] transition-colors ${
@@ -178,12 +211,18 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
                 }
           }
         >
-          <CloudArrowUp size={30} weight="thin" className={dragging ? "text-[#8b434a]" : "text-[#6b7280]"} />
+          <CloudArrowUp
+            size={30}
+            weight="thin"
+            className={dragging ? "text-[#8b434a]" : "text-[#6b7280]"}
+          />
           <p className="font-semibold text-[14px] text-[#1e1e1e]">Sube tu diseño</p>
           <p className="text-[12px] text-[#555] text-center leading-snug">
             Arrastra tu archivo aquí o selecciónalo desde tu equipo.
           </p>
-          <p className="text-[11px] text-[#888]">Formatos: SVG, PNG, JPG, AI, EPS, DXF, PDF · Máx {maxBytes / MB} MB</p>
+          <p className="text-[11px] text-[#888]">
+            Formatos: SVG, PNG, JPG, AI, EPS, DXF, PDF · Máx {maxBytes / MB} MB
+          </p>
         </div>
       )}
 
@@ -198,7 +237,9 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
             <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           Agregar otro archivo
-          <span className="text-[#999] font-normal">({slots.length}/{maxFiles})</span>
+          <span className="text-[#999] font-normal">
+            ({slots.length}/{maxFiles})
+          </span>
         </button>
       )}
 
