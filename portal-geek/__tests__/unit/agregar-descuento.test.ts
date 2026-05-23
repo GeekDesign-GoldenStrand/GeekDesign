@@ -20,7 +20,15 @@ jest.mock("@/lib/auth/guards", () => ({
         return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
           status: 401,
         });
-      if (!roles.includes((session as { role: string }).role))
+
+      // Administrador is treated as equivalent to Direccion — mirror the
+      // real guard's role normalization so tests reflect actual behavior.
+      const effectiveRole =
+        (session as { role: string }).role === "Administrador"
+          ? "Direccion"
+          : (session as { role: string }).role;
+
+      if (!roles.includes(effectiveRole))
         return new Response(
           JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
           { status: 403 }
