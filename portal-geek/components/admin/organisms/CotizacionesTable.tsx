@@ -1,10 +1,14 @@
 "use client";
 
-import { ArrowSquareOut, CaretDown, PencilSimple } from "@phosphor-icons/react";
+import { CaretDown, Info } from "@phosphor-icons/react";
 
 import { formatDate } from "@/lib/utils/date";
 
 import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
+
+import { daysUntilDate } from "@/lib/utils/date";
+
+import Link from "next/link";
 
 type Cotizacion = {
   id_cotizacion: number;
@@ -129,12 +133,12 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 </div>
               </div>
               <div className="flex justify-center">
-                <button
+                <Link
                   className="text-black hover:text-[#e42200] transition-colors p-2"
-                  title="Editar cotización"
+                  href={`cotizaciones/${c.id_cotizacion}`}
                 >
-                  <PencilSimple size={18} />
-                </button>
+                  <Info size={18} />
+                </Link>
               </div>
             </div>
 
@@ -185,6 +189,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   </p>
                   <p className="text-[13px] font-bold text-[#1e1e1e]">
                     ${c.monto_total.toLocaleString("es-MX")}
+                    <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada} />
                   </p>
                 </div>
               </div>
@@ -204,9 +209,12 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <button className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]">
-                  <PencilSimple size={18} />
-                </button>
+                <Link
+                  className="text-black hover:text-[#e42200] transition-colors p-2"
+                  href={`cotizaciones/${c.id_cotizacion}`}
+                >
+                  <Info size={18} />
+                </Link>
               </div>
             </div>
           </div>
