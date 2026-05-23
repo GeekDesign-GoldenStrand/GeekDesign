@@ -1,4 +1,4 @@
-import type { Pedidos } from "@prisma/client";
+import type { Pedidos, Proveedores, Instaladores } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
@@ -357,6 +357,199 @@ export async function listActivePedidoServices() {
     },
   });
 }
+
+// ─── getOrderThirdParties ─────────────────────────────────────────────────────
+//
+// Include configs defined as `const` so TypeScript can derive exact payload
+// types from them.
+
+const PEDIDO_TERCEROS_INCLUDE = {
+  cliente: true,
+  sucursal: true,
+} as const;
+
+// For each detalle we need only the priced paths:
+//   • servicio.proveedorPrecios → ProveedorPrecios rows where id_servicio matches (price B)
+//   • servicio.instaladorServicios → InstaladorServicios rows where id_servicio matches (price B)
+//   • material.proveedorPrecios → ProveedorPrecios rows where id_material matches (price C)
+//
+// Servicios.id_proveedor and Servicios.id_instalador (direct FKs) are intentionally
+// excluded — they carry no price row and a purchase order cannot be raised without one.
+const DETALLE_TERCEROS_INCLUDE = {
+  servicio: {
+    include: {
+      proveedorPrecios: {
+        include: { proveedor: true },
+      },
+      instaladorServicios: {
+        include: { instalador: true },
+      },
+    },
+  },
+  material: {
+    include: {
+      proveedorPrecios: {
+        include: { proveedor: true },
+      },
+    },
+  },
+} as const;
+
+// Payload types derived from the include configs — no manual duplication.
+type PedidoConTerceros = Prisma.PedidosGetPayload<{
+  include: typeof PEDIDO_TERCEROS_INCLUDE;
+}>;
+
+type DetalleConTerceros = Prisma.DetallePedidoGetPayload<{
+  include: typeof DETALLE_TERCEROS_INCLUDE;
+}>;
+
+type ProveedorPrecioConProveedor = Prisma.ProveedorPreciosGetPayload<{
+  include: { proveedor: true };
+}>;
+
+type InstaladorServicioConInstalador = Prisma.InstaladorServiciosGetPayload<{
+  include: { instalador: true };
+}>;
+
+// Public-facing types for the map entries.
+export type ProveedorEntry = {
+  /** The supplier linked to one or more line items. */
+  proveedor: Proveedores;
+  /** Every DetallePedido that references this supplier (deduplicated). */
+  detalles: DetalleConTerceros[];
+  /** ProveedorPrecios rows that link this supplier to the order (always non-empty). */
+  precios: ProveedorPrecioConProveedor[];
+};
+
+export type InstaladorEntry = {
+  /** The installer linked to one or more line items. */
+  instalador: Instaladores;
+  /** Every DetallePedido that references this installer (deduplicated). */
+  detalles: DetalleConTerceros[];
+  /** InstaladorServicios rows that link this installer to the order (always non-empty). */
+  costos: InstaladorServicioConInstalador[];
+};
+
+export type OrderThirdPartiesResult = {
+  pedido: PedidoConTerceros;
+  /** Convenience alias — same object as pedido.sucursal; may be null. */
+  sucursal: PedidoConTerceros["sucursal"];
+  /** Keyed by id_proveedor. */
+  proveedorMap: Map<number, ProveedorEntry>;
+  /** Keyed by id_instalador. */
+  instaladorMap: Map<number, InstaladorEntry>;
+};
+
+/**
+ * Builds the third-party (proveedor / instalador) groupings for a Pedido.
+ *
+ * Only priced paths are considered — Servicios.id_proveedor and
+ * Servicios.id_instalador (direct FKs) are excluded because they carry no
+ * price row and a purchase order cannot be raised without one.
+ *
+ * A DetallePedido is linked to a Proveedor when:
+ *   B – A ProveedorPrecios row exists with id_servicio = detalle.id_servicio, OR
+ *   C – A ProveedorPrecios row exists with id_material = detalle.id_material.
+ *
+ * A DetallePedido is linked to an Instalador when:
+ *   B – An InstaladorServicios row exists with id_servicio = detalle.id_servicio.
+ *
+ * Duplicates are suppressed: if multiple paths lead to the same third party
+ * for the same detalle, the detalle appears only once in that entry's list.
+ */
+export async function getOrderThirdParties(id_pedido: number): Promise<OrderThirdPartiesResult> {
+  // Run both queries in parallel — if the pedido doesn't exist the detalles
+  // query simply returns [] (no FK constraint stops it), so parallelism is safe.
+  const [pedido, detalles] = await Promise.all([
+    prisma.pedidos.findUnique({
+      where: { id_pedido },
+      include: PEDIDO_TERCEROS_INCLUDE,
+    }),
+    prisma.detallePedido.findMany({
+      where: { id_pedido },
+      include: DETALLE_TERCEROS_INCLUDE,
+    }),
+  ]);
+
+  if (!pedido) {
+    throw new NotFoundError(`Pedido ${id_pedido} no encontrado`);
+  }
+
+  const proveedorMap = new Map<number, ProveedorEntry>();
+  const instaladorMap = new Map<number, InstaladorEntry>();
+
+  for (const detalle of detalles) {
+    // ── Proveedor grouping ──────────────────────────────────────────────────
+    // addedToProveedores tracks which proveedor IDs already received *this*
+    // detalle so we never push the same detalle twice into one entry.
+    const addedToProveedores = new Set<number>();
+
+    const upsertProveedor = (precio: ProveedorPrecioConProveedor) => {
+      const { id_proveedor: id, proveedor } = precio;
+      if (!proveedorMap.has(id)) {
+        proveedorMap.set(id, { proveedor, detalles: [], precios: [] });
+      }
+      const entry = proveedorMap.get(id)!;
+
+      // Detalle deduplication: each detalle appears at most once per proveedor.
+      if (!addedToProveedores.has(id)) {
+        entry.detalles.push(detalle);
+        addedToProveedores.add(id);
+      }
+
+      // Precio deduplication: the same ProveedorPrecios row can surface via
+      // multiple detalles sharing the same service or material.
+      if (!entry.precios.some((p) => p.id_proveedor_precio === precio.id_proveedor_precio)) {
+        entry.precios.push(precio);
+      }
+    };
+
+    // Path B — ProveedorPrecios where id_servicio matches
+    for (const precio of detalle.servicio.proveedorPrecios) {
+      upsertProveedor(precio);
+    }
+
+    // Path C — ProveedorPrecios where id_material matches
+    for (const precio of detalle.material.proveedorPrecios) {
+      upsertProveedor(precio);
+    }
+
+    // ── Instalador grouping ─────────────────────────────────────────────────
+    const addedToInstaladores = new Set<number>();
+
+    const upsertInstalador = (costo: InstaladorServicioConInstalador) => {
+      const { id_instalador: id, instalador } = costo;
+      if (!instaladorMap.has(id)) {
+        instaladorMap.set(id, { instalador, detalles: [], costos: [] });
+      }
+      const entry = instaladorMap.get(id)!;
+
+      if (!addedToInstaladores.has(id)) {
+        entry.detalles.push(detalle);
+        addedToInstaladores.add(id);
+      }
+
+      if (!entry.costos.some((c) => c.id_instalador_servicio === costo.id_instalador_servicio)) {
+        entry.costos.push(costo);
+      }
+    };
+
+    // Path B — InstaladorServicios where id_servicio matches
+    for (const costo of detalle.servicio.instaladorServicios) {
+      upsertInstalador(costo);
+    }
+  }
+
+  return {
+    pedido,
+    sucursal: pedido.sucursal,
+    proveedorMap,
+    instaladorMap,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const PEDIDO_STATUS_API_TO_DB: Record<PedidoStatus, string> = {
   [PEDIDO_STATUS.PENDIENTE]: "Pendiente",
