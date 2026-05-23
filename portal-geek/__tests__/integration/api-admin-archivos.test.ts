@@ -16,8 +16,7 @@ jest.mock("@/lib/auth/session", () => ({
 
 jest.mock("@/lib/auth/guards", () => ({
   withRoleParams:
-    (roles: string[], handler: Handler) =>
-    async (req: Request, ctx: { params: unknown }) => {
+    (roles: string[], handler: Handler) => async (req: Request, ctx: { params: unknown }) => {
       const session = await getSession();
       if (!session) {
         return new Response(JSON.stringify({ error: "No autenticado" }), { status: 401 });
