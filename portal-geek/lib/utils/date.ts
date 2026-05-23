@@ -1,4 +1,6 @@
-export function formatDate(dateString: string) {
+export function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return "—";
+
   const date = new Date(dateString);
 
   const day = String(date.getUTCDate()).padStart(2, "0");
@@ -23,7 +25,11 @@ export function formatDate(dateString: string) {
   return `${day} ${month} ${year}`;
 }
 
-export function daysUntilDate(dateString: string): "soon" | "very soon" | "expired" | "n/a" {
+export function daysUntilDate(
+  dateString: string | null | undefined
+): "soon" | "very soon" | "expired" | "n/a" {
+  if (!dateString) return "n/a";
+
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
@@ -34,6 +40,6 @@ export function daysUntilDate(dateString: string): "soon" | "very soon" | "expir
 
   if (diff < 0) return "expired";
   else if (diff <= 5) return "very soon";
-  else if (diff <= 10 && diff > 5) "soon";
+  else if (diff <= 10 && diff > 5) return "soon";
   else return "n/a";
 }
