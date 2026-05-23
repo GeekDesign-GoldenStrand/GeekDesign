@@ -125,7 +125,9 @@ describe("updateCotizacion", () => {
 
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ id_cliente: 5 }),
+        data: expect.objectContaining({
+          cliente: { connect: { id_cliente: 5 } },
+        }),
       })
     );
   });
