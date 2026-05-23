@@ -12,8 +12,6 @@ export default function DeliveryDateTrafficLight({
   const daysUntil = daysUntilDate(deliveryDate);
   const color = daysUntil === "soon" ? "text-amber-400" : "text-red-400";
 
-  console.log("Days until delivery:", daysUntil); // Debug log
-
   if (daysUntil !== "soon" && daysUntil !== "very soon") return null;
 
   return (
