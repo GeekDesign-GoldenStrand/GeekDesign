@@ -1,9 +1,18 @@
 import { AlarmIcon } from "@phosphor-icons/react";
+
 import { daysUntilDate } from "@/lib/utils/date";
 
-export default function DeliveryDateTrafficLight({ deliveryDate }: { deliveryDate: string }) {
-  let daysUntil = daysUntilDate(deliveryDate);
+export default function DeliveryDateTrafficLight({
+  deliveryDate,
+}: {
+  deliveryDate: string | null;
+}) {
+  if (!deliveryDate) return null;
+
+  const daysUntil = daysUntilDate(deliveryDate);
   const color = daysUntil === "soon" ? "text-amber-400" : "text-red-400";
+
+  console.log("Days until delivery:", daysUntil); // Debug log
 
   if (daysUntil !== "soon" && daysUntil !== "very soon") return null;
 

@@ -186,7 +186,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   </p>
                   <p className="text-[13px] font-bold text-[#1e1e1e]">
                     ${c.monto_total.toLocaleString("es-MX")}
-                    <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada} />
+                    <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada || null} />
                   </p>
                 </div>
               </div>
