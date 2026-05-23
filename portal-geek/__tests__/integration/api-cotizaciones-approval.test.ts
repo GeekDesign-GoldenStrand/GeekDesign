@@ -104,7 +104,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
         estatus: { descripcion: "Validada" },
         cliente: { nombre_cliente: "Test User" },
         variablesCotizacion: [],
-        historial: [],           
+        historial: [],
       };
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
