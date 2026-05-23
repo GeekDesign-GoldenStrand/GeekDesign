@@ -54,10 +54,7 @@ jest.mock("@/lib/db/client", () => ({
         },
         detallePedido: {
           update: jest.fn().mockResolvedValue({}),
-          findMany: jest.fn().mockResolvedValue([
-            { subtotal: "1000.00" },
-            { subtotal: "500.00" },
-          ]),
+          findMany: jest.fn().mockResolvedValue([{ subtotal: "1000.00" }, { subtotal: "500.00" }]),
         },
       })
     ),
@@ -71,8 +68,7 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
   beforeAll(async () => {
     const mod = await import("@/app/api/cotizaciones/[id]/route");
     routes = {
-      PUT: (req: unknown) =>
-        mod.PUT(req as NextRequest, { params: Promise.resolve({ id: "1" }) }),
+      PUT: (req: unknown) => mod.PUT(req as NextRequest, { params: Promise.resolve({ id: "1" }) }),
     };
   });
 
