@@ -10,9 +10,9 @@ const MB = 1024 * 1024;
 
 // Estado interno de cada slot de archivo (todos tienen `file`)
 type SlotState =
-  | { status: "uploading"; file: File }
-  | { status: "done"; file: File; key: string }
-  | { status: "error"; file: File; message: string };
+  | { id: string; status: "uploading"; file: File }
+  | { id: string; status: "done"; file: File; key: string }
+  | { id: string; status: "error"; file: File; message: string };
 
 interface Props {
   maxFiles?: number;
@@ -49,35 +49,33 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
     }
     setSizeError(null);
 
-    const index = slots.length;
-    setSlots((prev) => [...prev, { status: "uploading", file: f }]);
+    // ID estable generado antes del upload — evita la carrera de leer slots.length
+    // (estado potencialmente stale) y luego actualizar por posición.
+    const slotId = crypto.randomUUID();
+    setSlots((prev) => [...prev, { id: slotId, status: "uploading", file: f }]);
 
     try {
       const key = await uploadDesignFile(f);
-      setSlots((prev) => {
-        const updated = [...prev];
-        updated[index] = { status: "done", file: f, key };
-        return updated;
-      });
+      setSlots((prev) =>
+        prev.map((s) => (s.id === slotId ? { id: slotId, status: "done", file: f, key } : s))
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al subir el archivo";
-      setSlots((prev) => {
-        const updated = [...prev];
-        updated[index] = { status: "error", file: f, message };
-        return updated;
-      });
+      setSlots((prev) =>
+        prev.map((s) => (s.id === slotId ? { id: slotId, status: "error", file: f, message } : s))
+      );
     }
   }
 
-  async function removeSlot(index: number) {
-    const slot = slots[index];
+  async function removeSlot(id: string) {
+    const slot = slots.find((s) => s.id === id);
     // Si ya subió, borrar el orphan del bucket
-    if (slot.status === "done") {
+    if (slot?.status === "done") {
       deleteFile(slot.key).catch(() => {
         // best-effort: si falla el delete el bucket lo limpiará con GC
       });
     }
-    setSlots((prev) => prev.filter((_, i) => i !== index));
+    setSlots((prev) => prev.filter((s) => s.id !== id));
     if (inputRef.current) inputRef.current.value = "";
     setSizeError(null);
   }
@@ -108,9 +106,9 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
       />
 
       {/* Lista de slots */}
-      {slots.map((slot, i) => (
+      {slots.map((slot) => (
         <div
-          key={i}
+          key={slot.id}
           className={`border border-dashed rounded-[10px] px-[16px] py-[12px] flex items-center gap-[10px] ${
             slot.status === "error"
               ? "border-[#c14a4a] bg-[#fff5f5]"
@@ -165,7 +163,7 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
 
           <button
             type="button"
-            onClick={() => removeSlot(i)}
+            onClick={() => removeSlot(slot.id)}
             aria-label="Quitar archivo"
             disabled={slot.status === "uploading"}
             className="shrink-0 text-[#999] hover:text-[#1e1e1e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
