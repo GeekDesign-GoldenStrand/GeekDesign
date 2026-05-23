@@ -7,6 +7,7 @@ import {
   StopCircle,
   CurrencyDollar,
   CaretDown,
+  Paperclip,
 } from "@phosphor-icons/react";
 
 import { formatDate } from "@/lib/utils/date";
@@ -130,6 +131,8 @@ interface Pedido {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  archivos: { id: number; nombre: string }[];
 }
 
 interface Props {
@@ -249,7 +252,23 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
               </div>
 
               {/* Acciones */}
-              <div className="flex justify-center">
+              <div className="flex justify-center items-center gap-1">
+                {p.archivos.length > 0 && (
+                  <a
+                    href={`/api/admin/archivos/${p.archivos[0].id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={p.archivos[0].nombre}
+                    className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                  >
+                    <Paperclip size={18} />
+                    {p.archivos.length > 1 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-[#8b434a] text-white text-[9px] font-bold rounded-full w-[14px] h-[14px] flex items-center justify-center leading-none">
+                        {p.archivos.length}
+                      </span>
+                    )}
+                  </a>
+                )}
                 <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
                   <PencilSimple size={18} />
                 </a>
@@ -353,12 +372,30 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <a
-                  href={`/pedidos/${p.id_pedido}`}
-                  className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
-                >
-                  <PencilSimple size={18} />
-                </a>
+                <div className="flex items-center gap-2">
+                  {p.archivos.length > 0 && (
+                    <a
+                      href={`/api/admin/archivos/${p.archivos[0].id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={p.archivos[0].nombre}
+                      className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                    >
+                      <Paperclip size={18} />
+                      {p.archivos.length > 1 && (
+                        <span className="absolute -top-0.5 -right-0.5 bg-[#8b434a] text-white text-[9px] font-bold rounded-full w-[14px] h-[14px] flex items-center justify-center leading-none">
+                          {p.archivos.length}
+                        </span>
+                      )}
+                    </a>
+                  )}
+                  <a
+                    href={`/pedidos/${p.id_pedido}`}
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
+                  >
+                    <PencilSimple size={18} />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

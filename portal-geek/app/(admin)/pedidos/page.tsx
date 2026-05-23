@@ -23,6 +23,8 @@ interface Pedido {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  archivos: { id: number; nombre: string }[];
 }
 
 // Raw API response type
@@ -47,6 +49,10 @@ interface PedidoApi {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  detalles?: {
+    archivo?: { id_archivo: number; nombre_archivo: string; url_archivo: string } | null;
+  }[];
 }
 
 export default function PedidosPage() {
@@ -99,6 +105,14 @@ export default function PedidosPage() {
         estatus: p.estatus,
 
         estado_factura: p.estado_factura ?? null,
+
+        archivos: (p.detalles ?? [])
+          .map((d) => d.archivo)
+          .filter(
+            (a): a is { id_archivo: number; nombre_archivo: string; url_archivo: string } =>
+              a != null && a.url_archivo !== "__PLACEHOLDER__"
+          )
+          .map((a) => ({ id: a.id_archivo, nombre: a.nombre_archivo })),
       }));
 
       setPedidos(mapped);
