@@ -7,11 +7,7 @@ import { useState, type FormEvent } from "react";
 import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
-interface Props {
-  token: string;
-}
-
-export function CambiarForm({ token }: Props) {
+export function CambiarForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,7 +28,7 @@ export function CambiarForm({ token }: Props) {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password, confirmPassword }),
+        body: JSON.stringify({ password, confirmPassword }),
       });
       const json = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) {

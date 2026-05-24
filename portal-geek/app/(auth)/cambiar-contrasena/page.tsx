@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 
 import { BrandLogo } from "@/components/ui/atoms/BrandLogo";
 
@@ -9,12 +10,9 @@ export const metadata: Metadata = {
   title: "Nueva contraseña",
 };
 
-interface PageProps {
-  searchParams: Promise<{ token?: string }>;
-}
-
-export default async function CambiarContrasenaPage({ searchParams }: PageProps) {
-  const { token } = await searchParams;
+export default async function CambiarContrasenaPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("reset_token")?.value;
 
   if (!token) {
     return (
@@ -47,7 +45,7 @@ export default async function CambiarContrasenaPage({ searchParams }: PageProps)
       </div>
 
       <div className="mt-10 w-full">
-        <CambiarForm token={token} />
+        <CambiarForm />
       </div>
     </div>
   );

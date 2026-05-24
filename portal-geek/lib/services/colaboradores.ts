@@ -1,6 +1,7 @@
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
 import type { CreateColaboradorInput, UpdateColaboradorInput } from "@/lib/schemas/colaboradores";
+import { sendWelcomeEmailForColaborador } from "@/lib/services/password-reset";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 const COLABORADOR_SELECT = {
@@ -53,7 +54,6 @@ export async function createColaborador(data: CreateColaboradorInput) {
   const {
     nombre_completo,
     correo_electronico,
-    contrasena_hash: plainPassword,
     id_rol,
     estatus,
     id_sucursal,
@@ -63,14 +63,12 @@ export async function createColaborador(data: CreateColaboradorInput) {
     estatus_colaborador,
   } = data;
 
-  const contrasena_hash = await hashPassword(plainPassword);
-
+  let usuario;
   try {
-    return await prisma.usuarios.create({
+    usuario = await prisma.usuarios.create({
       data: {
         nombre_completo,
         correo_electronico,
-        contrasena_hash,
         id_rol,
         estatus,
         colaborador: {
@@ -88,6 +86,26 @@ export async function createColaborador(data: CreateColaboradorInput) {
   } catch (err: unknown) {
     if ((err as { code?: string }).code === "P2002")
       throw new ConflictError("El correo electrónico ya está registrado");
+    throw err;
+  }
+
+  try {
+    await sendWelcomeEmailForColaborador(
+      usuario.id_usuario,
+      usuario.correo_electronico,
+      usuario.nombre_completo
+    );
+    return usuario;
+  } catch (err) {
+    // Si falla el envío del correo, hacemos un rollback manual para no dejar el usuario a medias
+    await prisma.$transaction([
+      prisma.tokensRecuperacion.deleteMany({ where: { id_usuario: usuario.id_usuario } }),
+      prisma.colaboradores.deleteMany({ where: { id_usuario: usuario.id_usuario } }),
+      prisma.usuarios.delete({ where: { id_usuario: usuario.id_usuario } }),
+    ]).catch(rollbackErr => {
+      console.error("[rollback] Falló al eliminar el usuario tras error de correo:", rollbackErr);
+    });
+
     throw err;
   }
 }

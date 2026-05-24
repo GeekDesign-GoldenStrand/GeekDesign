@@ -58,7 +58,7 @@ model Usuarios {
   id_usuario         Int       @id @default(autoincrement())
   nombre_completo    String    @db.VarChar(100)
   correo_electronico String    @unique @db.VarChar(150)
-  contrasena_hash    String    @db.VarChar(255)
+  contrasena_hash    String?   @db.VarChar(255)
   id_rol             Int
   estatus            String    @db.VarChar(20) // Activo / Inactivo
   fecha_creacion     DateTime  @default(now())
