@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
 import {
   AgregarTerceroModal,
   ConfirmarEliminarInstaladorModal,
@@ -80,7 +81,10 @@ export default function TercerosPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("Todos");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const PAGE_SIZE = 12;
 
   // PROV-02 – edit
   const [editingProveedorId, setEditingProveedorId] = useState<number | null>(null);
@@ -123,6 +127,11 @@ export default function TercerosPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Reset to the first page whenever the visible set changes.
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, search]);
+
   async function handleStatusChange(
     id: number,
     newStatus: TerceroStatus,
@@ -163,6 +172,7 @@ export default function TercerosPage() {
       const d: DbProveedor = payload.data;
       setEditData({
         nombre_proveedor: d.nombre_proveedor,
+        apodo: d.apodo ?? "",
         tipo: d.tipo as ProveedorFormData["tipo"],
         correo: d.correo ?? "",
         telefono: d.telefono ?? "",
@@ -199,7 +209,7 @@ export default function TercerosPage() {
             ? {
                 ...r,
                 companyName: updated.nombre_proveedor,
-                contactName: updated.nombre_proveedor,
+                contactName: updated.apodo ?? updated.nombre_proveedor,
                 location: updated.ubicacion ?? "",
                 email: updated.correo ?? "",
                 phone: updated.telefono ?? "",
@@ -377,6 +387,11 @@ export default function TercerosPage() {
       }),
     }));
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp in case the current page fell out of range (e.g. after a deletion).
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const initialModalType = activeTab === "Instaladores" ? "Instalador" : "Proveedor";
 
   return (
@@ -394,7 +409,10 @@ export default function TercerosPage() {
         {loading ? (
           <p className="text-[#8e908f] text-[16px]">Cargando...</p>
         ) : (
-          <TercerosGrid items={filtered} />
+          <>
+            <TercerosGrid items={paginated} />
+            <PaginacionControles page={safePage} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </main>
 

@@ -2,7 +2,7 @@ import type { Proveedores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateProveedorInput, UpdateProveedorInput } from "@/lib/schemas/proveedores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 export async function listProveedores(
   page: number,
@@ -28,6 +28,20 @@ export async function getProveedor(id: number): Promise<Proveedores> {
 }
 
 export async function createProveedor(data: CreateProveedorInput): Promise<Proveedores> {
+  // Reject duplicates by email (case-insensitive) among non-deleted providers.
+  // Email is the identity key — different companies may share a name, but not an
+  // email; one provider offering many products is handled via item assignments,
+  // not duplicate records.
+  const existing = await prisma.proveedores.findFirst({
+    where: {
+      correo: { equals: data.correo, mode: "insensitive" },
+      estatus: { not: "Inactivo" },
+    },
+    select: { id_proveedor: true },
+  });
+  if (existing) {
+    throw new ConflictError(`Ya existe un proveedor con el correo "${data.correo}".`);
+  }
   return prisma.proveedores.create({
     data: {
       ...data,
