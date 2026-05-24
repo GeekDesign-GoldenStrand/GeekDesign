@@ -44,7 +44,13 @@ jobs:
     # Bind this job to the GitHub Environment chosen by branch. Environment
     # Secrets/Variables resolve from this environment, and any protection rules
     # (e.g. required reviewers on "production") gate the job here.
-    environment: ${{ steps.config.outputs.env_name }}
+    #
+    # This MUST be a pure expression of github.* context — the `steps` context
+    # is empty when GitHub resolves the job's environment (before any step runs),
+    # so referencing steps.config here would bind to no environment, skipping
+    # env secrets/vars AND the production reviewer gate. Map: main -> production,
+    # otherwise the branch name already equals the environment name.
+    environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name }}
 
     steps:
       # ── 1. Checkout ────────────────────────────────────────────────────────
@@ -52,10 +58,9 @@ jobs:
         uses: actions/checkout@v4
 
       # ── 2. Resolve branch -> environment / version / promote ──────────────
-      # NOTE: `environment:` above reads steps.config.outputs.env_name. GitHub
-      # evaluates that BEFORE steps run, so the mapping below must be a pure
-      # function of github.ref_name (it is) — the runner derives env_name from
-      # the branch deterministically. We re-emit it here for later steps too.
+      # The job's `environment:` is resolved from github.ref_name directly (see
+      # above). This step derives the version name, promote flag, and a display
+      # env_name for later steps (e.g. the summary).
       - name: Configure environment
         id: config
         run: |
@@ -138,6 +143,9 @@ jobs:
           echo "Rendered app.yaml ($(wc -l < app.yaml) lines). Values masked."
 
       # ── 5. Deploy to App Engine ───────────────────────────────────────────
+      # NOTE: DB migrations are NOT run here. The runtime DB user is least-
+      # privilege (no DDL); migrations are a manual prerequisite run from a
+      # trusted machine BEFORE merging a schema change. See docs/deployment.md §2.
       - name: Deploy to App Engine
         id: deploy
         uses: google-github-actions/deploy-appengine@v3
