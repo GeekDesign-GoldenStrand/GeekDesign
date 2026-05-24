@@ -6,12 +6,14 @@ import { can, sectionForPath, SECTION_ACCESS } from "@/lib/auth/access";
 import type { Role, Section, Action } from "@/lib/auth/access";
 
 // The intended access matrix, written out independently of SECTION_ACCESS so an
-// accidental edit to the policy is caught here. Grounded in the SRS §2.2
-// *Actividades* column (system permissions), not "Formación o conocimientos":
-//   - Colaborador: only pedidos (consult + update status).
+// accidental edit to the policy is caught here. Grounded in the per-requirement
+// **Rol** field of the detailed use cases (SRS §2.4.x), which is authoritative
+// per feature:
+//   - Colaborador: pedidos (consult + update status, PE-*) and materiales read
+//     (MAT-01). Materiales write stays Dirección (MAT-02/03/04).
 //   - Finanzas: pedidos (invoicing) + finanzas.
-//   - Everything else is Dirección-only (§2.3.1 rules 3–6 reserve métricas, user
-//     roles, services catalog, and formulas to Dirección).
+//   - Everything else is Dirección-only (every §2.4.x requirement there lists
+//     ROL: Dirección).
 const ALL_ROLES: Role[] = ["Direccion", "Colaborador", "Finanzas"];
 
 const EXPECTED: Record<Section, { read: Role[]; write: Role[] }> = {
@@ -21,7 +23,7 @@ const EXPECTED: Record<Section, { read: Role[]; write: Role[] }> = {
   usuarios: { read: ["Direccion"], write: ["Direccion"] },
   servicios: { read: ["Direccion"], write: ["Direccion"] },
   cotizaciones: { read: ["Direccion"], write: ["Direccion"] },
-  materiales: { read: ["Direccion"], write: ["Direccion"] },
+  materiales: { read: ["Direccion", "Colaborador"], write: ["Direccion"] },
   proveedores: { read: ["Direccion"], write: ["Direccion"] },
   terceros: { read: ["Direccion"], write: ["Direccion"] },
   instaladores: { read: ["Direccion"], write: ["Direccion"] },
@@ -67,11 +69,14 @@ describe("RBAC policy matrix — can(role, section, action)", () => {
     }
   );
 
-  // Colaborador's only system activity is pedidos (consult + update status).
-  it("Colaborador may read+write pedidos but nothing else", () => {
+  // Colaborador: full access to pedidos (PE-*) and read-only on materiales
+  // (MAT-01). No write on materiales (MAT-02/03/04) and no access elsewhere.
+  it("Colaborador may read+write pedidos, read materiales, and nothing else", () => {
     expect(can("Colaborador", "pedidos", "read")).toBe(true);
     expect(can("Colaborador", "pedidos", "write")).toBe(true);
-    for (const section of sections.filter((s) => s !== "pedidos")) {
+    expect(can("Colaborador", "materiales", "read")).toBe(true);
+    expect(can("Colaborador", "materiales", "write")).toBe(false);
+    for (const section of sections.filter((s) => s !== "pedidos" && s !== "materiales")) {
       expect(can("Colaborador", section, "read")).toBe(false);
       expect(can("Colaborador", section, "write")).toBe(false);
     }

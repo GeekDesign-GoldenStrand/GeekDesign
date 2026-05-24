@@ -2,46 +2,45 @@ import {
   Buildings,
   CubeTransparent,
   CurrencyDollar,
-  Gear,
+  Microscope,
   Handshake,
-  House,
-  Money,
+  Briefcase,
   Package,
   UserGear,
   Users,
-  Wrench,
+  Storefront,
+  PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
 
 import type { Section } from "@/lib/auth/access";
 
-export type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-  // The policy section this item links to. Visibility is derived from
-  // can(role, section, "read") — see SidebarNav. Omit for items visible to any
-  // authenticated user (e.g. Dashboard).
-  section?: Section;
-};
+export type NavItem =
+  | {
+      type?: "link";
+      href: string;
+      label: string;
+      icon: React.ReactNode;
+      // The policy section this item links to. Visibility is derived from
+      // can(role, section, "read") — see SidebarNav. Omit for items visible to
+      // any authenticated user (e.g. Dashboard).
+      section?: Section;
+    }
+  | {
+      type: "divider";
+    };
 
-const ICON_SIZE = 32;
+const ICON_SIZE = 30;
 
 export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    icon: <House size={ICON_SIZE} />,
-  },
-  {
-    href: "/finanzas",
-    label: "Finanzas",
-    icon: <CurrencyDollar size={ICON_SIZE} />,
-    section: "finanzas",
+    icon: <PresentationChart size={ICON_SIZE} />,
   },
   {
     href: "/cotizaciones",
     label: "Cotizaciones",
-    icon: <Money size={ICON_SIZE} />,
+    icon: <Briefcase size={ICON_SIZE} />,
     section: "cotizaciones",
   },
   {
@@ -51,11 +50,31 @@ export const navItems: NavItem[] = [
     section: "pedidos",
   },
   {
+    href: "/finanzas",
+    label: "Finanzas",
+    icon: <CurrencyDollar size={ICON_SIZE} />,
+    section: "finanzas",
+  },
+  { type: "divider" },
+  {
     href: "/servicios",
     label: "Servicios",
-    icon: <Wrench size={ICON_SIZE} />,
+    icon: <Storefront size={ICON_SIZE} />,
     section: "servicios",
   },
+  {
+    href: "/materiales",
+    label: "Materiales",
+    icon: <CubeTransparent size={ICON_SIZE} />,
+    section: "materiales",
+  },
+  {
+    href: "/maquinas",
+    label: "Máquinas",
+    icon: <Microscope size={ICON_SIZE} />,
+    section: "maquinas",
+  },
+  { type: "divider" },
   {
     href: "/colaboradores",
     label: "Colaboradores",
@@ -69,27 +88,15 @@ export const navItems: NavItem[] = [
     section: "terceros",
   },
   {
-    href: "/clientes",
-    label: "Clientes",
-    icon: <Handshake size={ICON_SIZE} />,
-    section: "clientes",
-  },
-  {
-    href: "/maquinas",
-    label: "Máquinas",
-    icon: <Gear size={ICON_SIZE} />,
-    section: "maquinas",
-  },
-  {
-    href: "/materiales",
-    label: "Materiales",
-    icon: <CubeTransparent size={ICON_SIZE} />,
-    section: "materiales",
-  },
-  {
     href: "/sucursales",
     label: "Sucursales",
     icon: <Buildings size={ICON_SIZE} />,
     section: "sucursales",
+  },
+  {
+    href: "/clientes",
+    label: "Clientes",
+    icon: <Handshake size={ICON_SIZE} />,
+    section: "clientes",
   },
 ];

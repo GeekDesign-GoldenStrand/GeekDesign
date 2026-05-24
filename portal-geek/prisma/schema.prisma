@@ -193,14 +193,19 @@ model Servicios {
 
 model Materiales {
   id_material          Int      @id @default(autoincrement())
+  id_material_padre    Int?
+  es_grupo             Boolean  @default(false)
   nombre_material      String   @db.VarChar(100)
   descripcion_material String?
-  unidad_medida        String   @db.VarChar(30)
+  unidad_medida        String?  @db.VarChar(30)
   ancho                Decimal? @db.Decimal(10, 2)
   alto                 Decimal? @db.Decimal(10, 2)
   grosor               Decimal? @db.Decimal(10, 2)
   color                String?  @db.VarChar(50)
   imagen_url           String?  @db.VarChar(500)
+
+  padre              Materiales?  @relation("SubMateriales", fields: [id_material_padre], references: [id_material])
+  subMateriales      Materiales[] @relation("SubMateriales")
 
   opciones           OpcionesProducto[]
   detallesPedido     DetallePedido[]

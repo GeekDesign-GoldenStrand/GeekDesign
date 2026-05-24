@@ -13,14 +13,11 @@ export type Role = "Direccion" | "Colaborador" | "Finanzas";
 export type Action = "read" | "write";
 
 // Per-section access. By convention `write` ⊆ `read`: anyone who may write may
-// also read. SRS §2.3.1 / §2.2 drive the primary sections; the secondary
-// sections default to "Direccion writes, everyone reads" (pending stakeholder
-// confirmation).
-// Access follows the SRS §2.2 *Actividades* column (what each role may do in the
-// system) — NOT the "Formación o conocimientos" column (the person's background
-// knowledge). Colaborador's only activities are "consultar pedidos activos,
-// actualizar estado de pedidos"; Finanzas's are consulting orders for invoicing
-// and marking them facturado. Everything else is Direccion-only (§2.3.1).
+// also read. Access is derived from the per-requirement **Rol** field of the
+// detailed use cases in SRS §2.4.x — that field, not the §2.2 *Actividades*
+// summary, is authoritative for each feature. Where the two disagree, §2.4.x
+// wins (e.g. MAT-01 grants Colaborador read on materiales even though the §2.2
+// Colaborador summary lists only pedidos).
 export const SECTION_ACCESS = {
   // Pedidos: Direccion manages; Colaborador consults + updates status; Finanzas
   // consults orders needing invoicing. (Finanzas's status→"facturado" + invoice-
@@ -30,14 +27,19 @@ export const SECTION_ACCESS = {
   // Expenses/payments — the Finanzas role's domain.
   finanzas: { read: ["Direccion", "Finanzas"], write: ["Direccion", "Finanzas"] },
 
-  // Everything below is Direccion-only: not in the Colaborador/Finanzas
-  // Actividades, and §2.3.1 rules 3–6 reserve métricas, user roles, the services
-  // catalog, and the cotización formulas to Direccion.
+  // Materiales: Colaborador may consult the catalog (MAT-01), but only Direccion
+  // may register/modify/delete (MAT-02/03/04).
+  materiales: { read: ["Direccion", "Colaborador"], write: ["Direccion"] },
+
+  // Everything below is Direccion-only per its §2.4.x use cases (every requirement
+  // lists ROL: Dirección): servicios catalog + formulas (ADMIN-01..08), cotizaciones
+  // (COT-*), proveedores (PROV-*), instaladores (INST-*), maquinas (MAQ-*), clientes
+  // (CL-*), colaboradores (COL-*), sucursales (SU-*), metricas (MET-*), user roles
+  // (AU-04).
   metricas: { read: ["Direccion"], write: ["Direccion"] },
   usuarios: { read: ["Direccion"], write: ["Direccion"] },
   servicios: { read: ["Direccion"], write: ["Direccion"] }, // catalog + formulas
   cotizaciones: { read: ["Direccion"], write: ["Direccion"] },
-  materiales: { read: ["Direccion"], write: ["Direccion"] },
   proveedores: { read: ["Direccion"], write: ["Direccion"] },
   terceros: { read: ["Direccion"], write: ["Direccion"] },
   instaladores: { read: ["Direccion"], write: ["Direccion"] },

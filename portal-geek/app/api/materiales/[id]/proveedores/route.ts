@@ -6,7 +6,10 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withSectionParams<Params>("materiales", "read", async (_req, ctx) => {
+// Lists a material's suppliers and their costs — proveedor/pricing data
+// (PROV-04/05), which is Dirección-only, not the MAT-01 catalog consultation
+// that Colaborador may read.
+export const GET = withSectionParams<Params>("proveedores", "read", async (_req, ctx) => {
   try {
     const { id } = MaterialIdParams.parse(await ctx.params);
     return ok(await getMaterialProveedores(id));
