@@ -169,10 +169,19 @@ describe("updateCotizacion", () => {
   });
 
   // ── Servicios (DetallePedido) ──────────────────────────────────────────────
+  // Note: each fixture below includes `id_detalle` on the findMany returns
+  // because updateCotizacion now calls findMany twice in the servicios path —
+  // first to build an IDOR allow-list (needs id_detalle), then to recompute
+  // monto_total from the post-update subtotales (needs subtotal). The same
+  // mock satisfies both calls when each object carries both fields.
+
   it("actualiza cada DetallePedido cuando se envían servicios", async () => {
     mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
     mockDetallePedidoUpdate.mockResolvedValue({});
-    mockDetallePedidoFindMany.mockResolvedValue([{ subtotal: "200.00" }, { subtotal: "300.00" }]);
+    mockDetallePedidoFindMany.mockResolvedValue([
+      { id_detalle: 1, subtotal: "200.00" },
+      { id_detalle: 2, subtotal: "300.00" },
+    ]);
     mockUpdate.mockResolvedValue({});
 
     await updateCotizacion(1, {
@@ -188,7 +197,7 @@ describe("updateCotizacion", () => {
   it("recalcula subtotal de cada detalle (cantidad × precio_unitario)", async () => {
     mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
     mockDetallePedidoUpdate.mockResolvedValue({});
-    mockDetallePedidoFindMany.mockResolvedValue([{ subtotal: "500.00" }]);
+    mockDetallePedidoFindMany.mockResolvedValue([{ id_detalle: 1, subtotal: "500.00" }]);
     mockUpdate.mockResolvedValue({});
 
     await updateCotizacion(1, {
@@ -211,7 +220,10 @@ describe("updateCotizacion", () => {
     mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
     mockDetallePedidoUpdate.mockResolvedValue({});
     // Simula los detalles tras la actualización
-    mockDetallePedidoFindMany.mockResolvedValue([{ subtotal: "200.00" }, { subtotal: "300.00" }]);
+    mockDetallePedidoFindMany.mockResolvedValue([
+      { id_detalle: 1, subtotal: "200.00" },
+      { id_detalle: 2, subtotal: "300.00" },
+    ]);
     mockUpdate.mockResolvedValue({});
 
     await updateCotizacion(1, {
@@ -249,7 +261,7 @@ describe("updateCotizacion", () => {
   it("el monto_total del caller tiene menor prioridad que el recalculado", async () => {
     mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
     mockDetallePedidoUpdate.mockResolvedValue({});
-    mockDetallePedidoFindMany.mockResolvedValue([{ subtotal: "750.00" }]);
+    mockDetallePedidoFindMany.mockResolvedValue([{ id_detalle: 1, subtotal: "750.00" }]);
     mockUpdate.mockResolvedValue({});
 
     // El caller manda monto_total: 9999 pero los detalles suman 750

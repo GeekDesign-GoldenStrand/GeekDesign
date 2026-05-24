@@ -61,6 +61,15 @@ describe("aplicarDescuento", () => {
   });
 
   // ── Estatus validation ────────────────────────────────────────────────────
+  // Policy: aplicarDescuento only accepts Pendiente (mirrors updateCotizacion).
+  // Anything else returns ConflictError so the storefront never silently
+  // mutates a quote the cliente has already moved past.
+  it("lanza ConflictError cuando el estatus es Validada", async () => {
+    mockFindUnique.mockResolvedValue(COTIZACION_VALIDADA);
+
+    await expect(aplicarDescuento(1, 10)).rejects.toThrow(ConflictError);
+  });
+
   it("lanza ConflictError cuando el estatus es Aprobada", async () => {
     mockFindUnique.mockResolvedValue(COTIZACION_APROBADA);
 
@@ -89,13 +98,6 @@ describe("aplicarDescuento", () => {
   it("permite aplicar descuento en estatus Pendiente", async () => {
     mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
     mockUpdate.mockResolvedValue({ ...COTIZACION_PENDIENTE, porcentaje_descuento: "10.00" });
-
-    await expect(aplicarDescuento(1, 10)).resolves.not.toThrow();
-  });
-
-  it("permite aplicar descuento en estatus Validada", async () => {
-    mockFindUnique.mockResolvedValue(COTIZACION_VALIDADA);
-    mockUpdate.mockResolvedValue({ ...COTIZACION_VALIDADA, porcentaje_descuento: "10.00" });
 
     await expect(aplicarDescuento(1, 10)).resolves.not.toThrow();
   });

@@ -38,6 +38,14 @@ jest.mock("@/lib/auth/guards", () => ({
 }));
 
 // ── DB mock ───────────────────────────────────────────────────────────────────
+// Note on the mock shape:
+//   - findUnique returns `estatus.descripcion` and `porcentaje_descuento`
+//     because updateCotizacion now reads both (Pendiente-only guard +
+//     discount re-apply in monto_total recompute).
+//   - detallePedido.findMany returns objects with BOTH id_detalle and
+//     subtotal because the service calls findMany twice: first to build
+//     the IDOR allow-list, then to sum the post-update subtotales. Each
+//     row serves both consumers.
 jest.mock("@/lib/db/client", () => ({
   prisma: {
     $transaction: jest.fn().mockImplementation((fn) =>
@@ -46,6 +54,8 @@ jest.mock("@/lib/db/client", () => ({
           findUnique: jest.fn().mockResolvedValue({
             id_cotizacion: 1,
             id_pedido: 10,
+            porcentaje_descuento: null,
+            estatus: { descripcion: "Pendiente" },
           }),
           update: jest.fn().mockImplementation(({ data }) => ({
             id_cotizacion: 1,
@@ -54,7 +64,10 @@ jest.mock("@/lib/db/client", () => ({
         },
         detallePedido: {
           update: jest.fn().mockResolvedValue({}),
-          findMany: jest.fn().mockResolvedValue([{ subtotal: "1000.00" }, { subtotal: "500.00" }]),
+          findMany: jest.fn().mockResolvedValue([
+            { id_detalle: 1, subtotal: "1000.00" },
+            { id_detalle: 2, subtotal: "500.00" },
+          ]),
         },
       })
     ),
