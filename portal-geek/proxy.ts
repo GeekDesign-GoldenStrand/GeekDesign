@@ -34,7 +34,10 @@ export async function proxy(request: NextRequest) {
   // the real per-section enforcement lives in the layouts/pages (Phase 3).
   const section = sectionForPath(pathname);
   if (section && !can(claims.rol as Role, section, "read")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    // Send the user straight to their own landing section in a single hop,
+    // rather than bouncing through /dashboard (which non-Direccion roles can't
+    // read and would just re-redirect via the page guard).
+    return NextResponse.redirect(new URL(landingPath(claims.rol as Role), request.url));
   }
 
   return NextResponse.next();
