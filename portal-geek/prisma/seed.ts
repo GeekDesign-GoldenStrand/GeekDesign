@@ -847,8 +847,9 @@ async function main() {
       },
     ];
 
+    const createdPedidoIds: number[] = [];
     for (const pedido of demoPedidos) {
-      await prisma.pedidos.create({
+      const created = await prisma.pedidos.create({
         data: {
           cliente: {
             connect: {
@@ -879,9 +880,17 @@ async function main() {
           notas: pedido.notas,
         },
       });
+      createdPedidoIds.push(created.id_pedido);
     }
 
-    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
+    // Map each cotización to the pedido actually created at the same index,
+    // rather than assuming the sequence starts at 1.
+    const cotizacionesToCreate = demoCotizaciones.map((cot, i) => ({
+      ...cot,
+      id_pedido: createdPedidoIds[i],
+    }));
+
+    await prisma.cotizaciones.createMany({ data: cotizacionesToCreate });
     console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
 

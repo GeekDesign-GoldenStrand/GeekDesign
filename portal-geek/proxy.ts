@@ -1,26 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { sectionForPath, can } from "@/lib/auth/access";
+import type { Role } from "@/lib/auth/access";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 import { verifyToken } from "@/lib/auth/tokens";
-import type { UserRole } from "@/types";
-
-const ADMIN_ROLES: UserRole[] = ["Direccion", "Administrador", "Colaborador", "Finanzas"];
-
-const ADMIN_PATHS = [
-  "/dashboard",
-  "/pedidos",
-  "/cotizaciones",
-  "/clientes",
-  "/colaboradores",
-  "/sucursales",
-  "/materiales",
-  "/maquinas",
-  "/terceros",
-  "/usuarios",
-  "/finanzas",
-  "/metricas",
-];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -39,14 +23,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
-  if (isAdminPath) {
-    if (!claims) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    if (!ADMIN_ROLES.includes(claims.rol)) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+  // Everything past here is an admin path (see config.matcher): require a session.
+  if (!claims) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Coarse, edge-level gate. verifyToken has already normalized the legacy
+  // "Administrador" alias to "Direccion", so claims.rol is a canonical Role.
+  // Section-less admin paths (/dashboard, /perfil) only need a valid session;
+  // the real per-section enforcement lives in the layouts/pages (Phase 3).
+  const section = sectionForPath(pathname);
+  if (section && !can(claims.rol as Role, section, "read")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();

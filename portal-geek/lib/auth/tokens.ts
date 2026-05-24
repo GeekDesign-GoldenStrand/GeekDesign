@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 
+import { normalizeRole } from "@/lib/auth/access";
 import type { UserRole } from "@/types";
 
 const JWT_ALG = "HS256";
@@ -28,6 +29,9 @@ export async function generateToken(claims: TokenClaims): Promise<string> {
     .sign(getSecret());
 }
 
+// "Administrador" is a legacy alias of "Direccion". Normalizing here — the single
+// chokepoint both getSession and proxy.ts pass through — means no downstream code
+// (guards, layouts, policy module) ever observes the alias.
 export async function verifyToken(token: string): Promise<TokenClaims | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret(), { algorithms: [JWT_ALG] });
@@ -36,7 +40,11 @@ export async function verifyToken(token: string): Promise<TokenClaims | null> {
       typeof payload.email === "string" &&
       typeof payload.rol === "string"
     ) {
-      return { id: payload.id, email: payload.email, rol: payload.rol as UserRole };
+      return {
+        id: payload.id,
+        email: payload.email,
+        rol: normalizeRole(payload.rol as UserRole),
+      };
     }
     return null;
   } catch {

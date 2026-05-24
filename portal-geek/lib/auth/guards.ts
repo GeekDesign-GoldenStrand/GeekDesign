@@ -1,6 +1,8 @@
 import type { NextRequest } from "next/server";
 import type { NextResponse } from "next/server";
 
+import { SECTION_ACCESS, normalizeRole } from "@/lib/auth/access";
+import type { Section, Action } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
 import type { SessionPayload } from "@/lib/auth/session";
 import { handleError, UnauthorizedError, ForbiddenError } from "@/lib/utils/errors";
@@ -16,19 +18,17 @@ type ParamHandler<P> = (
   session: SessionPayload
 ) => Promise<NextResponse>;
 
-// Roles that share full administrative access and are treated interchangeably.
-export const ADMIN_ROLES: UserRole[] = ["Direccion", "Administrador"];
-
 // Reads the current session and checks role access when needed.
-// Any route that allows a role in ADMIN_ROLES implicitly allows all of them.
+//
+// The role must be explicitly listed — there is no implicit widening (a route
+// that allows "Direccion" does NOT silently allow anything else). The legacy
+// "Administrador" alias is canonicalized to "Direccion" first; verifyToken
+// already does this for real sessions, so this is belt-and-suspenders.
 async function resolveSession(roles?: UserRole[]): Promise<SessionPayload> {
   const session = await getSession();
   if (!session) throw new UnauthorizedError();
   if (roles && roles.length > 0) {
-    const effective = roles.some((r) => ADMIN_ROLES.includes(r as UserRole))
-      ? [...new Set([...roles, ...ADMIN_ROLES])]
-      : roles;
-    if (!effective.includes(session.role as UserRole)) throw new ForbiddenError();
+    if (!roles.includes(normalizeRole(session.role))) throw new ForbiddenError();
   }
   return session;
 }
@@ -79,4 +79,15 @@ export function withRoleParams<P>(roles: UserRole[], handler: ParamHandler<P>) {
       return handleError(err);
     }
   };
+}
+
+// Policy-derived guards: instead of hardcoding a role list per route, declare
+// the section and action and let SECTION_ACCESS decide who is allowed. GET uses
+// "read"; mutations use "write". This keeps every layer in sync with the policy.
+export function withSection(section: Section, action: Action, handler: Handler) {
+  return withRole(SECTION_ACCESS[section][action] as UserRole[], handler);
+}
+
+export function withSectionParams<P>(section: Section, action: Action, handler: ParamHandler<P>) {
+  return withRoleParams<P>(SECTION_ACCESS[section][action] as UserRole[], handler);
 }

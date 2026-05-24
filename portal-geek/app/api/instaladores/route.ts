@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { withRole } from "@/lib/auth/guards";
+import { withSection } from "@/lib/auth/guards";
 import { CreateInstaladorSchema } from "@/lib/schemas/instaladores";
 import {
   listInstaladores,
@@ -11,7 +11,7 @@ import {
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
+export const GET = withSection("instaladores", "read", async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get("mode");
@@ -32,7 +32,7 @@ export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequ
   }
 });
 
-export const POST = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
+export const POST = withSection("instaladores", "write", async (req: NextRequest) => {
   try {
     const body = CreateInstaladorSchema.parse(await req.json());
     return created(await createInstalador(body));
