@@ -30,6 +30,7 @@ type DbInstalador = {
   correo: string;
   telefono: string;
   notas: string | null;
+  costo_instalacion: string;
 };
 
 type DbProveedor = {
@@ -269,6 +270,7 @@ export default function TercerosPage() {
         ubicacion: d.ubicacion ?? "",
         notas: d.notas ?? "",
         estatus: d.estatus,
+        costo_instalacion: d.costo_instalacion,
       });
     } catch (err) {
       if ((err as Error).name !== "AbortError") {

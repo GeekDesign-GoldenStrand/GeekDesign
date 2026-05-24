@@ -72,6 +72,13 @@ const instaladorSchema = z.object({
   ubicacion: z
     .string()
     .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+  costo_instalacion: z
+    .string()
+    .min(1, "La tarifa base es requerida.")
+    .refine(
+      (v) => !isNaN(parseFloat(v)) && parseFloat(v) >= 0,
+      "Debe ser un número mayor o igual a 0."
+    ),
 });
 
 type TerceroType = "Proveedor" | "Instalador";
@@ -108,6 +115,7 @@ export function RegistrarTerceroForm({
     notas: "",
     descripcion_proveedor: "",
     estatus: "Activo",
+    costo_instalacion: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -160,6 +168,7 @@ export function RegistrarTerceroForm({
         telefono: form.telefono,
         notas: form.notas,
         ubicacion: form.ubicacion,
+        costo_instalacion: form.costo_instalacion,
       });
       if (!result.success) {
         for (const issue of result.error.issues) {
@@ -236,6 +245,7 @@ export function RegistrarTerceroForm({
           notas: form.notas || undefined,
           ubicacion: form.ubicacion || undefined,
           estatus: form.estatus,
+          costo_instalacion: parseFloat(form.costo_instalacion),
         };
 
         const res = await fetch("/api/instaladores", {
@@ -474,6 +484,33 @@ export function RegistrarTerceroForm({
                 <option value="Contratista">Contratista</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Tarifa base <span className="text-[#e42200]">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#8e908f] pointer-events-none">
+                $
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={form.costo_instalacion}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "" || /^\d{0,8}(\.\d{0,2})?$/.test(raw))
+                    setField("costo_instalacion", raw);
+                }}
+                className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
+              />
+            </div>
+            {errors.costo_instalacion && (
+              <p className={ERROR_MSG}>{errors.costo_instalacion}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
