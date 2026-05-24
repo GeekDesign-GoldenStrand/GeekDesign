@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { can, sectionForPath, SECTION_ACCESS } from "@/lib/auth/access";
+import { can, sectionForPath, landingPath, SECTION_ACCESS } from "@/lib/auth/access";
 import type { Role, Section, Action } from "@/lib/auth/access";
 
 // The intended access matrix, written out independently of SECTION_ACCESS so an
@@ -116,4 +116,29 @@ describe("sectionForPath", () => {
   it("does not match on a partial segment prefix (/pedidosX is not /pedidos)", () => {
     expect(sectionForPath("/pedidosX")).toBeNull();
   });
+});
+
+describe("landingPath", () => {
+  it.each([
+    ["Direccion", "/dashboard"],
+    ["Colaborador", "/pedidos"],
+    ["Finanzas", "/finanzas"],
+  ] as [Role, string][])("sends %s to %s after login", (role, expected) => {
+    expect(landingPath(role)).toBe(expected);
+  });
+
+  // The landing must be readable by its role, otherwise a denied requireSection
+  // redirect (→ /dashboard → landingPath) could loop. /dashboard is gated by
+  // metricas, so only roles that can read metricas may land there.
+  it.each(["Direccion", "Colaborador", "Finanzas"] as Role[])(
+    "returns a destination %s is allowed to reach",
+    (role) => {
+      const dest = landingPath(role);
+      if (dest === "/dashboard") {
+        expect(can(role, "metricas", "read")).toBe(true);
+      } else {
+        expect(can(role, sectionForPath(dest) as Section, "read")).toBe(true);
+      }
+    }
+  );
 });

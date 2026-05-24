@@ -22,7 +22,7 @@ export type NavItem =
       icon: React.ReactNode;
       // The policy section this item links to. Visibility is derived from
       // can(role, section, "read") — see SidebarNav. Omit for items visible to
-      // any authenticated user (e.g. Dashboard).
+      // any authenticated user.
       section?: Section;
     }
   | {
@@ -36,6 +36,9 @@ export const navItems: NavItem[] = [
     href: "/dashboard",
     label: "Dashboard",
     icon: <PresentationChart size={ICON_SIZE} />,
+    // The dashboard is the company-wide metrics home, so it's Direccion-only.
+    // Colaborador/Finanzas don't see it and land on their own section instead.
+    section: "metricas",
   },
   {
     href: "/cotizaciones",

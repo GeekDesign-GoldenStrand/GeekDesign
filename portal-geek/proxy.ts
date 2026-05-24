@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { sectionForPath, can } from "@/lib/auth/access";
+import { sectionForPath, can, landingPath } from "@/lib/auth/access";
 import type { Role } from "@/lib/auth/access";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 import { verifyToken } from "@/lib/auth/tokens";
@@ -19,7 +19,7 @@ export async function proxy(request: NextRequest) {
 
   // Already logged in → skip the login page.
   if (pathname.startsWith("/login")) {
-    if (claims) return NextResponse.redirect(new URL("/dashboard", request.url));
+    if (claims) return NextResponse.redirect(new URL(landingPath(claims.rol as Role), request.url));
     return NextResponse.next();
   }
 

@@ -56,6 +56,22 @@ export function can(role: Role, section: Section, action: Action): boolean {
   return (SECTION_ACCESS[section][action] as readonly Role[]).includes(role);
 }
 
+// Where to send a role after login. Direccion lands on the dashboard, which is
+// the company-wide metrics home (metricas is Direccion-only). The other roles
+// don't get the dashboard, so they land on their primary working section.
+// Every target here must be readable by its role, otherwise a denied
+// requireSection redirect (which falls back to /dashboard, then here) could loop.
+export function landingPath(role: Role): string {
+  switch (role) {
+    case "Colaborador":
+      return "/pedidos";
+    case "Finanzas":
+      return "/finanzas";
+    default:
+      return "/dashboard";
+  }
+}
+
 // Canonicalize a stored role. "Administrador" is a legacy alias of "Direccion"
 // (see §2 of docs/rbac.md); every other value passes through. This is the single
 // definition both verifyToken and the API guards use, so authorization never
