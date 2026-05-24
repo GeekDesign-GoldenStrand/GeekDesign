@@ -1044,18 +1044,186 @@ async function main() {
     }
   }
 
+  // ── PE-01: Orden de Compra Interna — seed data ──────────────────────────────
+  //
+  // Provides a realistic Pedido (id=9) with two DetallePedido that exercise
+  // both tercero paths recognised by getOrderThirdParties:
+  //
+  //   Detalle 1 → Servicio 1 (Corte Láser)
+  //               ProveedorPrecios(id_proveedor=6, id_servicio=1) @ $2.10
+  //               → proveedorMap[6] = Mi Marca Vende SS de CV
+  //
+  //   Detalle 2 → Servicio 5 (Instalación de Señalética)
+  //               InstaladorServicios(id_instalador=5, id_servicio=5) @ $320
+  //               → instaladorMap[5] = Rotulaciones Flores
+  //
+  // POST /api/pedidos/9/orden-compra-interna produces the multi-PDF response.
+  // Remove one of the two detalles from the DB to test the single-PDF path.
+
+  // 1. Proveedor ─────────────────────────────────────────────────────────────
+  const proveedorMiMarca = await prisma.proveedores.upsert({
+    where: { id_proveedor: 6 },
+    update: {},
+    create: {
+      id_proveedor: 6,
+      nombre_proveedor: "Mi Marca Vende SS de CV",
+      apodo: "Mi Marca Vende",
+      tipo: "Proveedor de servicio",
+      telefono: "442 128 2467",
+      correo: "ideas@mimarcavende.com",
+      descripcion_proveedor: "Servicios de grabado y personalización de productos.",
+      ubicacion: "Querétaro, Querétaro",
+      estatus: "Activo",
+    },
+  });
+
+  // 2. Instalador ────────────────────────────────────────────────────────────
+  const instaladorPE01 = await prisma.instaladores.upsert({
+    where: { id_instalador: 5 },
+    update: {},
+    create: {
+      id_instalador: 5,
+      nombre_instalador: "Rotulaciones Flores",
+      apodo: "Flores",
+      tipo: "Instalador",
+      telefono: "442 897 6543",
+      correo: "contacto@rotulacionesflores.mx",
+      costo_instalacion: 320.0,
+      notas: "Especialista en instalación de señalética y rotulación exterior.",
+      ubicacion: "Querétaro, Querétaro",
+      estatus: "Activo",
+    },
+  });
+
+  // 5. Servicio "Instalación de Señalética" at id=5.
+  //    id=2 is already owned by "Grabado Láser" (seeded above), so PE-01 uses
+  //    the next available ID. InstaladorServicios for Rotulaciones Flores links
+  //    to this service, and the direct id_proveedor FK points to Mi Marca Vende.
+  const servicioSenaletica = await prisma.servicios.upsert({
+    where: { id_servicio: 5 },
+    update: {},
+    create: {
+      id_servicio: 5,
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Instalación de Señalética",
+      descripcion_servicio: "Instalación de señalética interior y exterior.",
+      estatus_servicio: true,
+      id_proveedor: proveedorMiMarca.id_proveedor,
+    },
+  });
+
+  // 3. ProveedorPrecios: Mi Marca Vende → Corte Láser @ $2.10 (path B)
+  await prisma.proveedorPrecios.upsert({
+    where: { id_proveedor_id_servicio: { id_proveedor: 6, id_servicio: 1 } },
+    update: {},
+    create: {
+      id_proveedor: proveedorMiMarca.id_proveedor,
+      id_servicio: servicioCorte.id_servicio,
+      precio: 2.1,
+      notas: "Precio por cm² de personalización",
+    },
+  });
+
+  // 4. InstaladorServicios: Rotulaciones Flores → Instalación de Señalética @ $320 (path B)
+  await prisma.instaladorServicios.upsert({
+    where: { id_instalador_id_servicio: { id_instalador: 5, id_servicio: 5 } },
+    update: {},
+    create: {
+      id_instalador: instaladorPE01.id_instalador,
+      id_servicio: servicioSenaletica.id_servicio,
+      costo: 320.0,
+      notas: "Costo fijo de instalación por servicio",
+    },
+  });
+
+  console.log(
+    "Seeded PE-01: Mi Marca Vende (proveedor), Rotulaciones Flores (instalador), " +
+      "Instalación de Señalética (servicio id=5), ProveedorPrecios @ $2.10, InstaladorServicios @ $320"
+  );
+
+  // 6. Pedido id=9 with two DetallePedido ────────────────────────────────────
+  // Upsert with an explicit PK forces PedidosUncheckedCreateInput — use raw FK
+  // integers instead of relation-connect syntax.
+  const pe01StatusPendiente = await prisma.estatusPedidos.findUniqueOrThrow({
+    where: { descripcion: "Pendiente" },
+  });
+  const pe01EstadoCotizacion = await prisma.estadoFacturaPedido.findUniqueOrThrow({
+    where: { descripcion: "Cotizacion" },
+  });
+
+  const pedidoPE01 = await prisma.pedidos.upsert({
+    where: { id_pedido: 9 },
+    update: {},
+    create: {
+      id_pedido: 9,
+      id_cliente: 1,
+      id_sucursal: sucursal.id_sucursal,
+      id_estatus: pe01StatusPendiente.id_estatus,
+      id_estado_factura: pe01EstadoCotizacion.id_estado_factura,
+      notas: "PE-01: Pedido de prueba para generación de Orden de Compra Interna",
+      fecha_creacion: new Date("2026-05-22"),
+    },
+  });
+
+  // Detalles — idempotent via per-pedido count so re-running the seed does not
+  // create duplicate rows. Explicit IDs are intentionally avoided here because
+  // the DetallePedido backfill below uses auto-increment and would collide if
+  // those IDs were already taken.
+  const pe01DetalleCount = await prisma.detallePedido.count({
+    where: { id_pedido: pedidoPE01.id_pedido },
+  });
+  if (pe01DetalleCount === 0) {
+    // Detalle 1 — Corte Láser × 5
+    // Grouped under proveedorMap[6] via ProveedorPrecios(id_servicio=1), path B.
+    await prisma.detallePedido.create({
+      data: {
+        id_pedido: pedidoPE01.id_pedido,
+        id_servicio: servicioCorte.id_servicio,
+        id_material: material.id_material,
+        id_archivo: 1,
+        cantidad: 5,
+        responsable_recoleccion: "Cliente Demo",
+        precio_unitario: 25.0,
+        subtotal: 125.0,
+      },
+    });
+    // Detalle 2 — Instalación de Señalética × 2
+    // Grouped under instaladorMap[5] via InstaladorServicios(id_servicio=5), path B.
+    await prisma.detallePedido.create({
+      data: {
+        id_pedido: pedidoPE01.id_pedido,
+        id_servicio: servicioSenaletica.id_servicio,
+        id_material: material.id_material,
+        id_archivo: 1,
+        cantidad: 2,
+        responsable_recoleccion: "Cliente Demo",
+        precio_unitario: 320.0,
+        subtotal: 640.0,
+      },
+    });
+  }
+
+  console.log(
+    `Seeded PE-01 Pedido id=${pedidoPE01.id_pedido} with 2 detalles ` +
+      "(Corte Láser → Mi Marca Vende | Instalación de Señalética → Rotulaciones Flores)"
+  );
+
   // ── Backfill DetallePedido for existing pedidos (PE-03 / PE-05) ────────────
   // Demo pedidos are seeded as headers only. Without line items the
   // "Semáforo de servicios" (PE-03) renders empty and the order detail modal
   // (PE-05) shows zero products. Seed a few detalles per pedido, spread across
-  // servicios and statuses so the semaphore is populated. Idempotent: only runs
-  // when no DetallePedido rows exist yet.
-  const detalleCount = await prisma.detallePedido.count();
+  // servicios and statuses so the semaphore is populated.
+  // Idempotent: only backfills pedidos that have NO detalles yet, so
+  // re-running the seed skips already-filled pedidos (including PE-01 above).
+  const pedidosWithoutDetalles = await prisma.pedidos.findMany({
+    where: { detalles: { none: {} } },
+    orderBy: { id_pedido: "asc" },
+  });
 
-  if (detalleCount > 0) {
-    console.log("DetallePedido already present, skipping detalle backfill");
+  if (pedidosWithoutDetalles.length === 0) {
+    console.log("All pedidos already have detalles, skipping detalle backfill");
   } else {
-    const pedidosToFill = await prisma.pedidos.findMany({ orderBy: { id_pedido: "asc" } });
     const orderStatusRowsForDetalle = await prisma.estatusPedidos.findMany();
 
     const statusByName: Record<string, number> = {};
@@ -1067,7 +1235,7 @@ async function main() {
 
     let detallesCreated = 0;
 
-    for (const [pedidoIndex, pedido] of pedidosToFill.entries()) {
+    for (const [pedidoIndex, pedido] of pedidosWithoutDetalles.entries()) {
       const lineCount = 2 + (pedidoIndex % 2); // 2 or 3 line items per pedido
 
       for (let line = 0; line < lineCount; line++) {
