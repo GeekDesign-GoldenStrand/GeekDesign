@@ -1,0 +1,163 @@
+name: Deploy to App Engine
+
+# Deploys the portal-geek Next.js app to Google App Engine Standard.
+#
+# Flow: a merge/push to a long-lived branch triggers a deploy to the matching
+# environment. PRs never deploy (no `pull_request` trigger). Production
+# (`main`) is gated behind a GitHub Environment approval rule.
+#
+#   develop branch -> GitHub Environment "develop"    -> version dev-<run>   (no promote)
+#   staging branch -> GitHub Environment "staging"     -> version stg-<run>   (no promote)
+#   main    branch -> GitHub Environment "production"  -> version prod-<run>  (promote)
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+
+# Least-privilege token. `id-token: write` is REQUIRED for Workload Identity
+# Federation (the OIDC token exchanged for GCP credentials). `contents: read`
+# lets the job check out the repo. Nothing else is granted.
+permissions:
+  id-token: write
+  contents: read
+
+# One in-flight deploy per branch. A newer push cancels the older run so we
+# never race two deploys onto the same environment.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_ID: learned-ocean-475917-c9
+  REGION: us-central1
+  # App Engine code + app.template.yaml live in this subdirectory.
+  WORKDIR: portal-geek
+
+jobs:
+  deploy:
+    name: Deploy (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+
+    # Bind this job to the GitHub Environment chosen by branch. Environment
+    # Secrets/Variables resolve from this environment, and any protection rules
+    # (e.g. required reviewers on "production") gate the job here.
+    environment: ${{ steps.config.outputs.env_name }}
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Resolve branch -> environment / version / promote ──────────────
+      # NOTE: `environment:` above reads steps.config.outputs.env_name. GitHub
+      # evaluates that BEFORE steps run, so the mapping below must be a pure
+      # function of github.ref_name (it is) — the runner derives env_name from
+      # the branch deterministically. We re-emit it here for later steps too.
+      - name: Configure environment
+        id: config
+        run: |
+          set -euo pipefail
+          case "${GITHUB_REF_NAME}" in
+            develop)
+              echo "env_name=develop"                 >> "$GITHUB_OUTPUT"
+              echo "version=dev-${GITHUB_RUN_NUMBER}"  >> "$GITHUB_OUTPUT"
+              echo "promote=false"                     >> "$GITHUB_OUTPUT"
+              ;;
+            staging)
+              echo "env_name=staging"                  >> "$GITHUB_OUTPUT"
+              echo "version=stg-${GITHUB_RUN_NUMBER}"  >> "$GITHUB_OUTPUT"
+              echo "promote=false"                     >> "$GITHUB_OUTPUT"
+              ;;
+            main)
+              echo "env_name=production"               >> "$GITHUB_OUTPUT"
+              echo "version=prod-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+              echo "promote=true"                      >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Branch ${GITHUB_REF_NAME} is not a deploy target"
+              exit 1
+              ;;
+          esac
+
+      # ── 3. Authenticate to GCP via Workload Identity Federation ───────────
+      # No JSON keys. GitHub mints a short-lived OIDC token; GCP exchanges it
+      # for a short-lived access token impersonating the deployer SA.
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      # ── 4. Render app.yaml from template (no secrets committed) ───────────
+      # envsubst replaces ONLY the named placeholders, so a literal `$` inside
+      # any secret value is left untouched. Secrets come from the environment
+      # block below and are masked in logs by GitHub.
+      - name: Generate app.yaml
+        working-directory: ${{ env.WORKDIR }}
+        env:
+          # Non-sensitive — GitHub Environment Variables
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          STORAGE_ENDPOINT: ${{ vars.STORAGE_ENDPOINT }}
+          STORAGE_REGION: ${{ vars.STORAGE_REGION }}
+          STORAGE_BUCKET: ${{ vars.STORAGE_BUCKET }}
+          STORAGE_PUBLIC_BASE_URL: ${{ vars.STORAGE_PUBLIC_BASE_URL }}
+          RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
+          CLOUD_SQL_INSTANCE: ${{ vars.CLOUD_SQL_INSTANCE }}
+          # Sensitive — GitHub Environment Secrets
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          STORAGE_ACCESS_KEY: ${{ secrets.STORAGE_ACCESS_KEY }}
+          STORAGE_SECRET_KEY: ${{ secrets.STORAGE_SECRET_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
+          MERCADOPAGO_WEBHOOK_SECRET: ${{ secrets.MERCADOPAGO_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          # Restrict substitution to our known keys so nothing else expands.
+          VARS='${NODE_ENV} ${NEXT_PUBLIC_APP_URL} ${STORAGE_ENDPOINT}
+                ${STORAGE_REGION} ${STORAGE_BUCKET} ${STORAGE_PUBLIC_BASE_URL}
+                ${RESEND_FROM_EMAIL} ${CLOUD_SQL_INSTANCE} ${DATABASE_URL}
+                ${AUTH_SECRET} ${STORAGE_ACCESS_KEY} ${STORAGE_SECRET_KEY}
+                ${RESEND_API_KEY} ${MERCADOPAGO_ACCESS_TOKEN}
+                ${MERCADOPAGO_WEBHOOK_SECRET}'
+          envsubst "$VARS" < app.template.yaml > app.yaml
+          # Fail fast if any placeholder went unrendered (missing var/secret).
+          if grep -q '\${' app.yaml; then
+            echo "::error::Unrendered placeholders remain in app.yaml — a Secret/Variable is missing for this environment."
+            grep -n '\${' app.yaml | sed 's/=.*//'
+            exit 1
+          fi
+          echo "Rendered app.yaml ($(wc -l < app.yaml) lines). Values masked."
+
+      # ── 5. Deploy to App Engine ───────────────────────────────────────────
+      - name: Deploy to App Engine
+        id: deploy
+        uses: google-github-actions/deploy-appengine@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          working_directory: ${{ env.WORKDIR }}
+          deliverables: app.yaml
+          version: ${{ steps.config.outputs.version }}
+          promote: ${{ steps.config.outputs.promote }}
+
+      # ── 6. Report deployed URL ────────────────────────────────────────────
+      - name: Print deployed version URL
+        run: |
+          echo "### ✅ Deployed to ${{ steps.config.outputs.env_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| | |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | \`${{ steps.config.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Promoted | \`${{ steps.config.outputs.promote }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version URL | ${{ steps.deploy.outputs.version_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Service URL | ${{ steps.deploy.outputs.url }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed version URL: ${{ steps.deploy.outputs.version_url }}"
+          echo "Service (promoted) URL: ${{ steps.deploy.outputs.url }}"
