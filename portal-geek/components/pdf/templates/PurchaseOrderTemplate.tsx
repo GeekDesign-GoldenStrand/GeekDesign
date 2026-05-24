@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "path";
 
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
@@ -5,7 +6,6 @@ import React from "react";
 
 import { TableCell } from "../atoms/TableCell";
 import { formatCurrency, formatDate } from "../constants";
-import { CompanySlogan } from "../molecules/CompanySlogan";
 import { TableRow } from "../molecules/TableRow";
 import { styles } from "../styles";
 
@@ -276,7 +276,10 @@ function POHeader({
   fecha: Date | string;
   comprador: POBuyer;
 }) {
-  const logoPath = path.join(process.cwd(), "public", "geekdesign.png");
+  // Read the logo once as a base64 data URI so react-pdf never tries to
+  // fetch() a local file path (Node's fetch doesn't support file:// and logs
+  // "fetch failed" before falling back to fs — this avoids that noise entirely).
+  const logoSrc = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "geekdesign.png")).toString("base64")}`;
 
   return (
     <View style={po.header}>
@@ -284,10 +287,9 @@ function POHeader({
       <View style={styles.companyInfo}>
         <View style={styles.logoContainer}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <Image style={styles.logo} src={logoPath} />
+          <Image style={styles.logo} src={logoSrc} />
           <View style={styles.companyTextContainer}>
             <Text style={styles.companyName}>GEEK DESIGN</Text>
-            <CompanySlogan />
           </View>
         </View>
         <Text style={{ fontSize: 10, fontWeight: "bold", marginBottom: 2 }}>

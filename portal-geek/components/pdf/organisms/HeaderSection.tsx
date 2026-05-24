@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "path";
 
 import { View, Text, Image } from "@react-pdf/renderer";
@@ -25,14 +26,14 @@ interface HeaderProps {
 }
 
 export function HeaderSection({ branch, quotation }: HeaderProps) {
-  const logoPath = path.join(process.cwd(), "public", "geekdesign.png");
+  const logoSrc = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "geekdesign.png")).toString("base64")}`;
 
   return (
     <View style={styles.header}>
       <View style={styles.companyInfo}>
         <View style={styles.logoContainer}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <Image style={styles.logo} src={logoPath} />
+          <Image style={styles.logo} src={logoSrc} />
           <View style={styles.companyTextContainer}>
             <Text style={styles.companyName}>GEEK DESIGN</Text>
             <CompanySlogan />
