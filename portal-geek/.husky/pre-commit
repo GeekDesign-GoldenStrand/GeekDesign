@@ -1,0 +1,1 @@
+cd portal-geek && npx --no -- lint-staged
