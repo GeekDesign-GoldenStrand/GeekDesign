@@ -432,9 +432,7 @@ describe("POST /api/pedidos/[id]/orden-compra-interna", () => {
 
   describe("5. non-existent pedido", () => {
     it("returns 404 when getOrderThirdParties throws NotFoundError", async () => {
-      mockGetOrderThirdParties.mockRejectedValue(
-        new NotFoundError("Pedido 999 no encontrado")
-      );
+      mockGetOrderThirdParties.mockRejectedValue(new NotFoundError("Pedido 999 no encontrado"));
 
       const res = await createApp({ POST: purchaseOrderPOST }, paramExtractor)
         .post("/api/pedidos/999/orden-compra-interna")
