@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
+import { normalizePhone } from "@/lib/utils/format";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -20,20 +21,6 @@ function formatPhone(digits: string): string {
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
   return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-}
-
-// Extracts the 10-digit national number from raw input. When a number is pasted
-// with the Mexican country code (e.g. "+52 1 272 703 3148" from WhatsApp), strips
-// the leading 52 and optional mobile 1 prefix instead of truncating the tail.
-function normalizePhone(raw: string): string {
-  let digits = raw.replace(/\D/g, "");
-  if (digits.length > 10 && digits.startsWith("52")) {
-    digits = digits.slice(2);
-    if (digits.length > 10 && digits.startsWith("1")) {
-      digits = digits.slice(1);
-    }
-  }
-  return digits.slice(0, 10);
 }
 
 const proveedorSchema = z.object({
