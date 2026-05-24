@@ -287,16 +287,52 @@ export async function updateCotizacion(
   return prisma.$transaction(async (tx) => {
     const existing = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: id },
-      select: { id_cotizacion: true, id_pedido: true },
+      select: {
+        id_cotizacion: true,
+        id_pedido: true,
+        porcentaje_descuento: true,
+        estatus: { select: { descripcion: true } },
+      },
     });
 
     if (!existing) {
       throw new NotFoundError(`Cotización ${id} no encontrada`);
     }
 
+    // Mirror aplicarDescuento's policy — pricing-relevant edits are only
+    // allowed while the cotización is still in a mutable state. Locking
+    // here also matches what the edit modal exposes to the user, and lets
+    // the client's 409 handler actually trigger.
+    const editableStatuses: string[] = [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA];
+    if (!editableStatuses.includes(existing.estatus.descripcion)) {
+      throw new ConflictError(
+        `No se puede modificar una cotización en estatus '${existing.estatus.descripcion}'`
+      );
+    }
+
     let computedMontoTotal: number | undefined;
 
     if (data.servicios && data.servicios.length > 0) {
+      if (!existing.id_pedido) {
+        throw new ConflictError("La cotización no tiene un pedido vinculado");
+      }
+
+      // IDOR guard: `id_detalle` arrives from the request body. Without
+      // scoping to this cotización's `id_pedido` a caller could update line
+      // items that belong to a completely different quote. Resolve the
+      // allow-list once up-front, validate every id, and only then write.
+      const ownedDetalles = await tx.detallePedido.findMany({
+        where: { id_pedido: existing.id_pedido },
+        select: { id_detalle: true },
+      });
+      const ownedIds = new Set(ownedDetalles.map((d) => d.id_detalle));
+
+      for (const s of data.servicios) {
+        if (!ownedIds.has(s.id_detalle)) {
+          throw new NotFoundError(`Detalle ${s.id_detalle} no pertenece a la cotización ${id}`);
+        }
+      }
+
       for (const s of data.servicios) {
         await tx.detallePedido.update({
           where: { id_detalle: s.id_detalle },
@@ -308,14 +344,17 @@ export async function updateCotizacion(
         });
       }
 
-      if (existing.id_pedido) {
-        const detalles = await tx.detallePedido.findMany({
-          where: { id_pedido: existing.id_pedido },
-          select: { subtotal: true },
-        });
+      const detalles = await tx.detallePedido.findMany({
+        where: { id_pedido: existing.id_pedido },
+        select: { subtotal: true },
+      });
+      const baseSum = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
 
-        computedMontoTotal = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
-      }
+      // Re-apply the stored discount so monto_total stays consistent with
+      // porcentaje_descuento. Without this the row would drift to an
+      // un-discounted total while still advertising a discount %.
+      const pct = existing.porcentaje_descuento ? Number(existing.porcentaje_descuento) : 0;
+      computedMontoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
     }
 
     // Use Prisma's checked update type so each field write is validated
