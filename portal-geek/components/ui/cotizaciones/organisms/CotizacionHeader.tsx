@@ -8,6 +8,13 @@ interface CotizacionHeaderProps {
   folio?: string | null;
   nombreOportunidad?: string | null;
   discountApplied?: boolean;
+  // When false, the "Editar" CTA is hidden. The server only accepts edits
+  // while the cotización is in 'Pendiente'; once the cliente has validated
+  // (or beyond), showing the button just leads to a 409 on save.
+  canEdit?: boolean;
+  // When false, the "Agregar descuento" CTA is hidden. Same Pendiente-only
+  // rule as `canEdit` (see aplicarDescuento in lib/services/cotizaciones.ts).
+  canAddDiscount?: boolean;
   backHref?: string;
   onEdit: () => void;
   onDiscount: () => void;
@@ -17,6 +24,8 @@ export function CotizacionHeader({
   folio,
   nombreOportunidad,
   discountApplied = false,
+  canEdit = true,
+  canAddDiscount = true,
   backHref = "/cotizaciones",
   onEdit,
   onDiscount,
@@ -45,7 +54,7 @@ export function CotizacionHeader({
 
       <div className="flex flex-col items-end gap-2">
         <div className="flex flex-wrap gap-2">
-          {!discountApplied && (
+          {!discountApplied && canAddDiscount && (
             <Button
               onClick={onDiscount}
               icon={<Tag size={15} />}
@@ -54,14 +63,16 @@ export function CotizacionHeader({
               Agregar descuento
             </Button>
           )}
-          <Button
-            variant="default"
-            onClick={onEdit}
-            icon={<PencilSimple size={15} />}
-            className="border-dashed border-gray-400 rounded-[7px] p-2 text-[#1e1e1e] hover:bg-amber-100 shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors"
-          >
-            Editar
-          </Button>
+          {canEdit && (
+            <Button
+              variant="default"
+              onClick={onEdit}
+              icon={<PencilSimple size={15} />}
+              className="border-dashed border-gray-400 rounded-[7px] p-2 text-[#1e1e1e] hover:bg-amber-100 shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors"
+            >
+              Editar
+            </Button>
+          )}
         </div>
       </div>
     </div>

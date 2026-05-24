@@ -114,12 +114,20 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
 
   const creadoPor = cotizacion.cliente.nombre_cliente;
 
+  // Edits, adding a discount, and removing a discount all share the same
+  // server-side Pendiente-only rule (see updateCotizacion + aplicarDescuento).
+  // Derive once and pass to each gate so the UI stops offering actions the
+  // server would refuse.
+  const isMutable = cotizacion.estatus.descripcion === "Pendiente";
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
       <CotizacionHeader
         folio={cotizacion.folio}
         nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
         discountApplied={porcentajeDescuento > 0}
+        canEdit={isMutable}
+        canAddDiscount={isMutable}
         onEdit={() => togglePanel("edit")}
         onDiscount={() => togglePanel("discount")}
       />
@@ -156,7 +164,10 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         fechaCreacion={cotizacion.fecha_creacion}
         fechaEntrega={fields.fecha_fin || cotizacion.fecha_fin}
         servicios={fields.servicios}
-        onDeleteDiscount={() => togglePanel("discount")}
+        // Trash icon on the discount ribbon is only wired when the quote
+        // can still be mutated — withholding the callback hides the button
+        // in CotizacionSummary (it gates on the prop being defined).
+        onDeleteDiscount={isMutable ? () => togglePanel("discount") : undefined}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

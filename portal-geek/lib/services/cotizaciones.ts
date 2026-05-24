@@ -299,14 +299,13 @@ export async function updateCotizacion(
       throw new NotFoundError(`Cotización ${id} no encontrada`);
     }
 
-    // Mirror aplicarDescuento's policy — pricing-relevant edits are only
-    // allowed while the cotización is still in a mutable state. Locking
-    // here also matches what the edit modal exposes to the user, and lets
-    // the client's 409 handler actually trigger.
-    const editableStatuses: string[] = [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA];
-    if (!editableStatuses.includes(existing.estatus.descripcion)) {
+    // Pendiente-only — once the cliente validates the quote (or moves
+    // beyond), line items become immutable. Same rule as aplicarDescuento
+    // so the two write paths stay aligned: any mutation that affects the
+    // saved monto_total is locked behind this single transition gate.
+    if (existing.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
       throw new ConflictError(
-        `No se puede modificar una cotización en estatus '${existing.estatus.descripcion}'`
+        `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${existing.estatus.descripcion}')`
       );
     }
 
@@ -417,10 +416,13 @@ export async function aplicarDescuento(
     throw new NotFoundError("Cotización no encontrada");
   }
 
-  const allowed: string[] = [QUOTATION_STATUS.PENDIENTE, QUOTATION_STATUS.VALIDADA];
-  if (!allowed.includes(cotizacion.estatus.descripcion)) {
+  // Discounts share the same Pendiente-only rule as line-item edits — once
+  // the cliente has validated the quote, neither price nor discount can be
+  // mutated. Covers both the "apply discount" and "remove discount"
+  // (porcentaje === null) call paths since both write to the same fields.
+  if (cotizacion.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
     throw new ConflictError(
-      `No se puede modificar una cotización en estatus '${cotizacion.estatus.descripcion}'`
+      `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${cotizacion.estatus.descripcion}')`
     );
   }
 
