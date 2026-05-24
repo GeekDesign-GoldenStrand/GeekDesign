@@ -508,9 +508,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
               />
             </div>
-            {errors.costo_instalacion && (
-              <p className={ERROR_MSG}>{errors.costo_instalacion}</p>
-            )}
+            {errors.costo_instalacion && <p className={ERROR_MSG}>{errors.costo_instalacion}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
