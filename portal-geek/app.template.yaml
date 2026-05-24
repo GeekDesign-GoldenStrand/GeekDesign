@@ -18,36 +18,36 @@ instance_class: F2
 
 env_variables:
   # --- App ---------------------------------------------------------------------
-  NODE_ENV: "${NODE_ENV}"                       # (var)  e.g. "production"
+  NODE_ENV: "${NODE_ENV}" # (var)  e.g. "production"
   NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL}" # (var)  public origin for this env
 
   # --- Database (Cloud SQL via Unix socket) -----------------------------------
   # Full DSN incl. the host=/cloudsql/... socket path. Differs per environment.
-  DATABASE_URL: "${DATABASE_URL}"               # (secret)
+  DATABASE_URL: "${DATABASE_URL}" # (secret)
 
   # --- Auth -------------------------------------------------------------------
-  AUTH_SECRET: "${AUTH_SECRET}"                 # (secret)
+  AUTH_SECRET: "${AUTH_SECRET}" # (secret)
 
   # --- Object storage (GCS via S3 interop / HMAC) -----------------------------
-  STORAGE_ENDPOINT: "${STORAGE_ENDPOINT}"             # (var)
-  STORAGE_REGION: "${STORAGE_REGION}"                 # (var)
-  STORAGE_BUCKET: "${STORAGE_BUCKET}"                 # (var)  per-env bucket
-  STORAGE_ACCESS_KEY: "${STORAGE_ACCESS_KEY}"         # (secret)
-  STORAGE_SECRET_KEY: "${STORAGE_SECRET_KEY}"         # (secret)
+  STORAGE_ENDPOINT: "${STORAGE_ENDPOINT}" # (var)
+  STORAGE_REGION: "${STORAGE_REGION}" # (var)
+  STORAGE_BUCKET: "${STORAGE_BUCKET}" # (var)  per-env bucket
+  STORAGE_ACCESS_KEY: "${STORAGE_ACCESS_KEY}" # (secret)
+  STORAGE_SECRET_KEY: "${STORAGE_SECRET_KEY}" # (secret)
   STORAGE_PUBLIC_BASE_URL: "${STORAGE_PUBLIC_BASE_URL}" # (var)
 
   # --- Email (Resend) ---------------------------------------------------------
-  RESEND_API_KEY: "${RESEND_API_KEY}"           # (secret)
-  RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL}"     # (var)
+  RESEND_API_KEY: "${RESEND_API_KEY}" # (secret)
+  RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL}" # (var)
 
   # --- MercadoPago ------------------------------------------------------------
-  MERCADOPAGO_ACCESS_TOKEN: "${MERCADOPAGO_ACCESS_TOKEN}"     # (secret)
+  MERCADOPAGO_ACCESS_TOKEN: "${MERCADOPAGO_ACCESS_TOKEN}" # (secret)
   MERCADOPAGO_WEBHOOK_SECRET: "${MERCADOPAGO_WEBHOOK_SECRET}" # (secret)
 
 # Mounts the Cloud SQL socket inside the App Engine instance.
 # CLOUD_SQL_INSTANCE differs per environment (dev/staging/prod instances).
 beta_settings:
-  cloud_sql_instances: ${CLOUD_SQL_INSTANCE}    # (var)
+  cloud_sql_instances: ${CLOUD_SQL_INSTANCE} # (var)
 
 automatic_scaling:
   min_instances: 0
