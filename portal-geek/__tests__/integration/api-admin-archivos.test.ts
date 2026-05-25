@@ -105,14 +105,34 @@ describe("GET /api/admin/archivos/[id]", () => {
   });
 
   it("devuelve 404 para el archivo placeholder", async () => {
+    // Reflect real seed values: sentinel lives in nombre_archivo, url_archivo
+    // is a fake https URL. Both fields together trigger the guard.
     mockFindUnique.mockResolvedValue({
       id_archivo: 1,
-      url_archivo: "__PLACEHOLDER__",
+      url_archivo: "https://placeholder.invalid/no-design-yet",
       nombre_archivo: "__PLACEHOLDER__",
     });
 
     const res = await GET(makeRequest(), makeCtx("1"));
     expect(res.status).toBe(404);
+    // presignGet must never be called with the fake URL — that would cause a
+    // GCS NoSuchKey error and redirect the browser to a broken signed URL.
+    expect(mockPresignGet).not.toHaveBeenCalled();
+  });
+
+  it("devuelve 404 cuando url_archivo es una URL absoluta (aunque nombre no sea placeholder)", async () => {
+    // Defense-in-depth: a row whose url_archivo starts with https:// must be
+    // rejected even when nombre_archivo looks like a real filename. This mirrors
+    // the route guard: archivo.url_archivo must be a relative GCS object key.
+    mockFindUnique.mockResolvedValue({
+      id_archivo: 2,
+      url_archivo: "https://evil.example.com/payload.ai",
+      nombre_archivo: "logo_cliente.ai",
+    });
+
+    const res = await GET(makeRequest(), makeCtx("2"));
+    expect(res.status).toBe(404);
+    expect(mockPresignGet).not.toHaveBeenCalled();
   });
 
   it("devuelve 404 si el archivo no existe en la DB", async () => {

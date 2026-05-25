@@ -23,7 +23,16 @@ export const GET = withRoleParams<{ id: string }>(
         where: { id_archivo: archivoId },
       });
 
-      if (!archivo || archivo.url_archivo === "__PLACEHOLDER__") {
+      // Guard against the seed placeholder row (id=1). The sentinel lives in
+      // nombre_archivo, not url_archivo — url_archivo holds a fake https URL
+      // that GCS would reject with NoSuchKey if we signed it.
+      // Also reject any url_archivo that looks like an absolute URL as
+      // defense-in-depth: real GCS keys are always relative paths (no scheme).
+      if (
+        !archivo ||
+        archivo.nombre_archivo === "__PLACEHOLDER__" ||
+        /^https?:\/\//i.test(archivo.url_archivo)
+      ) {
         throw new NotFoundError("Archivo no encontrado");
       }
 

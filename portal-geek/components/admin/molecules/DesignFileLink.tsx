@@ -22,6 +22,8 @@ export function DesignFileLink({ archivos, className }: Props) {
   if (archivos.length === 0) return null;
 
   const first = archivos[0];
+
+  if (!first.id || first.nombre === "__PLACEHOLDER__") return null;
   const title = `${first.nombre} · Archivo enviado por el cliente · No ha sido escaneado · Ábrelo en un entorno seguro`;
 
   return (
