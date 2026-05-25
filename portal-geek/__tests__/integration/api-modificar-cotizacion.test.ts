@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import type { NextRequest } from "next/server";
 
 import { getSession } from "@/lib/auth/session";
@@ -6,36 +10,59 @@ import { createApp } from "../helpers/next-supertest";
 
 // ── Auth mocks ────────────────────────────────────────────────────────────────
 const mockGetSession = jest.fn();
+
 type Handler = (req: Request, ctx: { params: unknown }, session?: unknown) => Promise<Response>;
 
 jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
-jest.mock("@/lib/auth/guards", () => ({
-  withRoleParams:
-    (roles: string[], handler: Handler) => async (req: Request, ctx: { params: unknown }) => {
+jest.mock("@/lib/auth/guards", () => {
+  const buildGuard =
+    (allowedRoles: string[], handler: Handler) =>
+    async (req: Request, ctx: { params: unknown }) => {
       const session = await getSession();
-      if (!session)
-        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
-          status: 401,
-        });
 
-      // Administrador is treated as equivalent to Direccion — mirror the
-      // real guard's role normalization so tests reflect actual behavior.
+      if (!session) {
+        return new Response(
+          JSON.stringify({
+            data: null,
+            error: "No autenticado",
+          }),
+          { status: 401 }
+        );
+      }
+
+      // Administrador behaves like Direccion
       const effectiveRole =
         (session as { role: string }).role === "Administrador"
           ? "Direccion"
           : (session as { role: string }).role;
 
-      if (!roles.includes(effectiveRole))
+      if (!allowedRoles.includes(effectiveRole)) {
         return new Response(
-          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          JSON.stringify({
+            data: null,
+            error: "Sin permisos para realizar esta acción",
+          }),
           { status: 403 }
         );
+      }
+
       return handler(req, ctx, session);
+    };
+
+  return {
+    withRoleParams: (roles: string[], handler: Handler) => buildGuard(roles, handler),
+
+    withSectionParams: (_section: string, action: "read" | "write", handler: Handler) => {
+      const allowedRoles =
+        action === "read" ? ["Direccion", "Ventas", "Produccion"] : ["Direccion"];
+
+      return buildGuard(allowedRoles, handler);
     },
-}));
+  };
+});
 
 // ── DB mock ───────────────────────────────────────────────────────────────────
 // Note on the mock shape:
@@ -80,14 +107,22 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
 
   beforeAll(async () => {
     const mod = await import("@/app/api/cotizaciones/[id]/route");
+
     routes = {
-      PUT: (req: unknown) => mod.PUT(req as NextRequest, { params: Promise.resolve({ id: "1" }) }),
+      PUT: (req: unknown) =>
+        mod.PUT(req as NextRequest, {
+          params: Promise.resolve({ id: "1" }),
+        }),
     };
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    mockGetSession.mockResolvedValue({
+      id: 1,
+      role: "Direccion",
+    });
   });
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -102,7 +137,10 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
   });
 
   it("retorna 403 cuando el rol es Colaborador", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    mockGetSession.mockResolvedValue({
+      id: 1,
+      role: "Colaborador",
+    });
 
     const res = await createApp({ PUT: routes.PUT })
       .put("/api/cotizaciones/1")
@@ -112,7 +150,10 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
   });
 
   it("acepta rol Administrador", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockGetSession.mockResolvedValue({
+      id: 1,
+      role: "Administrador",
+    });
 
     const res = await createApp({ PUT: routes.PUT })
       .put("/api/cotizaciones/1")
@@ -124,8 +165,11 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
   // ── Validation ────────────────────────────────────────────────────────────
   it("retorna 422 cuando el id no es un número", async () => {
     const mod = await import("@/app/api/cotizaciones/[id]/route");
+
     const handler = (req: unknown) =>
-      mod.PUT(req as NextRequest, { params: Promise.resolve({ id: "abc" }) });
+      mod.PUT(req as NextRequest, {
+        params: Promise.resolve({ id: "abc" }),
+      });
 
     const res = await createApp({ PUT: handler })
       .put("/api/cotizaciones/abc")
@@ -146,7 +190,13 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
     const res = await createApp({ PUT: routes.PUT })
       .put("/api/cotizaciones/1")
       .send({
-        servicios: [{ id_detalle: 1, cantidad: 0, precio_unitario: 100 }],
+        servicios: [
+          {
+            id_detalle: 1,
+            cantidad: 0,
+            precio_unitario: 100,
+          },
+        ],
       });
 
     expect(res.status).toBe(422);
@@ -156,7 +206,13 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
     const res = await createApp({ PUT: routes.PUT })
       .put("/api/cotizaciones/1")
       .send({
-        servicios: [{ id_detalle: 1, cantidad: 1, precio_unitario: -10 }],
+        servicios: [
+          {
+            id_detalle: 1,
+            cantidad: 1,
+            precio_unitario: -10,
+          },
+        ],
       });
 
     expect(res.status).toBe(422);
@@ -164,9 +220,9 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
 
   // ── Success ───────────────────────────────────────────────────────────────
   it("retorna 200 actualizando solo nombre_oportunidad", async () => {
-    const res = await createApp({ PUT: routes.PUT })
-      .put("/api/cotizaciones/1")
-      .send({ nombre_oportunidad: "Letrero exterior" });
+    const res = await createApp({ PUT: routes.PUT }).put("/api/cotizaciones/1").send({
+      nombre_oportunidad: "Letrero exterior",
+    });
 
     expect(res.status).toBe(200);
   });
@@ -176,8 +232,16 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
       .put("/api/cotizaciones/1")
       .send({
         servicios: [
-          { id_detalle: 1, cantidad: 2, precio_unitario: 500 },
-          { id_detalle: 2, cantidad: 1, precio_unitario: 500 },
+          {
+            id_detalle: 1,
+            cantidad: 2,
+            precio_unitario: 500,
+          },
+          {
+            id_detalle: 2,
+            cantidad: 1,
+            precio_unitario: 500,
+          },
         ],
       });
 
@@ -187,6 +251,7 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
   // ── Error handling ────────────────────────────────────────────────────────
   it("retorna 404 cuando la cotización no existe", async () => {
     const { prisma } = await import("@/lib/db/client");
+
     (prisma.$transaction as jest.Mock).mockImplementationOnce((fn) =>
       fn({
         cotizaciones: {
