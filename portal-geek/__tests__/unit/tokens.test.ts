@@ -58,9 +58,16 @@ describe("tokens (AU-01)", () => {
   });
 
   it("AU01-T1b: verifyToken devuelve los claims cuando el payload es válido", async () => {
-    mockJwtVerify.mockResolvedValue({ payload: { ...claims } });
+    const direccionClaims = { id: 1, email: "ada@example.com", rol: "Direccion" as const };
+    mockJwtVerify.mockResolvedValue({ payload: { ...direccionClaims } });
 
-    expect(await verifyToken("good")).toEqual(claims);
+    expect(await verifyToken("good")).toEqual(direccionClaims);
+  });
+
+  it("AU01-T1c: verifyToken normaliza el alias legacy Administrador → Direccion", async () => {
+    mockJwtVerify.mockResolvedValue({ payload: { ...claims } }); // claims.rol === "Administrador"
+
+    expect(await verifyToken("admin-token")).toEqual({ ...claims, rol: "Direccion" });
   });
 
   it("AU01-T2: verifyToken devuelve null si jwtVerify lanza (firma/manipulación)", async () => {

@@ -42,6 +42,7 @@ interface Pedido {
 
   detalles?: PedidoDetalle[];
   serviceStatusSummary?: ServiceStatusSummary;
+  archivos: { id: number; nombre: string }[];
 }
 
 // Raw API response type
@@ -68,7 +69,16 @@ interface PedidoApi {
     descripcion: string;
   } | null;
 
-  detalles?: PedidoDetalle[];
+  detalles?: Array<
+    PedidoDetalle & {
+      archivo?: {
+        id_archivo: number;
+        nombre_archivo: string;
+        url_archivo: string;
+      } | null;
+    }
+  >;
+
   serviceStatusSummary?: ServiceStatusSummary;
 }
 
@@ -123,6 +133,14 @@ export default function PedidosPage() {
         estado_factura: p.estado_factura ?? null,
         detalles: p.detalles ?? [],
         serviceStatusSummary: p.serviceStatusSummary,
+
+        archivos: (p.detalles ?? [])
+          .map((d) => d.archivo)
+          .filter(
+            (a): a is { id_archivo: number; nombre_archivo: string; url_archivo: string } =>
+              a != null && a.url_archivo !== "__PLACEHOLDER__"
+          )
+          .map((a) => ({ id: a.id_archivo, nombre: a.nombre_archivo })),
       }));
 
       setPedidos(mapped);

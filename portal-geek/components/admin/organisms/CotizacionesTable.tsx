@@ -1,8 +1,12 @@
 "use client";
 
-import { PencilSimple, CaretDown } from "@phosphor-icons/react";
+import { CaretDown, Info } from "@phosphor-icons/react";
+import Link from "next/link";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { formatDate } from "@/lib/utils/date";
+
+import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
 
 type Cotizacion = {
   id_cotizacion: number;
@@ -13,32 +17,27 @@ type Cotizacion = {
   folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
+  archivos: { id: number; nombre: string }[];
 };
 
 type Props = {
   cotizaciones: Cotizacion[];
-  onDelete: (id: number) => void; // Unused but kept for prop compatibility
+  onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 };
 
-// Helper para estilos de estatus tipo Figma
 function getStatusStyle(status: string) {
   switch (status) {
     case "Pendiente":
       return "bg-[#F7B9FF]/70 text-[#D83CFF]";
-
     case "Validada":
       return "bg-[#B9EAFF] text-[#0D7794]";
-
     case "Rechazada":
       return "bg-[#FFA5A5]/60 text-[#FF3030]";
-
     case "Aprobada":
       return "bg-[#CCFFA5]/60 text-[#26AF00]";
-
     case "Cancelada":
       return "bg-[#B1B1B1] text-black";
-
     default:
       return "bg-gray-100 text-gray-600";
   }
@@ -48,8 +47,6 @@ function getAllowedQuotationStatuses(currentStatus: string): string[] {
   switch (currentStatus) {
     case "Pendiente":
       return ["Pendiente", "Validada", "Rechazada"];
-
-    // Once Validated, Approved or Rejected, the status is locked for administration.
     default:
       return [currentStatus];
   }
@@ -68,9 +65,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         {/* Header - Desktop Only */}
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-          style={{
-            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
-          }}
+          style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
         >
           <span className="whitespace-nowrap">Fecha</span>
           <span className="whitespace-nowrap">Monto</span>
@@ -79,7 +74,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
           <span className="whitespace-nowrap">Cliente</span>
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">Estatus</span>
-          <span className="whitespace-nowrap">Acciones</span>
+          <span className="whitespace-nowrap disabled hidden">Acciones</span>
         </div>
 
         {/* Rows */}
@@ -88,9 +83,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
             {/* Desktop Row */}
             <div
               className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
-              style={{
-                gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
-              }}
+              style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
             >
               <span className="whitespace-nowrap">
                 {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
@@ -126,13 +119,17 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   />
                 </div>
               </div>
-              <div className="flex justify-center">
-                <button
+              <div className="flex justify-center items-center gap-1">
+                <DesignFileLink
+                  archivos={c.archivos}
+                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                />
+                <Link
                   className="text-black hover:text-[#e42200] transition-colors p-2"
-                  title="Editar cotización"
+                  href={`cotizaciones/${c.id_cotizacion}`}
                 >
-                  <PencilSimple size={18} />
-                </button>
+                  <Info size={18} />
+                </Link>
               </div>
             </div>
 
@@ -183,6 +180,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   </p>
                   <p className="text-[13px] font-bold text-[#1e1e1e]">
                     ${c.monto_total.toLocaleString("es-MX")}
+                    <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada || null} />
                   </p>
                 </div>
               </div>
@@ -202,9 +200,18 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <button className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]">
-                  <PencilSimple size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <DesignFileLink
+                    archivos={c.archivos}
+                    className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                  />
+                  <Link
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
+                    href={`cotizaciones/${c.id_cotizacion}`}
+                  >
+                    <Info size={18} />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

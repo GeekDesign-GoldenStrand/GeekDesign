@@ -7,6 +7,7 @@ import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
 import { normalizePhone } from "@/lib/utils/format";
+import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -75,6 +76,10 @@ const instaladorSchema = z.object({
   ubicacion: z
     .string()
     .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado"),
+  costo_instalacion: z
+    .string()
+    .min(1, "La tarifa base es requerida.")
+    .refine(isValidMoney, "Debe ser un número mayor o igual a 0."),
 });
 
 type TerceroType = "Proveedor" | "Instalador";
@@ -111,6 +116,7 @@ export function RegistrarTerceroForm({
     notas: "",
     descripcion_proveedor: "",
     estatus: "Activo",
+    costo_instalacion: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -163,6 +169,7 @@ export function RegistrarTerceroForm({
         telefono: form.telefono,
         notas: form.notas,
         ubicacion: form.ubicacion,
+        costo_instalacion: form.costo_instalacion,
       });
       if (!result.success) {
         for (const issue of result.error.issues) {
@@ -238,7 +245,7 @@ export function RegistrarTerceroForm({
           correo: form.correo,
           notas: form.notas || undefined,
           ubicacion: form.ubicacion || undefined,
-          estatus: form.estatus,
+          costo_instalacion: parseFloat(form.costo_instalacion),
         };
 
         const res = await fetch("/api/instaladores", {
@@ -471,6 +478,30 @@ export function RegistrarTerceroForm({
             </div>
           </div>
 
+          <div>
+            <label className={LABEL}>
+              Tarifa base <span className="text-[#e42200]">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#8e908f] pointer-events-none">
+                $
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={form.costo_instalacion}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (isValidMoneyInput(raw)) setField("costo_instalacion", raw);
+                }}
+                className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
+              />
+            </div>
+            {errors.costo_instalacion && <p className={ERROR_MSG}>{errors.costo_instalacion}</p>}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>
@@ -513,19 +544,6 @@ export function RegistrarTerceroForm({
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
             />
             {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
-          </div>
-
-          <div>
-            <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
           </div>
 
           <div>

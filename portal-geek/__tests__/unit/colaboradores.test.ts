@@ -20,12 +20,25 @@ jest.mock("@/lib/db/client", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
+    },
+    colaboradores: {
+      deleteMany: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
+    },
+    tokensRecuperacion: {
+      deleteMany: jest.fn(),
     },
   },
 }));
 
 jest.mock("@/lib/auth/password", () => ({
   hashPassword: jest.fn().mockResolvedValue("hashed_password"),
+}));
+
+jest.mock("@/lib/services/password-reset", () => ({
+  sendWelcomeEmailForColaborador: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockTransaction = prisma.$transaction as jest.Mock;
@@ -147,7 +160,10 @@ describe("getColaborador — COL-02 Obtener colaborador por ID", () => {
 // COL-01 — createColaborador
 // ──────────────────────────────────────────────────────────────────────────────
 describe("createColaborador — COL-01 Registrar colaborador", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFindUnique.mockResolvedValue(null);
+  });
 
   it("crea el colaborador y retorna el registro completo", async () => {
     mockCreate.mockResolvedValue(BASE_COLABORADOR);
@@ -157,12 +173,16 @@ describe("createColaborador — COL-01 Registrar colaborador", () => {
     expect(mockCreate).toHaveBeenCalled();
   });
 
-  it("hashea la contraseña antes de guardar", async () => {
+  it("envía correo de bienvenida al colaborador", async () => {
     mockCreate.mockResolvedValue(BASE_COLABORADOR);
-    const { hashPassword } = jest.requireMock("@/lib/auth/password");
+    const { sendWelcomeEmailForColaborador } = jest.requireMock("@/lib/services/password-reset");
 
     await createColaborador(VALID_CREATE_INPUT);
-    expect(hashPassword).toHaveBeenCalledWith(VALID_CREATE_INPUT.contrasena_hash);
+    expect(sendWelcomeEmailForColaborador).toHaveBeenCalledWith(
+      BASE_COLABORADOR.id_usuario,
+      BASE_COLABORADOR.correo_electronico,
+      BASE_COLABORADOR.nombre_completo
+    );
   });
 
   it("crea el colaborador con registro anidado (colaborador.create)", async () => {
@@ -173,6 +193,32 @@ describe("createColaborador — COL-01 Registrar colaborador", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           colaborador: expect.objectContaining({ create: expect.any(Object) }),
+        }),
+      })
+    );
+  });
+
+  it("reutiliza un usuario existente que no tiene contraseña configurada", async () => {
+    const existingPasswordlessUser = {
+      ...BASE_COLABORADOR,
+      contrasena_hash: null,
+    };
+    mockFindUnique.mockResolvedValue(existingPasswordlessUser);
+    mockTransaction.mockImplementation(async (arg) => {
+      if (typeof arg === "function") return arg(prisma);
+      return Promise.all(arg);
+    });
+    mockUpdate.mockResolvedValue(BASE_COLABORADOR);
+
+    const result = await createColaborador(VALID_CREATE_INPUT);
+    expect(result).toMatchObject({ id_usuario: 1, nombre_completo: "Juan García" });
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id_usuario: existingPasswordlessUser.id_usuario },
+        data: expect.objectContaining({
+          nombre_completo: VALID_CREATE_INPUT.nombre_completo,
+          id_rol: VALID_CREATE_INPUT.id_rol,
+          estatus: VALID_CREATE_INPUT.estatus,
         }),
       })
     );
@@ -262,8 +308,8 @@ describe("deleteColaborador — COL-04 Eliminar colaborador (soft delete)", () =
     mockUpdate.mockResolvedValue(undefined);
 
     await deleteColaborador(1);
-    const { delete: mockDel } = prisma.usuarios as unknown as { delete: jest.Mock };
-    expect(mockDel).toBeUndefined();
+    const mockDel = prisma.usuarios.delete as unknown as jest.Mock;
+    expect(mockDel).not.toHaveBeenCalled();
   });
 
   it("lanza NotFoundError cuando el colaborador no existe (P2025)", async () => {
