@@ -602,6 +602,38 @@ async function main() {
   });
   console.log("Seeded test client");
 
+  // ── More demo clients ──────────────────────────────────────────────────────
+  const demoClientsData = [
+    {
+      id_cliente: 2,
+      nombre_cliente: "Grupo Empresarial NL",
+      empresa: "Grupo Empresarial NL SA de CV",
+      correo_electronico: "contacto@gruponl.mx",
+      numero_telefono: "8121100001",
+      categoria: "Gold",
+    },
+    {
+      id_cliente: 3,
+      nombre_cliente: "Laura Rodríguez Vega",
+      correo_electronico: "laura.rodriguez@example.mx",
+      numero_telefono: "4421100002",
+      categoria: "Silver",
+    },
+    {
+      id_cliente: 4,
+      nombre_cliente: "Publicidad Del Valle",
+      empresa: "Publicidad Del Valle SA de CV",
+      correo_electronico: "info@pubdelvalle.mx",
+      numero_telefono: "5591100003",
+    },
+  ];
+
+  for (const c of demoClientsData) {
+    await prisma.clientes.upsert({ where: { id_cliente: c.id_cliente }, update: {}, create: c });
+  }
+
+  console.log(`Seeded ${demoClientsData.length} more demo clients`);
+
   // ── Proveedores ────────────────────────────────────────────────────────────
   const proveedoresData = [
     {
@@ -835,48 +867,49 @@ async function main() {
     const statusMap: Record<string, number> = {};
     cotizacionStatuses.forEach((s) => (statusMap[s.descripcion] = s.id_estatus));
 
+    // id_cliente values mirror demoPedidos[i].id_cliente for referential consistency
     const demoCotizaciones = [
       {
         id_pedido: 1,
         folio: "COT-001",
         monto_total: 1500,
-        notas: "Cotización pendiente para corte láser",
+        notas: "Cotización pendiente para señalética interior",
         fecha_creacion: new Date("2026-04-13"),
-        id_cliente: clienteDemo.id_cliente,
+        id_cliente: 2,
         id_estatus_cotizacion: statusMap["Pendiente"],
       },
       {
         id_pedido: 2,
         folio: "COT-002",
         monto_total: 2500,
-        notas: "Cotización aprobada para grabado",
+        notas: "Cotización aprobada para corte y grabado trofeos",
         fecha_creacion: new Date("2026-04-15"),
-        id_cliente: clienteDemo.id_cliente,
+        id_cliente: 3,
         id_estatus_cotizacion: statusMap["Validada"],
       },
       {
         id_pedido: 3,
         folio: "COT-003",
         monto_total: 1800,
-        notas: "Cliente rechazó la propuesta",
+        notas: "Cliente rechazó la propuesta de placas",
         fecha_creacion: new Date("2026-04-17"),
-        id_cliente: clienteDemo.id_cliente,
+        id_cliente: 4,
         id_estatus_cotizacion: statusMap["Rechazada"],
       },
       {
         id_pedido: 4,
         folio: "COT-004",
         monto_total: 2200,
-        notas: "Cotización validada por cambios de requerimiento",
+        notas: "Cotización aprobada para rotulación flota vehicular",
         fecha_creacion: new Date("2026-04-20"),
-        id_cliente: clienteDemo.id_cliente,
+        id_cliente: 2,
         id_estatus_cotizacion: statusMap["Aprobada"],
       },
       {
         id_pedido: 5,
         folio: "COT-005",
         monto_total: 3000,
-        notas: "Cotización cancelada",
+        notas: "Cotización cancelada — cambio de presupuesto",
         fecha_creacion: new Date("2026-06-20"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Cancelada"],
@@ -885,25 +918,25 @@ async function main() {
         id_pedido: 6,
         folio: "COT-006",
         monto_total: 4500,
-        notas: "Cotización pendiente para señalización exterior",
+        notas: "Cotización pendiente para corte láser piezas madera",
         fecha_creacion: new Date("2026-04-22"),
-        id_cliente: clienteDemo.id_cliente,
+        id_cliente: 3,
         id_estatus_cotizacion: statusMap["Pendiente"],
       },
       {
         id_pedido: 7,
         folio: "COT-007",
         monto_total: 890,
-        notas: "Cotización pendiente para corte de acrílico",
+        notas: "Cotización pendiente para bordado gorras evento",
         fecha_creacion: new Date("2026-04-23"),
-        id_cliente: clienteDemo.id_cliente,
+        id_cliente: 4,
         id_estatus_cotizacion: statusMap["Pendiente"],
       },
       {
         id_pedido: 8,
         folio: "COT-008",
         monto_total: 3200,
-        notas: "Cotización pendiente para grabado de placa conmemorativa",
+        notas: "Cotización pendiente para señalética exterior",
         fecha_creacion: new Date("2026-04-24"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Pendiente"],
@@ -922,67 +955,83 @@ async function main() {
     // ── Demo Pedidos ───────────────────────────────────────────────
     const demoPedidos = [
       {
+        id_cliente: 2,
         status: "Pendiente",
         estado_factura: "Cotizacion",
         fecha_creacion: new Date("2026-04-13"),
         fecha_estimada: new Date("2026-04-18"),
         notas: "Pedido demo pendiente",
+        nombre_oportunidad: "Señalética interior oficinas",
       },
 
       {
+        id_cliente: 3,
         status: "En producción",
         estado_factura: "Pagado",
         fecha_creacion: new Date("2026-04-15"),
         fecha_estimada: new Date("2026-04-22"),
         notas: "Pedido demo en producción",
+        nombre_oportunidad: "Corte y grabado trofeos",
       },
 
       {
+        id_cliente: 4,
         status: "Finalizado",
         estado_factura: "Aprobacion_diseno",
         fecha_creacion: new Date("2026-04-17"),
         fecha_estimada: new Date("2026-04-24"),
         notas: "Pedido demo finalizado",
+        nombre_oportunidad: "Grabado placas conmemorativas",
       },
 
       {
+        id_cliente: 2,
         status: "Entregado",
         estado_factura: "Entregado",
         fecha_creacion: new Date("2026-04-20"),
         fecha_estimada: new Date("2026-04-27"),
         notas: "Pedido demo entregado",
+        nombre_oportunidad: "Rotulación flota vehicular",
       },
 
       {
+        id_cliente: 1,
         status: "Cancelado",
         estado_factura: "Facturado",
         fecha_creacion: new Date("2026-04-25"),
         fecha_estimada: new Date("2026-05-01"),
         notas: "Pedido demo cancelado",
+        nombre_oportunidad: "Bordado uniformes corporativos",
       },
 
       {
+        id_cliente: 3,
         status: "Pendiente",
         estado_factura: "Cotizacion",
         fecha_creacion: new Date("2026-04-22"),
         fecha_estimada: new Date("2026-04-27"),
         notas: "Pedido demo pendiente 6",
+        nombre_oportunidad: "Corte láser piezas madera",
       },
 
       {
+        id_cliente: 4,
         status: "Pendiente",
         estado_factura: "Cotizacion",
         fecha_creacion: new Date("2026-04-23"),
         fecha_estimada: new Date("2026-04-28"),
         notas: "Pedido demo pendiente 7",
+        nombre_oportunidad: "Bordado gorras evento",
       },
 
       {
+        id_cliente: 1,
         status: "Pendiente",
         estado_factura: "Cotizacion",
         fecha_creacion: new Date("2026-04-24"),
         fecha_estimada: new Date("2026-04-29"),
         notas: "Pedido demo pendiente 8",
+        nombre_oportunidad: "Señalética exterior",
       },
     ];
 
@@ -1004,7 +1053,7 @@ async function main() {
           data: {
             cliente: {
               connect: {
-                id_cliente: 1,
+                id_cliente: pedido.id_cliente,
               },
             },
 
@@ -1029,6 +1078,7 @@ async function main() {
             fecha_creacion: pedido.fecha_creacion,
             fecha_estimada: pedido.fecha_estimada,
             notas: pedido.notas,
+            nombre_oportunidad: pedido.nombre_oportunidad,
           },
         });
         createdPedidoIds.push(created.id_pedido);
@@ -1041,6 +1091,197 @@ async function main() {
 
       await prisma.cotizaciones.createMany({ data: cotizacionesData });
       console.log(`Seeded ${cotizacionesData.length} demo cotizaciones`);
+    }
+  }
+
+  // ── Demo DetallePedido ────────────────────────────────────────────────────
+  // Runs outside the cotizaciones idempotency guard so that re-running the
+  // seed on a DB that already has COT-001…COT-008 still populates detalles.
+  // Resolves pedido IDs from the cotizacion folios rather than assuming 1..8.
+  {
+    const demoCotizFolios = [
+      "COT-001",
+      "COT-002",
+      "COT-003",
+      "COT-004",
+      "COT-005",
+      "COT-006",
+      "COT-007",
+      "COT-008",
+    ];
+
+    const demoCotizRows = await prisma.cotizaciones.findMany({
+      where: { folio: { in: demoCotizFolios } },
+      select: { folio: true, id_pedido: true },
+      orderBy: { folio: "asc" }, // COT-001 → index 0, COT-008 → index 7
+    });
+
+    if (demoCotizRows.length === 8 && demoCotizRows.every((c) => c.id_pedido !== null)) {
+      const pids = demoCotizRows.map((c) => c.id_pedido!);
+
+      const existingDetallesCount = await prisma.detallePedido.count({
+        where: { id_pedido: { in: pids } },
+      });
+
+      if (existingDetallesCount === 0) {
+        // Re-fetch the status map in case we're outside the block that built it
+        const statusRowsLocal = await prisma.estatusPedidos.findMany();
+        const smLocal: Record<string, number> = {};
+        statusRowsLocal.forEach((s) => {
+          smLocal[s.descripcion] = s.id_estatus;
+        });
+
+        const detallesDemo = [
+          // Pedido COT-001 (Pendiente): Corte Láser + Grabado Láser
+          {
+            id_pedido: pids[0],
+            id_servicio: 1,
+            id_material: 1,
+            id_archivo: 1,
+            cantidad: 5,
+            responsable_recoleccion: "Grupo Empresarial NL",
+            precio_unitario: 25.0,
+            subtotal: 125.0,
+          },
+          {
+            id_pedido: pids[0],
+            id_servicio: 2,
+            id_material: 2,
+            id_archivo: 1,
+            cantidad: 3,
+            responsable_recoleccion: "Grupo Empresarial NL",
+            precio_unitario: 30.0,
+            subtotal: 90.0,
+          },
+          // Pedido COT-002 (En producción): Corte Láser + Bordado
+          {
+            id_pedido: pids[1],
+            id_servicio: 1,
+            id_material: 1,
+            id_archivo: 1,
+            id_estatus: smLocal["En producción"],
+            cantidad: 10,
+            responsable_recoleccion: "Laura Rodríguez Vega",
+            precio_unitario: 20.0,
+            subtotal: 200.0,
+          },
+          {
+            id_pedido: pids[1],
+            id_servicio: 3,
+            id_material: 3,
+            id_archivo: 1,
+            cantidad: 6,
+            responsable_recoleccion: "Laura Rodríguez Vega",
+            precio_unitario: 45.0,
+            subtotal: 270.0,
+          },
+          // Pedido COT-003 (Finalizado): Grabado Láser acrílico
+          {
+            id_pedido: pids[2],
+            id_servicio: 2,
+            id_material: 2,
+            id_archivo: 1,
+            id_estatus: smLocal["Finalizado"],
+            cantidad: 4,
+            responsable_recoleccion: "Publicidad Del Valle",
+            precio_unitario: 55.0,
+            subtotal: 220.0,
+          },
+          // Pedido COT-004 (Entregado): Rotulación de vinil + Bordado
+          {
+            id_pedido: pids[3],
+            id_servicio: 4,
+            id_material: 4,
+            id_archivo: 1,
+            id_estatus: smLocal["Entregado"],
+            cantidad: 8,
+            responsable_recoleccion: "Grupo Empresarial NL",
+            precio_unitario: 80.0,
+            subtotal: 640.0,
+          },
+          {
+            id_pedido: pids[3],
+            id_servicio: 3,
+            id_material: 3,
+            id_archivo: 1,
+            id_estatus: smLocal["Entregado"],
+            cantidad: 12,
+            responsable_recoleccion: "Grupo Empresarial NL",
+            precio_unitario: 45.0,
+            subtotal: 540.0,
+          },
+          // Pedido COT-005 (Cancelado): Corte Láser
+          {
+            id_pedido: pids[4],
+            id_servicio: 1,
+            id_material: 1,
+            id_archivo: 1,
+            id_estatus: smLocal["Cancelado"],
+            cantidad: 2,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 25.0,
+            subtotal: 50.0,
+          },
+          // Pedido COT-006 (Pendiente): Corte Láser + Rotulación de vinil
+          {
+            id_pedido: pids[5],
+            id_servicio: 1,
+            id_material: 1,
+            id_archivo: 1,
+            cantidad: 7,
+            responsable_recoleccion: "Laura Rodríguez Vega",
+            precio_unitario: 25.0,
+            subtotal: 175.0,
+          },
+          {
+            id_pedido: pids[5],
+            id_servicio: 4,
+            id_material: 4,
+            id_archivo: 1,
+            cantidad: 3,
+            responsable_recoleccion: "Laura Rodríguez Vega",
+            precio_unitario: 80.0,
+            subtotal: 240.0,
+          },
+          // Pedido COT-007 (Pendiente): Bordado gorras
+          {
+            id_pedido: pids[6],
+            id_servicio: 3,
+            id_material: 3,
+            id_archivo: 1,
+            cantidad: 20,
+            responsable_recoleccion: "Publicidad Del Valle",
+            precio_unitario: 40.0,
+            subtotal: 800.0,
+          },
+          // Pedido COT-008 (Pendiente): Grabado Láser + Rotulación de vinil
+          {
+            id_pedido: pids[7],
+            id_servicio: 2,
+            id_material: 1,
+            id_archivo: 1,
+            cantidad: 2,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 30.0,
+            subtotal: 60.0,
+          },
+          {
+            id_pedido: pids[7],
+            id_servicio: 4,
+            id_material: 4,
+            id_archivo: 1,
+            cantidad: 5,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 80.0,
+            subtotal: 400.0,
+          },
+        ];
+
+        await prisma.detallePedido.createMany({ data: detallesDemo });
+        console.log(`Seeded ${detallesDemo.length} demo detalles de pedido`);
+      } else {
+        console.log("Demo detalles already seeded, skipping");
+      }
     }
   }
 
