@@ -44,13 +44,54 @@ export const CotizacionIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// ─────────────────────────────────────────────
+// Discount rules — single source of truth shared by the API (this Zod
+// schema) and the front-end modal (AplicarDescuento). Edit one place
+// and both the client-side validation messages and the server-side
+// guard move in lockstep.
+// ─────────────────────────────────────────────
+export const DISCOUNT_MIN = 5;
+export const DISCOUNT_MAX = 20;
+export const DISCOUNT_STEP = 5;
+
+// Validation message catalog — kept here so the front-end can show the
+// exact same copy the server would reject with. Keys match the alts in
+// the COT-06 sequence diagram.
+export const DISCOUNT_ERROR = {
+  NOT_INTEGER: "Ingresa un número entero",
+  ZERO: "El descuento debe ser mayor o igual a 5%",
+  TOO_LOW: `El descuento debe ser de al menos ${DISCOUNT_MIN}%`,
+  TOO_HIGH: `El descuento no puede superar el ${DISCOUNT_MAX}%`,
+  NOT_MULTIPLE: `El descuento debe ser múltiplo de ${DISCOUNT_STEP}, mínimo ${DISCOUNT_MIN}%`,
+} as const;
+
+// Returns the first applicable error string for a percentage, or null
+// when the value is acceptable. Used directly by the modal and mirrored
+// by the Zod schema below so both layers reject the same set of inputs
+// with the same messaging.
+export function validateDescuentoPercentage(value: number): string | null {
+  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+    return DISCOUNT_ERROR.NOT_INTEGER;
+  }
+  if (value === 0) {
+    return DISCOUNT_ERROR.ZERO;
+  }
+  if (value > DISCOUNT_MAX) {
+    return DISCOUNT_ERROR.TOO_HIGH;
+  }
+  if (value < DISCOUNT_MIN || value % DISCOUNT_STEP !== 0) {
+    return DISCOUNT_ERROR.NOT_MULTIPLE;
+  }
+  return null;
+}
+
 export const AplicarDescuentoSchema = z.object({
   porcentaje_descuento: z
     .number()
-    .int("Ingresa un número entero")
-    .min(5, "El descuento debe ser de al menos 5%")
-    .max(20, "El descuento no puede superar el 20%")
-    .refine((v) => v % 5 === 0, "El descuento debe ser múltiplo de 5")
+    .int(DISCOUNT_ERROR.NOT_INTEGER)
+    .min(DISCOUNT_MIN, DISCOUNT_ERROR.TOO_LOW)
+    .max(DISCOUNT_MAX, DISCOUNT_ERROR.TOO_HIGH)
+    .refine((v) => v % DISCOUNT_STEP === 0, DISCOUNT_ERROR.NOT_MULTIPLE)
     .nullable(),
   motivo_descuento: z.string().max(255).nullable().optional(),
 });

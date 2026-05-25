@@ -1,7 +1,10 @@
 import { ArrowSquareOut, FileText } from "@phosphor-icons/react";
 
 import { formatDate } from "@/lib/utils/date";
-import type { EstatusCotizacion } from "@/types/cotizacion";
+// estatus_label is the free-form catalog string (see StatusBadge). We
+// keep the import out of this file to discourage callers from re-adding
+// `as EstatusCotizacion` casts at the call site — the badge already
+// handles off-catalog values gracefully.
 
 import { FieldRow } from "../atoms/FieldRow";
 import { SectionCard } from "../atoms/SectionCard";
@@ -10,7 +13,7 @@ import { StatusBadge } from "../atoms/StatusBadge";
 export interface GeneralDataCardData {
   folio: string | null;
   nombre_oportunidad: string | null;
-  estatus_label: EstatusCotizacion;
+  estatus_label: string;
   creado_por: string;
   fecha_fin: string | null;
   fecha_validacion: string | null;

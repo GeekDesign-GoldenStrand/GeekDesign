@@ -3,12 +3,12 @@ import React, { useState, useCallback } from "react";
 import AplicarDescuento from "@/app/(admin)/cotizaciones/[id]/aplicar-descuento";
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
-import type {
-  Cotizacion,
-  EstatusCotizacion,
-  FormulaVariable,
-  HistorialEstado,
-  LineItem,
+import {
+  QUOTATION_STATUS,
+  type Cotizacion,
+  type FormulaVariable,
+  type HistorialEstado,
+  type LineItem,
 } from "@/types/cotizacion";
 
 import { ClientCard } from "../molecules/ClientCard";
@@ -117,8 +117,10 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
   // Edits, adding a discount, and removing a discount all share the same
   // server-side Pendiente-only rule (see updateCotizacion + aplicarDescuento).
   // Derive once and pass to each gate so the UI stops offering actions the
-  // server would refuse.
-  const isMutable = cotizacion.estatus.descripcion === "Pendiente";
+  // server would refuse. Comparing against the constant — not the literal
+  // — keeps this in lock-step with the backend if the catalog string ever
+  // changes.
+  const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
@@ -179,7 +181,7 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
           cotizacion={{
             folio: cotizacion.folio,
             nombre_oportunidad: fields.nombre_oportunidad || cotizacion.nombre_oportunidad,
-            estatus_label: cotizacion.estatus.descripcion as EstatusCotizacion,
+            estatus_label: cotizacion.estatus.descripcion,
             creado_por: creadoPor,
             fecha_fin: fields.fecha_fin || cotizacion.fecha_fin,
             fecha_validacion: cotizacion.fecha_validacion,

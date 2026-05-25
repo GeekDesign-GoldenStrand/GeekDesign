@@ -2,29 +2,18 @@ import { Trash } from "@phosphor-icons/react";
 import React, { useEffect, useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-
-const DISCOUNT_MIN = 5;
-const DISCOUNT_MAX = 20;
-const DISCOUNT_STEP = 5;
+// Discount rules + validator come from the schema module so this modal
+// and the Zod-validated PATCH endpoint can't drift. See
+// lib/schemas/cotizaciones.ts for the single source of truth.
+import {
+  DISCOUNT_MAX,
+  DISCOUNT_MIN,
+  DISCOUNT_STEP,
+  validateDescuentoPercentage,
+} from "@/lib/schemas/cotizaciones";
 
 function fmt(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
-}
-
-function validatePercentage(value: number): string | null {
-  if (!Number.isFinite(value) || !Number.isInteger(value)) {
-    return "Ingresa un número entero";
-  }
-  if (value === 0) {
-    return "El descuento debe ser mayor o igual a 5%";
-  }
-  if (value > DISCOUNT_MAX) {
-    return "El descuento no puede superar el 20%";
-  }
-  if (value < DISCOUNT_MIN || value % DISCOUNT_STEP !== 0) {
-    return "El descuento debe ser múltiplo de 5, mínimo 5%";
-  }
-  return null;
 }
 
 interface AplicarDescuentoProps {
@@ -68,7 +57,7 @@ export default function AplicarDescuento({
 
   if (!isOpen) return null;
 
-  const validationError = validatePercentage(percentage);
+  const validationError = validateDescuentoPercentage(percentage);
   const isPercentageValid = validationError === null;
   const displayedError = serverError ?? (!hasExistingDiscount ? validationError : null);
 

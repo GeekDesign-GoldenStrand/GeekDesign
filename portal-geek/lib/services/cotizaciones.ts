@@ -1,9 +1,9 @@
 import type {
   Cotizaciones,
-  HistorialEstadosCotizacion,
   CotizacionesRechazadas,
+  HistorialEstadosCotizacion,
+  Prisma,
 } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type {
@@ -16,10 +16,15 @@ import { getPlaceholderArchivoId, getSistemaUserId } from "@/lib/services/sistem
 import {
   ConfigurationError,
   ConflictError,
+  DataInconsistencyError,
   NotFoundError,
   ValidationError,
-  DataInconsistencyError,
 } from "@/lib/utils/errors";
+// Catalog of quotation statuses lives in @/types/cotizacion so both the
+// server (this file) and the client (CotizacionDetailPage, etc.) read from
+// the same source. Re-exported further down so existing service consumers
+// don't have to update their imports.
+import { QUOTATION_STATUS, toEstatusCotizacion, type QuotationStatus } from "@/types/cotizacion";
 
 /**
  * Common include configuration for quotations to ensure consistent typing.
@@ -117,17 +122,12 @@ export type CotizacionDetail = Omit<CotizacionDetailBase, "historial"> & {
 // header — keep both sides consistent by routing every email through this.
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
 
-// Centralized catalog of quotation statuses.
-// Using constants avoids scattered "magic strings" and makes refactoring safer.
-export const QUOTATION_STATUS = {
-  PENDIENTE: "Pendiente",
-  VALIDADA: "Validada",
-  RECHAZADA: "Rechazada",
-  APROBADA: "Aprobada",
-  CANCELADA: "Cancelada",
-} as const;
-
-export type QuotationStatus = (typeof QUOTATION_STATUS)[keyof typeof QUOTATION_STATUS];
+// Re-export the catalog so existing `import { QUOTATION_STATUS } from
+// "@/lib/services/cotizaciones"` consumers keep resolving without edits.
+// The actual import lives at the top of the file with the rest of the
+// imports (see @/types/cotizacion).
+export { QUOTATION_STATUS };
+export type { QuotationStatus };
 
 export async function listCotizaciones(
   page: number,
@@ -493,7 +493,16 @@ export async function changeQuotationStatus(
     throw new Error("Quotation not found");
   }
 
-  const currentStatus = currentQuotation.estatus.descripcion as QuotationStatus;
+  // descripcion comes from a VARCHAR(50) column with no enum constraint at
+  // the DB level — narrow with the runtime guard before treating it as the
+  // union, otherwise an off-catalog value would silently index past the
+  // transition table below and pass an empty `allowedTransitions`.
+  const currentStatus = toEstatusCotizacion(currentQuotation.estatus.descripcion);
+  if (!currentStatus) {
+    throw new Error(
+      `Estado de cotización fuera del catálogo: '${currentQuotation.estatus.descripcion}'`
+    );
+  }
 
   // Valid workflow transitions.
   const ALLOWED_QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
