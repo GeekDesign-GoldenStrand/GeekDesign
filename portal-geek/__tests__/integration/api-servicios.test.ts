@@ -50,6 +50,27 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
+const SERVICIO_PARA_ADMIN_MOCK = {
+  id_servicio: 1,
+  id_estatus: 1,
+  id_sucursal: 1,
+  id_instalador: null,
+  id_proveedor: null,
+  nombre_servicio: "Corte Láser",
+  descripcion_servicio: "Corte con láser CO2",
+  estatus_servicio: true,
+  imagen_url: null,
+  costo_instalador_override: null,
+  costo_proveedor_override: null,
+  fecha_modificacion: new Date("2026-05-08"),
+  sucursal: { id_sucursal: 1, nombre_sucursal: "Sucursal Principal" },
+  maquinas: [],
+  instalador: null,
+  proveedor: null,
+  formulas: [],
+  servicioMateriales: [],
+};
+
 describe("GET /api/servicios", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let routes: any;
@@ -138,27 +159,6 @@ describe("GET /api/servicios/[id]", () => {
       return { id: segments[segments.length - 1] };
     });
   }
-
-  const SERVICIO_PARA_ADMIN_MOCK = {
-    id_servicio: 1,
-    id_estatus: 1,
-    id_sucursal: 1,
-    id_instalador: null,
-    id_proveedor: null,
-    nombre_servicio: "Corte Láser",
-    descripcion_servicio: "Corte con láser CO2",
-    estatus_servicio: true,
-    imagen_url: null,
-    costo_instalador_override: null,
-    costo_proveedor_override: null,
-    fecha_modificacion: new Date("2026-05-08"),
-    sucursal: { id_sucursal: 1, nombre_sucursal: "Sucursal Principal" },
-    maquinas: [],
-    instalador: null,
-    proveedor: null,
-    formulas: [],
-    servicioMateriales: [],
-  };
 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
@@ -533,27 +533,6 @@ describe("PUT /api/servicios/[id] — ADMIN-02 Modificar servicio", () => {
       return { id: segments[segments.length - 1] };
     });
   }
-
-  const SERVICIO_PARA_ADMIN_MOCK = {
-    id_servicio: 1,
-    id_estatus: 1,
-    id_sucursal: 1,
-    id_instalador: null,
-    id_proveedor: null,
-    nombre_servicio: "Corte Láser",
-    descripcion_servicio: "Corte con láser CO2",
-    estatus_servicio: true,
-    imagen_url: null,
-    costo_instalador_override: null,
-    costo_proveedor_override: null,
-    fecha_modificacion: new Date("2026-05-08"),
-    sucursal: { id_sucursal: 1, nombre_sucursal: "Sucursal Principal" },
-    maquinas: [],
-    instalador: null,
-    proveedor: null,
-    formulas: [],
-    servicioMateriales: [],
-  };
 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
