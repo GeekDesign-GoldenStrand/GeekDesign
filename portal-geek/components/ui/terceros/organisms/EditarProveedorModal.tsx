@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 
+import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import type { UpdateProveedorInput } from "@/lib/schemas/proveedores";
+import {
+  CreateProveedorSchema,
+  UBICACION_REGEX,
+  type UpdateProveedorInput,
+} from "@/lib/schemas/proveedores";
+import { normalizePhone } from "@/lib/utils/format";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,27 +32,31 @@ function validateFields(form: ProveedorFormData): Record<string, string> {
   else if (form.nombre_proveedor.length > 30) errs.nombre_proveedor = "Máximo 30 caracteres.";
   else if (!NOMBRE_REGEX.test(form.nombre_proveedor))
     errs.nombre_proveedor = "Solo letras, números, puntos, guiones y apóstrofes.";
+  if (form.apodo) {
+    if (form.apodo.length > 30) errs.apodo = "Máximo 30 caracteres.";
+    else if (!NOMBRE_REGEX.test(form.apodo))
+      errs.apodo = "Solo letras, números, puntos, guiones y apóstrofes.";
+  }
   if (!["Proveedor de material", "Proveedor de servicio"].includes(form.tipo))
     errs.tipo = "Seleccione un tipo válido.";
   if (!form.correo.trim()) errs.correo = "El correo es requerido.";
   else if (!EMAIL_REGEX.test(form.correo)) errs.correo = "Correo electrónico inválido.";
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
   else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
-  if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+  if (form.ubicacion) {
+    if (form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+    else if (!UBICACION_REGEX.test(form.ubicacion.trim()))
+      errs.ubicacion = "Formato requerido: Municipio, Estado";
+  }
+  if (form.descripcion_proveedor.length > 500)
+    errs.descripcion_proveedor = "Máximo 500 caracteres.";
   return errs;
 }
 
 function parseServerFieldErrors(serverError: string | null): Record<string, string> {
   if (!serverError) return {};
-  const fields: (keyof ProveedorFormData)[] = [
-    "nombre_proveedor",
-    "tipo",
-    "correo",
-    "telefono",
-    "ubicacion",
-    "descripcion_proveedor",
-    "estatus",
-  ];
+  // Derive the field list from the schema so new fields are picked up automatically.
+  const fields = Object.keys(CreateProveedorSchema.shape);
   const parsed: Record<string, string> = {};
   for (const field of fields) {
     const match = serverError.match(new RegExp(`\\b${field}:\\s*([^,]+)`));
@@ -64,6 +74,7 @@ const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 export type ProveedorFormData = {
   nombre_proveedor: string;
+  apodo: string;
   tipo: "Proveedor de material" | "Proveedor de servicio";
   correo: string;
   telefono: string;
@@ -125,6 +136,7 @@ export function EditarProveedorModal({
     }
     onSubmit({
       nombre_proveedor: form.nombre_proveedor,
+      apodo: form.apodo || undefined,
       tipo: form.tipo,
       correo: form.correo || undefined,
       telefono: form.telefono || undefined,
@@ -143,18 +155,35 @@ export function EditarProveedorModal({
           </div>
         )}
 
-        <div>
-          <label className={LABEL}>
-            Nombre del proveedor <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="text"
-            maxLength={30}
-            value={form.nombre_proveedor}
-            onChange={(e) => setField("nombre_proveedor", e.target.value)}
-            className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
-          />
-          {allErrors.nombre_proveedor && <p className={ERROR_MSG}>{allErrors.nombre_proveedor}</p>}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Nombre del proveedor <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              maxLength={30}
+              value={form.nombre_proveedor}
+              onChange={(e) => setField("nombre_proveedor", e.target.value)}
+              className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
+            />
+            {allErrors.nombre_proveedor && (
+              <p className={ERROR_MSG}>{allErrors.nombre_proveedor}</p>
+            )}
+            <CharCounter value={form.nombre_proveedor} max={30} />
+          </div>
+          <div>
+            <label className={LABEL}>Apodo</label>
+            <input
+              type="text"
+              maxLength={30}
+              value={form.apodo}
+              onChange={(e) => setField("apodo", e.target.value)}
+              className={`${FIELD} ${getFieldClass("apodo")}`}
+            />
+            {allErrors.apodo && <p className={ERROR_MSG}>{allErrors.apodo}</p>}
+            <CharCounter value={form.apodo} max={30} />
+          </div>
         </div>
 
         <div>
@@ -196,8 +225,7 @@ export function EditarProveedorModal({
               placeholder="442 123 4567"
               value={formatPhone(form.telefono)}
               onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                setField("telefono", digits);
+                setField("telefono", normalizePhone(e.target.value));
               }}
               className={`${FIELD} ${getFieldClass("telefono")}`}
             />
@@ -234,11 +262,16 @@ export function EditarProveedorModal({
           <label className={LABEL}>Descripción</label>
           <textarea
             rows={3}
+            maxLength={500}
             placeholder="Detalles adicionales del proveedor..."
             value={form.descripcion_proveedor}
             onChange={(e) => setField("descripcion_proveedor", e.target.value)}
             className={`${FIELD} ${getFieldClass("descripcion_proveedor")} resize-none`}
           />
+          {allErrors.descripcion_proveedor && (
+            <p className={ERROR_MSG}>{allErrors.descripcion_proveedor}</p>
+          )}
+          <CharCounter value={form.descripcion_proveedor} max={500} />
         </div>
 
         <div className="flex justify-end gap-3 mt-2">

@@ -847,51 +847,62 @@ async function main() {
       },
     ];
 
-    const createdPedidoIds: number[] = [];
-    for (const pedido of demoPedidos) {
-      const created = await prisma.pedidos.create({
-        data: {
-          cliente: {
-            connect: {
-              id_cliente: 1,
-            },
-          },
+    // Idempotency guard: demo cotizaciones use fixed folios (COT-001…) which
+    // are @unique, and pedidos use autoincrement IDs. Re-running the seed would
+    // collide on `folio` and accumulate duplicate pedidos, so only seed the
+    // demo orders/quotations when their folios are not already present.
+    const existingDemoCotizaciones = await prisma.cotizaciones.count({
+      where: { folio: { in: demoCotizaciones.map((c) => c.folio) } },
+    });
 
-          estatus: {
-            connect: {
-              descripcion: pedido.status,
+    if (existingDemoCotizaciones > 0) {
+      console.log("Demo cotizaciones already seeded, skipping");
+    } else {
+      // Capture the actual autoincrement IDs instead of assuming 1..N.
+      const createdPedidoIds: number[] = [];
+      for (const pedido of demoPedidos) {
+        const created = await prisma.pedidos.create({
+          data: {
+            cliente: {
+              connect: {
+                id_cliente: 1,
+              },
             },
-          },
 
-          estado_factura: {
-            connect: {
-              id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+            estatus: {
+              connect: {
+                descripcion: pedido.status,
+              },
             },
-          },
 
-          sucursal: {
-            connect: {
-              id_sucursal: 1,
+            estado_factura: {
+              connect: {
+                id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+              },
             },
-          },
 
-          fecha_creacion: pedido.fecha_creacion,
-          fecha_estimada: pedido.fecha_estimada,
-          notas: pedido.notas,
-        },
-      });
-      createdPedidoIds.push(created.id_pedido);
+            sucursal: {
+              connect: {
+                id_sucursal: 1,
+              },
+            },
+
+            fecha_creacion: pedido.fecha_creacion,
+            fecha_estimada: pedido.fecha_estimada,
+            notas: pedido.notas,
+          },
+        });
+        createdPedidoIds.push(created.id_pedido);
+      }
+
+      const cotizacionesData = demoCotizaciones.map((cotizacion, index) => ({
+        ...cotizacion,
+        id_pedido: createdPedidoIds[index],
+      }));
+
+      await prisma.cotizaciones.createMany({ data: cotizacionesData });
+      console.log(`Seeded ${cotizacionesData.length} demo cotizaciones`);
     }
-
-    // Map each cotización to the pedido actually created at the same index,
-    // rather than assuming the sequence starts at 1.
-    const cotizacionesToCreate = demoCotizaciones.map((cot, i) => ({
-      ...cot,
-      id_pedido: createdPedidoIds[i],
-    }));
-
-    await prisma.cotizaciones.createMany({ data: cotizacionesToCreate });
-    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
 
   await resyncSequences();
