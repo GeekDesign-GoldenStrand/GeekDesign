@@ -10,13 +10,21 @@ jest.mock("@/lib/storage/keys", () => ({
   buildKey: jest.fn().mockReturnValue("disenios/2026/05/mock-uuid.png"),
 }));
 
+const mockDeleteObject = jest.fn(async (_key: string) => {});
 jest.mock("@/lib/services/storage", () => ({
   presignPut: jest.fn().mockResolvedValue("https://storage.example.com/signed-put-url"),
+  deleteObject: (key: string) => mockDeleteObject(key),
+  DEFAULT_TTL_SECONDS: 300,
 }));
 
 // Reset rate-limit state between tests by re-importing the module fresh
 jest.mock("@/lib/utils/rate-limit", () => ({
   checkRateLimit: jest.fn().mockReturnValue({ allowed: true }),
+}));
+
+const mockFindFirst = jest.fn();
+jest.mock("@/lib/db/client", () => ({
+  prisma: { archivosDisenio: { findFirst: (...a: unknown[]) => mockFindFirst(...a) } },
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -26,6 +34,13 @@ jest.mock("@/lib/utils/rate-limit", () => ({
 function makeRequest(body: Record<string, unknown>, ip = "127.0.0.1"): NextRequest {
   return {
     json: () => Promise.resolve({ category: "disenios", ...body }),
+    headers: { get: (h: string) => (h === "x-forwarded-for" ? ip : null) },
+  } as unknown as NextRequest;
+}
+
+function makeDeleteRequest(key: string, ip = "127.0.0.1"): NextRequest {
+  return {
+    url: `http://localhost/api/upload/disenios?key=${encodeURIComponent(key)}`,
     headers: { get: (h: string) => (h === "x-forwarded-for" ? ip : null) },
   } as unknown as NextRequest;
 }
@@ -42,6 +57,7 @@ describe("POST /api/upload/disenios", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFindFirst.mockResolvedValue(null);
     const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
     checkRateLimit.mockReturnValue({ allowed: true });
   });
@@ -109,5 +125,58 @@ describe("POST /api/upload/disenios", () => {
       makeRequest({ contentType: "image/png", size: 1024, filename: "logo.png" })
     );
     expect(res.status).toBe(429);
+  });
+});
+
+describe("DELETE /api/upload/disenios", () => {
+  const ORPHAN_KEY = "disenios/2026/05/11111111-2222-3333-4444-555555555555.dxf";
+
+  let DELETE: (req: NextRequest) => Promise<Response>;
+
+  beforeAll(async () => {
+    const mod = await import("@/app/api/upload/disenios/route");
+    DELETE = mod.DELETE;
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFindFirst.mockResolvedValue(null);
+    const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
+    checkRateLimit.mockReturnValue({ allowed: true });
+  });
+
+  it("elimina una clave huérfana sin requerir sesión", async () => {
+    const res = await DELETE(makeDeleteRequest(ORPHAN_KEY));
+    expect(res.status).toBe(200);
+    expect(mockDeleteObject).toHaveBeenCalledWith(ORPHAN_KEY);
+  });
+
+  it("retorna 422 cuando la clave no tiene formato válido", async () => {
+    const res = await DELETE(makeDeleteRequest("not-a-valid-key"));
+    expect(res.status).toBe(422);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("retorna 422 cuando la clave es de otra categoría (materiales)", async () => {
+    const res = await DELETE(
+      makeDeleteRequest("materiales/2026/05/11111111-2222-3333-4444-555555555555.jpg")
+    );
+    expect(res.status).toBe(422);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("retorna 409 cuando la clave ya está persistida en ArchivosDisenio", async () => {
+    mockFindFirst.mockResolvedValue({ id_archivo: 3 });
+    const res = await DELETE(makeDeleteRequest(ORPHAN_KEY));
+    expect(res.status).toBe(409);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("retorna 429 cuando se supera el rate limit", async () => {
+    const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
+    checkRateLimit.mockReturnValue({ allowed: false });
+    const res = await DELETE(makeDeleteRequest(ORPHAN_KEY));
+    expect(res.status).toBe(429);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
   });
 });

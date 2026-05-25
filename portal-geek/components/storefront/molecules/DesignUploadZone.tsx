@@ -3,7 +3,7 @@
 import { CloudArrowUp, File } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
-import { deleteFile, uploadDesignFile } from "@/lib/utils/upload";
+import { deleteDesignFile, uploadDesignFile } from "@/lib/utils/upload";
 
 const ACCEPTED = ".svg,.png,.jpg,.jpeg,.ai,.eps,.dxf,.pdf";
 const MB = 1024 * 1024;
@@ -74,9 +74,10 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
 
   async function removeSlot(id: string) {
     const slot = slots.find((s) => s.id === id);
-    // Si ya subió, borrar el orphan del bucket
+    // Si ya subió, borrar el orphan del bucket. Usa el endpoint público de
+    // disenios porque el storefront no tiene sesión autenticada.
     if (slot?.status === "done") {
-      deleteFile(slot.key).catch(() => {
+      deleteDesignFile(slot.key).catch(() => {
         // best-effort: si falla el delete el bucket lo limpiará con GC
       });
     }

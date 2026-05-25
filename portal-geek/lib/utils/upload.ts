@@ -53,10 +53,24 @@ export async function uploadDesignFile(file: File): Promise<string> {
 }
 
 // Removes an orphan upload from the bucket — used when the user clears a
-// freshly-uploaded but not-yet-saved file. The server refuses to delete keys
-// already referenced by a persisted entity, so this is safe to call from the UI.
+// freshly-uploaded but not-yet-saved file. Requires an authenticated session.
+// The server refuses to delete keys already referenced by a persisted entity,
+// so this is safe to call from the UI.
 export async function deleteFile(key: string): Promise<void> {
   const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? `Error ${res.status} al eliminar el archivo`);
+  }
+}
+
+// Removes an orphan design upload — public counterpart of deleteFile() for use
+// in the storefront where users are anonymous. Hits the unauthenticated
+// DELETE /api/upload/disenios endpoint, which is scoped to the disenios/ prefix.
+export async function deleteDesignFile(key: string): Promise<void> {
+  const res = await fetch(`/api/upload/disenios?key=${encodeURIComponent(key)}`, {
     method: "DELETE",
   });
   if (!res.ok) {
