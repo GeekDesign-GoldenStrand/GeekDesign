@@ -237,18 +237,23 @@ export async function deletePedido(id: number): Promise<void> {
   throw new Error("Not implemented");
 }
 
-export async function getPedidoStatusId(description: string) {
-  // Lookup status ID by description in catalog table.
-  // This indirection allows DB-driven status values while keeping code strongly typed.
-  const status = await prisma.estatusPedidos.findUnique({
-    where: { descripcion: description },
+type PrismaTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function getPedidoStatusId(
+  status: string,
+  client: typeof prisma | PrismaTransaction = prisma
+) {
+  const estatus = await client.estatusPedidos.findUnique({
+    where: {
+      descripcion: status,
+    },
   });
 
-  if (!status) {
-    throw new Error(`Pedido status '${description}' not found`);
+  if (!estatus) {
+    throw new NotFoundError(`Pedido status '${status}' not found`);
   }
 
-  return status.id_estatus;
+  return estatus.id_estatus;
 }
 
 export async function listActivePedidoServices() {
@@ -330,40 +335,89 @@ export async function changePedidoStatus(
   return updatedPedido;
 }
 
-export async function changeDetallePedidoStatus(detalleId: number, targetStatus: PedidoStatus) {
-  const currentDetalle = await prisma.detallePedido.findUnique({
-    where: {
-      id_detalle: detalleId,
-    },
-    include: {
-      estatus: true,
-    },
-  });
+export async function changeDetallePedidoStatus(
+  detalleId: number,
+  targetStatus: PedidoStatus,
+  userId: number
+) {
+  return prisma.$transaction(async (tx) => {
+    const currentDetalle = await tx.detallePedido.findUnique({
+      where: {
+        id_detalle: detalleId,
+      },
+      include: {
+        estatus: true,
+      },
+    });
 
-  if (!currentDetalle) {
-    throw new NotFoundError("Detalle de pedido not found");
-  }
+    if (!currentDetalle) {
+      throw new NotFoundError("Detalle de pedido not found");
+    }
 
-  const currentStatus = (currentDetalle.estatus?.descripcion ??
-    PEDIDO_STATUS.PENDIENTE) as PedidoStatus;
+    const currentStatus = (currentDetalle.estatus?.descripcion ??
+      PEDIDO_STATUS.PENDIENTE) as PedidoStatus;
 
-  const isFinalStatus =
-    currentStatus === PEDIDO_STATUS.ENTREGADO || currentStatus === PEDIDO_STATUS.CANCELADO;
+    const isCurrentFinalStatus =
+      currentStatus === PEDIDO_STATUS.ENTREGADO || currentStatus === PEDIDO_STATUS.CANCELADO;
 
-  if (isFinalStatus && targetStatus !== currentStatus) {
-    throw new Error(`No se puede cambiar el estatus de un servicio que ya está '${currentStatus}'`);
-  }
+    if (isCurrentFinalStatus && targetStatus !== currentStatus) {
+      throw new Error(
+        `No se puede cambiar el estatus de un servicio que ya está '${currentStatus}'`
+      );
+    }
 
-  const dbStatus = PEDIDO_STATUS_API_TO_DB[targetStatus];
+    const dbStatus = PEDIDO_STATUS_API_TO_DB[targetStatus];
+    const newStatusId = await getPedidoStatusId(dbStatus, tx);
 
-  const newStatusId = await getPedidoStatusId(dbStatus);
+    const updatedDetalle = await tx.detallePedido.update({
+      where: {
+        id_detalle: detalleId,
+      },
+      data: {
+        id_estatus: newStatusId,
+        id_usuario_modificacion: userId,
+        fecha_modificacion: new Date(),
+      },
+    });
 
-  return prisma.detallePedido.update({
-    where: {
-      id_detalle: detalleId,
-    },
-    data: {
-      id_estatus: newStatusId,
-    },
+    const detallesPedido = await tx.detallePedido.findMany({
+      where: {
+        id_pedido: currentDetalle.id_pedido,
+      },
+      include: {
+        estatus: true,
+      },
+    });
+
+    const allDetailsAreFinal =
+      detallesPedido.length > 0 &&
+      detallesPedido.every((detalle) => {
+        const status = detalle.estatus?.descripcion ?? PEDIDO_STATUS.PENDIENTE;
+
+        return status === PEDIDO_STATUS.ENTREGADO || status === PEDIDO_STATUS.CANCELADO;
+      });
+
+    if (allDetailsAreFinal) {
+      const allDetailsAreCanceled = detallesPedido.every(
+        (detalle) => detalle.estatus?.descripcion === PEDIDO_STATUS.CANCELADO
+      );
+
+      const finalPedidoStatus = allDetailsAreCanceled
+        ? PEDIDO_STATUS.CANCELADO
+        : PEDIDO_STATUS.ENTREGADO;
+
+      const finalPedidoStatusId = await getPedidoStatusId(finalPedidoStatus, tx);
+
+      await tx.pedidos.update({
+        where: {
+          id_pedido: currentDetalle.id_pedido,
+        },
+        data: {
+          id_estatus: finalPedidoStatusId,
+        },
+      });
+    }
+
+    return updatedDetalle;
   });
 }

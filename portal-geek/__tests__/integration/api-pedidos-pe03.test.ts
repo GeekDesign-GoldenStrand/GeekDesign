@@ -7,9 +7,31 @@ import type { NextRequest } from "next/server";
 import { GET } from "@/app/api/pedidos/route";
 import { listPedidos } from "@/lib/services/pedidos";
 
+const mockGetSession = jest.fn();
+
+jest.mock("@/lib/auth/session", () => ({
+  getSession: () => mockGetSession(),
+}));
+
 jest.mock("@/lib/auth/guards", () => ({
-  withRole: (_roles: string[], handler: unknown) =>
-    handler as (req: NextRequest) => Promise<Response>,
+  withRole: (roles: string[], handler: unknown) => async (req: NextRequest) => {
+    const session = await mockGetSession();
+
+    if (!session) {
+      return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+        status: 401,
+      });
+    }
+
+    if (!roles.includes(session.role)) {
+      return new Response(
+        JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+        { status: 403 }
+      );
+    }
+
+    return (handler as (req: NextRequest) => Promise<Response>)(req);
+  },
 }));
 
 jest.mock("@/lib/services/pedidos", () => ({
@@ -29,10 +51,34 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
     (listPedidos as jest.Mock).mockResolvedValue({
       items: [],
       total: 0,
     });
+  });
+
+  it("returns 401 when there is no active session", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const req = createMockRequest("http://localhost/api/pedidos?page=1&pageSize=10&serviceId=1");
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(401);
+    expect(listPedidos).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when the user role is not allowed", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Cliente" });
+
+    const req = createMockRequest("http://localhost/api/pedidos?page=1&pageSize=10&serviceId=1");
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(403);
+    expect(listPedidos).not.toHaveBeenCalled();
   });
 
   it("returns 200 and forwards a valid serviceId filter to the service", async () => {
@@ -41,7 +87,17 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
     const res = await GET(req);
 
     expect(res.status).toBe(200);
+    expect(listPedidos).toHaveBeenCalledWith(1, 10, [1], [], false, null, null, null);
+  });
 
+  it("allows Colaborador to filter pedidos by serviceId", async () => {
+    mockGetSession.mockResolvedValue({ id: 2, role: "Colaborador" });
+
+    const req = createMockRequest("http://localhost/api/pedidos?page=1&pageSize=10&serviceId=1");
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(200);
     expect(listPedidos).toHaveBeenCalledWith(1, 10, [1], [], false, null, null, null);
   });
 
@@ -53,7 +109,6 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
     const res = await GET(req);
 
     expect(res.status).toBe(200);
-
     expect(listPedidos).toHaveBeenCalledWith(1, 10, [1, 2], [], false, null, null, null);
   });
 

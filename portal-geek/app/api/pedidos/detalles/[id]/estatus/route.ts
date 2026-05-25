@@ -18,16 +18,19 @@ const ChangeDetallePedidoStatusSchema = z.object({
   ]),
 });
 
-export const PATCH = withRoleParams<Params>(["Direccion", "Colaborador"], async (req, ctx) => {
-  try {
-    const { id } = DetallePedidoIdParams.parse(await ctx.params);
+export const PATCH = withRoleParams<Params>(
+  ["Direccion", "Colaborador"],
+  async (req, ctx, session) => {
+    try {
+      const { id } = DetallePedidoIdParams.parse(await ctx.params);
 
-    const body = ChangeDetallePedidoStatusSchema.parse(await req.json());
+      const body = ChangeDetallePedidoStatusSchema.parse(await req.json());
 
-    const detalle = await changeDetallePedidoStatus(id, body.estatus);
+      const detalle = await changeDetallePedidoStatus(id, body.estatus, session.id);
 
-    return ok(detalle);
-  } catch (err) {
-    return handleError(err);
+      return ok(detalle);
+    } catch (err) {
+      return handleError(err);
+    }
   }
-});
+);

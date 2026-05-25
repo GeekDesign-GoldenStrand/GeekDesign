@@ -72,6 +72,7 @@ describe("PATCH /api/pedidos/detalles/[id]/estatus", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     (changeDetallePedidoStatus as jest.Mock).mockResolvedValue({
@@ -100,7 +101,7 @@ describe("PATCH /api/pedidos/detalles/[id]/estatus", () => {
     expect(changeDetallePedidoStatus).not.toHaveBeenCalled();
   });
 
-  it("allows Direccion to update detail status", async () => {
+  it("allows Direccion to update detail status and forwards user id for audit", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const req = createMockRequest({ estatus: "En producción" });
@@ -109,17 +110,17 @@ describe("PATCH /api/pedidos/detalles/[id]/estatus", () => {
 
     expect(res.status).toBe(200);
     expect(body.data.id_detalle).toBe(1);
-    expect(changeDetallePedidoStatus).toHaveBeenCalledWith(1, "En producción");
+    expect(changeDetallePedidoStatus).toHaveBeenCalledWith(1, "En producción", 1);
   });
 
-  it("allows Colaborador to update detail status", async () => {
+  it("allows Colaborador to update detail status and forwards user id for audit", async () => {
     mockGetSession.mockResolvedValue({ id: 2, role: "Colaborador" });
 
     const req = createMockRequest({ estatus: "Finalizado" });
     const res = await PATCH(req, { params: Promise.resolve({ id: "1" }) });
 
     expect(res.status).toBe(200);
-    expect(changeDetallePedidoStatus).toHaveBeenCalledWith(1, "Finalizado");
+    expect(changeDetallePedidoStatus).toHaveBeenCalledWith(1, "Finalizado", 2);
   });
 
   it("returns 422 with invalid detail id", async () => {
@@ -138,14 +139,6 @@ describe("PATCH /api/pedidos/detalles/[id]/estatus", () => {
     expect(changeDetallePedidoStatus).not.toHaveBeenCalled();
   });
 
-  it("returns 500 when service layer throws an unexpected error", async () => {
-    (changeDetallePedidoStatus as jest.Mock).mockRejectedValue(new Error("Database error"));
-
-    const req = createMockRequest({ estatus: "En producción" });
-    const res = await PATCH(req, { params: Promise.resolve({ id: "1" }) });
-
-    expect(res.status).toBe(500);
-  });
   it("returns 404 when detalle pedido does not exist", async () => {
     (changeDetallePedidoStatus as jest.Mock).mockRejectedValue(
       new NotFoundError("Detalle de pedido not found")
@@ -155,5 +148,14 @@ describe("PATCH /api/pedidos/detalles/[id]/estatus", () => {
     const res = await PATCH(req, { params: Promise.resolve({ id: "999" }) });
 
     expect(res.status).toBe(404);
+  });
+
+  it("returns 500 when service layer throws an unexpected error", async () => {
+    (changeDetallePedidoStatus as jest.Mock).mockRejectedValue(new Error("Database error"));
+
+    const req = createMockRequest({ estatus: "En producción" });
+    const res = await PATCH(req, { params: Promise.resolve({ id: "1" }) });
+
+    expect(res.status).toBe(500);
   });
 });

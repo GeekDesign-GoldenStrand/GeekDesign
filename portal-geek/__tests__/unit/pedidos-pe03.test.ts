@@ -5,22 +5,43 @@
 import { prisma } from "@/lib/db/client";
 import { changeDetallePedidoStatus, listPedidos, PEDIDO_STATUS } from "@/lib/services/pedidos";
 
-jest.mock("@/lib/db/client", () => ({
-  prisma: {
+jest.mock("@/lib/db/client", () => {
+  const mockPrisma = {
+    $transaction: jest.fn(),
+
     pedidos: {
       findMany: jest.fn(),
       count: jest.fn(),
+      update: jest.fn(),
     },
+
     detallePedido: {
       findUnique: jest.fn(),
       update: jest.fn(),
-    },
-    estatusPedidos: {
       findMany: jest.fn(),
+    },
+
+    estatusPedidos: {
       findUnique: jest.fn(),
     },
-  },
-}));
+  };
+
+  mockPrisma.$transaction.mockImplementation(
+    async (
+      callback: ((tx: typeof mockPrisma) => Promise<unknown> | unknown) | Promise<unknown>[]
+    ) => {
+      if (typeof callback === "function") {
+        return callback(mockPrisma);
+      }
+
+      return Promise.all(callback);
+    }
+  );
+
+  return {
+    prisma: mockPrisma,
+  };
+});
 
 describe("listPedidos - PE-03 service status summary", () => {
   beforeEach(() => {
@@ -137,20 +158,44 @@ describe("changeDetallePedidoStatus", () => {
 
     (prisma.detallePedido.update as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
+      id_estatus: 2,
+      id_usuario_modificacion: 99,
+    });
+
+    // Default case: not all details are final, so the parent pedido should not be closed.
+    (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
+      {
+        id_detalle: 1,
+        estatus: {
+          descripcion: PEDIDO_STATUS.EN_PRODUCCION,
+        },
+      },
+      {
+        id_detalle: 2,
+        estatus: {
+          descripcion: PEDIDO_STATUS.PENDIENTE,
+        },
+      },
+    ]);
+
+    (prisma.pedidos.update as jest.Mock).mockResolvedValue({
+      id_pedido: 1,
       id_estatus: 2,
     });
   });
 
-  it("updates a detalle pedido status", async () => {
+  it("updates a detalle pedido status and persists audit data", async () => {
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: 1,
       estatus: {
         descripcion: PEDIDO_STATUS.PENDIENTE,
       },
     });
 
-    const result = await changeDetallePedidoStatus(1, PEDIDO_STATUS.EN_PRODUCCION);
+    const result = await changeDetallePedidoStatus(1, PEDIDO_STATUS.EN_PRODUCCION, 99);
 
     expect(prisma.estatusPedidos.findUnique).toHaveBeenCalledWith({
       where: {
@@ -164,23 +209,30 @@ describe("changeDetallePedidoStatus", () => {
       },
       data: {
         id_estatus: 2,
+        id_usuario_modificacion: 99,
+        fecha_modificacion: expect.any(Date),
       },
     });
 
+    expect(prisma.pedidos.update).not.toHaveBeenCalled();
+
     expect(result).toEqual({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: 2,
+      id_usuario_modificacion: 99,
     });
   });
 
   it("treats a detalle without current status as Pendiente", async () => {
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: null,
       estatus: null,
     });
 
-    await changeDetallePedidoStatus(1, PEDIDO_STATUS.EN_PRODUCCION);
+    await changeDetallePedidoStatus(1, PEDIDO_STATUS.EN_PRODUCCION, 99);
 
     expect(prisma.detallePedido.update).toHaveBeenCalledWith({
       where: {
@@ -188,6 +240,8 @@ describe("changeDetallePedidoStatus", () => {
       },
       data: {
         id_estatus: 2,
+        id_usuario_modificacion: 99,
+        fecha_modificacion: expect.any(Date),
       },
     });
   });
@@ -195,46 +249,51 @@ describe("changeDetallePedidoStatus", () => {
   it("throws when detalle pedido does not exist", async () => {
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(changeDetallePedidoStatus(999, PEDIDO_STATUS.EN_PRODUCCION)).rejects.toThrow(
+    await expect(changeDetallePedidoStatus(999, PEDIDO_STATUS.EN_PRODUCCION, 99)).rejects.toThrow(
       "Detalle de pedido not found"
     );
 
     expect(prisma.detallePedido.update).not.toHaveBeenCalled();
+    expect(prisma.pedidos.update).not.toHaveBeenCalled();
   });
 
   it("prevents changing an Entregado detail to another status", async () => {
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: 4,
       estatus: {
         descripcion: PEDIDO_STATUS.ENTREGADO,
       },
     });
 
-    await expect(changeDetallePedidoStatus(1, PEDIDO_STATUS.PENDIENTE)).rejects.toThrow(
+    await expect(changeDetallePedidoStatus(1, PEDIDO_STATUS.PENDIENTE, 99)).rejects.toThrow(
       "No se puede cambiar el estatus de un servicio que ya está 'Entregado'"
     );
 
     expect(prisma.detallePedido.update).not.toHaveBeenCalled();
+    expect(prisma.pedidos.update).not.toHaveBeenCalled();
   });
 
   it("prevents changing a Cancelado detail to another status", async () => {
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: 5,
       estatus: {
         descripcion: PEDIDO_STATUS.CANCELADO,
       },
     });
 
-    await expect(changeDetallePedidoStatus(1, PEDIDO_STATUS.PENDIENTE)).rejects.toThrow(
+    await expect(changeDetallePedidoStatus(1, PEDIDO_STATUS.PENDIENTE, 99)).rejects.toThrow(
       "No se puede cambiar el estatus de un servicio que ya está 'Cancelado'"
     );
 
     expect(prisma.detallePedido.update).not.toHaveBeenCalled();
+    expect(prisma.pedidos.update).not.toHaveBeenCalled();
   });
 
-  it("allows keeping the same final status", async () => {
+  it("allows keeping the same final status and persists audit data", async () => {
     (prisma.estatusPedidos.findUnique as jest.Mock).mockResolvedValue({
       id_estatus: 4,
       descripcion: PEDIDO_STATUS.ENTREGADO,
@@ -242,17 +301,44 @@ describe("changeDetallePedidoStatus", () => {
 
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: 4,
       estatus: {
         descripcion: PEDIDO_STATUS.ENTREGADO,
       },
     });
 
-    await changeDetallePedidoStatus(1, PEDIDO_STATUS.ENTREGADO);
+    (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
+      {
+        id_detalle: 1,
+        estatus: {
+          descripcion: PEDIDO_STATUS.ENTREGADO,
+        },
+      },
+      {
+        id_detalle: 2,
+        estatus: {
+          descripcion: PEDIDO_STATUS.CANCELADO,
+        },
+      },
+    ]);
+
+    await changeDetallePedidoStatus(1, PEDIDO_STATUS.ENTREGADO, 99);
 
     expect(prisma.detallePedido.update).toHaveBeenCalledWith({
       where: {
         id_detalle: 1,
+      },
+      data: {
+        id_estatus: 4,
+        id_usuario_modificacion: 99,
+        fecha_modificacion: expect.any(Date),
+      },
+    });
+
+    expect(prisma.pedidos.update).toHaveBeenCalledWith({
+      where: {
+        id_pedido: 1,
       },
       data: {
         id_estatus: 4,
@@ -263,6 +349,7 @@ describe("changeDetallePedidoStatus", () => {
   it("throws when target status does not exist in catalog", async () => {
     (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
       id_detalle: 1,
+      id_pedido: 1,
       id_estatus: 1,
       estatus: {
         descripcion: PEDIDO_STATUS.PENDIENTE,
@@ -271,10 +358,157 @@ describe("changeDetallePedidoStatus", () => {
 
     (prisma.estatusPedidos.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(changeDetallePedidoStatus(1, PEDIDO_STATUS.EN_PRODUCCION)).rejects.toThrow(
+    await expect(changeDetallePedidoStatus(1, PEDIDO_STATUS.EN_PRODUCCION, 99)).rejects.toThrow(
       "Pedido status 'En producción' not found"
     );
 
     expect(prisma.detallePedido.update).not.toHaveBeenCalled();
+    expect(prisma.pedidos.update).not.toHaveBeenCalled();
+  });
+
+  it("marks pedido as Entregado when all details are final and at least one is delivered", async () => {
+    (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
+      id_detalle: 1,
+      id_pedido: 10,
+      id_estatus: 3,
+      estatus: {
+        descripcion: PEDIDO_STATUS.FINALIZADO,
+      },
+    });
+
+    (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
+      {
+        id_detalle: 1,
+        estatus: {
+          descripcion: PEDIDO_STATUS.ENTREGADO,
+        },
+      },
+      {
+        id_detalle: 2,
+        estatus: {
+          descripcion: PEDIDO_STATUS.CANCELADO,
+        },
+      },
+    ]);
+
+    (prisma.estatusPedidos.findUnique as jest.Mock)
+      .mockResolvedValueOnce({
+        id_estatus: 4,
+        descripcion: PEDIDO_STATUS.ENTREGADO,
+      })
+      .mockResolvedValueOnce({
+        id_estatus: 4,
+        descripcion: PEDIDO_STATUS.ENTREGADO,
+      });
+
+    await changeDetallePedidoStatus(1, PEDIDO_STATUS.ENTREGADO, 99);
+
+    expect(prisma.detallePedido.update).toHaveBeenCalledWith({
+      where: {
+        id_detalle: 1,
+      },
+      data: {
+        id_estatus: 4,
+        id_usuario_modificacion: 99,
+        fecha_modificacion: expect.any(Date),
+      },
+    });
+
+    expect(prisma.pedidos.update).toHaveBeenCalledWith({
+      where: {
+        id_pedido: 10,
+      },
+      data: {
+        id_estatus: 4,
+      },
+    });
+  });
+
+  it("marks pedido as Cancelado when all details are canceled", async () => {
+    (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
+      id_detalle: 1,
+      id_pedido: 10,
+      id_estatus: 1,
+      estatus: {
+        descripcion: PEDIDO_STATUS.PENDIENTE,
+      },
+    });
+
+    (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
+      {
+        id_detalle: 1,
+        estatus: {
+          descripcion: PEDIDO_STATUS.CANCELADO,
+        },
+      },
+      {
+        id_detalle: 2,
+        estatus: {
+          descripcion: PEDIDO_STATUS.CANCELADO,
+        },
+      },
+    ]);
+
+    (prisma.estatusPedidos.findUnique as jest.Mock)
+      .mockResolvedValueOnce({
+        id_estatus: 5,
+        descripcion: PEDIDO_STATUS.CANCELADO,
+      })
+      .mockResolvedValueOnce({
+        id_estatus: 5,
+        descripcion: PEDIDO_STATUS.CANCELADO,
+      });
+
+    await changeDetallePedidoStatus(1, PEDIDO_STATUS.CANCELADO, 99);
+
+    expect(prisma.detallePedido.update).toHaveBeenCalledWith({
+      where: {
+        id_detalle: 1,
+      },
+      data: {
+        id_estatus: 5,
+        id_usuario_modificacion: 99,
+        fecha_modificacion: expect.any(Date),
+      },
+    });
+
+    expect(prisma.pedidos.update).toHaveBeenCalledWith({
+      where: {
+        id_pedido: 10,
+      },
+      data: {
+        id_estatus: 5,
+      },
+    });
+  });
+
+  it("does not mark pedido as final when at least one detail is not final", async () => {
+    (prisma.detallePedido.findUnique as jest.Mock).mockResolvedValue({
+      id_detalle: 1,
+      id_pedido: 10,
+      id_estatus: 1,
+      estatus: {
+        descripcion: PEDIDO_STATUS.PENDIENTE,
+      },
+    });
+
+    (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
+      {
+        id_detalle: 1,
+        estatus: {
+          descripcion: PEDIDO_STATUS.ENTREGADO,
+        },
+      },
+      {
+        id_detalle: 2,
+        estatus: {
+          descripcion: PEDIDO_STATUS.EN_PRODUCCION,
+        },
+      },
+    ]);
+
+    await changeDetallePedidoStatus(1, PEDIDO_STATUS.ENTREGADO, 99);
+
+    expect(prisma.pedidos.update).not.toHaveBeenCalled();
   });
 });

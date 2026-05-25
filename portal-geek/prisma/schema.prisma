@@ -75,6 +75,7 @@ model Usuarios {
   historialCotizaciones HistorialEstadosCotizacion[]
   variablesCotizacion   VariablesCotizacion[]
   formulasCreadas       Formulas[]
+  detalles_modificados DetallePedido[] @relation("DetallePedidoUsuarioModificacion")
 
   @@map("USUARIOS")
 }
@@ -491,10 +492,10 @@ model DetallePedido {
   id_material             Int
   id_archivo              Int
   id_estatus              Int?
+  id_usuario_modificacion Int?
+  fecha_modificacion      DateTime?
 
   cantidad                Int
-  // D3: ancho_cm/alto_cm/grosor_cm/color/opciones_seleccionadas removed.
-  // Source of truth for dimensions/sizing is VariablesCotizacion (linked by id_detalle).
   responsable_recoleccion String   @db.VarChar(100)
   notas                   String?
   precio_unitario         Decimal  @db.Decimal(10, 2)
@@ -505,6 +506,8 @@ model DetallePedido {
   material Materiales      @relation(fields: [id_material], references: [id_material])
   archivo  ArchivosDisenio @relation(fields: [id_archivo], references: [id_archivo])
   estatus  EstatusPedidos? @relation(fields: [id_estatus], references: [id_estatus])
+
+  usuario_modificacion Usuarios? @relation("DetallePedidoUsuarioModificacion", fields: [id_usuario_modificacion], references: [id_usuario])
 
   variablesCotizacion VariablesCotizacion[]
 
