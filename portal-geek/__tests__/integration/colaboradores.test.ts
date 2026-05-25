@@ -14,12 +14,23 @@ jest.mock("@/lib/db/client", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
+    },
+    colaboradores: {
+      deleteMany: jest.fn(),
+    },
+    tokensRecuperacion: {
+      deleteMany: jest.fn(),
     },
   },
 }));
 
 jest.mock("@/lib/auth/password", () => ({
   hashPassword: jest.fn().mockResolvedValue("hashed_password"),
+}));
+
+jest.mock("@/lib/services/password-reset", () => ({
+  sendWelcomeEmailForColaborador: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockTransaction = prisma.$transaction as jest.Mock;

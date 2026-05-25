@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
 
-  // Redirect to the change password page
-  const redirectUrl = new URL("/cambiar-contrasena", request.url);
+  // Redirect to the collaborator password setting page
+  const redirectUrl = new URL("/establecer-contrasena", request.url);
   const response = NextResponse.redirect(redirectUrl);
 
   if (token) {

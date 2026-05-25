@@ -98,13 +98,15 @@ export async function createColaborador(data: CreateColaboradorInput) {
     return usuario;
   } catch (err) {
     // Si falla el envío del correo, hacemos un rollback manual para no dejar el usuario a medias
-    await prisma.$transaction([
-      prisma.tokensRecuperacion.deleteMany({ where: { id_usuario: usuario.id_usuario } }),
-      prisma.colaboradores.deleteMany({ where: { id_usuario: usuario.id_usuario } }),
-      prisma.usuarios.delete({ where: { id_usuario: usuario.id_usuario } }),
-    ]).catch(rollbackErr => {
-      console.error("[rollback] Falló al eliminar el usuario tras error de correo:", rollbackErr);
-    });
+    await prisma
+      .$transaction([
+        prisma.tokensRecuperacion.deleteMany({ where: { id_usuario: usuario.id_usuario } }),
+        prisma.colaboradores.deleteMany({ where: { id_usuario: usuario.id_usuario } }),
+        prisma.usuarios.delete({ where: { id_usuario: usuario.id_usuario } }),
+      ])
+      .catch((rollbackErr) => {
+        console.error("[rollback] Falló al eliminar el usuario tras error de correo:", rollbackErr);
+      });
 
     throw err;
   }

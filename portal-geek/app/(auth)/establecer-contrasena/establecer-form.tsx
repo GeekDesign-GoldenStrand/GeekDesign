@@ -7,11 +7,7 @@ import { useState, type FormEvent } from "react";
 import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
-interface Props {
-  token: string;
-}
-
-export function CambiarForm({ token }: Props) {
+export function EstablecerForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,14 +25,14 @@ export function CambiarForm({ token }: Props) {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch("/api/auth/establecer-contrasena", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password, confirmPassword }),
+        body: JSON.stringify({ password, confirmPassword }),
       });
       const json = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) {
-        setError(json?.error ?? "No se pudo actualizar la contraseña");
+        setError(json?.error ?? "No se pudo establecer la contraseña");
         return;
       }
       router.push("/login?reset=1");
@@ -53,7 +49,7 @@ export function CambiarForm({ token }: Props) {
         value={password}
         onChange={setPassword}
         disabled={isSubmitting}
-        placeholder="Nueva contraseña"
+        placeholder="Contraseña"
         autoComplete="new-password"
         name="password"
         hasIcon

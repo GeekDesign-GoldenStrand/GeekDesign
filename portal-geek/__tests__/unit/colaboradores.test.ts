@@ -20,12 +20,23 @@ jest.mock("@/lib/db/client", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
+    },
+    colaboradores: {
+      deleteMany: jest.fn(),
+    },
+    tokensRecuperacion: {
+      deleteMany: jest.fn(),
     },
   },
 }));
 
 jest.mock("@/lib/auth/password", () => ({
   hashPassword: jest.fn().mockResolvedValue("hashed_password"),
+}));
+
+jest.mock("@/lib/services/password-reset", () => ({
+  sendWelcomeEmailForColaborador: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockTransaction = prisma.$transaction as jest.Mock;
@@ -157,12 +168,16 @@ describe("createColaborador — COL-01 Registrar colaborador", () => {
     expect(mockCreate).toHaveBeenCalled();
   });
 
-  it("hashea la contraseña antes de guardar", async () => {
+  it("envía correo de bienvenida al colaborador", async () => {
     mockCreate.mockResolvedValue(BASE_COLABORADOR);
-    const { hashPassword } = jest.requireMock("@/lib/auth/password");
+    const { sendWelcomeEmailForColaborador } = jest.requireMock("@/lib/services/password-reset");
 
     await createColaborador(VALID_CREATE_INPUT);
-    expect(hashPassword).toHaveBeenCalledWith(VALID_CREATE_INPUT.contrasena_hash);
+    expect(sendWelcomeEmailForColaborador).toHaveBeenCalledWith(
+      BASE_COLABORADOR.id_usuario,
+      BASE_COLABORADOR.correo_electronico,
+      BASE_COLABORADOR.nombre_completo
+    );
   });
 
   it("crea el colaborador con registro anidado (colaborador.create)", async () => {
@@ -262,8 +277,8 @@ describe("deleteColaborador — COL-04 Eliminar colaborador (soft delete)", () =
     mockUpdate.mockResolvedValue(undefined);
 
     await deleteColaborador(1);
-    const { delete: mockDel } = prisma.usuarios as unknown as { delete: jest.Mock };
-    expect(mockDel).toBeUndefined();
+    const mockDel = prisma.usuarios.delete as unknown as jest.Mock;
+    expect(mockDel).not.toHaveBeenCalled();
   });
 
   it("lanza NotFoundError cuando el colaborador no existe (P2025)", async () => {
