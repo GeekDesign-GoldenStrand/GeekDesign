@@ -85,6 +85,7 @@ const PROVEEDOR = {
   descripcion_proveedor: null,
   costo: null,
   ubicacion: null,
+  color: "#3B82F6",
   estatus: "Activo",
 };
 
@@ -98,6 +99,7 @@ const INSTALADOR = {
   costo_instalacion: 500,
   notas: null,
   ubicacion: null,
+  color: "#10B981",
   estatus: "Activo",
 };
 
