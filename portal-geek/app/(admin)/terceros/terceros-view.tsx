@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import {
   AgregarTerceroModal,
   ConfirmarEliminarInstaladorModal,
@@ -10,7 +11,6 @@ import {
   EditarInstaladorModal,
   EditarProveedorModal,
   TercerosGrid,
-  TercerosHeader,
 } from "@/components/ui/terceros";
 import type { InstaladorFormData } from "@/components/ui/terceros/organisms/EditarInstaladorModal";
 import type { ProveedorFormData } from "@/components/ui/terceros/organisms/EditarProveedorModal";
@@ -396,7 +396,7 @@ export function TercerosView() {
 
   return (
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-white">
-      <TercerosHeader />
+      <AdminHeader title="Terceros" />
       <main className="p-4 md:p-8">
         <AdminToolbar
           tabs={TABS}
