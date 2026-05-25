@@ -2,7 +2,7 @@
 import { randomBytes } from "node:crypto";
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import type { Pedidos, Roles } from "@prisma/client";
+import type { Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
@@ -385,16 +385,6 @@ async function main() {
       nombre_material: "Vinil adhesivo",
       descripcion_material: "Vinil para rotulación y señalética",
       unidad_medida: "metro",
-    },
-  });
-
-  const materialMetal = await prisma.materiales.upsert({
-    where: { id_material: 5 },
-    update: {},
-    create: {
-      nombre_material: "Placa metálica",
-      descripcion_material: "Placa metálica para grabado láser",
-      unidad_medida: "pieza",
     },
   });
 
