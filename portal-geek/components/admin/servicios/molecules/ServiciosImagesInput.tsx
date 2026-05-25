@@ -1,6 +1,5 @@
 "use client";
 
-import type { File } from "@phosphor-icons/react";
 import { CloudArrowUp, Trash, Warning } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 

@@ -31,10 +31,11 @@ export function ServicioDetalleClient({
 }: Props) {
   const [disenioFile, setDisenioFile] = useState<UploadedFile | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(imagenUrls[0] || null);
-  const [prevUrls, setPrevUrls] = useState<string[]>(imagenUrls);
+  const urlsKey = imagenUrls.join("|");
+  const [prevKey, setPrevKey] = useState(urlsKey);
 
-  if (imagenUrls !== prevUrls) {
-    setPrevUrls(imagenUrls);
+  if (urlsKey !== prevKey) {
+    setPrevKey(urlsKey);
     setSelectedImage(imagenUrls[0] || null);
   }
 
@@ -64,6 +65,7 @@ export function ServicioDetalleClient({
                   selectedImage === url ? "border-[#df2646]" : "border-gray-200"
                 }`}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover" />
               </button>
             ))}
