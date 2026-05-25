@@ -564,7 +564,7 @@ model Cotizaciones {
   id_estatus_cotizacion Int
   folio                 String?   @unique @db.VarChar(50)
   monto_total           Decimal   @db.Decimal(10, 2)
-  porcentaje_descuento  Decimal?  @db.Decimal(5, 2)
+  porcentaje_descuento  Decimal?  @db.Decimal(4, 2)
   motivo_descuento      String?   @db.VarChar(255)
   nombre_oportunidad    String?   @db.VarChar(150)
   empresa_cliente       String?   @db.VarChar(100)
