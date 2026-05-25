@@ -6,6 +6,8 @@ import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosSe
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
 
+const FINAL_PEDIDO_STATUSES = ["Entregado", "Cancelado"];
+
 interface PedidoDetalle {
   id_detalle: number;
   id_servicio: number;
@@ -19,7 +21,6 @@ interface PedidoDetalle {
   };
 }
 
-// Frontend type for a single order (pedido)
 interface Pedido {
   id_pedido: number;
   fecha_creacion: string;
@@ -42,9 +43,9 @@ interface Pedido {
 
   detalles?: PedidoDetalle[];
   serviceStatusSummary?: ServiceStatusSummary;
+  archivos: { id: number; nombre: string }[];
 }
 
-// Raw API response type
 interface PedidoApi {
   id_pedido: number;
   fecha_creacion: string;
@@ -68,41 +69,47 @@ interface PedidoApi {
     descripcion: string;
   } | null;
 
-  detalles?: PedidoDetalle[];
+  detalles?: Array<
+    PedidoDetalle & {
+      archivo?: {
+        id_archivo: number;
+        nombre_archivo: string;
+        url_archivo: string;
+      } | null;
+    }
+  >;
+
   serviceStatusSummary?: ServiceStatusSummary;
 }
 
-export default function PedidosPage() {
-  // Local state for orders list and pagination/search controls
+export default function PedidosFinalizadosPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filter states (active flag, service IDs, statuses, company, client)
-  const [onlyActive, setOnlyActive] = useState(true);
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [estatuses, setEstatuses] = useState<string[]>([]);
+  const [estatuses, setEstatuses] = useState<string[]>(FINAL_PEDIDO_STATUSES);
   const [empresa, setEmpresa] = useState<string | null>(null);
   const [cliente, setCliente] = useState<string | null>(null);
+  const [services, setServices] = useState<PedidoServiceOption[]>([]);
 
   const pageSize = 10;
 
-  const [services, setServices] = useState<PedidoServiceOption[]>([]);
-
-  // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
     try {
       const params = new URLSearchParams();
 
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
-      params.set("onlyActive", onlyActive ? "true" : "false");
+      params.set("onlyActive", "false");
 
       if (search) params.set("search", search);
 
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
-      estatuses.forEach((e) => params.append("estatus", e));
+
+      // This view is only for completed/canceled orders.
+      FINAL_PEDIDO_STATUSES.forEach((status) => params.append("estatus", status));
 
       if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
@@ -110,35 +117,36 @@ export default function PedidosPage() {
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
 
-      // Map API response into frontend-friendly structure
       const mapped: Pedido[] = (json.data ?? []).map((p: PedidoApi) => ({
         id_pedido: p.id_pedido,
         fecha_creacion: p.fecha_creacion,
         fecha_estimada: p.fecha_estimada ?? null,
         folio: p.cotizaciones?.[0]?.folio ?? null,
-        // Take latest quotation amount if it exists
         monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
         cliente: p.cliente,
         estatus: p.estatus,
         estado_factura: p.estado_factura ?? null,
         detalles: p.detalles ?? [],
         serviceStatusSummary: p.serviceStatusSummary,
+
+        archivos: (p.detalles ?? [])
+          .map((d) => d.archivo)
+          .filter(
+            (a): a is { id_archivo: number; nombre_archivo: string; url_archivo: string } =>
+              a != null && a.url_archivo !== "__PLACEHOLDER__"
+          )
+          .map((a) => ({ id: a.id_archivo, nombre: a.nombre_archivo })),
       }));
 
       setPedidos(mapped);
       setTotal(json.total ?? 0);
     } catch {
-      console.error("Error loading orders");
+      console.error("Error loading finalized orders");
     }
-  }, [page, search, onlyActive, serviceIds, estatuses, empresa, cliente]);
+  }, [page, search, serviceIds, empresa, cliente]);
 
-  // Effect: reload orders whenever filters or pagination change
   useEffect(() => {
-    async function load() {
-      await fetchPedidos();
-    }
-
-    load();
+    fetchPedidos();
   }, [fetchPedidos]);
 
   useEffect(() => {
@@ -161,23 +169,6 @@ export default function PedidosPage() {
     fetchServices();
   }, []);
 
-  // Delete an order and refresh list
-  async function handleDelete(id: number) {
-    await fetch(`/api/pedidos/${id}`, { method: "DELETE" });
-    fetchPedidos();
-  }
-
-  // Update order status and refresh list
-  async function handleStatusChange(id: number, status: string) {
-    await fetch(`/api/pedidos/${id}/estatus`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estatus: status }),
-    });
-
-    fetchPedidos();
-  }
-
   function handleServiceSelect(id: number | null) {
     setPage(1);
     setServiceIds(id === null ? [] : [id]);
@@ -195,7 +186,6 @@ export default function PedidosPage() {
     fetchPedidos();
   }
 
-  // Render template with data, search, filters, and pagination
   return (
     <PedidosTemplate
       pedidos={pedidos}
@@ -204,10 +194,10 @@ export default function PedidosPage() {
       page={page}
       setPage={setPage}
       total={total}
-      onDelete={handleDelete}
-      onStatusChange={handleStatusChange}
-      onlyActive={onlyActive}
-      setOnlyActive={setOnlyActive}
+      onDelete={() => {}}
+      onStatusChange={() => {}}
+      onlyActive={false}
+      setOnlyActive={() => {}}
       serviceIds={serviceIds}
       setServiceIds={setServiceIds}
       estatuses={estatuses}
@@ -220,9 +210,9 @@ export default function PedidosPage() {
       selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
       onServiceSelect={handleServiceSelect}
       onDetalleStatusChange={handleDetalleStatusChange}
-      title="Pedidos"
-      historyButtonHref="/pedidos/finalizados"
-      historyButtonLabel="Pedidos Completados / Cancelados"
+      title="Pedidos Completados / Cancelados"
+      backButtonHref="/pedidos"
+      backButtonLabel="Volver a Pedidos"
       showServiceTabs={true}
     />
   );

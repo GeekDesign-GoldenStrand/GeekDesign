@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
@@ -63,6 +64,13 @@ type Props = {
   selectedServiceId: number | null;
   onServiceSelect: (id: number | null) => void;
   onDetalleStatusChange: (detalleId: number, status: string) => void;
+
+  title?: string;
+  historyButtonHref?: string;
+  historyButtonLabel?: string;
+  backButtonHref?: string;
+  backButtonLabel?: string;
+  showServiceTabs?: boolean;
 };
 
 export function PedidosTemplate({
@@ -88,6 +96,12 @@ export function PedidosTemplate({
   selectedServiceId,
   onServiceSelect,
   onDetalleStatusChange,
+  title = "Pedidos",
+  historyButtonHref,
+  historyButtonLabel,
+  backButtonHref,
+  backButtonLabel,
+  showServiceTabs = true,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -128,25 +142,79 @@ export function PedidosTemplate({
 
   return (
     <>
-      <AdminHeader title="Pedidos" />
+      <AdminHeader title={title} />
 
-      <PedidosServiceTabs
-        services={services}
-        selectedServiceId={selectedServiceId}
-        onSelectService={onServiceSelect}
-      />
+      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-8 space-y-6">
+        {/* Service filter tabs */}
+        {showServiceTabs && (
+          <div className="pt-2">
+            <PedidosServiceTabs
+              services={services}
+              selectedServiceId={selectedServiceId}
+              onSelectService={onServiceSelect}
+            />
+          </div>
+        )}
 
-      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
-        {/* Toolbar */}
+        {/* Toolbar and actions */}
         <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            // Button for adding a new order. Backend not implemented yet.
-            // onAgregar={() => {}}
-            // Filter button for orders, uncomment if you want to implement it
-            // onFiltrar={() => setShowFilter((prev) => !prev)}
-          />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="w-full md:max-w-[430px]">
+              <AdminToolbar search={search} onSearchChange={setSearch} />
+            </div>
+
+            <div className="flex justify-end items-center">
+              {historyButtonHref && historyButtonLabel && (
+                <Link
+                  href={historyButtonHref}
+                  className="
+                    h-11
+                    px-6
+                    rounded-md
+                    border
+                    border-[#c6c6c6]
+                    bg-white
+                    text-[#575757]
+                    text-sm
+                    font-semibold
+                    flex
+                    items-center
+                    justify-center
+                    hover:border-[#8e908f]
+                    hover:text-[#1e1e1e]
+                    transition
+                  "
+                >
+                  {historyButtonLabel}
+                </Link>
+              )}
+
+              {backButtonHref && backButtonLabel && (
+                <Link
+                  href={backButtonHref}
+                  className="
+                    h-11
+                    px-6
+                    rounded-md
+                    border
+                    border-[#c6c6c6]
+                    bg-white
+                    text-[#575757]
+                    text-sm
+                    font-semibold
+                    flex
+                    items-center
+                    justify-center
+                    hover:border-[#8e908f]
+                    hover:text-[#1e1e1e]
+                    transition
+                  "
+                >
+                  ← {backButtonLabel}
+                </Link>
+              )}
+            </div>
+          </div>
 
           {/* Filter dropdown */}
           {showFilter && (
