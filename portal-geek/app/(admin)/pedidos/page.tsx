@@ -80,7 +80,7 @@ export default function PedidosPage() {
   const [total, setTotal] = useState(0);
 
   // Filter states (active flag, service IDs, statuses, company, client)
-  const [onlyActive, setOnlyActive] = useState(false);
+  const [onlyActive, setOnlyActive] = useState(true);
   const [serviceIds, setServiceIds] = useState<number[]>([]);
   const [estatuses, setEstatuses] = useState<string[]>([]);
   const [empresa, setEmpresa] = useState<string | null>(null);
