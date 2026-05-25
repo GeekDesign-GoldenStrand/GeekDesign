@@ -261,6 +261,13 @@ export interface PurchaseOrderTemplateProps {
   comprador: POBuyer;
   items: POLineItem[];
   notas?: string | null;
+  /**
+   * Financial totals computed by `calcularTotalesOrden` in pdf-purchase-order.tsx
+   * (single source of truth). The template renders them verbatim — no arithmetic here.
+   */
+  subtotal_general: number;
+  iva: number;
+  total: number;
 }
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
@@ -475,10 +482,17 @@ function ItemsTable({ items }: { items: POLineItem[] }) {
 }
 
 /** Notes (left) + Subtotal / IVA / Total (right). */
-function BottomSection({ notas, subtotal }: { notas?: string | null; subtotal: number }) {
-  const iva = subtotal * 0.16;
-  const total = subtotal + iva;
-
+function BottomSection({
+  notas,
+  subtotal_general,
+  iva,
+  total,
+}: {
+  notas?: string | null;
+  subtotal_general: number;
+  iva: number;
+  total: number;
+}) {
   return (
     <View style={po.bottomRow}>
       {/* Notes */}
@@ -499,7 +513,7 @@ function BottomSection({ notas, subtotal }: { notas?: string | null; subtotal: n
       <View style={po.totalsBlock}>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal:</Text>
-          <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+          <Text style={styles.totalValue}>{formatCurrency(subtotal_general)}</Text>
         </View>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>IVA (16%):</Text>
@@ -526,10 +540,10 @@ export function PurchaseOrderTemplate({
   comprador,
   items,
   notas,
+  subtotal_general,
+  iva,
+  total,
 }: PurchaseOrderTemplateProps) {
-  // Pre-tax subtotal derived from line items so callers don't have to pass it separately.
-  const subtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -545,7 +559,7 @@ export function PurchaseOrderTemplate({
 
         <ItemsTable items={items} />
 
-        <BottomSection notas={notas} subtotal={subtotal} />
+        <BottomSection notas={notas} subtotal_general={subtotal_general} iva={iva} total={total} />
 
         <Text
           style={styles.pageFooter}

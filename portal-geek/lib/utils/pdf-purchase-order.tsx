@@ -82,7 +82,11 @@ export async function generatePurchaseOrderPDF(
     subtotal: item.cantidad * item.precio_unitario,
   }));
 
-  // 2. Map input params to template props.
+  // 2. Compute financial summary here — single source of truth.
+  //    The template receives these as props and renders them verbatim.
+  const { subtotal_general, iva, total } = calcularTotalesOrden(items);
+
+  // 3. Map input params to template props.
   //    `cliente.nombre` → `comprador.nombre_sucursal` is the only renaming needed.
   const templateProps: PurchaseOrderTemplateProps = {
     po_number: numero_orden,
@@ -99,12 +103,13 @@ export async function generatePurchaseOrderPDF(
       correo: cliente.correo,
     },
     items: pricedItems,
+    subtotal_general,
+    iva,
+    total,
   };
 
-  // 3. Render to an in-memory buffer.
+  // 4. Render to an in-memory buffer.
   //    renderToBuffer resolves once the PDF is fully assembled — no streaming needed.
-  //    Aggregate totals (subtotal_general, iva, total) are derived inside the
-  //    template from `items`; use calcularTotalesOrden when you need them outside.
   const buffer = await renderToBuffer(<PurchaseOrderTemplate {...templateProps} />);
 
   // Buffer.from() normalises the result whether react-pdf returns Buffer or Uint8Array.

@@ -22,7 +22,7 @@ import {
   type ProveedorEntry,
 } from "@/lib/services/pedidos";
 import { apiError } from "@/lib/utils/api";
-import { handleError } from "@/lib/utils/errors";
+import { DataInconsistencyError, handleError } from "@/lib/utils/errors";
 import {
   calcularTotalesOrden,
   generatePurchaseOrderPDF,
@@ -46,11 +46,18 @@ function buildProveedorItems(entry: ProveedorEntry): POItemInput[] {
       entry.precios.find((p) => p.id_servicio === detalle.id_servicio) ??
       entry.precios.find((p) => p.id_material === detalle.id_material);
 
+    if (!precio) {
+      throw new DataInconsistencyError(
+        `No se encontró precio para el detalle DET-${detalle.id_detalle} ` +
+          `(servicio ${detalle.id_servicio}, material ${detalle.id_material})`
+      );
+    }
+
     return {
       codigo: `DET-${detalle.id_detalle}`,
       descripcion: `${detalle.servicio.nombre_servicio} — ${detalle.material.nombre_material}`,
       cantidad: detalle.cantidad,
-      precio_unitario: Number(precio?.precio ?? 0),
+      precio_unitario: Number(precio.precio),
     };
   });
 }
@@ -63,11 +70,18 @@ function buildInstaladorItems(entry: InstaladorEntry): POItemInput[] {
   return entry.detalles.map((detalle) => {
     const costo = entry.costos.find((c) => c.id_servicio === detalle.id_servicio);
 
+    if (!costo) {
+      throw new DataInconsistencyError(
+        `No se encontró costo de instalador para el detalle DET-${detalle.id_detalle} ` +
+          `(servicio ${detalle.id_servicio})`
+      );
+    }
+
     return {
       codigo: `DET-${detalle.id_detalle}`,
       descripcion: `${detalle.servicio.nombre_servicio} (Instalación) — ${detalle.material.nombre_material}`,
       cantidad: detalle.cantidad,
-      precio_unitario: Number(costo?.costo ?? 0),
+      precio_unitario: Number(costo.costo),
     };
   });
 }
