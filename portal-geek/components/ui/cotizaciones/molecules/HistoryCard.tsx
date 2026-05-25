@@ -1,10 +1,9 @@
 import { ArrowRight, Clock } from "@phosphor-icons/react";
-import React from "react";
 
 import { formatDate } from "@/lib/utils/date";
 import type { HistorialEstado } from "@/types/cotizacion";
-import { USERS } from "@/types/cotizacion";
 
+import { USERS } from "../atoms/constants";
 import { SectionCard } from "../atoms/SectionCard";
 
 interface HistoryCardProps {

@@ -1,7 +1,6 @@
-import React from "react";
-
 import type { CategoriaCliente } from "@/types/cotizacion";
-import { CLIENT_CATEGORY_COLORS } from "@/types/cotizacion";
+
+import { CLIENT_CATEGORY_COLORS } from "../atoms/constants";
 
 interface ClientBadgeProps {
   categoria: CategoriaCliente;

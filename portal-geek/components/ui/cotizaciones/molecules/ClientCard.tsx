@@ -1,5 +1,4 @@
 import { User } from "@phosphor-icons/react";
-import React from "react";
 
 import { formatPhoneNumber } from "@/lib/utils/format";
 import type { Cliente } from "@/types/cotizacion";

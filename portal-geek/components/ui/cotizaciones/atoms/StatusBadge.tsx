@@ -1,7 +1,6 @@
-import React from "react";
-
 import type { EstatusCotizacion } from "@/types/cotizacion";
-import { STATUS_COLORS } from "@/types/cotizacion";
+
+import { STATUS_COLORS } from "../atoms/constants";
 
 interface StatusBadgeProps {
   estatus: EstatusCotizacion;

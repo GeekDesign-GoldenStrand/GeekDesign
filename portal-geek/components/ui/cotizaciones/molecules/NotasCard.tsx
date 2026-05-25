@@ -1,5 +1,4 @@
 import { NotePencil } from "@phosphor-icons/react";
-import React from "react";
 
 import { SectionCard } from "../atoms/SectionCard";
 
