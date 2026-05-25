@@ -120,6 +120,21 @@ describe("GET /api/admin/archivos/[id]", () => {
     expect(mockPresignGet).not.toHaveBeenCalled();
   });
 
+  it("devuelve 404 cuando url_archivo es una URL absoluta (aunque nombre no sea placeholder)", async () => {
+    // Defense-in-depth: a row whose url_archivo starts with https:// must be
+    // rejected even when nombre_archivo looks like a real filename. This mirrors
+    // the route guard: archivo.url_archivo must be a relative GCS object key.
+    mockFindUnique.mockResolvedValue({
+      id_archivo: 2,
+      url_archivo: "https://evil.example.com/payload.ai",
+      nombre_archivo: "logo_cliente.ai",
+    });
+
+    const res = await GET(makeRequest(), makeCtx("2"));
+    expect(res.status).toBe(404);
+    expect(mockPresignGet).not.toHaveBeenCalled();
+  });
+
   it("devuelve 404 si el archivo no existe en la DB", async () => {
     mockFindUnique.mockResolvedValue(null);
     const res = await GET(makeRequest(), makeCtx("999"));

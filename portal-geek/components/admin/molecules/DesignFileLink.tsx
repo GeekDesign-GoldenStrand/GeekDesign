@@ -23,7 +23,7 @@ export function DesignFileLink({ archivos, className }: Props) {
 
   const first = archivos[0];
 
-  if (first.nombre === "PLACEHOLDER") return null;
+  if (!first.id || first.nombre === "__PLACEHOLDER__") return null;
   const title = `${first.nombre} · Archivo enviado por el cliente · No ha sido escaneado · Ábrelo en un entorno seguro`;
 
   return (
