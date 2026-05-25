@@ -6,6 +6,12 @@ import { listPedidos } from "@/lib/services/pedidos";
 // Mock auth guard
 jest.mock("@/lib/auth/guards", () => ({
   withRole: (_roles: string[], handler: unknown) => handler as (req: Request) => Promise<Response>,
+  withRoleParams: (_roles: string[], handler: unknown) =>
+    handler as (req: Request) => Promise<Response>,
+  withSection: (_section: string, _action: string, handler: unknown) =>
+    handler as (req: Request) => Promise<Response>,
+  withSectionParams: (_section: string, _action: string, handler: unknown) =>
+    handler as (req: Request) => Promise<Response>,
 }));
 
 // Mock service layer

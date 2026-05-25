@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { withRole } from "@/lib/auth/guards";
+import { withSection } from "@/lib/auth/guards";
 import { CreateCotizacionSchema } from "@/lib/schemas/cotizaciones";
 import { listCotizaciones, createCotizacion } from "@/lib/services/cotizaciones";
 import { created } from "@/lib/utils/api";
@@ -19,7 +19,7 @@ export function paginated<T>(items: T[], total: number, page: number, pageSize: 
 }
 
 // GET endpoint: lists cotizaciones with filters and pagination
-export const GET = withRole(["Direccion"], async (req: NextRequest) => {
+export const GET = withSection("cotizaciones", "read", async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
 
   // Pagination parameters: default page=1, pageSize=13
@@ -47,7 +47,7 @@ export const GET = withRole(["Direccion"], async (req: NextRequest) => {
 });
 
 // POST endpoint: creates a new cotizacion
-export const POST = withRole(["Direccion"], async (req: NextRequest) => {
+export const POST = withSection("cotizaciones", "write", async (req: NextRequest) => {
   try {
     // Validate request body against schema
     const body = CreateCotizacionSchema.parse(await req.json());

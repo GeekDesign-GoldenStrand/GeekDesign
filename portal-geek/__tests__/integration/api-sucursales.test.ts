@@ -28,6 +28,22 @@ jest.mock("@/lib/auth/guards", () => ({
         req as NextRequest,
         ctx
       ),
+
+  withSection:
+    (_section: string, _action: string, handler: unknown) =>
+    async (req: unknown, ctx: { params?: unknown }) =>
+      (handler as (req: NextRequest, ctx: { params?: unknown }) => Promise<Response>)(
+        req as NextRequest,
+        ctx
+      ),
+
+  withSectionParams:
+    (_section: string, _action: string, handler: unknown) =>
+    async (req: unknown, ctx: { params?: unknown }) =>
+      (handler as (req: NextRequest, ctx: { params?: unknown }) => Promise<Response>)(
+        req as NextRequest,
+        ctx
+      ),
 }));
 
 // Service mocks keep these tests focused on route validation and service contracts.
