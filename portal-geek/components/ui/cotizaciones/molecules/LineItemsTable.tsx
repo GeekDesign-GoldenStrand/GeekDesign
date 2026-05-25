@@ -111,9 +111,9 @@ export function LineItemsTable({ servicios, discountAmount, discountLabel }: Lin
                   <VariablesList variables={item.variables} />
                 </td>
                 <td className="py-3 px-2 align-top">
-                  {item.archivo_url ? (
+                  {item.archivo_nombre != "__PLACEHOLDER__" ? (
                     <a
-                      href={item.archivo_url}
+                      href={`/api/admin/archivos/${item.archivo_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       title={item.archivo_nombre ?? "Ver diseño"}
@@ -123,7 +123,7 @@ export function LineItemsTable({ servicios, discountAmount, discountLabel }: Lin
                       className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-medium text-blue-700 border border-blue-200 rounded-md hover:bg-blue-50 transition-colors"
                     >
                       <ImageIcon size={14} />
-                      Ver
+                      Descargar
                     </a>
                   ) : (
                     <span className="text-gray-300 text-[12px]">—</span>
