@@ -1,9 +1,9 @@
 import type {
   Cotizaciones,
-  HistorialEstadosCotizacion,
   CotizacionesRechazadas,
+  HistorialEstadosCotizacion,
+  Prisma,
 } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type {
@@ -16,10 +16,15 @@ import { getPlaceholderArchivoId, getSistemaUserId } from "@/lib/services/sistem
 import {
   ConfigurationError,
   ConflictError,
+  DataInconsistencyError,
   NotFoundError,
   ValidationError,
-  DataInconsistencyError,
 } from "@/lib/utils/errors";
+// Catalog of quotation statuses lives in @/types/cotizacion so both the
+// server (this file) and the client (CotizacionDetailPage, etc.) read from
+// the same source. Re-exported further down so existing service consumers
+// don't have to update their imports.
+import { QUOTATION_STATUS, toEstatusCotizacion, type QuotationStatus } from "@/types/cotizacion";
 
 /**
  * Common include configuration for quotations to ensure consistent typing.
@@ -58,23 +63,72 @@ export type CotizacionWithRelations = Prisma.CotizacionesGetPayload<{
   include: typeof INCLUDE_CONFIG;
 }>;
 
+// Detail view used by GET /api/cotizaciones/[id] AND by the storefront
+// page fallback. Designed as a strict superset of INCLUDE_CONFIG so the
+// payload remains assignable to CotizacionWithRelations:
+//   - admin detail needs material + archivo on each detalle, historial
+//     with usuario + cliente, variablesCotizacion.usuario, rechazada
+//   - storefront needs pedido.estatus + estado_factura and the
+//     variable → formula → servicio chain
+// Keeping both unioned in one include keeps a single source of truth and
+// avoids a second `findUnique` per request.
+const DETAIL_INCLUDE = {
+  cliente: true,
+  estatus: true,
+  pedido: {
+    include: {
+      estatus: true,
+      estado_factura: true,
+      detalles: {
+        include: { servicio: true, material: true, archivo: true },
+      },
+    },
+  },
+  historial: {
+    include: {
+      usuario: { select: { nombre_completo: true } },
+      cliente: { select: { nombre_cliente: true } },
+    },
+  },
+  variablesCotizacion: {
+    include: {
+      variable: {
+        include: {
+          formula: { include: { servicio: true } },
+        },
+      },
+      usuario: { select: { nombre_completo: true } },
+    },
+  },
+  rechazada: true,
+} as const;
+
+type CotizacionDetailBase = Prisma.CotizacionesGetPayload<{
+  include: typeof DETAIL_INCLUDE;
+}>;
+
+// Service-enriched: each historial entry gets the resolved label strings
+// looked up against the EstatusCotizacion catalog so the UI doesn't have
+// to hold the catalog itself.
+export type CotizacionDetail = Omit<CotizacionDetailBase, "historial"> & {
+  historial: (CotizacionDetailBase["historial"][number] & {
+    estado_anterior_label: string | null;
+    estado_nuevo_label: string;
+  })[];
+};
+
 // Copilot review #1: emails must be normalized before any Postgres @unique
 // lookup or comparison. Postgres unique indexes are case-sensitive, and the
 // approve/cancel handlers compare with `.toLowerCase()` on a `.trim()`-less
 // header — keep both sides consistent by routing every email through this.
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
 
-// Centralized catalog of quotation statuses.
-// Using constants avoids scattered "magic strings" and makes refactoring safer.
-export const QUOTATION_STATUS = {
-  PENDIENTE: "Pendiente",
-  VALIDADA: "Validada",
-  RECHAZADA: "Rechazada",
-  APROBADA: "Aprobada",
-  CANCELADA: "Cancelada",
-} as const;
-
-export type QuotationStatus = (typeof QUOTATION_STATUS)[keyof typeof QUOTATION_STATUS];
+// Re-export the catalog so existing `import { QUOTATION_STATUS } from
+// "@/lib/services/cotizaciones"` consumers keep resolving without edits.
+// The actual import lives at the top of the file with the rest of the
+// imports (see @/types/cotizacion).
+export { QUOTATION_STATUS };
+export type { QuotationStatus };
 
 export async function listCotizaciones(
   page: number,
@@ -163,10 +217,36 @@ export async function listCotizaciones(
   return { items, total };
 }
 
-export async function getCotizacion(id: number): Promise<CotizacionWithRelations | null> {
-  return prisma.cotizaciones.findUnique({
-    where: { id_cotizacion: id },
-    include: INCLUDE_CONFIG,
+export async function getCotizacion(id: number): Promise<CotizacionDetail | null> {
+  return prisma.$transaction(async (tx) => {
+    const cotizacion = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion: id },
+      include: {
+        ...DETAIL_INCLUDE,
+        // orderBy lives on the live query, not on the include type — keeps
+        // DETAIL_INCLUDE pure structural so GetPayload stays sharp.
+        historial: {
+          ...DETAIL_INCLUDE.historial,
+          orderBy: { fecha_cambio: "asc" },
+        },
+      },
+    });
+
+    if (!cotizacion) return null;
+
+    const estatuses = await tx.estatusCotizacion.findMany();
+    const estatusMap = new Map(estatuses.map((e) => [e.id_estatus, e.descripcion]));
+
+    return {
+      ...cotizacion,
+      historial: cotizacion.historial.map((h) => ({
+        ...h,
+        estado_anterior_label: h.id_estado_anterior
+          ? (estatusMap.get(h.id_estado_anterior) ?? String(h.id_estado_anterior))
+          : null,
+        estado_nuevo_label: estatusMap.get(h.id_estado_nuevo) ?? String(h.id_estado_nuevo),
+      })),
+    };
   });
 }
 
@@ -205,15 +285,184 @@ export async function updateCotizacion(
   id: number,
   data: UpdateCotizacionInput
 ): Promise<Cotizaciones> {
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion: id },
+      select: {
+        id_cotizacion: true,
+        id_pedido: true,
+        porcentaje_descuento: true,
+        estatus: { select: { descripcion: true } },
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundError(`Cotización ${id} no encontrada`);
+    }
+
+    // Pendiente-only — once the cliente validates the quote (or moves
+    // beyond), line items become immutable. Same rule as aplicarDescuento
+    // so the two write paths stay aligned: any mutation that affects the
+    // saved monto_total is locked behind this single transition gate.
+    if (existing.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
+      throw new ConflictError(
+        `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${existing.estatus.descripcion}')`
+      );
+    }
+
+    let computedMontoTotal: number | undefined;
+
+    if (data.servicios && data.servicios.length > 0) {
+      if (!existing.id_pedido) {
+        throw new ConflictError("La cotización no tiene un pedido vinculado");
+      }
+
+      // IDOR guard: `id_detalle` arrives from the request body. Without
+      // scoping to this cotización's `id_pedido` a caller could update line
+      // items that belong to a completely different quote. Resolve the
+      // allow-list once up-front, validate every id, and only then write.
+      const ownedDetalles = await tx.detallePedido.findMany({
+        where: { id_pedido: existing.id_pedido },
+        select: { id_detalle: true },
+      });
+      const ownedIds = new Set(ownedDetalles.map((d) => d.id_detalle));
+
+      for (const s of data.servicios) {
+        if (!ownedIds.has(s.id_detalle)) {
+          throw new NotFoundError(`Detalle ${s.id_detalle} no pertenece a la cotización ${id}`);
+        }
+      }
+
+      for (const s of data.servicios) {
+        await tx.detallePedido.update({
+          where: { id_detalle: s.id_detalle },
+          data: {
+            cantidad: s.cantidad,
+            precio_unitario: s.precio_unitario,
+            subtotal: s.cantidad * s.precio_unitario,
+          },
+        });
+      }
+
+      const detalles = await tx.detallePedido.findMany({
+        where: { id_pedido: existing.id_pedido },
+        select: { subtotal: true },
+      });
+      const baseSum = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
+
+      // Re-apply the stored discount so monto_total stays consistent with
+      // porcentaje_descuento. Without this the row would drift to an
+      // un-discounted total while still advertising a discount %.
+      const pct = existing.porcentaje_descuento ? Number(existing.porcentaje_descuento) : 0;
+      computedMontoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+    }
+
+    // Use Prisma's checked update type so each field write is validated
+    // against the schema (e.g. fecha_* must be Date | string, not arbitrary).
+    const updateData: Prisma.CotizacionesUpdateInput = {};
+
+    if (data.id_cliente !== undefined) {
+      updateData.cliente = { connect: { id_cliente: data.id_cliente } };
+    }
+    if (data.nombre_oportunidad !== undefined)
+      updateData.nombre_oportunidad = data.nombre_oportunidad;
+    if (data.id_estatus_cotizacion !== undefined)
+      updateData.estatus = { connect: { id_estatus: data.id_estatus_cotizacion } };
+    if (data.empresa_cliente !== undefined) updateData.empresa_cliente = data.empresa_cliente;
+    if (data.fecha_fin !== undefined) updateData.fecha_fin = data.fecha_fin;
+    if (data.fecha_validacion !== undefined) updateData.fecha_validacion = data.fecha_validacion;
+    if (data.fecha_aprobacion !== undefined) updateData.fecha_aprobacion = data.fecha_aprobacion;
+    if (data.pdf_url !== undefined) updateData.pdf_url = data.pdf_url;
+    if (data.notas !== undefined) updateData.notas = data.notas;
+
+    // Prefer the server-recomputed total over whatever the caller sent.
+    const montoTotal = computedMontoTotal ?? data.monto_total;
+    if (montoTotal !== undefined) updateData.monto_total = montoTotal;
+
+    return tx.cotizaciones.update({
+      where: { id_cotizacion: id },
+      data: updateData,
+    });
+  });
 }
 
 export async function deleteCotizacion(id: number): Promise<void> {
   // Placeholder until implemented.
   void id;
   throw new Error("Not implemented");
+}
+
+export async function aplicarDescuento(
+  id_cotizacion: number,
+  porcentaje: number | null,
+  motivo?: string | null
+) {
+  const cotizacion = await prisma.cotizaciones.findUnique({
+    where: { id_cotizacion },
+    select: {
+      id_cotizacion: true,
+      monto_total: true,
+      porcentaje_descuento: true,
+      id_estatus_cotizacion: true,
+      estatus: { select: { descripcion: true } },
+      pedido: {
+        select: {
+          detalles: { select: { subtotal: true } },
+        },
+      },
+    },
+  });
+
+  if (!cotizacion) {
+    throw new NotFoundError("Cotización no encontrada");
+  }
+
+  // Discounts share the same Pendiente-only rule as line-item edits — once
+  // the cliente has validated the quote, neither price nor discount can be
+  // mutated. Covers both the "apply discount" and "remove discount"
+  // (porcentaje === null) call paths since both write to the same fields.
+  if (cotizacion.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
+    throw new ConflictError(
+      `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${cotizacion.estatus.descripcion}')`
+    );
+  }
+
+  // Decimal arithmetic in JS — convert through Number once and round to 2
+  // decimals so we don't drift on repeated discounts. Cotización amounts
+  // fit well within Number's safe-integer range. If the cotización has no
+  // detalles (very rare — cart-submitted cotizaciones always do), fall back
+  // to the stored monto_total so callers still get *something* sensible.
+  const detalles = cotizacion.pedido?.detalles ?? [];
+  const baseOriginal = detalles.length
+    ? detalles.reduce((acc, d) => acc + Number(d.subtotal), 0)
+    : Number(cotizacion.monto_total);
+
+  // porcentaje === null is the delete path: clear the discount, drop the
+  // motivo and restore monto_total to the original sum of subtotales.
+  if (porcentaje === null) {
+    return prisma.cotizaciones.update({
+      where: { id_cotizacion },
+      data: {
+        porcentaje_descuento: null,
+        motivo_descuento: null,
+        monto_total: baseOriginal,
+      },
+    });
+  }
+
+  const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
+
+  // Trim then normalize "" / null → null so the column never holds whitespace-only.
+  const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
+
+  return prisma.cotizaciones.update({
+    where: { id_cotizacion },
+    data: {
+      porcentaje_descuento: porcentaje,
+      motivo_descuento: motivoNormalizado,
+      monto_total: montoConDescuento,
+    },
+  });
 }
 
 export async function getQuotationStatusId(description: string) {
@@ -245,7 +494,16 @@ export async function changeQuotationStatus(
     throw new Error("Quotation not found");
   }
 
-  const currentStatus = currentQuotation.estatus.descripcion as QuotationStatus;
+  // descripcion comes from a VARCHAR(50) column with no enum constraint at
+  // the DB level — narrow with the runtime guard before treating it as the
+  // union, otherwise an off-catalog value would silently index past the
+  // transition table below and pass an empty `allowedTransitions`.
+  const currentStatus = toEstatusCotizacion(currentQuotation.estatus.descripcion);
+  if (!currentStatus) {
+    throw new Error(
+      `Estado de cotización fuera del catálogo: '${currentQuotation.estatus.descripcion}'`
+    );
+  }
 
   // Valid workflow transitions.
   const ALLOWED_QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
