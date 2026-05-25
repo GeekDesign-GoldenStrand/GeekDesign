@@ -334,6 +334,7 @@ model Proveedores {
   descripcion_proveedor String?
   costo                 Decimal? @db.Decimal(10, 2)  // FIX: era Float?
   ubicacion             String?  @db.VarChar(255)
+  color                 String?  @db.VarChar(50)   // CSS hex o nombre de color para PDF de OC
   estatus               String   @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   servicios         Servicios[]
@@ -387,6 +388,7 @@ model Instaladores {
   costo_instalacion Decimal @db.Decimal(10, 2)  // FIX: era Float
   notas             String? @db.VarChar(500)
   ubicacion         String? @db.VarChar(255)
+  color             String? @db.VarChar(50)   // CSS hex o nombre de color para PDF de OC
   estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   servicios           Servicios[]
