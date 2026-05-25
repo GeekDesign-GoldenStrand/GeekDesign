@@ -60,6 +60,7 @@ export const CreateServicioSchema = z.object({
   nombre_servicio: z.string().min(1).max(100),
   descripcion_servicio: z.string().optional(),
   estatus_servicio: z.boolean().default(true),
+  imagenes: z.array(z.string()).optional().default([]),
 
   // Vinculations
   id_maquinas: z.array(z.number().int().positive()).optional().default([]),

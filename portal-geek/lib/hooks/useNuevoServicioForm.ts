@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
+import { deleteFile } from "@/lib/utils/upload";
 import type {
   InstaladorOption,
   MaterialDraft,
@@ -103,6 +104,7 @@ export function useNuevoServicioForm() {
           descripcion_servicio: form.descripcion_servicio || undefined,
           id_sucursal: form.id_sucursal,
           estatus_servicio: true,
+          imagenes: form.imagenes,
           id_maquinas: form.id_maquinas,
           id_instalador: form.id_instalador,
           costo_instalador_override: form.costo_instalador_override,
@@ -120,6 +122,12 @@ export function useNuevoServicioForm() {
 
       setSubmitSuccess(true);
     } catch (err) {
+      // Clean up successfully uploaded S3 images if saving the service failed
+      if (form.imagenes.length > 0) {
+        form.imagenes.forEach((key) => {
+          void deleteFile(key).catch(() => {});
+        });
+      }
       setSubmitError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setSubmitting(false);
@@ -163,6 +171,7 @@ export function useNuevoServicioForm() {
       updateMaterialProveedor,
       handleSubmit,
       setForm,
+      setSubmitError,
       onCancel: () => router.push("/servicios"),
       onSuccessRedirect: () => router.push("/servicios"),
     },

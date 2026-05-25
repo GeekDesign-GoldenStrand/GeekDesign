@@ -93,12 +93,24 @@ export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload)
 
     // Block deletion of keys persisted to any entity. Extend this list when a
     // new entity starts storing storage keys.
-    const inUse = await prisma.materiales.findFirst({
+    const materialInUse = await prisma.materiales.findFirst({
       where: { imagen_url: key },
       select: { id_material: true },
     });
-    if (inUse) {
-      throw new ConflictError("Esta imagen ya está en uso y no puede eliminarse desde aquí.");
+    if (materialInUse) {
+      throw new ConflictError("Esta imagen ya está en uso por un material y no puede eliminarse desde aquí.");
+    }
+
+    const servicioInUse = await prisma.servicios.findFirst({
+      where: {
+        imagen_url: {
+          contains: key,
+        },
+      },
+      select: { id_servicio: true },
+    });
+    if (servicioInUse) {
+      throw new ConflictError("Esta imagen ya está en uso por un servicio y no puede eliminarse desde aquí.");
     }
 
     await deleteObject(key);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ServicioDetalleClient } from "@/components/storefront/organisms/ServicioDetalleClient";
+import { getServiceImageUrls } from "@/lib/utils/images";
 import { getServicioWithDetails } from "@/lib/services/servicios";
 
 export const metadata: Metadata = { title: "Servicio" };
@@ -43,6 +44,7 @@ export default async function ServicioDetallePage({ params }: Props) {
     : [];
 
   const materialesText = materiales.map((m) => m.nombre_material).join(", ");
+  const imagenUrls = getServiceImageUrls(servicio.imagen_url);
 
   return (
     <div className="bg-[#fff8f9] min-h-[calc(100vh-106px)]">
@@ -57,6 +59,7 @@ export default async function ServicioDetallePage({ params }: Props) {
           materiales={materiales}
           variables={variables}
           puedeCotizarEnLinea={puedeCotizarEnLinea}
+          imagenUrls={imagenUrls}
         />
 
         {/* ── Info cards ── */}

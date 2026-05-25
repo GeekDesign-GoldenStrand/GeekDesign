@@ -4,15 +4,25 @@ interface ServiceCatalogCardProps {
   id: number;
   nombre: string;
   descripcion?: string | null;
+  imagenUrl?: string | null;
 }
 
-export function ServiceCatalogCard({ id, nombre, descripcion }: ServiceCatalogCardProps) {
+export function ServiceCatalogCard({ id, nombre, descripcion, imagenUrl }: ServiceCatalogCardProps) {
   return (
     <Link href={`/tienda/servicios/${id}`} className="block group">
       <div className="relative rounded-[10px] overflow-hidden">
         {/* Image */}
         <div className="w-full aspect-[368/176] bg-[#ffd9e2] overflow-hidden rounded-t-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]">
-          <div className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
+          {imagenUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imagenUrl}
+              alt={nombre}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
+          )}
         </div>
 
         {/* Info bar — overlaps bottom of image */}
