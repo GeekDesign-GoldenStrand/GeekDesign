@@ -23,9 +23,11 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://images.unsplash.com",
+      // Presigned GCS reads (the /api/images proxy 302s to *.storage.googleapis.com).
+      "img-src 'self' data: blob: https://images.unsplash.com https://storage.googleapis.com https://*.storage.googleapis.com",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      // Browser uploads PUT directly to the presigned bucket URL.
+      "connect-src 'self' https://storage.googleapis.com https://*.storage.googleapis.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -52,10 +54,9 @@ const nextConfig: NextConfig = {
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin",
           },
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
-          },
+          // No Cross-Origin-Embedder-Policy: require-corp would block
+          // presigned GCS images (GCS sends no CORP header) without
+          // buying anything — the app needs no cross-origin isolation.
         ],
       },
     ];

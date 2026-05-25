@@ -13,6 +13,8 @@ export async function changePassword(
   });
 
   if (!usuario) throw new NotFoundError("Usuario no encontrado");
+  if (!usuario.contrasena_hash)
+    throw new UnauthorizedError("La cuenta no tiene contraseña configurada");
 
   const valid = await verifyPassword(currentPassword, usuario.contrasena_hash);
   if (!valid) throw new UnauthorizedError("La contraseña actual es incorrecta");

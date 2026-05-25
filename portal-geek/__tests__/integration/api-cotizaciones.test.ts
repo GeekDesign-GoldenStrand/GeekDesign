@@ -43,7 +43,7 @@ jest.mock("@/lib/auth/guards", () => ({
         });
       }
 
-      if (!roles.includes(session.role)) {
+      if (!roles.includes(session.role === "Administrador" ? "Direccion" : session.role)) {
         return new Response(
           JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
           { status: 403 }
@@ -63,13 +63,55 @@ jest.mock("@/lib/auth/guards", () => ({
         });
       }
 
-      if (!roles.includes(session.role)) {
+      if (!roles.includes(session.role === "Administrador" ? "Direccion" : session.role)) {
         return new Response(
           JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
           { status: 403 }
         );
       }
 
+      return handler(req, ctx, session);
+    },
+
+  // Section-based guards derive their role set from the real policy so they
+  // enforce the same allow/deny as production.
+  withSection:
+    (section: string, action: string, handler: Handler) =>
+    async (req: Request, ctx: { params: unknown }) => {
+      const { SECTION_ACCESS } = jest.requireActual("@/lib/auth/access");
+      const roles: string[] = SECTION_ACCESS[section][action];
+      const session = await getSession();
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
+      if (!roles.includes(session.role === "Administrador" ? "Direccion" : session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
+      return handler(req, ctx);
+    },
+
+  withSectionParams:
+    (section: string, action: string, handler: Handler) =>
+    async (req: Request, ctx: { params: unknown }) => {
+      const { SECTION_ACCESS } = jest.requireActual("@/lib/auth/access");
+      const roles: string[] = SECTION_ACCESS[section][action];
+      const session = await getSession();
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
+      if (!roles.includes(session.role === "Administrador" ? "Direccion" : session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
       return handler(req, ctx, session);
     },
 }));

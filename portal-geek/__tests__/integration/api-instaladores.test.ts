@@ -391,8 +391,16 @@ describe("GET /api/instaladores", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 cuando el rol es Colaborador", async () => {
+  it("retorna 403 cuando el rol es Colaborador (instaladores es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await createApp({ GET: routes.GET }).get("/api/instaladores");
+
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 403 cuando el rol es Finanzas", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await createApp({ GET: routes.GET }).get("/api/instaladores");
 

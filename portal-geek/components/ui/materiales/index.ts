@@ -5,6 +5,7 @@ export { MaterialesEmptyState } from "./molecules/MaterialesEmptyState";
 export { MaterialesToolbar } from "./organisms/MaterialesToolbar";
 export { MaterialesGrid } from "./organisms/MaterialesGrid";
 export { MaterialCard } from "./organisms/MaterialCard";
+export { MaterialGroupCard } from "./organisms/MaterialGroupCard";
 export { AgregarMaterialModal } from "./organisms/AgregarMaterialModal";
 export { RegistrarMaterialForm } from "./organisms/RegistrarMaterialForm";
 export { EditarMaterialModal } from "./organisms/EditarMaterialModal";

@@ -36,7 +36,7 @@ export function StatusDropdown({ status, onChange }: StatusDropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] transition-all ${
+        className={`flex items-center justify-center gap-1 min-w-[84px] px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] transition-all ${
           status === "Activo"
             ? "bg-[rgba(0,200,83,0.07)] border-[#00c853] text-[#00c853]"
             : status === "Inactivo"

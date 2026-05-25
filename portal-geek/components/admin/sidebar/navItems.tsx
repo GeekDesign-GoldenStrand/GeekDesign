@@ -1,90 +1,105 @@
 import {
-  CubeTransparent,
   Buildings,
+  CubeTransparent,
   CurrencyDollar,
-  Gear,
+  Microscope,
   Handshake,
-  House,
+  Briefcase,
   Package,
   UserGear,
   Users,
-  Wrench,
+  Storefront,
+  PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
 
-export type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-};
+import type { Section } from "@/lib/auth/access";
+
+export type NavItem =
+  | {
+      type?: "link";
+      href: string;
+      label: string;
+      icon: React.ReactNode;
+      // The policy section this item links to. Visibility is derived from
+      // can(role, section, "read") — see SidebarNav. Omit for items visible to
+      // any authenticated user.
+      section?: Section;
+    }
+  | {
+      type: "divider";
+    };
+
+const ICON_SIZE = 30;
 
 export const navItems: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    icon: <House />,
-  },
-  {
-    href: "/finanzas",
-    label: "Finanzas",
-    icon: <CurrencyDollar />,
+    icon: <PresentationChart size={ICON_SIZE} />,
+    // The dashboard is the company-wide metrics home, so it's Direccion-only.
+    // Colaborador/Finanzas don't see it and land on their own section instead.
+    section: "metricas",
   },
   {
     href: "/cotizaciones",
     label: "Cotizaciones",
-    icon: (
-      <svg
-        viewBox="0 0 40 40"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-full h-full"
-      >
-        <rect x="4" y="10" width="32" height="20" rx="3" />
-        <circle cx="20" cy="20" r="5" />
-        <path d="M8 15h4M28 15h4M8 25h4M28 25h4" />
-      </svg>
-    ),
+    icon: <Briefcase size={ICON_SIZE} />,
+    section: "cotizaciones",
   },
   {
     href: "/pedidos",
     label: "Pedidos",
-    icon: <Package />,
+    icon: <Package size={ICON_SIZE} />,
+    section: "pedidos",
   },
+  {
+    href: "/finanzas",
+    label: "Finanzas",
+    icon: <CurrencyDollar size={ICON_SIZE} />,
+    section: "finanzas",
+  },
+  { type: "divider" },
   {
     href: "/servicios",
     label: "Servicios",
-    icon: <Wrench />,
-  },
-  {
-    href: "/colaboradores",
-    label: "Colaboradores",
-    icon: <Users />,
-  },
-  {
-    href: "/terceros",
-    label: "Terceros",
-    icon: <UserGear />,
-  },
-  {
-    href: "/clientes",
-    label: "Clientes",
-    icon: <Handshake />,
-  },
-  {
-    href: "/maquinas",
-    label: "Máquinas",
-    icon: <Gear />,
+    icon: <Storefront size={ICON_SIZE} />,
+    section: "servicios",
   },
   {
     href: "/materiales",
     label: "Materiales",
-    icon: <CubeTransparent />,
+    icon: <CubeTransparent size={ICON_SIZE} />,
+    section: "materiales",
+  },
+  {
+    href: "/maquinas",
+    label: "Máquinas",
+    icon: <Microscope size={ICON_SIZE} />,
+    section: "maquinas",
+  },
+  { type: "divider" },
+  {
+    href: "/colaboradores",
+    label: "Colaboradores",
+    icon: <Users size={ICON_SIZE} />,
+    section: "colaboradores",
+  },
+  {
+    href: "/terceros",
+    label: "Terceros",
+    icon: <UserGear size={ICON_SIZE} />,
+    section: "terceros",
   },
   {
     href: "/sucursales",
     label: "Sucursales",
-    icon: <Buildings />,
+    icon: <Buildings size={ICON_SIZE} />,
+    section: "sucursales",
+  },
+  {
+    href: "/clientes",
+    label: "Clientes",
+    icon: <Handshake size={ICON_SIZE} />,
+    section: "clientes",
   },
 ];

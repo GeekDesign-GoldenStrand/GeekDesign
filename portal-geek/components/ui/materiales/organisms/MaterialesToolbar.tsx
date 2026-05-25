@@ -1,6 +1,6 @@
 import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/atoms/icons";
 import { MaterialesFilterPanel } from "@/components/ui/materiales/molecules/MaterialesFilterPanel";
-import type { MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
+import type { MaterialSortOrder, MaterialTipoFilter, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialesToolbarProps {
   search: string;
@@ -8,8 +8,10 @@ interface MaterialesToolbarProps {
   isFilterOpen: boolean;
   visibleColumns: MaterialesVisibleColumns;
   sortOrder: MaterialSortOrder;
+  tipoFilter: MaterialTipoFilter;
   onToggleColumn: (key: keyof MaterialesVisibleColumns) => void;
   onSortChange: (order: MaterialSortOrder) => void;
+  onTipoFilterChange: (value: MaterialTipoFilter) => void;
   onResetFilters: () => void;
   onAddClick?: () => void;
   onFilterClick?: () => void;
@@ -23,8 +25,10 @@ export function MaterialesToolbar({
   isFilterOpen,
   visibleColumns,
   sortOrder,
+  tipoFilter,
   onToggleColumn,
   onSortChange,
+  onTipoFilterChange,
   onResetFilters,
   onAddClick,
   onFilterClick,
@@ -71,8 +75,10 @@ export function MaterialesToolbar({
         <MaterialesFilterPanel
           visibleColumns={visibleColumns}
           sortOrder={sortOrder}
+          tipoFilter={tipoFilter}
           onToggleColumn={onToggleColumn}
           onSortChange={onSortChange}
+          onTipoFilterChange={onTipoFilterChange}
           onReset={onResetFilters}
           onClose={onCloseFilter}
           canViewProveedores={canViewProveedores}

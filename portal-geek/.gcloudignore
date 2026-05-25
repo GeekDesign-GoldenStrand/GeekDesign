@@ -34,5 +34,6 @@ public/cors-test.html
 .vscode/
 .idea/
 
-# Example file (real `app.yaml` is the one used at deploy time)
+# Example + template files (real `app.yaml` is the one used at deploy time)
 app.yaml.example
+app.template.yaml

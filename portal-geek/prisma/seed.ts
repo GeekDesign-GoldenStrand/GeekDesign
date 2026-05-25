@@ -1,9 +1,15 @@
 /* eslint-disable no-console */
+import { randomBytes } from "node:crypto";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import type { Roles } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
 import { Pool } from "pg";
+
+dotenv.config({ path: ".env.local" });
+dotenv.config();
 
 // Same TLS posture as lib/db/client.ts — connect plaintext; rely on the Unix
 // socket (App Engine) or Cloud SQL Auth Proxy (dev) to handle Cloud SQL TLS.
@@ -154,6 +160,23 @@ async function main() {
 
   console.log(`Seeded Dirección user: ${direccionUser.correo_electronico}`);
 
+  // ── SISTEMA user (audit trail for system-initiated writes) ────────────────
+  // Used as id_usuario_asigno on VariablesCotizacion when a Cliente (no session)
+  // submits a quote via the public storefront endpoint. Login disabled.
+  const sistemaPasswordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 12);
+  const sistemaUser = await prisma.usuarios.upsert({
+    where: { correo_electronico: "sistema@geekdesign.mx" },
+    update: {},
+    create: {
+      nombre_completo: "Sistema",
+      correo_electronico: "sistema@geekdesign.mx",
+      contrasena_hash: sistemaPasswordHash,
+      id_rol: colaboradorRoleForSistema(roles).id_rol,
+      estatus: "Inactivo",
+    },
+  });
+  console.log(`Seeded SISTEMA user: ${sistemaUser.correo_electronico}`);
+
   console.log("Seeded admin colaborador");
 
   // ── Colaboradores demo ─────────────────────────────────────────────────────
@@ -285,6 +308,44 @@ async function main() {
     },
   });
 
+  const servicioGrabado = await prisma.servicios.upsert({
+    where: { id_servicio: 2 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Grabado Láser",
+      descripcion_servicio: "Grabado láser sobre madera, acrílico o metal",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioBordado = await prisma.servicios.upsert({
+    where: { id_servicio: 3 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Bordado",
+      descripcion_servicio: "Bordado personalizado en textiles",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioRotulacion = await prisma.servicios.upsert({
+    where: { id_servicio: 4 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Rotulación de vinil",
+      descripcion_servicio: "Rotulación y aplicación de vinil decorativo o publicitario",
+      estatus_servicio: true,
+    },
+  });
+
+  console.log("Seeded demo services: Corte Láser, Grabado Láser, Bordado, Rotulación de vinil");
+
   const material = await prisma.materiales.upsert({
     where: { id_material: 1 },
     update: {},
@@ -295,6 +356,39 @@ async function main() {
       grosor: 3.0,
     },
   });
+
+  const materialAcrilico = await prisma.materiales.upsert({
+    where: { id_material: 2 },
+    update: {},
+    create: {
+      nombre_material: "Acrílico transparente 3mm",
+      descripcion_material: "Acrílico transparente para corte y grabado láser",
+      unidad_medida: "hoja",
+      grosor: 3.0,
+    },
+  });
+
+  const materialTela = await prisma.materiales.upsert({
+    where: { id_material: 3 },
+    update: {},
+    create: {
+      nombre_material: "Tela algodón",
+      descripcion_material: "Tela base para bordado personalizado",
+      unidad_medida: "pieza",
+    },
+  });
+
+  const materialVinil = await prisma.materiales.upsert({
+    where: { id_material: 4 },
+    update: {},
+    create: {
+      nombre_material: "Vinil adhesivo",
+      descripcion_material: "Vinil para rotulación y señalética",
+      unidad_medida: "metro",
+    },
+  });
+
+  console.log("Seeded demo materials for PE-03");
 
   const opcion = await prisma.opcionesProducto.upsert({
     where: { id_opcion: 1 },
@@ -393,6 +487,14 @@ async function main() {
   }
 
   console.log(`Seeded ${orderStatuses.length} order statuses`);
+
+  const orderStatusRows = await prisma.estatusPedidos.findMany();
+
+  const orderStatusMap: Record<string, number> = {};
+
+  orderStatusRows.forEach((s) => {
+    orderStatusMap[s.descripcion] = s.id_estatus;
+  });
 
   // ── Invoice statuses ─────────────────────────────────────────
   const invoiceStatuses = [
@@ -573,6 +675,158 @@ async function main() {
 
   console.log("Seeded ProveedorPrecios: Maderas del Norte SA → MDF 3mm @ $200");
 
+  const proveedorPrecioMDF = await prisma.proveedorPrecios.findUnique({
+    where: { id_proveedor_id_material: { id_proveedor: 1, id_material: material.id_material } },
+  });
+
+  // ── ServicioMaterial: link Corte Láser to MDF 3mm at MDF supplier price ──
+  if (proveedorPrecioMDF) {
+    await prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioCorte.id_servicio,
+          id_material: material.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioCorte.id_servicio,
+        id_material: material.id_material,
+        id_proveedor_precio: proveedorPrecioMDF.id_proveedor_precio,
+      },
+    });
+    console.log("Seeded ServicioMaterial: Corte Láser ↔ MDF 3mm");
+  }
+
+  await Promise.all([
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioGrabado.id_servicio,
+          id_material: material.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioGrabado.id_servicio,
+        id_material: material.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioGrabado.id_servicio,
+          id_material: materialAcrilico.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioGrabado.id_servicio,
+        id_material: materialAcrilico.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioBordado.id_servicio,
+          id_material: materialTela.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioBordado.id_servicio,
+        id_material: materialTela.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioRotulacion.id_servicio,
+          id_material: materialVinil.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioRotulacion.id_servicio,
+        id_material: materialVinil.id_material,
+      },
+    }),
+  ]);
+
+  console.log("Seeded ServicioMaterial relations for demo PE-03 services");
+
+  // ── Active Formula on Corte Láser ──────────────────────────────────────────
+  // Reuses the Dimensión tipoVariable for ancho/alto, a manual constante
+  // costo_laser, and the implicit precio_material from the selected material.
+  // Expression: cm² × $/cm² + $ material → unit price.
+  const tipoDimension = await prisma.tiposVariable.findUnique({
+    where: { nombre_tipo: "Dimensión" },
+  });
+  if (tipoDimension) {
+    const existingFormula = await prisma.formulas.findFirst({
+      where: { id_servicio: servicioCorte.id_servicio, estatus: "Activa" },
+    });
+    if (!existingFormula) {
+      const formula = await prisma.formulas.create({
+        data: {
+          id_servicio: servicioCorte.id_servicio,
+          expresion: "ancho * alto * costo_laser + precio_material",
+          estatus: "Activa",
+          id_usuario_creo: adminUser.id_usuario,
+        },
+      });
+      await prisma.formulaVariables.createMany({
+        data: [
+          {
+            id_formula: formula.id_formula,
+            id_tipo_variable: tipoDimension.id_tipo_variable,
+            nombre_variable: "ancho",
+            etiqueta: "Ancho (cm)",
+            valor_default: 50,
+            editable_por_cliente: true,
+            unidad: "cm",
+            estatus: "Activo",
+          },
+          {
+            id_formula: formula.id_formula,
+            id_tipo_variable: tipoDimension.id_tipo_variable,
+            nombre_variable: "alto",
+            etiqueta: "Alto (cm)",
+            valor_default: 30,
+            editable_por_cliente: true,
+            unidad: "cm",
+            estatus: "Activo",
+          },
+        ],
+      });
+      await prisma.formulaConstantes.create({
+        data: {
+          id_formula: formula.id_formula,
+          nombre_constante: "costo_laser",
+          origen: "manual",
+          valor: 2.5,
+          estatus: "Activo",
+        },
+      });
+      console.log("Seeded Formula on Corte Láser: ancho × alto × costo_laser + precio_material");
+    }
+  }
+
+  // ── Placeholder ArchivosDisenio (used until ST-06 ships file upload) ──────
+  await prisma.archivosDisenio.upsert({
+    where: { id_archivo: 1 },
+    update: {},
+    create: {
+      nombre_archivo: "__PLACEHOLDER__",
+      url_archivo: "https://placeholder.invalid/no-design-yet",
+      formato: "n/a",
+    },
+  });
+  console.log("Seeded placeholder ArchivosDisenio (id=1)");
+
   // ── Demo Cotizaciones ──────────────────────────────────────────────────────
   const cotizacionStatuses = await prisma.estatusCotizacion.findMany();
   const clienteDemo = await prisma.clientes.findUnique({ where: { id_cliente: 1 } });
@@ -584,6 +838,7 @@ async function main() {
     const demoCotizaciones = [
       {
         id_pedido: 1,
+        folio: "COT-001",
         monto_total: 1500,
         notas: "Cotización pendiente para corte láser",
         fecha_creacion: new Date("2026-04-13"),
@@ -592,6 +847,7 @@ async function main() {
       },
       {
         id_pedido: 2,
+        folio: "COT-002",
         monto_total: 2500,
         notas: "Cotización aprobada para grabado",
         fecha_creacion: new Date("2026-04-15"),
@@ -600,6 +856,7 @@ async function main() {
       },
       {
         id_pedido: 3,
+        folio: "COT-003",
         monto_total: 1800,
         notas: "Cliente rechazó la propuesta",
         fecha_creacion: new Date("2026-04-17"),
@@ -608,6 +865,7 @@ async function main() {
       },
       {
         id_pedido: 4,
+        folio: "COT-004",
         monto_total: 2200,
         notas: "Cotización validada por cambios de requerimiento",
         fecha_creacion: new Date("2026-04-20"),
@@ -616,11 +874,39 @@ async function main() {
       },
       {
         id_pedido: 5,
+        folio: "COT-005",
         monto_total: 3000,
         notas: "Cotización cancelada",
         fecha_creacion: new Date("2026-06-20"),
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Cancelada"],
+      },
+      {
+        id_pedido: 6,
+        folio: "COT-006",
+        monto_total: 4500,
+        notas: "Cotización pendiente para señalización exterior",
+        fecha_creacion: new Date("2026-04-22"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
+      },
+      {
+        id_pedido: 7,
+        folio: "COT-007",
+        monto_total: 890,
+        notas: "Cotización pendiente para corte de acrílico",
+        fecha_creacion: new Date("2026-04-23"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
+      },
+      {
+        id_pedido: 8,
+        folio: "COT-008",
+        monto_total: 3200,
+        notas: "Cotización pendiente para grabado de placa conmemorativa",
+        fecha_creacion: new Date("2026-04-24"),
+        id_cliente: clienteDemo.id_cliente,
+        id_estatus_cotizacion: statusMap["Pendiente"],
       },
     ];
 
@@ -674,45 +960,129 @@ async function main() {
         fecha_estimada: new Date("2026-05-01"),
         notas: "Pedido demo cancelado",
       },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-22"),
+        fecha_estimada: new Date("2026-04-27"),
+        notas: "Pedido demo pendiente 6",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-23"),
+        fecha_estimada: new Date("2026-04-28"),
+        notas: "Pedido demo pendiente 7",
+      },
+
+      {
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2026-04-24"),
+        fecha_estimada: new Date("2026-04-29"),
+        notas: "Pedido demo pendiente 8",
+      },
     ];
 
-    for (const pedido of demoPedidos) {
-      await prisma.pedidos.create({
-        data: {
-          cliente: {
-            connect: {
-              id_cliente: 1,
-            },
-          },
+    // Idempotency guard: demo cotizaciones use fixed folios (COT-001…) which
+    // are @unique, and pedidos use autoincrement IDs. Re-running the seed would
+    // collide on `folio` and accumulate duplicate pedidos, so only seed the
+    // demo orders/quotations when their folios are not already present.
+    const existingDemoCotizaciones = await prisma.cotizaciones.count({
+      where: { folio: { in: demoCotizaciones.map((c) => c.folio) } },
+    });
 
-          estatus: {
-            connect: {
-              descripcion: pedido.status,
+    if (existingDemoCotizaciones > 0) {
+      console.log("Demo cotizaciones already seeded, skipping");
+    } else {
+      // Capture the actual autoincrement IDs instead of assuming 1..N.
+      const createdPedidoIds: number[] = [];
+      for (const pedido of demoPedidos) {
+        const created = await prisma.pedidos.create({
+          data: {
+            cliente: {
+              connect: {
+                id_cliente: 1,
+              },
             },
-          },
 
-          estado_factura: {
-            connect: {
-              id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+            estatus: {
+              connect: {
+                descripcion: pedido.status,
+              },
             },
-          },
 
-          sucursal: {
-            connect: {
-              id_sucursal: 1,
+            estado_factura: {
+              connect: {
+                id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+              },
             },
-          },
 
-          fecha_creacion: pedido.fecha_creacion,
-          fecha_estimada: pedido.fecha_estimada,
-          notas: pedido.notas,
-        },
-      });
+            sucursal: {
+              connect: {
+                id_sucursal: 1,
+              },
+            },
+
+            fecha_creacion: pedido.fecha_creacion,
+            fecha_estimada: pedido.fecha_estimada,
+            notas: pedido.notas,
+          },
+        });
+        createdPedidoIds.push(created.id_pedido);
+      }
+
+      const cotizacionesData = demoCotizaciones.map((cotizacion, index) => ({
+        ...cotizacion,
+        id_pedido: createdPedidoIds[index],
+      }));
+
+      await prisma.cotizaciones.createMany({ data: cotizacionesData });
+      console.log(`Seeded ${cotizacionesData.length} demo cotizaciones`);
     }
-
-    await prisma.cotizaciones.createMany({ data: demoCotizaciones });
-    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
+
+  await resyncSequences();
+}
+
+// Seeding with explicit primary keys (id_*: 1, 2, ...) does NOT advance
+// Postgres' autoincrement sequences, so the next sequence-driven INSERT
+// collides with a seeded row (P2002 on the PK). Realign every owned
+// sequence to MAX(id) of its column so subsequent creates pick fresh IDs.
+async function resyncSequences(): Promise<void> {
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    DECLARE
+      r RECORD;
+      maxid BIGINT;
+    BEGIN
+      FOR r IN
+        SELECT
+          quote_ident(sn.nspname) || '.' || quote_ident(s.relname) AS seqfqn,
+          t.relname AS tablename,
+          a.attname AS colname
+        FROM pg_class s
+        JOIN pg_namespace sn ON sn.oid = s.relnamespace
+        JOIN pg_depend d ON d.objid = s.oid AND d.deptype = 'a'
+        JOIN pg_class t ON t.oid = d.refobjid
+        JOIN pg_namespace tn ON tn.oid = t.relnamespace AND tn.nspname = 'public'
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = d.refobjsubid
+        WHERE s.relkind = 'S' AND t.relkind = 'r'
+      LOOP
+        EXECUTE format('SELECT COALESCE(MAX(%I), 0) FROM %I', r.colname, r.tablename) INTO maxid;
+        EXECUTE format('SELECT setval(%L, %s, %L)', r.seqfqn, GREATEST(maxid, 1), maxid > 0);
+      END LOOP;
+    END $$;
+  `);
+  console.log("Resynced autoincrement sequences");
+}
+
+function colaboradorRoleForSistema(roles: Roles[]): Roles {
+  const r = roles.find((x) => x.nombre_rol === "Colaborador");
+  if (!r) throw new Error("Rol Colaborador no existe — seed roles primero");
+  return r;
 }
 
 main()

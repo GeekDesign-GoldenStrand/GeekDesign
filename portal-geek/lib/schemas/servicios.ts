@@ -6,9 +6,9 @@ const VariableSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(/^[a-zA-Z0-9_]+$/, "Solo minúsculas, números y guiones bajos"),
+    .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido"),
   etiqueta: z.string().min(1).max(100),
-  valor_default: z.string().optional(),
+  valor_default: z.coerce.number().optional(),
   editable_por_cliente: z.boolean().default(false),
   unidad: z.string().optional(),
 });
@@ -82,5 +82,24 @@ export const ServicioIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// Storefront request: compute the unit price of a service for the customer's
+// chosen material and variable values.
+export const CalcularPrecioSchema = z.object({
+  id_material: z.number().int().positive(),
+  variables: z
+    .array(
+      z.object({
+        nombre_variable: z
+          .string()
+          .min(1)
+          .max(100)
+          .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
+        valor: z.number().finite(),
+      })
+    )
+    .default([]),
+});
+
 export type CreateServicioInput = z.infer<typeof CreateServicioSchema>;
 export type UpdateServicioInput = z.infer<typeof UpdateServicioSchema>;
+export type CalcularPrecioInput = z.infer<typeof CalcularPrecioSchema>;
