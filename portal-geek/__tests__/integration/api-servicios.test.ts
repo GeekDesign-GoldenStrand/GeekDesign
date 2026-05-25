@@ -469,7 +469,10 @@ describe("POST /api/servicios", () => {
       id_estatus: 1,
       id_sucursal: 1,
       estatus_servicio: true,
-      imagen_url: JSON.stringify(["servicios/key1.png", "servicios/key2.png"]),
+      imagen_url: JSON.stringify([
+        "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+        "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+      ]),
     });
 
     mockTransaction.mockImplementation(async (callback) => {
@@ -494,14 +497,20 @@ describe("POST /api/servicios", () => {
         nombre_servicio: "Servicio Con Imágenes",
         id_sucursal: 1,
         estatus_servicio: true,
-        imagenes: ["servicios/key1.png", "servicios/key2.png"],
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
       });
 
     expect(res.status).toBe(201);
     expect(txCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          imagen_url: JSON.stringify(["servicios/key1.png", "servicios/key2.png"]),
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
         }),
       })
     );
@@ -637,7 +646,10 @@ describe("PUT /api/servicios/[id]", () => {
       .put("/api/servicios/1")
       .send({
         nombre_servicio: "Updated",
-        imagenes: ["servicios/imgA.jpg", "servicios/imgB.jpg"],
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555553.jpg",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555554.jpg",
+        ],
       });
 
     expect(res.status).toBe(200);
@@ -645,7 +657,10 @@ describe("PUT /api/servicios/[id]", () => {
       expect.objectContaining({
         where: { id_servicio: 1 },
         data: expect.objectContaining({
-          imagen_url: JSON.stringify(["servicios/imgA.jpg", "servicios/imgB.jpg"]),
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555553.jpg",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555554.jpg",
+          ]),
         }),
       })
     );

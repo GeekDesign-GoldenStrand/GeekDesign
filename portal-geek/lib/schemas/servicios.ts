@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isValidKey } from "@/lib/storage/keys";
+
 const VariableSchema = z.object({
   id_tipo_variable: z.number().int().positive(),
   nombre_variable: z
@@ -60,7 +62,15 @@ export const CreateServicioSchema = z.object({
   nombre_servicio: z.string().min(1).max(100),
   descripcion_servicio: z.string().optional(),
   estatus_servicio: z.boolean().default(true),
-  imagenes: z.array(z.string()).optional().default([]),
+  imagenes: z
+    .array(
+      z.string().refine((k) => isValidKey(k, "servicios"), {
+        message: "Llave de imagen de servicio inválida",
+      })
+    )
+    .max(5)
+    .optional()
+    .default([]),
 
   // Vinculations
   id_maquinas: z.array(z.number().int().positive()).optional().default([]),

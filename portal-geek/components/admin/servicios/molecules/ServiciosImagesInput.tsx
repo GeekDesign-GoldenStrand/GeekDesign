@@ -37,7 +37,9 @@ export function ServiciosImagesInput({
 
   // Initialize slots from initialKeys (saved images)
   useEffect(() => {
-    if (initialKeys.length > 0 && slots.length === 0) {
+    if (initialKeys.length === 0) {
+      setSlots([]);
+    } else if (slots.length === 0) {
       setSlots(
         initialKeys.map((key) => ({
           id: key,

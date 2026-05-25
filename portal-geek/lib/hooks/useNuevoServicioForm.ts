@@ -127,6 +127,7 @@ export function useNuevoServicioForm() {
         form.imagenes.forEach((key) => {
           void deleteFile(key).catch(() => {});
         });
+        setForm((prev) => ({ ...prev, imagenes: [] }));
       }
       setSubmitError(err instanceof Error ? err.message : "Error desconocido");
     } finally {

@@ -407,7 +407,10 @@ describe("updateServicio — stale FormulaVariables.estatus", () => {
       1,
       {
         nombre_servicio: "Corte Láser Modificado",
-        imagenes: ["servicios/image1.png", "servicios/image2.png"],
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
       },
       1
     );
@@ -415,7 +418,10 @@ describe("updateServicio — stale FormulaVariables.estatus", () => {
     expect(mockTx.servicios.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          imagen_url: JSON.stringify(["servicios/image1.png", "servicios/image2.png"]),
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
         }),
       })
     );
@@ -448,7 +454,10 @@ describe("createServicio", () => {
         nombre_servicio: "Nuevo Servicio",
         id_sucursal: 1,
         estatus_servicio: true,
-        imagenes: ["servicios/image1.png", "servicios/image2.png"],
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
         id_maquinas: [],
         materiales: [],
       },
@@ -458,7 +467,10 @@ describe("createServicio", () => {
     expect(mockTx.servicios.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          imagen_url: JSON.stringify(["servicios/image1.png", "servicios/image2.png"]),
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
         }),
       })
     );
