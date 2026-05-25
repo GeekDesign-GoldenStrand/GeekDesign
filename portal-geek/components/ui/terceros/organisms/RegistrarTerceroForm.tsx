@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { z } from "zod";
 
+import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
 import { normalizePhone } from "@/lib/utils/format";
@@ -91,16 +92,6 @@ const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
-
-function CharCounter({ value, max }: { value: string; max: number }) {
-  return (
-    <p
-      className={`text-[11px] mt-1 text-right ${value.length >= max ? "text-[#e42200]" : "text-[#8e908f]"}`}
-    >
-      {value.length}/{max}
-    </p>
-  );
-}
 
 export function RegistrarTerceroForm({
   onCreated,

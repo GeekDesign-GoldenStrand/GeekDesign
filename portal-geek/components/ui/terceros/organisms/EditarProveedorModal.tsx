@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 
+import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import { UBICACION_REGEX, type UpdateProveedorInput } from "@/lib/schemas/proveedores";
+import {
+  CreateProveedorSchema,
+  UBICACION_REGEX,
+  type UpdateProveedorInput,
+} from "@/lib/schemas/proveedores";
 import { normalizePhone } from "@/lib/utils/format";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
@@ -50,16 +55,8 @@ function validateFields(form: ProveedorFormData): Record<string, string> {
 
 function parseServerFieldErrors(serverError: string | null): Record<string, string> {
   if (!serverError) return {};
-  const fields: (keyof ProveedorFormData)[] = [
-    "nombre_proveedor",
-    "apodo",
-    "tipo",
-    "correo",
-    "telefono",
-    "ubicacion",
-    "descripcion_proveedor",
-    "estatus",
-  ];
+  // Derive the field list from the schema so new fields are picked up automatically.
+  const fields = Object.keys(CreateProveedorSchema.shape);
   const parsed: Record<string, string> = {};
   for (const field of fields) {
     const match = serverError.match(new RegExp(`\\b${field}:\\s*([^,]+)`));
@@ -74,16 +71,6 @@ const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
-
-function CharCounter({ value, max }: { value: string; max: number }) {
-  return (
-    <p
-      className={`text-[11px] mt-1 text-right ${value.length >= max ? "text-[#e42200]" : "text-[#8e908f]"}`}
-    >
-      {value.length}/{max}
-    </p>
-  );
-}
 
 export type ProveedorFormData = {
   nombre_proveedor: string;

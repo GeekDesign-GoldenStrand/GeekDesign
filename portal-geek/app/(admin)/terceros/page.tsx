@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
 import {
   AgregarTerceroModal,
   ConfirmarEliminarInstaladorModal,
@@ -13,6 +12,7 @@ import {
   EditarProveedorModal,
   TercerosGrid,
 } from "@/components/ui/terceros";
+import { PaginacionNumerada } from "@/components/ui/terceros/molecules/PaginacionNumerada";
 import type { InstaladorFormData } from "@/components/ui/terceros/organisms/EditarInstaladorModal";
 import type { ProveedorFormData } from "@/components/ui/terceros/organisms/EditarProveedorModal";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
@@ -411,7 +411,7 @@ export default function TercerosPage() {
         ) : (
           <>
             <TercerosGrid items={paginated} />
-            <PaginacionControles page={safePage} totalPages={totalPages} onPageChange={setPage} />
+            <PaginacionNumerada page={safePage} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
       </main>
