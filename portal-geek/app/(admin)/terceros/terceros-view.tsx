@@ -30,6 +30,7 @@ type DbInstalador = {
   correo: string;
   telefono: string;
   notas: string | null;
+  costo_instalacion: string;
 };
 
 type DbProveedor = {
@@ -176,6 +177,7 @@ export function TercerosView() {
       const d: DbProveedor = payload.data;
       setEditData({
         nombre_proveedor: d.nombre_proveedor,
+        apodo: d.apodo ?? "",
         tipo: d.tipo as ProveedorFormData["tipo"],
         correo: d.correo ?? "",
         telefono: d.telefono ?? "",
@@ -282,6 +284,7 @@ export function TercerosView() {
         ubicacion: d.ubicacion ?? "",
         notas: d.notas ?? "",
         estatus: d.estatus,
+        costo_instalacion: d.costo_instalacion,
       });
     } catch (err) {
       if ((err as Error).name !== "AbortError") {

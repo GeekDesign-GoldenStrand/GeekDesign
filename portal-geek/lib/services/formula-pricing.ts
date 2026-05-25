@@ -39,6 +39,19 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
     throw new NotFoundError(`Servicio ${id_servicio} no encontrado`);
   }
 
+  // Level 1: per-(instalador, servicio) price from InstaladorServicios
+  const instaladorServicioPrecio = servicio.id_instalador
+    ? await prisma.instaladorServicios.findUnique({
+        where: {
+          id_instalador_id_servicio: {
+            id_instalador: servicio.id_instalador,
+            id_servicio,
+          },
+        },
+        select: { costo: true },
+      })
+    : null;
+
   const formula = servicio.formulas[0];
   if (!formula) {
     throw new ValidationError(`Servicio ${id_servicio} no tiene una fórmula activa para cotizar`);
@@ -82,12 +95,18 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
 
   const precio_material = material.proveedorPrecio ? Number(material.proveedorPrecio.precio) : 0;
 
+  // Three-level resolution for costo_instalador:
+  //   1. InstaladorServicios.costo  (pair instalador×servicio)
+  //   2. costo_instalador_override  (service-level override)
+  //   3. instalador.costo_instalacion  (instalador base rate)
   const costo_instalador =
-    servicio.costo_instalador_override !== null
-      ? Number(servicio.costo_instalador_override)
-      : servicio.instalador
-        ? Number(servicio.instalador.costo_instalacion)
-        : 0;
+    instaladorServicioPrecio !== null
+      ? Number(instaladorServicioPrecio.costo)
+      : servicio.costo_instalador_override !== null
+        ? Number(servicio.costo_instalador_override)
+        : servicio.instalador
+          ? Number(servicio.instalador.costo_instalacion)
+          : 0;
 
   const costo_proveedor =
     servicio.costo_proveedor_override !== null
