@@ -10,25 +10,44 @@ import { ProveedorToggle } from "@/components/admin/servicios/molecules/Proveedo
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
-import type { ServicioFormMode } from "@/lib/hooks/useServicioForm";
+import type { UseServicioFormOptions } from "@/lib/hooks/useServicioForm";
 import { useServicioForm } from "@/lib/hooks/useServicioForm";
 import type { NuevoServicioFormState } from "@/types/servicios";
 
-type ServicioFormProps = {
-  mode: ServicioFormMode;
-  initialData?: NuevoServicioFormState;
-  servicioId?: number;
-  onSuccess?: () => void;
-  onCancel?: () => void;
-};
+type ServicioFormProps =
+  | {
+      mode: "create";
+      initialData?: NuevoServicioFormState;
+      servicioId?: never;
+      onSuccess?: () => void;
+      onCancel?: () => void;
+    }
+  | {
+      mode: "edit";
+      initialData?: NuevoServicioFormState;
+      servicioId: number;
+      onSuccess?: () => void;
+      onCancel?: () => void;
+    };
 
-export function ServicioForm({
-  mode,
-  initialData,
-  servicioId,
-  onSuccess,
-  onCancel,
-}: ServicioFormProps) {
+export function ServicioForm(props: ServicioFormProps) {
+  const { mode } = props;
+  const hookOptions: UseServicioFormOptions =
+    props.mode === "edit"
+      ? {
+          mode: props.mode,
+          initialData: props.initialData,
+          servicioId: props.servicioId,
+          onSuccess: props.onSuccess,
+          onCancel: props.onCancel,
+        }
+      : {
+          mode: props.mode,
+          initialData: props.initialData,
+          onSuccess: props.onSuccess,
+          onCancel: props.onCancel,
+        };
+
   const {
     form,
     submitting,
@@ -39,7 +58,7 @@ export function ServicioForm({
     canSubmit,
     options,
     actions,
-  } = useServicioForm({ mode, initialData, servicioId, onSuccess, onCancel });
+  } = useServicioForm(hookOptions);
 
   if (initialLoading) {
     return <div className="text-center py-12 text-gray-500">Cargando datos del formulario...</div>;

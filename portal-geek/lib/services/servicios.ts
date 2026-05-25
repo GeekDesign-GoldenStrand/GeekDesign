@@ -274,7 +274,7 @@ export function toServicioAdminDetalle(s: ServicioParaAdmin): ServicioAdminDetal
         id_material: m.material.id_material,
         nombre_material: m.material.nombre_material,
         descripcion_material: m.material.descripcion_material,
-        unidad_medida: m.material.unidad_medida,
+        unidad_medida: m.material.unidad_medida ?? "",
         ancho: m.material.ancho?.toString() ?? null,
         alto: m.material.alto?.toString() ?? null,
         grosor: m.material.grosor?.toString() ?? null,

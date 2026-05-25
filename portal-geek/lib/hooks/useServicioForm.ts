@@ -17,7 +17,7 @@ import type {
 
 export type ServicioFormMode = "create" | "edit";
 
-type UseServicioFormOptions =
+export type UseServicioFormOptions =
   | {
       mode: "create";
       initialData?: NuevoServicioFormState;
