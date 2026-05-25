@@ -5,12 +5,7 @@ import { PresignUploadSchema, UPLOAD_LIMITS } from "@/lib/schemas/upload";
 import { DEFAULT_TTL_SECONDS, deleteObject, presignPut } from "@/lib/services/storage";
 import { buildKey, extFromFilename, extFromMime, isValidKey } from "@/lib/storage/keys";
 import { ok } from "@/lib/utils/api";
-import {
-  ConflictError,
-  handleError,
-  RateLimitError,
-  ValidationError,
-} from "@/lib/utils/errors";
+import { ConflictError, handleError, RateLimitError, ValidationError } from "@/lib/utils/errors";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 // Public endpoint — no auth required. Rate-limited by IP to cap anonymous abuse.
