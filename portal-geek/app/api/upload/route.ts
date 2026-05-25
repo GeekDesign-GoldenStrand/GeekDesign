@@ -105,9 +105,7 @@ export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload)
 
     const servicioInUse = await prisma.servicios.findFirst({
       where: {
-        imagen_url: {
-          contains: key,
-        },
+        OR: [{ imagen_url: key }, { imagen_url: { contains: `"${key}"` } }],
       },
       select: { id_servicio: true },
     });
