@@ -7,6 +7,7 @@ import { InstaladorToggle } from "@/components/admin/servicios/molecules/Instala
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { MaterialesSection } from "@/components/admin/servicios/molecules/MaterialesSection";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
+import { ServiciosImagesInput } from "@/components/admin/servicios/molecules/ServiciosImagesInput";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
@@ -77,6 +78,16 @@ export function ViewNuevoServicio() {
           placeholder="Describe brevemente el servicio (opcional)"
           maxLength={500}
         />
+
+        {/* ── Row 2.5: Imágenes ── */}
+        <div className="pt-4 border-t border-gray-200">
+          <ServiciosImagesInput
+            initialKeys={form.imagenes}
+            onKeysChange={(keys) => actions.updateField("imagenes", keys)}
+            onError={(msg) => actions.setSubmitError(msg)}
+            disabled={submitting}
+          />
+        </div>
 
         {/* ── Row 3: Instalador | Proveedor | Máquinas ── */}
         <div className="grid grid-cols-3 gap-6 pt-4 border-t border-gray-200">

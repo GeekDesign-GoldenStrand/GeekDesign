@@ -125,6 +125,7 @@ export type NuevoServicioFormState = {
   formulaChunks: FormulaChunk[];
   variables: VariableDraft[];
   constantes: ConstanteDraft[];
+  imagenes: string[];
 };
 
 export const initialNuevoServicioState: NuevoServicioFormState = {
@@ -145,4 +146,5 @@ export const initialNuevoServicioState: NuevoServicioFormState = {
   ],
   variables: [],
   constantes: [{ nombre_constante: "iva", origen: "global", valor: 0.16 }],
+  imagenes: [],
 };
