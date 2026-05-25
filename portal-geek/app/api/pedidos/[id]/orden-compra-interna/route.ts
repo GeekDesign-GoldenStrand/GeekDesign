@@ -31,6 +31,25 @@ import {
 
 type Params = { id: string };
 
+// ─── Shared types ─────────────────────────────────────────────────────────────
+
+type VendedorInput = Parameters<typeof generatePurchaseOrderPDF>[0]["vendedor"];
+
+/** Everything that varies per-third-party; shared args (fecha, cliente) are added at call sites. */
+interface OrdenSpec {
+  items: POItemInput[];
+  numero_orden: string;
+  vendedor: VendedorInput;
+  accentColor: string;
+}
+
+type OrdenGenerada = {
+  tipo: "proveedor" | "instalador";
+  nombre: string;
+  pdf_base64: string;
+  total: number;
+};
+
 // ─── Line-item builders ───────────────────────────────────────────────────────
 // Each builder maps an entry's detalles to POItemInput[], resolving the unit
 // price from the associated ProveedorPrecios / InstaladorServicios row.
@@ -86,6 +105,70 @@ function buildInstaladorItems(entry: InstaladorEntry): POItemInput[] {
   });
 }
 
+// ─── Spec resolvers ───────────────────────────────────────────────────────────
+// Each resolver centralises the numero_orden format and vendedor shape for one
+// entry type.  If either format changes, there is exactly one place to edit.
+
+function resolveProveedorSpec(
+  pedidoId: number,
+  proveedorId: number,
+  entry: ProveedorEntry
+): OrdenSpec {
+  if (!entry.proveedor.color) {
+    throw new DataInconsistencyError(
+      `El proveedor "${entry.proveedor.nombre_proveedor}" no tiene un color asignado. ` +
+        `Asigna un color antes de generar la Orden de Compra.`
+    );
+  }
+  return {
+    items: buildProveedorItems(entry),
+    numero_orden: `OC-${pedidoId}-P${proveedorId}`,
+    vendedor: {
+      nombre: entry.proveedor.nombre_proveedor,
+      empresa: entry.proveedor.apodo ?? null,
+      direccion: entry.proveedor.ubicacion ?? null,
+      telefono: entry.proveedor.telefono,
+      correo: entry.proveedor.correo,
+    },
+    accentColor: entry.proveedor.color,
+  };
+}
+
+function resolveInstaladorSpec(
+  pedidoId: number,
+  instaladorId: number,
+  entry: InstaladorEntry
+): OrdenSpec {
+  if (!entry.instalador.color) {
+    throw new DataInconsistencyError(
+      `El instalador "${entry.instalador.nombre_instalador}" no tiene un color asignado. ` +
+        `Asigna un color antes de generar la Orden de Compra.`
+    );
+  }
+  return {
+    items: buildInstaladorItems(entry),
+    numero_orden: `OC-${pedidoId}-I${instaladorId}`,
+    vendedor: {
+      nombre: entry.instalador.nombre_instalador,
+      empresa: entry.instalador.apodo ?? null,
+      direccion: entry.instalador.ubicacion ?? null,
+      telefono: entry.instalador.telefono ?? null,
+      correo: entry.instalador.correo ?? null,
+    },
+    accentColor: entry.instalador.color,
+  };
+}
+
+// ─── PDF generator helper ─────────────────────────────────────────────────────
+
+async function generateOrdenBuffer(
+  spec: OrdenSpec,
+  fecha: Date,
+  cliente: Parameters<typeof generatePurchaseOrderPDF>[0]["cliente"]
+): Promise<Buffer> {
+  return generatePurchaseOrderPDF({ ...spec, fecha, cliente });
+}
+
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export const POST = withRoleParams<Params>(
@@ -123,41 +206,20 @@ export const POST = withRoleParams<Params>(
 
       // ── Single third party: stream PDF directly ─────────────────────────────
       if (totalTerceros === 1) {
-        let items: POItemInput[];
-        let numero_orden: string;
-        let vendedor: Parameters<typeof generatePurchaseOrderPDF>[0]["vendedor"];
+        const spec =
+          proveedorMap.size === 1
+            ? resolveProveedorSpec(
+                pedido.id_pedido,
+                [...proveedorMap.keys()][0],
+                [...proveedorMap.values()][0]
+              )
+            : resolveInstaladorSpec(
+                pedido.id_pedido,
+                [...instaladorMap.keys()][0],
+                [...instaladorMap.values()][0]
+              );
 
-        if (proveedorMap.size === 1) {
-          const [proveedorId, entry] = [...proveedorMap.entries()][0];
-          items = buildProveedorItems(entry);
-          numero_orden = `OC-${pedido.id_pedido}-P${proveedorId}`;
-          vendedor = {
-            nombre: entry.proveedor.nombre_proveedor,
-            empresa: entry.proveedor.apodo ?? null,
-            direccion: entry.proveedor.ubicacion ?? null,
-            telefono: entry.proveedor.telefono,
-            correo: entry.proveedor.correo,
-          };
-        } else {
-          const [instaladorId, entry] = [...instaladorMap.entries()][0];
-          items = buildInstaladorItems(entry);
-          numero_orden = `OC-${pedido.id_pedido}-I${instaladorId}`;
-          vendedor = {
-            nombre: entry.instalador.nombre_instalador,
-            empresa: entry.instalador.apodo ?? null,
-            direccion: entry.instalador.ubicacion ?? null,
-            telefono: entry.instalador.telefono ?? null,
-            correo: entry.instalador.correo ?? null,
-          };
-        }
-
-        const buffer = await generatePurchaseOrderPDF({
-          numero_orden,
-          fecha,
-          vendedor,
-          cliente: clienteData,
-          items,
-        });
+        const buffer = await generateOrdenBuffer(spec, fecha, clienteData);
 
         // NextResponse body must be a Web API BodyInit type.
         // Node's Buffer extends Uint8Array; wrapping makes the type explicit.
@@ -165,41 +227,19 @@ export const POST = withRoleParams<Params>(
           status: 200,
           headers: {
             "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="${numero_orden}.pdf"`,
+            "Content-Disposition": `attachment; filename="${spec.numero_orden}.pdf"`,
           },
         });
       }
 
       // ── Multiple third parties: return JSON with base64-encoded PDFs ────────
 
-      type OrdenGenerada = {
-        tipo: "proveedor" | "instalador";
-        nombre: string;
-        pdf_base64: string;
-        total: number;
-      };
-
       const ordenes_generadas: OrdenGenerada[] = [];
 
       for (const [proveedorId, entry] of proveedorMap.entries()) {
-        const items = buildProveedorItems(entry);
-        const numero_orden = `OC-${pedido.id_pedido}-P${proveedorId}`;
-        const { total } = calcularTotalesOrden(items);
-
-        const buffer = await generatePurchaseOrderPDF({
-          numero_orden,
-          fecha,
-          vendedor: {
-            nombre: entry.proveedor.nombre_proveedor,
-            empresa: entry.proveedor.apodo ?? null,
-            direccion: entry.proveedor.ubicacion ?? null,
-            telefono: entry.proveedor.telefono,
-            correo: entry.proveedor.correo,
-          },
-          cliente: clienteData,
-          items,
-        });
-
+        const spec = resolveProveedorSpec(pedido.id_pedido, proveedorId, entry);
+        const { total } = calcularTotalesOrden(spec.items);
+        const buffer = await generateOrdenBuffer(spec, fecha, clienteData);
         ordenes_generadas.push({
           tipo: "proveedor",
           nombre: entry.proveedor.nombre_proveedor,
@@ -209,24 +249,9 @@ export const POST = withRoleParams<Params>(
       }
 
       for (const [instaladorId, entry] of instaladorMap.entries()) {
-        const items = buildInstaladorItems(entry);
-        const numero_orden = `OC-${pedido.id_pedido}-I${instaladorId}`;
-        const { total } = calcularTotalesOrden(items);
-
-        const buffer = await generatePurchaseOrderPDF({
-          numero_orden,
-          fecha,
-          vendedor: {
-            nombre: entry.instalador.nombre_instalador,
-            empresa: entry.instalador.apodo ?? null,
-            direccion: entry.instalador.ubicacion ?? null,
-            telefono: entry.instalador.telefono ?? null,
-            correo: entry.instalador.correo ?? null,
-          },
-          cliente: clienteData,
-          items,
-        });
-
+        const spec = resolveInstaladorSpec(pedido.id_pedido, instaladorId, entry);
+        const { total } = calcularTotalesOrden(spec.items);
+        const buffer = await generateOrdenBuffer(spec, fecha, clienteData);
         ordenes_generadas.push({
           tipo: "instalador",
           nombre: entry.instalador.nombre_instalador,

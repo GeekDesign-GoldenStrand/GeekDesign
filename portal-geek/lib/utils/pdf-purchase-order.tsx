@@ -39,12 +39,14 @@ export interface GeneratePurchaseOrderPDFParams {
   /** Número único de la orden, e.g. "OC-2026-00001". */
   numero_orden: string;
   fecha: Date;
-  /** INCOTERM o condición de entrega pactada (EXW, DDP…). */
+  /** condición de entrega pactada */
   condiciones_entrega?: string;
   forma_pago?: string;
   /** ISO date string o valor legible; se formatea en el PDF. */
   fecha_envio?: string;
   notas?: string;
+  /** Must always be supplied — the template has no built-in fallback. */
+  accentColor: string;
 }
 
 // ─── Generator ────────────────────────────────────────────────────────────────
@@ -74,6 +76,7 @@ export async function generatePurchaseOrderPDF(
     forma_pago,
     fecha_envio,
     notas,
+    accentColor,
   } = params;
 
   // 1. Compute per-item subtotals — never trust client-supplied totals.
@@ -106,6 +109,7 @@ export async function generatePurchaseOrderPDF(
     subtotal_general,
     iva,
     total,
+    accentColor,
   };
 
   // 4. Render to an in-memory buffer.

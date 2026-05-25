@@ -9,15 +9,7 @@ import { formatCurrency, formatDate } from "../constants";
 import { TableRow } from "../molecules/TableRow";
 import { styles } from "../styles";
 
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-
-const GOLD = "#D97706"; // amber-600 — main accent
-const GOLD_LIGHT = "#FEF3C7"; // amber-50 — section fill
-const GOLD_DARK = "#92400E"; // amber-900 — text on light fill
-
-// ─── PO-specific stylesheet ───────────────────────────────────────────────────
-// Global styles.ts covers page, table skeleton, totals, footer.
-// This block adds only what is new or colour-overridden for the PO format.
+const logoSrc = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "geekdesign.png")).toString("base64")}`;
 
 const po = StyleSheet.create({
   // ── Header ─────────────────────────────────────────────────────────────────
@@ -32,7 +24,6 @@ const po = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "bold",
-    color: GOLD,
     marginBottom: 4,
     textAlign: "right",
   },
@@ -78,13 +69,11 @@ const po = StyleSheet.create({
   partyBlock: {
     flex: 1,
     borderWidth: 1,
-    borderColor: GOLD,
   },
   partyBlockLeft: {
     marginRight: 8,
   },
   partyHeader: {
-    backgroundColor: GOLD,
     paddingVertical: 5,
     paddingHorizontal: 8,
   },
@@ -129,7 +118,6 @@ const po = StyleSheet.create({
     flex: 1,
   },
   conditionHeader: {
-    backgroundColor: GOLD_LIGHT,
     paddingVertical: 4,
     paddingHorizontal: 6,
     borderBottomWidth: 1,
@@ -138,7 +126,6 @@ const po = StyleSheet.create({
   conditionHeaderText: {
     fontSize: 7,
     fontWeight: "bold",
-    color: GOLD_DARK,
     textAlign: "center",
   },
   conditionBody: {
@@ -159,18 +146,14 @@ const po = StyleSheet.create({
   tableSectionTitle: {
     fontSize: 9,
     fontWeight: "bold",
-    backgroundColor: GOLD_LIGHT,
-    color: GOLD_DARK,
     padding: 5,
     marginBottom: 0,
   },
-  // Gold header cell — mirrors styles.tableColHeader but with GOLD background
   thCell: {
     borderStyle: "solid",
     borderBottomWidth: 1,
     borderRightWidth: 1,
     borderColor: "#D1D5DB",
-    backgroundColor: GOLD,
     padding: 6,
     justifyContent: "center",
   },
@@ -193,7 +176,6 @@ const po = StyleSheet.create({
     borderColor: "#E5E7EB",
   },
   notesHeader: {
-    backgroundColor: GOLD_LIGHT,
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
@@ -202,7 +184,6 @@ const po = StyleSheet.create({
   notesHeaderText: {
     fontSize: 8,
     fontWeight: "bold",
-    color: GOLD_DARK,
   },
   notesBody: {
     padding: 8,
@@ -251,7 +232,7 @@ export interface PurchaseOrderTemplateProps {
   /** Número único de la orden de compra, e.g. "OC-2026-00001" */
   po_number: string;
   fecha: Date | string;
-  /** INCOTERM o condición de entrega pactada */
+  /** condición de entrega pactada */
   condiciones_entrega?: string | null;
   forma_pago?: string | null;
   fecha_envio?: Date | string | null;
@@ -268,6 +249,7 @@ export interface PurchaseOrderTemplateProps {
   subtotal_general: number;
   iva: number;
   total: number;
+  accentColor: string;
 }
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
@@ -278,16 +260,13 @@ function POHeader({
   po_number,
   fecha,
   comprador,
+  accent,
 }: {
   po_number: string;
   fecha: Date | string;
   comprador: POBuyer;
+  accent: string;
 }) {
-  // Read the logo once as a base64 data URI so react-pdf never tries to
-  // fetch() a local file path (Node's fetch doesn't support file:// and logs
-  // "fetch failed" before falling back to fs — this avoids that noise entirely).
-  const logoSrc = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "geekdesign.png")).toString("base64")}`;
-
   return (
     <View style={po.header}>
       {/* Left: company identity */}
@@ -309,7 +288,7 @@ function POHeader({
 
       {/* Right: PO identity */}
       <View style={{ alignItems: "flex-end" }}>
-        <Text style={po.title}>ORDEN DE COMPRA (PO)</Text>
+        <Text style={[po.title, { color: accent }]}>ORDEN DE COMPRA (PO)</Text>
         <View style={po.metaTable}>
           <View style={po.metaRow}>
             <View style={po.metaLabel}>
@@ -345,12 +324,20 @@ function PartyField({ label, value }: { label: string; value?: string | null }) 
 }
 
 /** Side-by-side VENDEDOR / COMPRADOR blocks. */
-function PartiesSection({ vendedor, comprador }: { vendedor: POVendor; comprador: POBuyer }) {
+function PartiesSection({
+  vendedor,
+  comprador,
+  accent,
+}: {
+  vendedor: POVendor;
+  comprador: POBuyer;
+  accent: string;
+}) {
   return (
     <View style={po.partiesRow}>
       {/* Vendedor — external supplier or installer */}
-      <View style={[po.partyBlock, po.partyBlockLeft]}>
-        <View style={po.partyHeader}>
+      <View style={[po.partyBlock, po.partyBlockLeft, { borderColor: accent }]}>
+        <View style={[po.partyHeader, { backgroundColor: accent }]}>
           <Text style={po.partyHeaderText}>VENDEDOR</Text>
         </View>
         <View style={po.partyBody}>
@@ -363,8 +350,8 @@ function PartiesSection({ vendedor, comprador }: { vendedor: POVendor; comprador
       </View>
 
       {/* Comprador — Geek Design sucursal */}
-      <View style={po.partyBlock}>
-        <View style={po.partyHeader}>
+      <View style={[po.partyBlock, { borderColor: accent }]}>
+        <View style={[po.partyHeader, { backgroundColor: accent }]}>
           <Text style={po.partyHeaderText}>COMPRADOR</Text>
         </View>
         <View style={po.partyBody}>
@@ -379,37 +366,39 @@ function PartiesSection({ vendedor, comprador }: { vendedor: POVendor; comprador
   );
 }
 
-/** Three-cell row: INCOTERM | Forma de pago | Fecha de envío. */
+/** Three-cell row: condicion de entrega | Forma de pago | Fecha de envío. */
 function ConditionsRow({
   condiciones_entrega,
   forma_pago,
   fecha_envio,
+  accent,
 }: {
   condiciones_entrega?: string | null;
   forma_pago?: string | null;
   fecha_envio?: Date | string | null;
+  accent: string;
 }) {
   return (
     <View style={po.conditionsRow}>
       <View style={po.conditionCell}>
-        <View style={po.conditionHeader}>
-          <Text style={po.conditionHeaderText}>CONDICIONES DE ENTREGA</Text>
+        <View style={[po.conditionHeader, { backgroundColor: accent }]}>
+          <Text style={[po.conditionHeaderText, { color: "#FFFFFF" }]}>CONDICIONES DE ENTREGA</Text>
         </View>
         <View style={po.conditionBody}>
           <Text style={po.conditionBodyText}>{condiciones_entrega ?? "—"}</Text>
         </View>
       </View>
       <View style={po.conditionCell}>
-        <View style={po.conditionHeader}>
-          <Text style={po.conditionHeaderText}>FORMA DE PAGO</Text>
+        <View style={[po.conditionHeader, { backgroundColor: accent }]}>
+          <Text style={[po.conditionHeaderText, { color: "#FFFFFF" }]}>FORMA DE PAGO</Text>
         </View>
         <View style={po.conditionBody}>
           <Text style={po.conditionBodyText}>{forma_pago ?? "—"}</Text>
         </View>
       </View>
       <View style={po.conditionCellLast}>
-        <View style={po.conditionHeader}>
-          <Text style={po.conditionHeaderText}>FECHA DE ENVÍO</Text>
+        <View style={[po.conditionHeader, { backgroundColor: accent }]}>
+          <Text style={[po.conditionHeaderText, { color: "#FFFFFF" }]}>FECHA DE ENVÍO</Text>
         </View>
         <View style={po.conditionBody}>
           <Text style={po.conditionBodyText}>
@@ -421,30 +410,32 @@ function ConditionsRow({
   );
 }
 
-/** Gold-header items table. Header cells rendered inline; data cells via TableCell atom. */
-function ItemsTable({ items }: { items: POLineItem[] }) {
+/** Accent-colored header items table. */
+function ItemsTable({ items, accent }: { items: POLineItem[]; accent: string }) {
   return (
     <View style={po.tableSection}>
-      <Text style={po.tableSectionTitle}>ARTÍCULOS / SERVICIOS</Text>
+      <Text style={[po.tableSectionTitle, { backgroundColor: accent, color: "#FFFFFF" }]}>
+        ARTÍCULOS / SERVICIOS
+      </Text>
       <View style={styles.table}>
-        {/* Header row — gold background, rendered directly to override the red default */}
+        {/* Header row — accent background, rendered directly to override the red default */}
         <TableRow>
-          <View style={[po.thCell, { width: "8%" }]}>
+          <View style={[po.thCell, { width: "8%", backgroundColor: accent }]}>
             <Text style={po.thText}>#</Text>
           </View>
-          <View style={[po.thCell, { width: "17%" }]}>
+          <View style={[po.thCell, { width: "17%", backgroundColor: accent }]}>
             <Text style={po.thText}>CÓDIGO</Text>
           </View>
-          <View style={[po.thCell, { width: "35%" }]}>
+          <View style={[po.thCell, { width: "35%", backgroundColor: accent }]}>
             <Text style={po.thText}>DESCRIPCIÓN</Text>
           </View>
-          <View style={[po.thCell, { width: "12%" }]}>
+          <View style={[po.thCell, { width: "12%", backgroundColor: accent }]}>
             <Text style={po.thText}>CANT.</Text>
           </View>
-          <View style={[po.thCell, { width: "14%" }]}>
+          <View style={[po.thCell, { width: "14%", backgroundColor: accent }]}>
             <Text style={po.thText}>PRECIO U.</Text>
           </View>
-          <View style={[po.thCell, { width: "14%", borderRightWidth: 0 }]}>
+          <View style={[po.thCell, { width: "14%", borderRightWidth: 0, backgroundColor: accent }]}>
             <Text style={po.thText}>SUBTOTAL</Text>
           </View>
         </TableRow>
@@ -487,18 +478,20 @@ function BottomSection({
   subtotal_general,
   iva,
   total,
+  accent,
 }: {
   notas?: string | null;
   subtotal_general: number;
   iva: number;
   total: number;
+  accent: string;
 }) {
   return (
     <View style={po.bottomRow}>
       {/* Notes */}
       <View style={po.notesBlock}>
-        <View style={po.notesHeader}>
-          <Text style={po.notesHeaderText}>NOTAS</Text>
+        <View style={[po.notesHeader, { backgroundColor: accent }]}>
+          <Text style={[po.notesHeaderText, { color: "#FFFFFF" }]}>NOTAS</Text>
         </View>
         <View style={po.notesBody}>
           {notas ? (
@@ -520,8 +513,8 @@ function BottomSection({
           <Text style={styles.totalValue}>{formatCurrency(iva)}</Text>
         </View>
         <View style={[styles.totalRow, styles.grandTotal]}>
-          <Text style={[styles.totalLabel, { color: GOLD }]}>Total:</Text>
-          <Text style={[styles.totalValue, { color: GOLD }]}>{formatCurrency(total)}</Text>
+          <Text style={[styles.totalLabel, { color: accent }]}>Total:</Text>
+          <Text style={[styles.totalValue, { color: accent }]}>{formatCurrency(total)}</Text>
         </View>
       </View>
     </View>
@@ -543,23 +536,33 @@ export function PurchaseOrderTemplate({
   subtotal_general,
   iva,
   total,
+  accentColor,
 }: PurchaseOrderTemplateProps) {
+  const accent = accentColor;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <POHeader po_number={po_number} fecha={fecha} comprador={comprador} />
+        <POHeader po_number={po_number} fecha={fecha} comprador={comprador} accent={accent} />
 
-        <PartiesSection vendedor={vendedor} comprador={comprador} />
+        <PartiesSection vendedor={vendedor} comprador={comprador} accent={accent} />
 
         <ConditionsRow
           condiciones_entrega={condiciones_entrega}
           forma_pago={forma_pago}
           fecha_envio={fecha_envio}
+          accent={accent}
         />
 
-        <ItemsTable items={items} />
+        <ItemsTable items={items} accent={accent} />
 
-        <BottomSection notas={notas} subtotal_general={subtotal_general} iva={iva} total={total} />
+        <BottomSection
+          notas={notas}
+          subtotal_general={subtotal_general}
+          iva={iva}
+          total={total}
+          accent={accent}
+        />
 
         <Text
           style={styles.pageFooter}

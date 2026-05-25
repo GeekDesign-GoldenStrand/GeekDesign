@@ -7,6 +7,8 @@ import React from "react";
 import { CompanySlogan } from "../molecules/CompanySlogan";
 import { styles } from "../styles";
 
+const logoSrc = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "geekdesign.png")).toString("base64")}`;
+
 interface Branch {
   nombre_sucursal: string;
   direccion: string;
@@ -26,8 +28,6 @@ interface HeaderProps {
 }
 
 export function HeaderSection({ branch, quotation }: HeaderProps) {
-  const logoSrc = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "geekdesign.png")).toString("base64")}`;
-
   return (
     <View style={styles.header}>
       <View style={styles.companyInfo}>
