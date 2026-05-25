@@ -22,28 +22,22 @@ type Cotizacion = {
 
 type Props = {
   cotizaciones: Cotizacion[];
-  onDelete: (id: number) => void; // Unused but kept for prop compatibility
+  onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 };
 
-// Helper para estilos de estatus tipo Figma
 function getStatusStyle(status: string) {
   switch (status) {
     case "Pendiente":
       return "bg-[#F7B9FF]/70 text-[#D83CFF]";
-
     case "Validada":
       return "bg-[#B9EAFF] text-[#0D7794]";
-
     case "Rechazada":
       return "bg-[#FFA5A5]/60 text-[#FF3030]";
-
     case "Aprobada":
       return "bg-[#CCFFA5]/60 text-[#26AF00]";
-
     case "Cancelada":
       return "bg-[#B1B1B1] text-black";
-
     default:
       return "bg-gray-100 text-gray-600";
   }
@@ -53,8 +47,6 @@ function getAllowedQuotationStatuses(currentStatus: string): string[] {
   switch (currentStatus) {
     case "Pendiente":
       return ["Pendiente", "Validada", "Rechazada"];
-
-    // Once Validated, Approved or Rejected, the status is locked for administration.
     default:
       return [currentStatus];
   }
@@ -73,9 +65,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         {/* Header - Desktop Only */}
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-          style={{
-            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
-          }}
+          style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
         >
           <span className="whitespace-nowrap">Fecha</span>
           <span className="whitespace-nowrap">Monto</span>
@@ -93,9 +83,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
             {/* Desktop Row */}
             <div
               className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
-              style={{
-                gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr",
-              }}
+              style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
             >
               <span className="whitespace-nowrap">
                 {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
@@ -132,17 +120,18 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 </div>
               </div>
               <div className="flex justify-center items-center gap-1">
-                    <DesignFileLink
-                      archivos={c.archivos}
-                      className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                    />
-                    <Link
-                      className="text-black hover:text-[#e42200] transition-colors p-2"
-                      href={`cotizaciones/${c.id_cotizacion}`}
-                    >
-                      <Info size={18} />
-                    </Link>
-               </div>
+                <DesignFileLink
+                  archivos={c.archivos}
+                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                />
+                <Link
+                  className="text-black hover:text-[#e42200] transition-colors p-2"
+                  href={`cotizaciones/${c.id_cotizacion}`}
+                >
+                  <Info size={18} />
+                </Link>
+              </div>
+            </div>
 
             {/* Mobile Card */}
             <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
