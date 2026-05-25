@@ -347,26 +347,28 @@ export function QuotationDetailView({ quotation }: Props) {
             Paso siguiente:
           </p>
           <p className="text-[15px] text-[#575757] font-medium mb-6">{bannerConfig.nextStep}</p>
-          <button
-            onClick={
-              quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
-                ? () => router.push("/tienda")
-                : handleApprove
-            }
-            disabled={
-              (!isActionable &&
-                quotation.estatus !== "Rechazada" &&
-                quotation.estatus !== "Cancelada") ||
-              loading
-            }
-            className={`h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center ${bannerConfig.buttonColor}`}
-          >
-            {loading ? (
-              <SpinnerGap size={24} className="animate-spin mx-auto" />
-            ) : (
-              bannerConfig.buttonText
-            )}
-          </button>
+          {quotation.estatus !== "Aprobada" && (
+            <button
+              onClick={
+                quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
+                  ? () => router.push("/tienda")
+                  : handleApprove
+              }
+              disabled={
+                (!isActionable &&
+                  quotation.estatus !== "Rechazada" &&
+                  quotation.estatus !== "Cancelada") ||
+                loading
+              }
+              className={`h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center ${bannerConfig.buttonColor}`}
+            >
+              {loading ? (
+                <SpinnerGap size={24} className="animate-spin mx-auto" />
+              ) : (
+                bannerConfig.buttonText
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -746,32 +748,34 @@ export function QuotationDetailView({ quotation }: Props) {
             )}
 
             <div className="space-y-4">
-              <button
-                onClick={
-                  quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
-                    ? () => router.push("/tienda")
-                    : handleApprove
-                }
-                disabled={
-                  (!isActionable &&
-                    quotation.estatus !== "Rechazada" &&
-                    quotation.estatus !== "Cancelada") ||
-                  loading
-                }
-                className={`w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all ${
-                  isActionable ||
-                  quotation.estatus === "Rechazada" ||
-                  quotation.estatus === "Cancelada"
-                    ? "bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
-                    : "bg-[#F5F5F5] text-[#B9B8B8]"
-                }`}
-              >
-                {loading ? (
-                  <SpinnerGap size={24} className="animate-spin mx-auto" />
-                ) : (
-                  bannerConfig.buttonText
-                )}
-              </button>
+              {quotation.estatus !== "Aprobada" && (
+                <button
+                  onClick={
+                    quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
+                      ? () => router.push("/tienda")
+                      : handleApprove
+                  }
+                  disabled={
+                    (!isActionable &&
+                      quotation.estatus !== "Rechazada" &&
+                      quotation.estatus !== "Cancelada") ||
+                    loading
+                  }
+                  className={`w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all ${
+                    isActionable ||
+                    quotation.estatus === "Rechazada" ||
+                    quotation.estatus === "Cancelada"
+                      ? "bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
+                      : "bg-[#F5F5F5] text-[#B9B8B8]"
+                  }`}
+                >
+                  {loading ? (
+                    <SpinnerGap size={24} className="animate-spin mx-auto" />
+                  ) : (
+                    bannerConfig.buttonText
+                  )}
+                </button>
+              )}
 
               {isActionable && (
                 <button
