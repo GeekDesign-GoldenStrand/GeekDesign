@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
+import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,7 +38,7 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
   if (form.notas && form.notas.length > 500) errs.notas = "Máximo 500 caracteres.";
   if (!form.costo_instalacion.trim()) errs.costo_instalacion = "La tarifa base es requerida.";
-  else if (isNaN(parseFloat(form.costo_instalacion)) || parseFloat(form.costo_instalacion) < 0)
+  else if (!isValidMoney(form.costo_instalacion))
     errs.costo_instalacion = "Debe ser un número mayor o igual a 0.";
   return errs;
 }
@@ -217,8 +218,7 @@ export function EditarInstaladorModal({
               value={form.costo_instalacion}
               onChange={(e) => {
                 const raw = e.target.value;
-                if (raw === "" || /^\d{0,8}(\.\d{0,2})?$/.test(raw))
-                  setField("costo_instalacion", raw);
+                if (isValidMoneyInput(raw)) setField("costo_instalacion", raw);
               }}
               className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
             />
