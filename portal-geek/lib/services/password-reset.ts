@@ -179,6 +179,11 @@ function buildWelcomeEmail(nombre: string, url: string): string {
               Configurar contraseña
             </a>
           </p>
+          <p style="color:#888;font-size:13px;line-height:1.6;margin:0 0 24px;word-break:break-all;">
+            Si el botón no funciona, copia y pega este enlace en tu navegador:
+            <br />
+            <a href="${url}" style="color:#df2646;text-decoration:underline;">${url}</a>
+          </p>
           <p style="color:#888;font-size:13px;line-height:1.6;margin:0 0 8px;">
             Este enlace expira en <strong>8 horas</strong>.
             Si no esperabas este correo, puedes ignorarlo.
