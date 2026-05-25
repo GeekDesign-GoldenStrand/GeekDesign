@@ -39,7 +39,6 @@ const mockFindUnique = prisma.instaladores.findUnique as jest.Mock;
 const mockCreate = prisma.instaladores.create as jest.Mock;
 const mockUpdate = prisma.instaladores.update as jest.Mock;
 const mockServiciosFindMany = prisma.instaladorServicios.findMany as jest.Mock;
-const mockServiciosValidate = prisma.servicios.findMany as jest.Mock;
 
 const INSTALADOR = {
   id_instalador: 1,
@@ -333,23 +332,26 @@ describe("syncInstaladorAssignments", () => {
       update: jest.Mock;
     };
     gastos: { findMany: jest.Mock };
+    servicios: { findMany: jest.Mock };
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockTx = {
       instaladorServicios: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         deleteMany: jest.fn(),
         createMany: jest.fn(),
         update: jest.fn(),
       },
       gastos: { findMany: jest.fn().mockResolvedValue([]) },
+      servicios: { findMany: jest.fn() },
     };
     mockTransaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
-    // Default: all requested service IDs are valid and active
-    mockServiciosValidate.mockImplementation((args: { where: { id_servicio: { in: number[] } } }) =>
-      Promise.resolve(args.where.id_servicio.in.map((id: number) => ({ id_servicio: id })))
+    // Default: all NEW service IDs are valid and active (only reached when toAdd is non-empty)
+    mockTx.servicios.findMany.mockImplementation(
+      (args: { where: { id_servicio: { in: number[] } } }) =>
+        Promise.resolve(args.where.id_servicio.in.map((id: number) => ({ id_servicio: id })))
     );
   });
 
@@ -445,23 +447,59 @@ describe("syncInstaladorAssignments", () => {
     );
   });
 
-  it("lanza ValidationError si un id_servicio no existe", async () => {
+  it("lanza ValidationError si un id_servicio nuevo no existe", async () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
-    mockServiciosValidate.mockResolvedValue([]); // none found
+    // instaladorServicios.findMany returns [] (default) → id 99 is toAdd → validation fires
+    mockTx.servicios.findMany.mockResolvedValue([]); // not found
 
     await expect(syncInstaladorAssignments(1, [{ id: 99, precio: 100 }])).rejects.toThrow(
       ValidationError
     );
   });
 
-  it("lanza ValidationError si un servicio está inactivo (estatus_servicio = false)", async () => {
+  it("lanza ValidationError si un servicio nuevo está inactivo (estatus_servicio = false)", async () => {
     mockFindUnique.mockResolvedValue(INSTALADOR);
-    mockServiciosValidate.mockResolvedValue([{ id_servicio: 1 }]); // only 1 of 2 returned
+    // Both ids are new (existing is empty by default) → validation fires for both
+    mockTx.servicios.findMany.mockResolvedValue([{ id_servicio: 1 }]); // only 1 of 2 returned
 
     await expect(
       syncInstaladorAssignments(1, [
         { id: 1, precio: 100 },
         { id: 2, precio: 200 },
+      ])
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("permite re-sincronizar asignación existente aunque el servicio esté inactivo", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    // Service 5 already has a row — it ends up in toUpdate, not toAdd
+    mockTx.instaladorServicios.findMany.mockResolvedValue([
+      { id_instalador_servicio: 10, id_servicio: 5 },
+    ]);
+
+    await expect(syncInstaladorAssignments(1, [{ id: 5, precio: 999 }])).resolves.toBeUndefined();
+
+    // Validation query must not run — no new assignments
+    expect(mockTx.servicios.findMany).not.toHaveBeenCalled();
+    expect(mockTx.instaladorServicios.update).toHaveBeenCalledWith({
+      where: { id_instalador_servicio: 10 },
+      data: { costo: 999, notas: null },
+    });
+  });
+
+  it("lanza ValidationError solo para el servicio nuevo inactivo, no para el existente inactivo", async () => {
+    mockFindUnique.mockResolvedValue(INSTALADOR);
+    // Service 5 is an existing assignment (its current active status is irrelevant)
+    // Service 9 is a new assignment whose service is inactive
+    mockTx.instaladorServicios.findMany.mockResolvedValue([
+      { id_instalador_servicio: 10, id_servicio: 5 },
+    ]);
+    mockTx.servicios.findMany.mockResolvedValue([]); // service 9 not active
+
+    await expect(
+      syncInstaladorAssignments(1, [
+        { id: 5, precio: 100 }, // existing → exempt from active check
+        { id: 9, precio: 200 }, // new + inactive → must reject
       ])
     ).rejects.toThrow(ValidationError);
   });

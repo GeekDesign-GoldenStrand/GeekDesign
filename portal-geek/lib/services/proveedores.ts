@@ -155,31 +155,6 @@ export async function syncProviderAssignments(
   await getProveedor(id);
   const isServicio = type === "servicio";
 
-  if (items.length > 0) {
-    const ids = items.map((i) => i.id);
-    if (isServicio) {
-      const valid = await prisma.servicios.findMany({
-        where: { id_servicio: { in: ids }, estatus_servicio: true },
-        select: { id_servicio: true },
-      });
-      if (valid.length !== ids.length) {
-        const validSet = new Set(valid.map((s) => s.id_servicio));
-        const bad = ids.filter((id) => !validSet.has(id));
-        throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
-      }
-    } else {
-      const valid = await prisma.materiales.findMany({
-        where: { id_material: { in: ids } },
-        select: { id_material: true },
-      });
-      if (valid.length !== ids.length) {
-        const validSet = new Set(valid.map((m) => m.id_material));
-        const bad = ids.filter((id) => !validSet.has(id));
-        throw new ValidationError(`Materiales no encontrados: ${bad.join(", ")}`);
-      }
-    }
-  }
-
   await prisma.$transaction(async (tx) => {
     const existing = await tx.proveedorPrecios.findMany({
       where: {
@@ -219,10 +194,44 @@ export async function syncProviderAssignments(
     );
 
     const toAdd = items.filter((item) => !existingIdSet.has(item.id));
-    const toUpdate = existing.filter((e) => {
+    const toUpdate = existing.flatMap((e) => {
       const cid = isServicio ? e.id_servicio : e.id_material;
-      return cid !== null && incomingIdSet.has(cid);
+      if (cid === null || !incomingIdSet.has(cid)) return [];
+      const precio = priceMap.get(cid);
+      if (precio === undefined) return []; // structurally unreachable, but explicit
+      return [
+        { id_proveedor_precio: e.id_proveedor_precio, precio, notas: notesMap.get(cid) ?? "" },
+      ];
     });
+
+    // Validate only brand-new assignments. Re-syncing an existing assignment
+    // whose entity was deactivated after the fact is intentionally allowed —
+    // blocking it would prevent price/notes updates to every other unrelated
+    // assignment in the same payload.
+    if (toAdd.length > 0) {
+      const newIds = toAdd.map((item) => item.id);
+      if (isServicio) {
+        const valid = await tx.servicios.findMany({
+          where: { id_servicio: { in: newIds }, estatus_servicio: true },
+          select: { id_servicio: true },
+        });
+        if (valid.length !== newIds.length) {
+          const validSet = new Set(valid.map((s) => s.id_servicio));
+          const bad = newIds.filter((newId) => !validSet.has(newId));
+          throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
+        }
+      } else {
+        const valid = await tx.materiales.findMany({
+          where: { id_material: { in: newIds } },
+          select: { id_material: true },
+        });
+        if (valid.length !== newIds.length) {
+          const validSet = new Set(valid.map((m) => m.id_material));
+          const bad = newIds.filter((newId) => !validSet.has(newId));
+          throw new ValidationError(`Materiales no encontrados: ${bad.join(", ")}`);
+        }
+      }
+    }
 
     if (toDeletePkIds.length > 0) {
       await tx.proveedorPrecios.deleteMany({
@@ -243,14 +252,10 @@ export async function syncProviderAssignments(
       });
     }
 
-    for (const row of toUpdate) {
-      const cid = (isServicio ? row.id_servicio : row.id_material) as number;
+    for (const { id_proveedor_precio, precio, notas } of toUpdate) {
       await tx.proveedorPrecios.update({
-        where: { id_proveedor_precio: row.id_proveedor_precio },
-        data: {
-          precio: priceMap.get(cid)!,
-          notas: notesMap.get(cid) ?? "",
-        },
+        where: { id_proveedor_precio },
+        data: { precio, notas },
       });
     }
   });

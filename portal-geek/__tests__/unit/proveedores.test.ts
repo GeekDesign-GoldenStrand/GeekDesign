@@ -34,8 +34,6 @@ const mockFindUniqueProveedor = prisma.proveedores.findUnique as jest.Mock;
 const mockFindFirstProveedor = prisma.proveedores.findFirst as jest.Mock;
 const mockCreateProveedor = prisma.proveedores.create as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
-const mockServiciosValidate = prisma.servicios.findMany as jest.Mock;
-const mockMaterialesValidate = prisma.materiales.findMany as jest.Mock;
 
 describe("getProviderAssignments", () => {
   beforeEach(() => {
@@ -88,25 +86,29 @@ describe("syncProviderAssignments", () => {
       update: jest.Mock;
     };
     gastos: { findMany: jest.Mock };
+    servicios: { findMany: jest.Mock };
+    materiales: { findMany: jest.Mock };
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockTx = {
       proveedorPrecios: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         deleteMany: jest.fn(),
         createMany: jest.fn(),
         update: jest.fn(),
       },
       gastos: { findMany: jest.fn().mockResolvedValue([]) },
+      servicios: { findMany: jest.fn() },
+      materiales: { findMany: jest.fn() },
     };
     mockTransaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
-    // Default: all requested IDs are valid
-    mockServiciosValidate.mockImplementation((args: { where: { id_servicio: { in: number[] } } }) =>
-      Promise.resolve(args.where.id_servicio.in.map((id: number) => ({ id_servicio: id })))
+    mockTx.servicios.findMany.mockImplementation(
+      (args: { where: { id_servicio: { in: number[] } } }) =>
+        Promise.resolve(args.where.id_servicio.in.map((id: number) => ({ id_servicio: id })))
     );
-    mockMaterialesValidate.mockImplementation(
+    mockTx.materiales.findMany.mockImplementation(
       (args: { where: { id_material: { in: number[] } } }) =>
         Promise.resolve(args.where.id_material.in.map((id: number) => ({ id_material: id })))
     );
@@ -240,22 +242,73 @@ describe("syncProviderAssignments", () => {
     );
   });
 
-  it("lanza ValidationError si un id_servicio no existe o está inactivo", async () => {
+  it("lanza ValidationError si un id_servicio nuevo no existe o está inactivo", async () => {
     mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockServiciosValidate.mockResolvedValue([]); // none found
+    // proveedorPrecios.findMany returns [] (default) → id 99 is toAdd → validation fires
+    mockTx.servicios.findMany.mockResolvedValue([]); // not found / inactive
 
     await expect(syncProviderAssignments(1, "servicio", [{ id: 99, precio: 100 }])).rejects.toThrow(
       ValidationError
     );
   });
 
-  it("lanza ValidationError si un id_material no existe", async () => {
+  it("lanza ValidationError si un id_material nuevo no existe", async () => {
     mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
-    mockMaterialesValidate.mockResolvedValue([]); // none found
+    // proveedorPrecios.findMany returns [] (default) → id 99 is toAdd → validation fires
+    mockTx.materiales.findMany.mockResolvedValue([]); // not found
 
     await expect(syncProviderAssignments(1, "material", [{ id: 99, precio: 100 }])).rejects.toThrow(
       ValidationError
     );
+  });
+
+  it("permite re-sincronizar asignación de servicio existente aunque el servicio esté inactivo", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    // Service 7 already has a row — ends up in toUpdate, not toAdd
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 7, id_material: null },
+    ]);
+
+    await expect(
+      syncProviderAssignments(1, "servicio", [{ id: 7, precio: 500 }])
+    ).resolves.toBeUndefined();
+
+    // Validation query must not run — no new assignments
+    expect(mockTx.servicios.findMany).not.toHaveBeenCalled();
+    expect(mockTx.proveedorPrecios.update).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: 100 },
+      data: { precio: 500, notas: "" },
+    });
+  });
+
+  it("permite re-sincronizar asignación de material existente", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 200, id_servicio: null, id_material: 15 },
+    ]);
+
+    await expect(
+      syncProviderAssignments(1, "material", [{ id: 15, precio: 300 }])
+    ).resolves.toBeUndefined();
+
+    // Validation query must not run — no new assignments
+    expect(mockTx.materiales.findMany).not.toHaveBeenCalled();
+  });
+
+  it("lanza ValidationError solo para el nuevo servicio inactivo, no para el existente inactivo", async () => {
+    mockFindUniqueProveedor.mockResolvedValue({ id_proveedor: 1 });
+    // Service 7: existing assignment (active status irrelevant); service 9: new + inactive
+    mockTx.proveedorPrecios.findMany.mockResolvedValue([
+      { id_proveedor_precio: 100, id_servicio: 7, id_material: null },
+    ]);
+    mockTx.servicios.findMany.mockResolvedValue([]); // service 9 not active
+
+    await expect(
+      syncProviderAssignments(1, "servicio", [
+        { id: 7, precio: 100 }, // existing → exempt from active check
+        { id: 9, precio: 200 }, // new + inactive → must reject
+      ])
+    ).rejects.toThrow(ValidationError);
   });
 });
 
