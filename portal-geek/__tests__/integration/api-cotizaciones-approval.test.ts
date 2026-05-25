@@ -16,6 +16,13 @@ jest.mock("@/lib/db/client", () => ({
     },
     estatusCotizacion: {
       findUnique: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([
+        { id_estatus: 1, descripcion: "Pendiente" },
+        { id_estatus: 2, descripcion: "Validada" },
+        { id_estatus: 3, descripcion: "Rechazada" },
+        { id_estatus: 4, descripcion: "Aprobada" },
+        { id_estatus: 5, descripcion: "Cancelada" },
+      ]),
     },
     estatusPedidos: {
       findUnique: jest.fn(),
@@ -100,6 +107,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
         estatus: { descripcion: "Validada" },
         cliente: { nombre_cliente: "Test User" },
         variablesCotizacion: [],
+        historial: [],
       };
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);

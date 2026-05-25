@@ -1,0 +1,211 @@
+import React, { useState, useCallback } from "react";
+
+import AplicarDescuento from "@/app/(admin)/cotizaciones/[id]/aplicar-descuento";
+import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
+import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
+import {
+  QUOTATION_STATUS,
+  type Cotizacion,
+  type FormulaVariable,
+  type HistorialEstado,
+  type LineItem,
+} from "@/types/cotizacion";
+
+import { ClientCard } from "../molecules/ClientCard";
+import { GeneralDataCard } from "../molecules/GeneralDataCard";
+import { HistoryCard } from "../molecules/HistoryCard";
+import { LineItemsTable } from "../molecules/LineItemsTable";
+import { NotasCard } from "../molecules/NotasCard";
+import { CotizacionHeader } from "../organisms/CotizacionHeader";
+import { CotizacionSummary } from "../organisms/CotizacionSummary";
+
+type ActivePanel = "edit" | "discount" | null;
+
+interface CotizacionDetailPageProps {
+  cotizacion: Cotizacion;
+  onRefetch?: () => Promise<void> | void;
+}
+
+export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetailPageProps) {
+  // ── Panel visibility ──────────────────────
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const togglePanel = (panel: ActivePanel) =>
+    setActivePanel((prev) => (prev === panel ? null : panel));
+
+  // ── Map API detalles → servicios ───────────
+  const variablesByDetalle = cotizacion.variablesCotizacion.reduce(
+    (acc: Record<number, FormulaVariable[]>, v) => {
+      if (v.id_detalle == null) return acc;
+      const fv: FormulaVariable = {
+        id_variable: v.variable.id_variable,
+        nombre_variable: v.variable.nombre_variable,
+        etiqueta: v.variable.etiqueta,
+        unidad: v.variable.unidad ?? undefined,
+        editable_por_cliente: v.variable.editable_por_cliente,
+        valor: parseFloat(v.valor),
+      };
+      acc[v.id_detalle] = [...(acc[v.id_detalle] ?? []), fv];
+      return acc;
+    },
+    {} as Record<number, FormulaVariable[]>
+  );
+
+  const servicios: LineItem[] = (cotizacion.pedido?.detalles ?? []).map((d) => ({
+    id_detalle: d.id_detalle,
+    nombre_servicio: d.servicio.nombre_servicio,
+    nombre_material: d.material.nombre_material,
+    cantidad: d.cantidad,
+    precio_unitario: parseFloat(d.precio_unitario),
+    subtotal: parseFloat(d.subtotal),
+    notas: d.notas ?? undefined,
+    variables: variablesByDetalle[d.id_detalle] ?? [],
+    archivo_url: d.archivo?.url_archivo,
+    archivo_nombre: d.archivo?.nombre_archivo,
+  }));
+
+  // ── Map API historial ─────────────────────
+  const historial: HistorialEstado[] = cotizacion.historial.map((h) => ({
+    id_historial: h.id_historial,
+    id_estado_anterior: h.id_estado_anterior,
+    id_estado_nuevo: h.id_estado_nuevo,
+    estado_anterior_label: h.estado_anterior_label ?? undefined,
+    estado_nuevo_label: h.estado_nuevo_label,
+    usuario_nombre: h.usuario?.nombre_completo ?? h.cliente?.nombre_cliente ?? "Sistema",
+    actor_tipo: h.actor_tipo,
+    fecha_cambio: h.fecha_cambio,
+  }));
+
+  // ── Editable fields ───────────────────────
+  const [fields, setFields] = useState<EditableFields>({
+    id_cliente: cotizacion.id_cliente,
+    nombre_oportunidad: cotizacion.nombre_oportunidad ?? "",
+    fecha_fin: cotizacion.fecha_fin?.slice(0, 10) ?? "",
+    notas: cotizacion.notas ?? "",
+    servicios,
+  });
+
+  const handleSave = useCallback(
+    async (updated: EditableFields) => {
+      setFields(updated);
+      await onRefetch?.();
+      setActivePanel(null);
+    },
+    [onRefetch]
+  );
+
+  // ── Discount (COT-06) ─────────────────────
+  const serviciosSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
+  const montoTotalActual = parseFloat(cotizacion.monto_total);
+  const porcentajeDescuento = cotizacion.porcentaje_descuento
+    ? parseFloat(cotizacion.porcentaje_descuento)
+    : 0;
+  const baseAmount = serviciosSubtotal || montoTotalActual;
+  const discountAmount = porcentajeDescuento > 0 ? Math.max(0, baseAmount - montoTotalActual) : 0;
+  const discountLabel =
+    porcentajeDescuento > 0
+      ? `Descuento ${Math.round(porcentajeDescuento)}%${
+          cotizacion.motivo_descuento ? ` — ${cotizacion.motivo_descuento}` : ""
+        }`
+      : "";
+
+  const handleDiscountApplied = useCallback(async () => {
+    await onRefetch?.();
+  }, [onRefetch]);
+
+  const creadoPor = cotizacion.cliente.nombre_cliente;
+
+  // Edits, adding a discount, and removing a discount all share the same
+  // server-side Pendiente-only rule (see updateCotizacion + aplicarDescuento).
+  // Derive once and pass to each gate so the UI stops offering actions the
+  // server would refuse. Comparing against the constant — not the literal
+  // — keeps this in lock-step with the backend if the catalog string ever
+  // changes.
+  const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
+      <CotizacionHeader
+        folio={cotizacion.folio}
+        nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
+        discountApplied={porcentajeDescuento > 0}
+        canEdit={isMutable}
+        canAddDiscount={isMutable}
+        onEdit={() => togglePanel("edit")}
+        onDiscount={() => togglePanel("discount")}
+      />
+
+      <AplicarDescuento
+        idCotizacion={cotizacion.id_cotizacion}
+        baseAmount={baseAmount}
+        isOpen={activePanel === "discount"}
+        initialPercentage={porcentajeDescuento || undefined}
+        initialMotivo={cotizacion.motivo_descuento ?? undefined}
+        onApplied={handleDiscountApplied}
+        onClose={() => setActivePanel(null)}
+      />
+
+      <EditarCotizacion
+        idCotizacion={cotizacion.id_cotizacion}
+        isOpen={activePanel === "edit"}
+        initial={fields}
+        currentCliente={{
+          id_cliente: cotizacion.cliente.id_cliente,
+          nombre_cliente: cotizacion.cliente.nombre_cliente,
+          empresa: cotizacion.cliente.empresa,
+        }}
+        porcentajeDescuento={porcentajeDescuento || null}
+        motivoDescuento={cotizacion.motivo_descuento}
+        onSave={handleSave}
+        onClose={() => setActivePanel(null)}
+      />
+
+      <CotizacionSummary
+        montoTotal={montoTotalActual}
+        porcentajeDescuento={porcentajeDescuento || null}
+        motivoDescuento={cotizacion.motivo_descuento}
+        fechaCreacion={cotizacion.fecha_creacion}
+        fechaEntrega={fields.fecha_fin || cotizacion.fecha_fin}
+        servicios={fields.servicios}
+        // Trash icon on the discount ribbon is only wired when the quote
+        // can still be mutated — withholding the callback hides the button
+        // in CotizacionSummary (it gates on the prop being defined).
+        onDeleteDiscount={isMutable ? () => togglePanel("discount") : undefined}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <ClientCard
+          cliente={cotizacion.cliente}
+          empresaCotizacion={cotizacion.empresa_cliente ?? undefined}
+        />
+        <GeneralDataCard
+          cotizacion={{
+            folio: cotizacion.folio,
+            nombre_oportunidad: fields.nombre_oportunidad || cotizacion.nombre_oportunidad,
+            estatus_label: cotizacion.estatus.descripcion,
+            creado_por: creadoPor,
+            fecha_fin: fields.fecha_fin || cotizacion.fecha_fin,
+            fecha_validacion: cotizacion.fecha_validacion,
+            fecha_aprobacion: cotizacion.fecha_aprobacion,
+            pdf_url: cotizacion.pdf_url,
+          }}
+        />
+      </div>
+
+      <div className="mb-4">
+        <LineItemsTable
+          servicios={fields.servicios}
+          discountAmount={discountAmount || undefined}
+          discountLabel={discountLabel || undefined}
+        />
+      </div>
+
+      <div className="mb-4">
+        <HistoryCard historial={historial} />
+      </div>
+
+      {(fields.notas || cotizacion.notas) && (
+        <NotasCard notas={fields.notas || cotizacion.notas!} />
+      )}
+    </div>
+  );
+}
