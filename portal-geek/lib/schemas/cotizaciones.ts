@@ -51,7 +51,7 @@ const SolicitarItemSchema = z.object({
     .optional(),
   // Original filename supplied by the client (e.g. "logo_cliente.ai").
   // Stored as ArchivosDisenio.nombre_archivo so admins see a human-readable name.
-  disenio_nombre: z.string().min(1).max(260).optional(),
+  disenio_nombre: z.string().min(1).max(255).optional(),
   variables: z
     .array(
       z.object({

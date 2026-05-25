@@ -79,7 +79,16 @@ export async function presignGet(
       Key: key,
       ...(filename
         ? {
-            ResponseContentDisposition: `attachment; filename="${encodeURIComponent(filename)}"`,
+            // RFC 6266 / RFC 5987: `filename=` only supports US-ASCII and browsers
+            // treat percent-encoded sequences literally (i.e. the file would download
+            // as "logo%20client.ai" instead of "logo client.ai").
+            // The `filename*=UTF-8''` extended parameter carries the full Unicode name;
+            // the ASCII `filename=` fallback is for older clients that don't support it.
+            ResponseContentDisposition: [
+              "attachment",
+              `filename="${filename.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_")}"`,
+              `filename*=UTF-8''${encodeURIComponent(filename)}`,
+            ].join("; "),
           }
         : {}),
     }),

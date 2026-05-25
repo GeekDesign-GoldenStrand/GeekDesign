@@ -121,7 +121,7 @@ describe("GET /api/admin/archivos/[id]", () => {
     expect(res.status).toBe(404);
   });
 
-  it("devuelve 400 para un id no numérico", async () => {
+  it("devuelve 404 para un id no numérico", async () => {
     const res = await GET(makeRequest(), makeCtx("abc"));
     expect(res.status).toBe(404);
   });

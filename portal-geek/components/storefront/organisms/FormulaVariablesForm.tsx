@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
@@ -54,8 +55,7 @@ export function FormulaVariablesForm({
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
+  const router = useRouter();
   const lastRequestId = useRef(0);
 
   useEffect(() => {
@@ -117,7 +117,6 @@ export function FormulaVariablesForm({
     setValues({ ...defaultValues });
     setCantidad(1);
     setNotas("");
-    setFeedback(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -157,8 +156,7 @@ export function FormulaVariablesForm({
       ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
     });
     window.dispatchEvent(new CustomEvent("carrito:updated"));
-    setFeedback(`${nombreServicio} agregado al carrito`);
-    setTimeout(() => setFeedback(null), 2500);
+    router.push("/tienda/carrito");
   }
 
   if (materiales.length === 0) {
@@ -299,7 +297,6 @@ export function FormulaVariablesForm({
           <p className="text-[12px] text-[#666]">Calculando…</p>
         )}
         {calcError && <p className="text-[13px] font-medium text-[#c14a4a]">{calcError}</p>}
-        {feedback && <p className="text-[13px] font-medium text-[#2e7d32]">{feedback}</p>}
 
         <div className="flex gap-[12px]">
           <button
