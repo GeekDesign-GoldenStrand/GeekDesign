@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isValidKey } from "@/lib/storage/keys";
+
 export const CreateCotizacionSchema = z.object({
   id_pedido: z.number().int().positive().optional(),
   id_cliente: z.number().int().positive(),
@@ -36,10 +38,23 @@ const SolicitarItemSchema = z.object({
   id_material: z.number().int().positive(),
   cantidad: z.number().int().positive().max(9999),
   notas: z.string().max(500).optional(),
+  // Storage key of the design file the client uploaded before adding to cart.
+  // Presence is optional — items without a design file fall back to the
+  // placeholder ArchivosDisenio row so DetallePedido.id_archivo stays NOT NULL.
+  // Must be a valid key in the "disenios" category (format: disenios/yyyy/mm/<uuid>.<ext>).
+  disenio_key: z
+    .string()
+    .max(500)
+    .refine((k) => isValidKey(k, "disenios"), {
+      message: "disenio_key must be a valid disenios storage key",
+    })
+    .optional(),
+  // Original filename supplied by the client (e.g. "logo_cliente.ai").
+  // Stored as ArchivosDisenio.nombre_archivo so admins see a human-readable name.
+  disenio_nombre: z.string().min(1).max(255).optional(),
   variables: z
     .array(
       z.object({
-        // Copilot review #6: align identifier validation with CalcularPrecioSchema.
         nombre_variable: z
           .string()
           .min(1)

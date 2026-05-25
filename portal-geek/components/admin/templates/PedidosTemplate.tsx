@@ -25,6 +25,8 @@ type Pedido = {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  archivos: { id: number; nombre: string }[];
 };
 
 // Props

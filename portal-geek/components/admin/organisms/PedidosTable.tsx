@@ -9,6 +9,7 @@ import {
   CaretDown,
 } from "@phosphor-icons/react";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { formatDate } from "@/lib/utils/date";
 
 // UI → API
@@ -130,6 +131,8 @@ interface Pedido {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  archivos: { id: number; nombre: string }[];
 }
 
 interface Props {
@@ -249,7 +252,11 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
               </div>
 
               {/* Acciones */}
-              <div className="flex justify-center">
+              <div className="flex justify-center items-center gap-1">
+                <DesignFileLink
+                  archivos={p.archivos}
+                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                />
                 <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
                   <PencilSimple size={18} />
                 </a>
@@ -353,12 +360,18 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <a
-                  href={`/pedidos/${p.id_pedido}`}
-                  className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
-                >
-                  <PencilSimple size={18} />
-                </a>
+                <div className="flex items-center gap-2">
+                  <DesignFileLink
+                    archivos={p.archivos}
+                    className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                  />
+                  <a
+                    href={`/pedidos/${p.id_pedido}`}
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
+                  >
+                    <PencilSimple size={18} />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

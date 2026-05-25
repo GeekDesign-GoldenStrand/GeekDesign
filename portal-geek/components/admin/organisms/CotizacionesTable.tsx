@@ -2,6 +2,7 @@
 
 import { PencilSimple, CaretDown } from "@phosphor-icons/react";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { formatDate } from "@/lib/utils/date";
 
 type Cotizacion = {
@@ -13,6 +14,7 @@ type Cotizacion = {
   folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
+  archivos: { id: number; nombre: string }[];
 };
 
 type Props = {
@@ -126,7 +128,11 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   />
                 </div>
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-center items-center gap-1">
+                <DesignFileLink
+                  archivos={c.archivos}
+                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                />
                 <button
                   className="text-black hover:text-[#e42200] transition-colors p-2"
                   title="Editar cotización"
@@ -202,9 +208,15 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <button className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]">
-                  <PencilSimple size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <DesignFileLink
+                    archivos={c.archivos}
+                    className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                  />
+                  <button className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]">
+                    <PencilSimple size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
