@@ -459,6 +459,53 @@ describe("POST /api/servicios", () => {
 
     expect(res.status).toBe(422);
   });
+
+  it("retorna 201 y guarda el servicio con imágenes en imagen_url serializadas", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const txCreate = jest.fn().mockResolvedValue({
+      id_servicio: 12,
+      nombre_servicio: "Servicio Con Imágenes",
+      id_estatus: 1,
+      id_sucursal: 1,
+      estatus_servicio: true,
+      imagen_url: JSON.stringify(["servicios/key1.png", "servicios/key2.png"]),
+    });
+
+    mockTransaction.mockImplementation(async (callback) => {
+      const tx = {
+        servicios: {
+          create: txCreate,
+        },
+        estatusServicio: {
+          findFirstOrThrow: jest.fn().mockResolvedValue({ id_estatus_servicio: 1 }),
+        },
+        serviciosMaquina: { createMany: jest.fn() },
+        formulas: { create: jest.fn() },
+        formulaVariables: { createMany: jest.fn() },
+        formulaConstantes: { createMany: jest.fn() },
+      };
+      return callback(tx);
+    });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/servicios")
+      .send({
+        nombre_servicio: "Servicio Con Imágenes",
+        id_sucursal: 1,
+        estatus_servicio: true,
+        imagenes: ["servicios/key1.png", "servicios/key2.png"],
+      });
+
+    expect(res.status).toBe(201);
+    expect(txCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: JSON.stringify(["servicios/key1.png", "servicios/key2.png"]),
+        }),
+      })
+    );
+  });
 });
 
 describe("DELETE /api/servicios/[id] — ADMIN-03 Eliminar servicio (soft delete)", () => {
@@ -539,5 +586,62 @@ describe("DELETE /api/servicios/[id] — ADMIN-03 Eliminar servicio (soft delete
     const res = await deleteApp().delete("/api/servicios/abc");
 
     expect(res.status).toBe(422);
+  });
+});
+
+describe("PUT /api/servicios/[id]", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/servicios/[id]/route");
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  function putApp() {
+    return createApp({ PUT: routes.PUT }, (url) => {
+      const segments = url.pathname.split("/");
+      return { id: segments[segments.length - 1] };
+    });
+  }
+
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const res = await putApp().put("/api/servicios/1").send({ nombre_servicio: "Test" });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 200 y actualiza el servicio con imágenes serializadas", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const mockTx = {
+      servicios: { update: jest.fn().mockResolvedValue({ id_servicio: 1, nombre_servicio: "Updated" }) },
+      servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+      formulas: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn(), create: jest.fn() },
+      formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
+      formulaConstantes: { createMany: jest.fn() },
+    };
+
+    mockTransaction.mockImplementation(async (callback) => callback(mockTx));
+
+    const res = await putApp()
+      .put("/api/servicios/1")
+      .send({
+        nombre_servicio: "Updated",
+        imagenes: ["servicios/imgA.jpg", "servicios/imgB.jpg"],
+      });
+
+    expect(res.status).toBe(200);
+    expect(mockTx.servicios.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id_servicio: 1 },
+        data: expect.objectContaining({
+          imagen_url: JSON.stringify(["servicios/imgA.jpg", "servicios/imgB.jpg"]),
+        }),
+      })
+    );
   });
 });
