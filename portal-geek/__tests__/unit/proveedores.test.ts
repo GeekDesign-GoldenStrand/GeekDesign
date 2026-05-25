@@ -2,7 +2,11 @@
  * @jest-environment node
  */
 import { prisma } from "@/lib/db/client";
-import { getProviderAssignments, syncProviderAssignments } from "@/lib/services/proveedores";
+import {
+  createProveedor,
+  getProviderAssignments,
+  syncProviderAssignments,
+} from "@/lib/services/proveedores";
 
 jest.mock("@/lib/db/client", () => ({
   prisma: {
@@ -14,6 +18,8 @@ jest.mock("@/lib/db/client", () => ({
     },
     proveedores: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
     },
     $transaction: jest.fn((ops) => Promise.all(ops)),
   },
@@ -24,6 +30,8 @@ const mockDeleteMany = prisma.proveedorPrecios.deleteMany as jest.Mock;
 const mockCreate = prisma.proveedorPrecios.create as jest.Mock;
 const mockUpdate = prisma.proveedorPrecios.update as jest.Mock;
 const mockFindUniqueProveedor = prisma.proveedores.findUnique as jest.Mock;
+const mockFindFirstProveedor = prisma.proveedores.findFirst as jest.Mock;
+const mockCreateProveedor = prisma.proveedores.create as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
 
 describe("getProviderAssignments", () => {
@@ -165,5 +173,64 @@ describe("syncProviderAssignments", () => {
     await expect(syncProviderAssignments(1, "servicio", [{ id: 5, precio: 100 }])).rejects.toThrow(
       "Transaction failed"
     );
+  });
+});
+
+describe("createProveedor", () => {
+  const baseInput = {
+    nombre_proveedor: "Empresa Uno",
+    tipo: "Proveedor de material",
+    telefono: "4421230001",
+    correo: "ventas@empresa.mx",
+    estatus: "Activo" as const,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("crea el proveedor cuando el correo no está en uso", async () => {
+    mockFindFirstProveedor.mockResolvedValue(null);
+    mockCreateProveedor.mockResolvedValue({ id_proveedor: 1, ...baseInput });
+
+    const result = await createProveedor(baseInput);
+
+    expect(result).toEqual(expect.objectContaining({ id_proveedor: 1 }));
+    expect(mockCreateProveedor).toHaveBeenCalledTimes(1);
+  });
+
+  it("busca duplicados por correo (case-insensitive) entre proveedores no eliminados", async () => {
+    mockFindFirstProveedor.mockResolvedValue(null);
+    mockCreateProveedor.mockResolvedValue({ id_proveedor: 1, ...baseInput });
+
+    await createProveedor(baseInput);
+
+    expect(mockFindFirstProveedor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          correo: { equals: baseInput.correo, mode: "insensitive" },
+          estatus: { not: "Inactivo" },
+        },
+      })
+    );
+  });
+
+  it("lanza ConflictError y no crea si ya existe un proveedor con ese correo", async () => {
+    mockFindFirstProveedor.mockResolvedValue({ id_proveedor: 99 });
+
+    await expect(createProveedor(baseInput)).rejects.toThrow(
+      `Ya existe un proveedor con el correo "${baseInput.correo}".`
+    );
+    expect(mockCreateProveedor).not.toHaveBeenCalled();
+  });
+
+  it("permite el mismo nombre con un correo distinto", async () => {
+    mockFindFirstProveedor.mockResolvedValue(null);
+    mockCreateProveedor.mockResolvedValue({ id_proveedor: 2 });
+
+    await expect(
+      createProveedor({ ...baseInput, correo: "otro@empresa.mx" })
+    ).resolves.toBeDefined();
+    expect(mockCreateProveedor).toHaveBeenCalledTimes(1);
   });
 });
