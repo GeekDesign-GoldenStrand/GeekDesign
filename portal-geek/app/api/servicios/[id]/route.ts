@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { ServicioIdParams, UpdateServicioSchema } from "@/lib/schemas/servicios";
 import { getServicioWithDetails, updateServicio, deleteServicio } from "@/lib/services/servicios";
 import { ok, noContent } from "@/lib/utils/api";
@@ -18,8 +18,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<Params> }) {
   }
 }
 
-export const PUT = withRoleParams<Params>(
-  ["Administrador", "Direccion"],
+export const PUT = withSectionParams<Params>(
+  "servicios",
+  "write",
   async (req: NextRequest, ctx, session) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
@@ -31,8 +32,9 @@ export const PUT = withRoleParams<Params>(
   }
 );
 
-export const DELETE = withRoleParams<Params>(
-  ["Administrador", "Direccion"],
+export const DELETE = withSectionParams<Params>(
+  "servicios",
+  "write",
   async (req: NextRequest, ctx) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);

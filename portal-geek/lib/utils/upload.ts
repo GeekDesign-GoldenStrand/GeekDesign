@@ -9,8 +9,12 @@ type PresignResponse = {
 
 // Uploads a single file via presigned PUT. Returns the storage key the server
 // minted — that's what gets persisted on the owning entity (e.g. Materiales.imagen_url).
-export async function uploadFile(file: File, category: Category): Promise<string> {
-  const presignRes = await fetch("/api/upload", {
+export async function uploadFile(
+  file: File,
+  category: Category,
+  endpoint = "/api/upload"
+): Promise<string> {
+  const presignRes = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -42,11 +46,31 @@ export async function uploadFile(file: File, category: Category): Promise<string
   return key;
 }
 
+// Uploads a design file without requiring an authenticated session.
+// Uses the public /api/upload/disenios endpoint (rate-limited by IP).
+export async function uploadDesignFile(file: File): Promise<string> {
+  return uploadFile(file, "disenios", "/api/upload/disenios");
+}
+
 // Removes an orphan upload from the bucket — used when the user clears a
-// freshly-uploaded but not-yet-saved file. The server refuses to delete keys
-// already referenced by a persisted entity, so this is safe to call from the UI.
+// freshly-uploaded but not-yet-saved file. Requires an authenticated session.
+// The server refuses to delete keys already referenced by a persisted entity,
+// so this is safe to call from the UI.
 export async function deleteFile(key: string): Promise<void> {
   const res = await fetch(`/api/upload?key=${encodeURIComponent(key)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? `Error ${res.status} al eliminar el archivo`);
+  }
+}
+
+// Removes an orphan design upload — public counterpart of deleteFile() for use
+// in the storefront where users are anonymous. Hits the unauthenticated
+// DELETE /api/upload/disenios endpoint, which is scoped to the disenios/ prefix.
+export async function deleteDesignFile(key: string): Promise<void> {
+  const res = await fetch(`/api/upload/disenios?key=${encodeURIComponent(key)}`, {
     method: "DELETE",
   });
   if (!res.ok) {

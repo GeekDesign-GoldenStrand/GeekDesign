@@ -9,6 +9,7 @@ import {
   CaretDown,
 } from "@phosphor-icons/react";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import {
   ServiceStatusSemaphore,
   type ServiceStatusSummary,
@@ -138,6 +139,7 @@ interface Pedido {
 
   detalles?: PedidoDetalle[];
   serviceStatusSummary?: ServiceStatusSummary;
+  archivos: { id: number; nombre: string }[];
 }
 
 interface Props {
@@ -165,12 +167,12 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
             gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
           }}
         >
-          <span className="whitespace-nowrap">Folio</span>
-          <span className="whitespace-nowrap">Fecha</span>
-          <span className="whitespace-nowrap">Entrega</span>
-          <span className="whitespace-nowrap">Monto</span>
+          <span className="whitespace-nowrap">Fecha de creación</span>
+          <span className="whitespace-nowrap">Fecha de entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
-          <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Nombre de oportunidad</span>
+          <span className="whitespace-nowrap">Monto</span>
+          <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">
             {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}
           </span>
@@ -195,27 +197,27 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
                 }}
               >
-                {/* Folio */}
-                <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
-
-                {/* Fecha */}
+                {/* Fecha de creación */}
                 <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
 
-                {/* Entrega */}
+                {/* Fecha de entrega */}
                 <span className="whitespace-nowrap">
                   {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
                 </span>
+
+                {/* Empresa */}
+                <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
+
+                {/* Nombre de oportunidad */}
+                <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
 
                 {/* Monto */}
                 <span className="whitespace-nowrap">
                   {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
                 </span>
 
-                {/* Empresa */}
-                <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
-
-                {/* Cliente */}
-                <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
+                {/* Folio */}
+                <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
 
                 {/* Semáforo general o estatus del servicio seleccionado */}
                 <div className="flex justify-center">
@@ -273,15 +275,16 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   </div>
                 </div>
 
-                {/* Acciones */}
-                <div className="flex justify-center">
-                  <a
-                    href={`/pedidos/${p.id_pedido}`}
-                    className="text-black hover:text-[#e42200] p-2"
-                  >
-                    <PencilSimple size={18} />
-                  </a>
-                </div>
+              {/* Acciones */}
+              <div className="flex justify-center items-center gap-1">
+                <DesignFileLink
+                  archivos={p.archivos}
+                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                />
+
+                <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
+                  <PencilSimple size={18} />
+                </a>
               </div>
 
               {/* Mobile Card */}
@@ -412,11 +415,21 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                       </p>
                     </div>
 
+                {/* Dates and actions */}
+                <div className="flex justify-between items-center pt-2">
+                  <div className="flex gap-4">
+                    {/* Creation date */}
+                    <div>
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Fecha</p>
+
+                      <p className="text-[11px] font-medium text-[#575757]">
+                        {formatDate(p.fecha_creacion)}
+                      </p>
+                    </div>
+
                     {/* Estimated delivery date */}
                     <div>
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
-                        Entrega
-                      </p>
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Entrega</p>
 
                       <p className="text-[11px] font-medium text-[#575757]">
                         {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
@@ -424,16 +437,22 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                     </div>
                   </div>
 
-                  {/* Edit action */}
-                  <a
-                    href={`/pedidos/${p.id_pedido}`}
-                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
-                    title="Editar pedido"
-                  >
-                    <PencilSimple size={18} />
-                  </a>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <DesignFileLink
+                      archivos={p.archivos}
+                      className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                    />
+
+                    <a
+                      href={`/pedidos/${p.id_pedido}`}
+                      className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
+                      title="Editar pedido"
+                    >
+                      <PencilSimple size={18} />
+                    </a>
+                  </div>
                 </div>
-              </div>
             </div>
           );
         })}

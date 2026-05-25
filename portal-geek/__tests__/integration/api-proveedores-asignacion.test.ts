@@ -44,7 +44,7 @@ describe("GET /api/proveedores/[id]/asignacion", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 si el rol no es Direccion", async () => {
+  it("retorna 403 si el rol no es Direccion (proveedores es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
     const res = await testApp().get("/api/proveedores/1/asignacion");
     expect(res.status).toBe(403);

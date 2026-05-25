@@ -1,12 +1,12 @@
 import type { NextRequest } from "next/server";
 
-import { withRole } from "@/lib/auth/guards";
+import { withSection } from "@/lib/auth/guards";
 import { CreateUsuarioSchema } from "@/lib/schemas/usuarios";
 import { listUsuarios, createUsuario } from "@/lib/services/usuarios";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion"], async (req: NextRequest) => {
+export const GET = withSection("usuarios", "read", async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
@@ -18,7 +18,7 @@ export const GET = withRole(["Direccion"], async (req: NextRequest) => {
   }
 });
 
-export const POST = withRole(["Direccion"], async (req: NextRequest) => {
+export const POST = withSection("usuarios", "write", async (req: NextRequest) => {
   try {
     const body = CreateUsuarioSchema.parse(await req.json());
     return created(await createUsuario(body));
