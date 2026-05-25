@@ -17,13 +17,21 @@ import type {
 
 export type ServicioFormMode = "create" | "edit";
 
-type UseServicioFormOptions = {
-  mode: ServicioFormMode;
-  initialData?: NuevoServicioFormState;
-  servicioId?: number;
-  onSuccess?: () => void;
-  onCancel?: () => void;
-};
+type UseServicioFormOptions =
+  | {
+      mode: "create";
+      initialData?: NuevoServicioFormState;
+      servicioId?: never;
+      onSuccess?: () => void;
+      onCancel?: () => void;
+    }
+  | {
+      mode: "edit";
+      initialData?: NuevoServicioFormState;
+      servicioId: number;
+      onSuccess?: () => void;
+      onCancel?: () => void;
+    };
 
 export function useServicioForm({
   mode,
@@ -94,6 +102,10 @@ export function useServicioForm({
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (mode === "edit" && servicioId === undefined) {
+      setSubmitError("Error interno: servicioId es requerido en modo edición.");
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
 
@@ -110,10 +122,7 @@ export function useServicioForm({
           ? { expresion, variables: form.variables, constantes: form.constantes }
           : undefined;
 
-      const url =
-        mode === "edit" && servicioId !== undefined
-          ? `/api/servicios/${servicioId}`
-          : "/api/servicios";
+      const url = mode === "edit" ? `/api/servicios/${servicioId}` : "/api/servicios";
       const method = mode === "edit" ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -157,7 +166,12 @@ export function useServicioForm({
     materiales.loading;
 
   const fetchError =
-    sucursales.error || instaladores.error || proveedores.error || tiposVariable.error;
+    sucursales.error ||
+    instaladores.error ||
+    proveedores.error ||
+    tiposVariable.error ||
+    maquinas.error ||
+    materiales.error;
 
   const canSubmit = form.nombre_servicio.trim().length > 0 && form.id_sucursal !== null;
 
