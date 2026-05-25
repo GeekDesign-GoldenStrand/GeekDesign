@@ -89,7 +89,7 @@ describe("CotizacionDetallePage Server Component", () => {
     // and shows up in the serialized props.
     expect(stringified).not.toContain("Vista en construcción");
     expect(stringified).toContain("OT-SIM-498");
-    expect(stringified).toContain("\"estatus\":\"Aprobada\"");
+    expect(stringified).toContain('"estatus":"Aprobada"');
   });
 
   it("should render the 'Acceso requerido' gate when the session cookie does not authorize this cotización", async () => {
