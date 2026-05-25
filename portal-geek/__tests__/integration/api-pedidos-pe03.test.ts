@@ -15,8 +15,7 @@ jest.mock("@/lib/auth/session", () => ({
 
 jest.mock("@/lib/auth/guards", () => ({
   withSection:
-    (_section: string, _action: string, handler: unknown) =>
-    async (req: NextRequest) => {
+    (_section: string, _action: string, handler: unknown) => async (req: NextRequest) => {
       const session = await mockGetSession();
 
       if (!session) {
