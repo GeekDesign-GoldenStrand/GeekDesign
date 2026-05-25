@@ -1,4 +1,4 @@
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { AssignmentSchema } from "@/lib/schemas/asignaciones";
 import { ProveedorIdParams } from "@/lib/schemas/proveedores";
 import { getProviderAssignments, syncProviderAssignments } from "@/lib/services/proveedores";
@@ -7,7 +7,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const GET = withSectionParams<Params>("proveedores", "read", async (_req, ctx) => {
   try {
     const { id } = ProveedorIdParams.parse(await ctx.params);
     return ok(await getProviderAssignments(id));
@@ -16,7 +16,7 @@ export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
+export const PUT = withSectionParams<Params>("proveedores", "write", async (req, ctx) => {
   try {
     const { id } = ProveedorIdParams.parse(await ctx.params);
     const body = AssignmentSchema.parse(await req.json());

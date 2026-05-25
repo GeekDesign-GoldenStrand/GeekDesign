@@ -1,4 +1,4 @@
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { MaquinaIdParams, UpdateMaquinaSchema } from "@/lib/schemas/maquinas";
 import { getMaquina, updateMaquina, deleteMaquina } from "@/lib/services/maquinas";
 import { ok, noContent } from "@/lib/utils/api";
@@ -6,7 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const GET = withSectionParams<Params>("maquinas", "read", async (_req, ctx) => {
   try {
     const { id } = MaquinaIdParams.parse(await ctx.params);
     return ok(await getMaquina(id));
@@ -15,7 +15,7 @@ export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
+export const PUT = withSectionParams<Params>("maquinas", "write", async (req, ctx) => {
   try {
     const { id } = MaquinaIdParams.parse(await ctx.params);
     const body = UpdateMaquinaSchema.parse(await req.json());
@@ -25,7 +25,7 @@ export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const DELETE = withSectionParams<Params>("maquinas", "write", async (_req, ctx) => {
   try {
     const { id } = MaquinaIdParams.parse(await ctx.params);
     await deleteMaquina(id);

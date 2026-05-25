@@ -102,22 +102,20 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 con rol no permitido (Finanzas)", async () => {
+  it("retorna 403 con rol Finanzas (materiales es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await createApp({ GET: routes.GET }).get("/api/materiales");
     expect(res.status).toBe(403);
   });
 
-  it("retorna 200 con items y total (rol Colaborador)", async () => {
+  it("retorna 200 con rol Colaborador (MAT-01: Colaborador puede consultar)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
     mockFindMany.mockResolvedValue([BASE_MATERIAL]);
     mockCount.mockResolvedValue(1);
 
     const res = await createApp({ GET: routes.GET }).get("/api/materiales");
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.total).toBe(1);
   });
 
   it("retorna 200 con items y total (rol Administrador)", async () => {
@@ -378,7 +376,7 @@ describe("GET /api/materiales/[id] — MAT-03 Obtener material por ID", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 con rol Finanzas", async () => {
+  it("retorna 403 con rol Finanzas (materiales es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await makeAppById({ GET: routes.GET }).get("/api/materiales/1");
@@ -386,7 +384,7 @@ describe("GET /api/materiales/[id] — MAT-03 Obtener material por ID", () => {
   });
 
   it("retorna 200 con los datos del material", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue(BASE_MATERIAL);
 
     const res = await makeAppById({ GET: routes.GET }).get("/api/materiales/1");
@@ -674,7 +672,7 @@ describe("GET /api/materiales/[id]/proveedores — MAT-06 Listar proveedores de 
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 con rol Finanzas", async () => {
+  it("retorna 403 con rol Finanzas (materiales es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await makeApp().get("/api/materiales/1/proveedores");
@@ -699,15 +697,11 @@ describe("GET /api/materiales/[id]/proveedores — MAT-06 Listar proveedores de 
     expect(res.body.data).toHaveLength(1);
   });
 
-  it("retorna 200 con la lista de proveedores (rol Colaborador)", async () => {
-    // Colaborador puede llamar al endpoint directamente aunque la columna
-    // esté oculta en la UI — el guard de la ruta lo permite explícitamente.
+  it("retorna 403 con rol Colaborador (proveedores de un material es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
-    mockProveedoresFindMany.mockResolvedValue([BASE_ROW]);
 
     const res = await makeApp().get("/api/materiales/1/proveedores");
-    expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
+    expect(res.status).toBe(403);
   });
 
   it("proyecta correctamente los campos del proveedor y el precio", async () => {

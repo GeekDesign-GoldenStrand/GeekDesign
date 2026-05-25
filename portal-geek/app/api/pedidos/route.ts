@@ -1,13 +1,13 @@
 import type { NextRequest } from "next/server";
 
-import { withRole } from "@/lib/auth/guards";
+import { withSection } from "@/lib/auth/guards";
 import { CreatePedidoSchema } from "@/lib/schemas/pedidos";
 import { listPedidos, createPedido } from "@/lib/services/pedidos";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError, ValidationError } from "@/lib/utils/errors";
 
 // GET endpoint: lists pedidos with filters and pagination
-export const GET = withRole(["Direccion", "Colaborador"], async (req: NextRequest) => {
+export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search");
@@ -57,7 +57,7 @@ export const GET = withRole(["Direccion", "Colaborador"], async (req: NextReques
 });
 
 // POST endpoint: creates a new pedido
-export const POST = withRole(["Direccion", "Colaborador"], async (req: NextRequest) => {
+export const POST = withSection("pedidos", "write", async (req: NextRequest) => {
   try {
     // Validate request body against schema
     const body = CreatePedidoSchema.parse(await req.json());

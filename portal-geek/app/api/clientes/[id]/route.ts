@@ -1,4 +1,4 @@
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { ClienteIdParams, UpdateClienteSchema } from "@/lib/schemas/clientes";
 import { getCliente, updateCliente, deleteCliente } from "@/lib/services/clientes";
 import { ok, noContent } from "@/lib/utils/api";
@@ -6,7 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const GET = withSectionParams<Params>("clientes", "read", async (_req, ctx) => {
   try {
     const { id } = ClienteIdParams.parse(await ctx.params);
     const cliente = await getCliente(id);
@@ -16,7 +16,7 @@ export const GET = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
+export const PUT = withSectionParams<Params>("clientes", "write", async (req, ctx) => {
   try {
     const { id } = ClienteIdParams.parse(await ctx.params);
     const body = UpdateClienteSchema.parse(await req.json());
@@ -27,7 +27,7 @@ export const PUT = withRoleParams<Params>(["Direccion"], async (req, ctx) => {
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Direccion"], async (_req, ctx) => {
+export const DELETE = withSectionParams<Params>("clientes", "write", async (_req, ctx) => {
   try {
     const { id } = ClienteIdParams.parse(await ctx.params);
     await deleteCliente(id);

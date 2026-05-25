@@ -12,7 +12,7 @@ import {
   PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
 
-import type { UserRole } from "@/types";
+import type { Section } from "@/lib/auth/access";
 
 export type NavItem =
   | {
@@ -20,11 +20,13 @@ export type NavItem =
       href: string;
       label: string;
       icon: React.ReactNode;
-      roles: UserRole[];
+      // The policy section this item links to. Visibility is derived from
+      // can(role, section, "read") — see SidebarNav. Omit for items visible to
+      // any authenticated user.
+      section?: Section;
     }
   | {
       type: "divider";
-      roles: UserRole[];
     };
 
 const ICON_SIZE = 30;
@@ -34,74 +36,70 @@ export const navItems: NavItem[] = [
     href: "/dashboard",
     label: "Dashboard",
     icon: <PresentationChart size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    // The dashboard is the company-wide metrics home, so it's Direccion-only.
+    // Colaborador/Finanzas don't see it and land on their own section instead.
+    section: "metricas",
   },
   {
     href: "/cotizaciones",
     label: "Cotizaciones",
     icon: <Briefcase size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    section: "cotizaciones",
   },
   {
     href: "/pedidos",
     label: "Pedidos",
     icon: <Package size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador", "Colaborador"],
+    section: "pedidos",
   },
   {
     href: "/finanzas",
     label: "Finanzas",
     icon: <CurrencyDollar size={ICON_SIZE} />,
-    roles: ["Finanzas", "Direccion", "Administrador"],
+    section: "finanzas",
   },
-  {
-    type: "divider",
-    roles: ["Direccion", "Administrador"],
-  },
+  { type: "divider" },
   {
     href: "/servicios",
     label: "Servicios",
     icon: <Storefront size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
-  },
-  {
-    href: "/terceros",
-    label: "Terceros",
-    icon: <UserGear size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    section: "servicios",
   },
   {
     href: "/materiales",
     label: "Materiales",
     icon: <CubeTransparent size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador", "Colaborador"],
-  },
-  {
-    type: "divider",
-    roles: ["Direccion", "Administrador"],
+    section: "materiales",
   },
   {
     href: "/maquinas",
     label: "Máquinas",
     icon: <Microscope size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    section: "maquinas",
   },
+  { type: "divider" },
   {
     href: "/colaboradores",
     label: "Colaboradores",
     icon: <Users size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    section: "colaboradores",
+  },
+  {
+    href: "/terceros",
+    label: "Terceros",
+    icon: <UserGear size={ICON_SIZE} />,
+    section: "terceros",
   },
   {
     href: "/sucursales",
     label: "Sucursales",
     icon: <Buildings size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    section: "sucursales",
   },
   {
     href: "/clientes",
     label: "Clientes",
     icon: <Handshake size={ICON_SIZE} />,
-    roles: ["Direccion", "Administrador"],
+    section: "clientes",
   },
 ];
