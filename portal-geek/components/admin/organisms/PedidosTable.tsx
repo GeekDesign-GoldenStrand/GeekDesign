@@ -275,16 +275,20 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   </div>
                 </div>
 
-              {/* Acciones */}
-              <div className="flex justify-center items-center gap-1">
-                <DesignFileLink
-                  archivos={p.archivos}
-                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                />
+                {/* Acciones */}
+                <div className="flex justify-center items-center gap-1">
+                  <DesignFileLink
+                    archivos={p.archivos}
+                    className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                  />
 
-                <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
-                  <PencilSimple size={18} />
-                </a>
+                  <a
+                    href={`/pedidos/${p.id_pedido}`}
+                    className="text-black hover:text-[#e42200] p-2"
+                  >
+                    <PencilSimple size={18} />
+                  </a>
+                </div>
               </div>
 
               {/* Mobile Card */}
@@ -415,21 +419,11 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                       </p>
                     </div>
 
-                {/* Dates and actions */}
-                <div className="flex justify-between items-center pt-2">
-                  <div className="flex gap-4">
-                    {/* Creation date */}
-                    <div>
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Fecha</p>
-
-                      <p className="text-[11px] font-medium text-[#575757]">
-                        {formatDate(p.fecha_creacion)}
-                      </p>
-                    </div>
-
                     {/* Estimated delivery date */}
                     <div>
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Entrega</p>
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                        Entrega
+                      </p>
 
                       <p className="text-[11px] font-medium text-[#575757]">
                         {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
@@ -453,6 +447,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                     </a>
                   </div>
                 </div>
+              </div>
             </div>
           );
         })}
