@@ -216,6 +216,8 @@ export async function getServicioParaAdmin(id: number): Promise<ServicioParaAdmi
       proveedor: true,
       formulas: {
         where: { estatus: "Activa" },
+        orderBy: { fecha_creacion: "desc" },
+        take: 1,
         include: {
           variables: { include: { tipo: true } },
           constantes: { include: { instalador: true, proveedor: true } },
@@ -407,25 +409,26 @@ async function validateServicioFKs(
     if (!found) throw new ValidationError(`Proveedor con id ${data.id_proveedor} no encontrado`);
   }
   if (data.id_maquinas && data.id_maquinas.length > 0) {
+    const uniqueMachineIds = Array.from(new Set(data.id_maquinas));
     const found = await tx.maquinas.findMany({
-      where: { id_maquina: { in: data.id_maquinas } },
+      where: { id_maquina: { in: uniqueMachineIds } },
       select: { id_maquina: true },
     });
-    if (found.length !== data.id_maquinas.length) {
+    if (found.length !== uniqueMachineIds.length) {
       const foundIds = new Set(found.map((m) => m.id_maquina));
-      const missing = data.id_maquinas.filter((id_maq) => !foundIds.has(id_maq));
+      const missing = uniqueMachineIds.filter((id_maq) => !foundIds.has(id_maq));
       throw new ValidationError(`Máquinas no encontradas: ${missing.join(", ")}`);
     }
   }
   if (data.materiales && data.materiales.length > 0) {
-    const ids = data.materiales.map((m) => m.id_material);
+    const uniqueMaterialIds = Array.from(new Set(data.materiales.map((m) => m.id_material)));
     const found = await tx.materiales.findMany({
-      where: { id_material: { in: ids } },
+      where: { id_material: { in: uniqueMaterialIds } },
       select: { id_material: true },
     });
-    if (found.length !== ids.length) {
+    if (found.length !== uniqueMaterialIds.length) {
       const foundIds = new Set(found.map((m) => m.id_material));
-      const missing = ids.filter((id_mat) => !foundIds.has(id_mat));
+      const missing = uniqueMaterialIds.filter((id_mat) => !foundIds.has(id_mat));
       throw new ValidationError(`Materiales no encontrados: ${missing.join(", ")}`);
     }
   }
