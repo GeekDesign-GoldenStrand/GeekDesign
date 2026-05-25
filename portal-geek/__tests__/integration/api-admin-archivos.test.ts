@@ -105,14 +105,19 @@ describe("GET /api/admin/archivos/[id]", () => {
   });
 
   it("devuelve 404 para el archivo placeholder", async () => {
+    // Reflect real seed values: sentinel lives in nombre_archivo, url_archivo
+    // is a fake https URL. Both fields together trigger the guard.
     mockFindUnique.mockResolvedValue({
       id_archivo: 1,
-      url_archivo: "__PLACEHOLDER__",
+      url_archivo: "https://placeholder.invalid/no-design-yet",
       nombre_archivo: "__PLACEHOLDER__",
     });
 
     const res = await GET(makeRequest(), makeCtx("1"));
     expect(res.status).toBe(404);
+    // presignGet must never be called with the fake URL — that would cause a
+    // GCS NoSuchKey error and redirect the browser to a broken signed URL.
+    expect(mockPresignGet).not.toHaveBeenCalled();
   });
 
   it("devuelve 404 si el archivo no existe en la DB", async () => {
