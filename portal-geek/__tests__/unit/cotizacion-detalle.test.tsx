@@ -33,7 +33,11 @@ describe("CotizacionDetallePage Server Component", () => {
     jest.clearAllMocks();
   });
 
-  it("should render 'Vista en construcción' placeholder when quotation is Aprobada", async () => {
+  it("should render the QuotationDetailView when quotation is Aprobada", async () => {
+    // Previously this page short-circuited to a "Vista en construcción"
+    // placeholder for Aprobada; that block was removed because
+    // QuotationDetailView already handles the Aprobada state (renders the
+    // banner + pedido production status block).
     const mockQuote = {
       id_cotizacion: 6,
       folio: "OT-SIM-498",
@@ -47,8 +51,12 @@ describe("CotizacionDetallePage Server Component", () => {
         empresa: "Test Corp",
       },
       pedido: {
+        id_pedido: 42,
+        estatus: { descripcion: "Pendiente" },
+        estado_factura: { descripcion: "Cotizacion" },
         detalles: [],
       },
+      variablesCotizacion: [],
     };
 
     (getCotizacionByFolio as jest.Mock).mockResolvedValue(mockQuote);
@@ -76,8 +84,12 @@ describe("CotizacionDetallePage Server Component", () => {
     };
 
     const stringified = safeStringify(element);
-    expect(stringified).toContain("Vista en construcción");
-    expect(stringified).toContain("La vista está en construcción. Próximamente estará disponible.");
+    // Aprobada now renders QuotationDetailView with the mapped quotation, not
+    // the construction placeholder. The folio passes through as a prop value
+    // and shows up in the serialized props.
+    expect(stringified).not.toContain("Vista en construcción");
+    expect(stringified).toContain("OT-SIM-498");
+    expect(stringified).toContain("\"estatus\":\"Aprobada\"");
   });
 
   it("should render the 'Acceso requerido' gate when the session cookie does not authorize this cotización", async () => {
