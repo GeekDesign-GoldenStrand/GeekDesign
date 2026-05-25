@@ -24,6 +24,8 @@ jest.mock("@/lib/db/client", () => ({
     },
     colaboradores: {
       deleteMany: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
     },
     tokensRecuperacion: {
       deleteMany: jest.fn(),
@@ -158,7 +160,10 @@ describe("getColaborador — COL-02 Obtener colaborador por ID", () => {
 // COL-01 — createColaborador
 // ──────────────────────────────────────────────────────────────────────────────
 describe("createColaborador — COL-01 Registrar colaborador", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFindUnique.mockResolvedValue(null);
+  });
 
   it("crea el colaborador y retorna el registro completo", async () => {
     mockCreate.mockResolvedValue(BASE_COLABORADOR);
@@ -188,6 +193,32 @@ describe("createColaborador — COL-01 Registrar colaborador", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           colaborador: expect.objectContaining({ create: expect.any(Object) }),
+        }),
+      })
+    );
+  });
+
+  it("reutiliza un usuario existente que no tiene contraseña configurada", async () => {
+    const existingPasswordlessUser = {
+      ...BASE_COLABORADOR,
+      contrasena_hash: null,
+    };
+    mockFindUnique.mockResolvedValue(existingPasswordlessUser);
+    mockTransaction.mockImplementation(async (arg) => {
+      if (typeof arg === "function") return arg(prisma);
+      return Promise.all(arg);
+    });
+    mockUpdate.mockResolvedValue(BASE_COLABORADOR);
+
+    const result = await createColaborador(VALID_CREATE_INPUT);
+    expect(result).toMatchObject({ id_usuario: 1, nombre_completo: "Juan García" });
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id_usuario: existingPasswordlessUser.id_usuario },
+        data: expect.objectContaining({
+          nombre_completo: VALID_CREATE_INPUT.nombre_completo,
+          id_rol: VALID_CREATE_INPUT.id_rol,
+          estatus: VALID_CREATE_INPUT.estatus,
         }),
       })
     );

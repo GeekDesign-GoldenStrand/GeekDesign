@@ -63,30 +63,86 @@ export async function createColaborador(data: CreateColaboradorInput) {
     estatus_colaborador,
   } = data;
 
+  const normalizedEmail = correo_electronico.trim().toLowerCase();
+
+  // Verify if there is an existing user with that mail
+  const existingUser = await prisma.usuarios.findUnique({
+    where: { correo_electronico: normalizedEmail },
+    include: { colaborador: true },
+  });
+
   let usuario;
-  try {
-    usuario = await prisma.usuarios.create({
-      data: {
-        nombre_completo,
-        correo_electronico,
-        id_rol,
-        estatus,
-        colaborador: {
-          create: {
+
+  if (existingUser) {
+    // if the user already has a password configured, it's a duplicate conflict
+    if (existingUser.contrasena_hash !== null) {
+      throw new ConflictError("El correo electrónico ya está registrado");
+    }
+
+    // if it exists but no password, we reuse and update
+    usuario = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.usuarios.update({
+        where: { id_usuario: existingUser.id_usuario },
+        data: {
+          nombre_completo,
+          id_rol,
+          estatus,
+        },
+        select: COLABORADOR_SELECT,
+      });
+
+      if (existingUser.colaborador) {
+        await tx.colaboradores.update({
+          where: { id_usuario: existingUser.id_usuario },
+          data: {
             id_sucursal,
             edad,
             sexo,
             telefono,
             estatus_colaborador,
           },
-        },
-      },
-      select: COLABORADOR_SELECT,
+        });
+      } else {
+        await tx.colaboradores.create({
+          data: {
+            id_usuario: existingUser.id_usuario,
+            id_sucursal,
+            edad,
+            sexo,
+            telefono,
+            estatus_colaborador,
+          },
+        });
+      }
+
+      return updatedUser;
     });
-  } catch (err: unknown) {
-    if ((err as { code?: string }).code === "P2002")
-      throw new ConflictError("El correo electrónico ya está registrado");
-    throw err;
+  } else {
+    // normal creation flow
+    try {
+      usuario = await prisma.usuarios.create({
+        data: {
+          nombre_completo,
+          correo_electronico: normalizedEmail,
+          id_rol,
+          estatus,
+          colaborador: {
+            create: {
+              id_sucursal,
+              edad,
+              sexo,
+              telefono,
+              estatus_colaborador,
+            },
+          },
+        },
+        select: COLABORADOR_SELECT,
+      });
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "P2002")
+        throw new ConflictError("El correo electrónico ya está registrado");
+      throw err;
+    }
   }
 
   try {
@@ -97,7 +153,7 @@ export async function createColaborador(data: CreateColaboradorInput) {
     );
     return usuario;
   } catch (err) {
-    // Si falla el envío del correo, hacemos un rollback manual para no dejar el usuario a medias
+    // if sending mail fails, manual rollback kicks in
     await prisma
       .$transaction([
         prisma.tokensRecuperacion.deleteMany({ where: { id_usuario: usuario.id_usuario } }),

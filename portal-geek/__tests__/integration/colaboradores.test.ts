@@ -18,6 +18,8 @@ jest.mock("@/lib/db/client", () => ({
     },
     colaboradores: {
       deleteMany: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
     },
     tokensRecuperacion: {
       deleteMany: jest.fn(),
