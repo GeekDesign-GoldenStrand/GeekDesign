@@ -124,19 +124,6 @@ export async function syncInstaladorAssignments(
   const deduped = Array.from(new Map(items.map((i) => [i.id, i])).values());
   await getInstalador(id);
 
-  if (deduped.length > 0) {
-    const ids = deduped.map((i) => i.id);
-    const valid = await prisma.servicios.findMany({
-      where: { id_servicio: { in: ids }, estatus_servicio: true },
-      select: { id_servicio: true },
-    });
-    if (valid.length !== ids.length) {
-      const validSet = new Set(valid.map((s) => s.id_servicio));
-      const bad = ids.filter((id) => !validSet.has(id));
-      throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
-    }
-  }
-
   await prisma.$transaction(async (tx) => {
     const existing = await tx.instaladorServicios.findMany({
       where: { id_instalador: id },
@@ -162,7 +149,27 @@ export async function syncInstaladorAssignments(
     }
 
     const toAdd = deduped.filter((i) => !existingMap.has(i.id));
-    const toUpdate = deduped.filter((i) => existingMap.has(i.id));
+    const toUpdate = deduped.flatMap((i) => {
+      const pk = existingMap.get(i.id);
+      if (pk === undefined) return [];
+      return [{ id_instalador_servicio: pk, precio: i.precio, notas: i.notas ?? null }];
+    });
+
+    // Only validate active status for NEW assignments.
+    // Re-syncing an existing assignment is allowed even if the service was
+    // deactivated after it was originally created.
+    if (toAdd.length > 0) {
+      const newIds = toAdd.map((i) => i.id);
+      const valid = await tx.servicios.findMany({
+        where: { id_servicio: { in: newIds }, estatus_servicio: true },
+        select: { id_servicio: true },
+      });
+      if (valid.length !== newIds.length) {
+        const validSet = new Set(valid.map((s) => s.id_servicio));
+        const bad = newIds.filter((id) => !validSet.has(id));
+        throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
+      }
+    }
 
     if (toDeletePkIds.length > 0) {
       await tx.instaladorServicios.deleteMany({
@@ -182,10 +189,10 @@ export async function syncInstaladorAssignments(
       });
     }
 
-    for (const i of toUpdate) {
+    for (const { id_instalador_servicio, precio, notas } of toUpdate) {
       await tx.instaladorServicios.update({
-        where: { id_instalador_servicio: existingMap.get(i.id)! },
-        data: { costo: i.precio, notas: i.notas ?? null },
+        where: { id_instalador_servicio },
+        data: { costo: precio, notas },
       });
     }
   });
