@@ -352,6 +352,7 @@ export function PedidosTemplate({
           onStatusChange={onStatusChange}
           selectedServiceId={selectedServiceId}
           onDetalleStatusChange={onDetalleStatusChange}
+          onShowDetail={setDetailId}
         />
 
         {/* Pagination */}
@@ -395,6 +396,16 @@ export function PedidosTemplate({
           </div>
         </div>
       </section>
+
+      {/* PE-05 — order detail window opened from the info icon */}
+      {detailId !== null && (
+        <PedidoDetailModal
+          key={detailId}
+          pedidoId={detailId}
+          selectedServiceId={selectedServiceId}
+          onClose={() => setDetailId(null)}
+        />
+      )}
     </>
   );
 }

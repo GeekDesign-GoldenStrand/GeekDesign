@@ -30,6 +30,7 @@ interface PedidoDetalle {
   };
   detalle: {
     id_detalle: number;
+    id_servicio: number;
     cantidad: number;
     ancho_cm?: string | null;
     alto_cm?: string | null;
@@ -65,6 +66,8 @@ interface Props {
   // only while a detail is open, so each order gets a fresh mount.
   pedidoId: number;
   onClose: () => void;
+  // When a service tab is active, only that service's line items are shown.
+  selectedServiceId?: number | null;
 }
 
 function money(value: string | number | null | undefined) {
@@ -83,7 +86,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default function PedidoDetailModal({ pedidoId, onClose }: Props) {
+export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId }: Props) {
   const [data, setData] = useState<PedidoDetalle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,151 +125,191 @@ export default function PedidoDetailModal({ pedidoId, onClose }: Props) {
         </div>
       )}
 
-      {data && (
-        <div className="flex flex-col gap-6">
-          {/* General */}
-          <section>
-            <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">General</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Estatus" value={data.pedido.estatus.descripcion} />
-              <Field
-                label="Estado factura"
-                value={data.pedido.estado_factura?.descripcion ?? "Sin facturar"}
-              />
-              <Field label="Fecha de creación" value={formatDate(data.pedido.fecha_creacion)} />
-              <Field
-                label="Fecha estimada"
-                value={data.pedido.fecha_estimada ? formatDate(data.pedido.fecha_estimada) : "—"}
-              />
-              <Field
-                label="Fecha de finalización"
-                value={data.pedido.fecha_fin ? formatDate(data.pedido.fecha_fin) : "—"}
-              />
-              <Field label="Sucursal" value={data.pedido.sucursal?.nombre_sucursal ?? "—"} />
-              <Field label="Requiere factura" value={data.pedido.factura ? "Sí" : "No"} />
-              <Field
-                label="Número de factura"
-                value={data.pedido.numero_factura ?? (data.pedido.facturado ? "—" : "No facturado")}
-              />
-            </div>
-            {data.pedido.notas && (
-              <div className="mt-3">
-                <Field label="Notas" value={data.pedido.notas} />
-              </div>
-            )}
-          </section>
+      {data &&
+        (() => {
+          // When a service tab is active, show only that service's line items
+          // and hide the order-level sections (the full order lives in the
+          // "Todos" view). Otherwise show the complete order detail.
+          const serviceView = selectedServiceId != null;
 
-          {/* Cliente */}
-          <section>
-            <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">Cliente</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Nombre" value={data.pedido.cliente.nombre_cliente} />
-              <Field label="Empresa" value={data.pedido.cliente.empresa ?? "—"} />
-              <Field label="Correo" value={data.pedido.cliente.correo_electronico} />
-              <Field label="Teléfono" value={data.pedido.cliente.numero_telefono} />
-              <Field label="RFC" value={data.pedido.cliente.rfc ?? "—"} />
-            </div>
-          </section>
+          const detalle = serviceView
+            ? data.detalle.filter((d) => d.id_servicio === selectedServiceId)
+            : data.detalle;
 
-          {/* Detalle del pedido */}
-          <section>
-            <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">
-              Productos ({data.detalle.length})
-            </h3>
-            <div className="space-y-3">
-              {data.detalle.map((d) => (
-                <div
-                  key={d.id_detalle}
-                  className="rounded-[8px] border border-[#f0f0f0] bg-[#fcfcfc] p-4"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <p className="text-[14px] font-semibold text-[#1e1e1e]">
-                      {d.servicio.nombre_servicio}
-                    </p>
-                    <p className="text-[14px] font-bold text-[#1e1e1e]">{money(d.subtotal)}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Material" value={d.material.nombre_material} />
-                    <Field label="Cantidad" value={d.cantidad} />
+          return (
+            <div className="flex flex-col gap-6">
+              {/* General */}
+              {!serviceView && (
+                <section>
+                  <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">General</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Estatus" value={data.pedido.estatus.descripcion} />
                     <Field
-                      label="Medidas (cm)"
+                      label="Estado factura"
+                      value={data.pedido.estado_factura?.descripcion ?? "Sin facturar"}
+                    />
+                    <Field
+                      label="Fecha de creación"
+                      value={formatDate(data.pedido.fecha_creacion)}
+                    />
+                    <Field
+                      label="Fecha estimada"
                       value={
-                        d.ancho_cm || d.alto_cm || d.grosor_cm
-                          ? `${d.ancho_cm ?? "—"} × ${d.alto_cm ?? "—"} × ${d.grosor_cm ?? "—"}`
-                          : "—"
+                        data.pedido.fecha_estimada ? formatDate(data.pedido.fecha_estimada) : "—"
                       }
                     />
-                    <Field label="Color" value={d.color ?? "—"} />
-                    <Field label="Precio unitario" value={money(d.precio_unitario)} />
-                    <Field label="Responsable recolección" value={d.responsable_recoleccion} />
                     <Field
-                      label="Archivo de diseño"
+                      label="Fecha de finalización"
+                      value={data.pedido.fecha_fin ? formatDate(data.pedido.fecha_fin) : "—"}
+                    />
+                    <Field label="Sucursal" value={data.pedido.sucursal?.nombre_sucursal ?? "—"} />
+                    <Field label="Requiere factura" value={data.pedido.factura ? "Sí" : "No"} />
+                    <Field
+                      label="Número de factura"
                       value={
-                        <a
-                          href={d.archivo.url_archivo}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[#e42200] hover:underline break-all"
-                        >
-                          {d.archivo.nombre_archivo}
-                        </a>
+                        data.pedido.numero_factura ?? (data.pedido.facturado ? "—" : "No facturado")
                       }
                     />
                   </div>
-                  {d.notas && (
-                    <div className="mt-2">
-                      <Field label="Notas" value={d.notas} />
+                  {data.pedido.notas && (
+                    <div className="mt-3">
+                      <Field label="Notas" value={data.pedido.notas} />
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
-          </section>
+                </section>
+              )}
 
-          {/* Pagos */}
-          <section>
-            <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">
-              Pagos ({data.pagos.length})
-            </h3>
-            {data.pagos.length === 0 ? (
-              <p className="text-[13px] text-[#8e908f]">Sin pagos registrados.</p>
-            ) : (
-              <div className="space-y-2">
-                {data.pagos.map((p) => (
-                  <div
-                    key={p.id_pago}
-                    className="flex justify-between items-center text-[13px] border-b border-[#f0f0f0] pb-2"
-                  >
-                    <span className="text-[#575757]">
-                      {formatDate(p.fecha)} · {p.metodo_pago} · {p.estatus_pago}
-                    </span>
-                    <span className="font-semibold text-[#1e1e1e]">{money(p.monto_pago)}</span>
+              {/* Cliente */}
+              {!serviceView && (
+                <section>
+                  <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">Cliente</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Nombre" value={data.pedido.cliente.nombre_cliente} />
+                    <Field label="Empresa" value={data.pedido.cliente.empresa ?? "—"} />
+                    <Field label="Correo" value={data.pedido.cliente.correo_electronico} />
+                    <Field label="Teléfono" value={data.pedido.cliente.numero_telefono} />
+                    <Field label="RFC" value={data.pedido.cliente.rfc ?? "—"} />
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
+                </section>
+              )}
 
-          {/* Historial de estados */}
-          <section>
-            <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">Historial de estados</h3>
-            {data.historial.length === 0 ? (
-              <p className="text-[13px] text-[#8e908f]">Sin cambios de estado registrados.</p>
-            ) : (
-              <ol className="space-y-2">
-                {data.historial.map((h, i) => (
-                  <li key={i} className="text-[13px] text-[#575757]">
-                    <span className="text-[#8e908f]">{formatDate(h.fecha_cambio)}</span> —{" "}
-                    {h.estatus_anterior ? `${h.estatus_anterior} → ` : ""}
-                    <span className="font-semibold text-[#1e1e1e]">{h.estatus_nuevo}</span>{" "}
-                    <span className="text-[#8e908f]">por {h.cambiado_por}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-        </div>
-      )}
+              {/* Detalle del pedido */}
+              <section>
+                <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">
+                  Productos ({detalle.length})
+                </h3>
+                <div className="space-y-3">
+                  {detalle.length === 0 && (
+                    <p className="text-[13px] text-[#8e908f]">
+                      {serviceView
+                        ? "Este pedido no tiene productos para el servicio seleccionado."
+                        : "Este pedido no tiene productos."}
+                    </p>
+                  )}
+                  {detalle.map((d) => (
+                    <div
+                      key={d.id_detalle}
+                      className="rounded-[8px] border border-[#f0f0f0] bg-[#fcfcfc] p-4"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-[14px] font-semibold text-[#1e1e1e]">
+                          {d.servicio.nombre_servicio}
+                        </p>
+                        <p className="text-[14px] font-bold text-[#1e1e1e]">{money(d.subtotal)}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Material" value={d.material.nombre_material} />
+                        <Field label="Cantidad" value={d.cantidad} />
+                        <Field
+                          label="Medidas (cm)"
+                          value={
+                            d.ancho_cm || d.alto_cm || d.grosor_cm
+                              ? `${d.ancho_cm ?? "—"} × ${d.alto_cm ?? "—"} × ${d.grosor_cm ?? "—"}`
+                              : "—"
+                          }
+                        />
+                        <Field label="Color" value={d.color ?? "—"} />
+                        <Field label="Precio unitario" value={money(d.precio_unitario)} />
+                        <Field label="Responsable recolección" value={d.responsable_recoleccion} />
+                        <Field
+                          label="Archivo de diseño"
+                          value={
+                            <a
+                              href={d.archivo.url_archivo}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#e42200] hover:underline break-all"
+                            >
+                              {d.archivo.nombre_archivo}
+                            </a>
+                          }
+                        />
+                      </div>
+                      {d.notas && (
+                        <div className="mt-2">
+                          <Field label="Notas" value={d.notas} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Pagos */}
+              {!serviceView && (
+                <section>
+                  <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">
+                    Pagos ({data.pagos.length})
+                  </h3>
+                  {data.pagos.length === 0 ? (
+                    <p className="text-[13px] text-[#8e908f]">Sin pagos registrados.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {data.pagos.map((p) => (
+                        <div
+                          key={p.id_pago}
+                          className="flex justify-between items-center text-[13px] border-b border-[#f0f0f0] pb-2"
+                        >
+                          <span className="text-[#575757]">
+                            {formatDate(p.fecha)} · {p.metodo_pago} · {p.estatus_pago}
+                          </span>
+                          <span className="font-semibold text-[#1e1e1e]">
+                            {money(p.monto_pago)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* Historial de estados */}
+              {!serviceView && (
+                <section>
+                  <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">
+                    Historial de estados
+                  </h3>
+                  {data.historial.length === 0 ? (
+                    <p className="text-[13px] text-[#8e908f]">Sin cambios de estado registrados.</p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {data.historial.map((h, i) => (
+                        <li key={i} className="text-[13px] text-[#575757]">
+                          <span className="text-[#8e908f]">{formatDate(h.fecha_cambio)}</span> —{" "}
+                          {h.estatus_anterior ? `${h.estatus_anterior} → ` : ""}
+                          <span className="font-semibold text-[#1e1e1e]">
+                            {h.estatus_nuevo}
+                          </span>{" "}
+                          <span className="text-[#8e908f]">por {h.cambiado_por}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </section>
+              )}
+            </div>
+          );
+        })()}
     </ModalShell>
   );
 }

@@ -6,6 +6,7 @@ import { NotFoundError } from "@/lib/utils/errors";
 
 // Mock auth guard: pass the handler through (the route owns its try/catch).
 jest.mock("@/lib/auth/guards", () => ({
+  withSectionParams: (_section: string, _action: string, handler: unknown) => handler,
   withRoleParams: (_roles: string[], handler: unknown) => handler,
 }));
 
