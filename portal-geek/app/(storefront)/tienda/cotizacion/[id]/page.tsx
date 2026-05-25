@@ -6,6 +6,7 @@ import Link from "next/link";
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { SESSION_COOKIE_NAME, readSessionCotizacionId } from "@/lib/services/cotizacion-access";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
+import { QUOTATION_STATUS } from "@/types/cotizacion";
 
 export const metadata: Metadata = { title: "Detalle de cotización" };
 
@@ -58,7 +59,7 @@ export default async function CotizacionDetallePage({ params }: Props) {
   }
 
   if (
-    quote.estatus.descripcion === "Aprobada" ||
+    quote.estatus.descripcion === QUOTATION_STATUS.APROBADA ||
     quote.estatus.descripcion.toLowerCase() === "confirmada"
   ) {
     return (
