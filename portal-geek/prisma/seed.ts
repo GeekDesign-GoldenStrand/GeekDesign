@@ -308,6 +308,44 @@ async function main() {
     },
   });
 
+  const servicioGrabado = await prisma.servicios.upsert({
+    where: { id_servicio: 2 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Grabado Láser",
+      descripcion_servicio: "Grabado láser sobre madera, acrílico o metal",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioBordado = await prisma.servicios.upsert({
+    where: { id_servicio: 3 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Bordado",
+      descripcion_servicio: "Bordado personalizado en textiles",
+      estatus_servicio: true,
+    },
+  });
+
+  const servicioRotulacion = await prisma.servicios.upsert({
+    where: { id_servicio: 4 },
+    update: {},
+    create: {
+      id_estatus: estatusServicioActivo.id_estatus_servicio,
+      id_sucursal: sucursal.id_sucursal,
+      nombre_servicio: "Rotulación de vinil",
+      descripcion_servicio: "Rotulación y aplicación de vinil decorativo o publicitario",
+      estatus_servicio: true,
+    },
+  });
+
+  console.log("Seeded demo services: Corte Láser, Grabado Láser, Bordado, Rotulación de vinil");
+
   const material = await prisma.materiales.upsert({
     where: { id_material: 1 },
     update: {},
@@ -318,6 +356,39 @@ async function main() {
       grosor: 3.0,
     },
   });
+
+  const materialAcrilico = await prisma.materiales.upsert({
+    where: { id_material: 2 },
+    update: {},
+    create: {
+      nombre_material: "Acrílico transparente 3mm",
+      descripcion_material: "Acrílico transparente para corte y grabado láser",
+      unidad_medida: "hoja",
+      grosor: 3.0,
+    },
+  });
+
+  const materialTela = await prisma.materiales.upsert({
+    where: { id_material: 3 },
+    update: {},
+    create: {
+      nombre_material: "Tela algodón",
+      descripcion_material: "Tela base para bordado personalizado",
+      unidad_medida: "pieza",
+    },
+  });
+
+  const materialVinil = await prisma.materiales.upsert({
+    where: { id_material: 4 },
+    update: {},
+    create: {
+      nombre_material: "Vinil adhesivo",
+      descripcion_material: "Vinil para rotulación y señalética",
+      unidad_medida: "metro",
+    },
+  });
+
+  console.log("Seeded demo materials for PE-03");
 
   const opcion = await prisma.opcionesProducto.upsert({
     where: { id_opcion: 1 },
@@ -416,6 +487,14 @@ async function main() {
   }
 
   console.log(`Seeded ${orderStatuses.length} order statuses`);
+
+  const orderStatusRows = await prisma.estatusPedidos.findMany();
+
+  const orderStatusMap: Record<string, number> = {};
+
+  orderStatusRows.forEach((s) => {
+    orderStatusMap[s.descripcion] = s.id_estatus;
+  });
 
   // ── Invoice statuses ─────────────────────────────────────────
   const invoiceStatuses = [
@@ -618,6 +697,66 @@ async function main() {
     });
     console.log("Seeded ServicioMaterial: Corte Láser ↔ MDF 3mm");
   }
+
+  await Promise.all([
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioGrabado.id_servicio,
+          id_material: material.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioGrabado.id_servicio,
+        id_material: material.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioGrabado.id_servicio,
+          id_material: materialAcrilico.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioGrabado.id_servicio,
+        id_material: materialAcrilico.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioBordado.id_servicio,
+          id_material: materialTela.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioBordado.id_servicio,
+        id_material: materialTela.id_material,
+      },
+    }),
+
+    prisma.servicioMaterial.upsert({
+      where: {
+        id_servicio_id_material: {
+          id_servicio: servicioRotulacion.id_servicio,
+          id_material: materialVinil.id_material,
+        },
+      },
+      update: {},
+      create: {
+        id_servicio: servicioRotulacion.id_servicio,
+        id_material: materialVinil.id_material,
+      },
+    }),
+  ]);
+
+  console.log("Seeded ServicioMaterial relations for demo PE-03 services");
 
   // ── Active Formula on Corte Láser ──────────────────────────────────────────
   // Reuses the Dimensión tipoVariable for ancho/alto, a manual constante

@@ -10,19 +10,14 @@ import {
 } from "@phosphor-icons/react";
 
 import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
+import {
+  ServiceStatusSemaphore,
+  type ServiceStatusSummary,
+} from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { formatDate } from "@/lib/utils/date";
 
 // UI → API
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
-  Pendiente: "Pendiente",
-  "En producción": "En producción",
-  Finalizado: "Finalizado",
-  Entregado: "Entregado",
-  Cancelado: "Cancelado",
-};
-
-// API → UI
-const STATUS_MAP_API_TO_UI: Record<string, string> = {
   Pendiente: "Pendiente",
   "En producción": "En producción",
   Finalizado: "Finalizado",
@@ -111,12 +106,22 @@ function renderInvoiceStatusIcon(status?: string | null) {
   return <WarningCircle size={18} className="text-[#E42200]" weight="fill" />;
 }
 
+interface PedidoDetalle {
+  id_detalle: number;
+  id_servicio: number;
+  estatus?: {
+    descripcion: string;
+  } | null;
+  servicio?: {
+    nombre_servicio: string;
+  };
+}
+
 interface Pedido {
   id_pedido: number;
   fecha_creacion: string;
-
   fecha_estimada?: string | null;
-
+  folio?: string | null;
   monto_total?: number | null;
 
   cliente: {
@@ -132,6 +137,8 @@ interface Pedido {
     descripcion: string;
   } | null;
 
+  detalles?: PedidoDetalle[];
+  serviceStatusSummary?: ServiceStatusSummary;
   archivos: { id: number; nombre: string }[];
 }
 
@@ -139,9 +146,11 @@ interface Props {
   pedidos: Pedido[];
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
+  selectedServiceId: number | null;
+  onDetalleStatusChange: (detalleId: number, status: string) => void;
 }
 
-export function PedidosTable({ pedidos, onStatusChange }: Props) {
+export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange }: Props) {
   if (pedidos.length === 0) {
     return (
       <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron pedidos.</div>
@@ -155,227 +164,293 @@ export function PedidosTable({ pedidos, onStatusChange }: Props) {
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
           style={{
-            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
           }}
         >
-          <span className="whitespace-nowrap">Fecha</span>
-          <span className="whitespace-nowrap">Entrega</span>
+          <span className="whitespace-nowrap">Fecha de creación</span>
+          <span className="whitespace-nowrap">Fecha de entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
-          <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Nombre de oportunidad</span>
           <span className="whitespace-nowrap">Monto</span>
-          <span className="whitespace-nowrap">Estatus</span>
+          <span className="whitespace-nowrap">Folio</span>
+          <span className="whitespace-nowrap">
+            {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}
+          </span>
           <span className="whitespace-nowrap">Estado factura</span>
           <span className="whitespace-nowrap">Acciones</span>
         </div>
 
         {/* Rows */}
-        {pedidos.map((p) => (
-          <div key={p.id_pedido}>
-            {/* Desktop Row */}
-            <div
-              className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
-              style={{
-                gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
-              }}
-            >
-              {/* Fecha */}
-              <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
+        {pedidos.map((p) => {
+          const selectedServiceDetail = selectedServiceId
+            ? p.detalles?.find((detalle) => detalle.id_servicio === selectedServiceId)
+            : null;
 
-              {/* Entrega */}
-              <span className="whitespace-nowrap">
-                {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
-              </span>
+          const selectedServiceStatus = selectedServiceDetail?.estatus?.descripcion ?? "Pendiente";
 
-              {/* Empresa */}
-              <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
+          return (
+            <div key={p.id_pedido}>
+              {/* Desktop Row */}
+              <div
+                className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
+                style={{
+                  gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
+                }}
+              >
+                {/* Fecha de creación */}
+                <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
 
-              {/* Cliente */}
-              <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
+                {/* Fecha de entrega */}
+                <span className="whitespace-nowrap">
+                  {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
+                </span>
 
-              {/* Monto */}
-              <span className="whitespace-nowrap">
-                {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
-              </span>
+                {/* Empresa */}
+                <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
 
-              {/* Estatus */}
-              <div className="flex justify-center">
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(
-                    p.estatus?.descripcion
-                  )}`}
-                >
-                  <select
-                    value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
-                    onChange={(e) => {
-                      const uiValue = e.target.value;
-                      const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
+                {/* Nombre de oportunidad */}
+                <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
 
-                      onStatusChange(p.id_pedido, apiValue);
-                    }}
-                    className="pl-4 pr-7 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
-                  >
-                    {getAllowedPedidoStatuses(
-                      STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion
-                    ).map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
+                {/* Monto */}
+                <span className="whitespace-nowrap">
+                  {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
+                </span>
 
-                  <CaretDown
-                    size={14}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
-              </div>
+                {/* Folio */}
+                <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
 
-              {/* Estado factura */}
-              <div className="flex flex-col items-center px-2 min-w-[180px]">
-                <div className="flex items-center gap-2 w-full">
-                  <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
-
-                  <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                {/* Semáforo general o estatus del servicio seleccionado */}
+                <div className="flex justify-center">
+                  {selectedServiceId && selectedServiceDetail ? (
                     <div
-                      className="h-full rounded-full transition-all duration-300"
-                      style={{
-                        width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
-                        backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
-                      }}
-                    />
-                  </div>
+                      className={`relative flex items-center rounded-full ${getStatusStyle(
+                        selectedServiceStatus
+                      )}`}
+                    >
+                      <select
+                        value={selectedServiceStatus}
+                        onChange={(e) => {
+                          const uiValue = e.target.value;
+                          const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
+
+                          onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue);
+                        }}
+                        className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                      >
+                        {getAllowedPedidoStatuses(selectedServiceStatus).map((status) => (
+                          <option key={status}>{status}</option>
+                        ))}
+                      </select>
+
+                      <CaretDown
+                        size={14}
+                        weight="bold"
+                        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+                      />
+                    </div>
+                  ) : (
+                    <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
+                  )}
                 </div>
 
-                <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
-                  <span className="text-[#6f6f6f]">Factura:</span>
-                  {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
-                </div>
-              </div>
+                {/* Estado factura */}
+                <div className="flex flex-col items-center px-2 min-w-[180px]">
+                  <div className="flex items-center gap-2 w-full">
+                    <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
 
-              {/* Acciones */}
-              <div className="flex justify-center items-center gap-1">
-                <DesignFileLink
-                  archivos={p.archivos}
-                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                />
-                <a href={`/pedidos/${p.id_pedido}`} className="text-black hover:text-[#e42200] p-2">
-                  <PencilSimple size={18} />
-                </a>
-              </div>
-            </div>
+                    <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                          backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
+                        }}
+                      />
+                    </div>
+                  </div>
 
-            {/* Mobile Card */}
-            <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                    Pedido
-                  </p>
-                  <p className="text-[16px] font-bold text-[#1e1e1e]">#{p.id_pedido}</p>
-                </div>
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(p.estatus?.descripcion)}`}
-                >
-                  <select
-                    value={STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion}
-                    onChange={(e) => {
-                      const uiValue = e.target.value;
-                      const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-                      onStatusChange(p.id_pedido, apiValue);
-                    }}
-                    className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
-                  >
-                    {getAllowedPedidoStatuses(
-                      STATUS_MAP_API_TO_UI[p.estatus?.descripcion] ?? p.estatus?.descripcion
-                    ).map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={12}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-[#F5F5F5] space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                      Cliente
-                    </p>
-                    <p className="text-[13px] font-medium text-[#1e1e1e]">
-                      {p.cliente?.nombre_cliente}
-                    </p>
-                    <p className="text-[11px] text-[#8e908f]">
-                      {p.cliente?.empresa || "Sin empresa"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                      Monto
-                    </p>
-                    <p className="text-[13px] font-bold text-[#1e1e1e]">
-                      {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")}` : "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-[#fcfcfc] rounded-lg p-3 space-y-2 border border-[#f0f0f0]">
-                  <div className="flex justify-between items-center text-[11px] font-bold text-[#8e908f] uppercase">
-                    <span>Estado de Factura</span>
-                    <span>{getInvoiceProgress(p.estado_factura?.descripcion).toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-300"
-                      style={{
-                        width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
-                        backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <span className="text-[#6f6f6f]">Estatus:</span>
-                    <span className="font-bold text-[#1e1e1e]">
-                      {p.estado_factura?.descripcion || "Sin facturar"}
-                    </span>
+                  <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
+                    <span className="text-[#6f6f6f]">Factura:</span>
                     {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
                   </div>
                 </div>
-              </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <div className="flex gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Fecha</p>
-                    <p className="text-[11px] font-medium text-[#575757]">
-                      {formatDate(p.fecha_creacion)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Entrega</p>
-                    <p className="text-[11px] font-medium text-[#575757]">
-                      {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
+                {/* Acciones */}
+                <div className="flex justify-center items-center gap-1">
                   <DesignFileLink
                     archivos={p.archivos}
-                    className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                    className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
                   />
+
                   <a
                     href={`/pedidos/${p.id_pedido}`}
-                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e]"
+                    className="text-black hover:text-[#e42200] p-2"
                   >
                     <PencilSimple size={18} />
                   </a>
                 </div>
               </div>
+
+              {/* Mobile Card */}
+              <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
+                {/* Header: pedido id + service status control/semaphore */}
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                      Pedido
+                    </p>
+
+                    <p className="text-[16px] font-bold text-[#1e1e1e]">#{p.id_pedido}</p>
+                  </div>
+
+                  {/* Service status:
+                    - General view: show semaphore.
+                    - Service-filtered view: show editable status for that service detail. */}
+                  <div className="flex justify-end">
+                    {selectedServiceId && selectedServiceDetail ? (
+                      <div
+                        className={`relative flex items-center rounded-full ${getStatusStyle(
+                          selectedServiceStatus
+                        )}`}
+                      >
+                        <select
+                          value={selectedServiceStatus}
+                          onChange={(e) => {
+                            const uiValue = e.target.value;
+                            const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
+
+                            onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue);
+                          }}
+                          className="pl-3 pr-8 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
+                        >
+                          {getAllowedPedidoStatuses(selectedServiceStatus).map((status) => (
+                            <option key={status}>{status}</option>
+                          ))}
+                        </select>
+
+                        <CaretDown
+                          size={12}
+                          weight="bold"
+                          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+                        />
+                      </div>
+                    ) : (
+                      <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Client and amount summary */}
+                <div className="pt-2 border-t border-[#F5F5F5] space-y-3">
+                  <div className="flex justify-between items-start gap-4">
+                    {/* Client info */}
+                    <div>
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                        Cliente
+                      </p>
+
+                      <p className="text-[13px] font-medium text-[#1e1e1e]">
+                        {p.cliente?.nombre_cliente}
+                      </p>
+
+                      <p className="text-[11px] text-[#8e908f]">
+                        {p.cliente?.empresa || "Sin empresa"}
+                      </p>
+                    </div>
+
+                    {/* Folio and amount */}
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                        Folio
+                      </p>
+
+                      <p className="text-[12px] font-semibold text-[#575757] mb-2">
+                        {p.folio ?? "—"}
+                      </p>
+
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                        Monto
+                      </p>
+
+                      <p className="text-[13px] font-bold text-[#1e1e1e]">
+                        {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")}` : "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Invoice status progress */}
+                  <div className="bg-[#fcfcfc] rounded-lg p-3 space-y-2 border border-[#f0f0f0]">
+                    <div className="flex justify-between items-center text-[11px] font-bold text-[#8e908f] uppercase">
+                      <span>Estado de Factura</span>
+                      <span>{getInvoiceProgress(p.estado_factura?.descripcion).toFixed(0)}%</span>
+                    </div>
+
+                    <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                          backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1 text-[11px]">
+                      <span className="text-[#6f6f6f]">Estatus:</span>
+
+                      <span className="font-bold text-[#1e1e1e]">
+                        {p.estado_factura?.descripcion || "Sin facturar"}
+                      </span>
+
+                      {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dates and actions */}
+                <div className="flex justify-between items-center pt-2">
+                  <div className="flex gap-4">
+                    {/* Creation date */}
+                    <div>
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Fecha</p>
+
+                      <p className="text-[11px] font-medium text-[#575757]">
+                        {formatDate(p.fecha_creacion)}
+                      </p>
+                    </div>
+
+                    {/* Estimated delivery date */}
+                    <div>
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                        Entrega
+                      </p>
+
+                      <p className="text-[11px] font-medium text-[#575757]">
+                        {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <DesignFileLink
+                      archivos={p.archivos}
+                      className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                    />
+
+                    <a
+                      href={`/pedidos/${p.id_pedido}`}
+                      className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
+                      title="Editar pedido"
+                    >
+                      <PencilSimple size={18} />
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
