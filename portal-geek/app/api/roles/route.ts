@@ -1,9 +1,9 @@
-import { withRole } from "@/lib/auth/guards";
+import { withSection } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/client";
 import { ok } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion"], async () => {
+export const GET = withSection("usuarios", "read", async () => {
   try {
     const roles = await prisma.roles.findMany({ orderBy: { id_rol: "asc" } });
     return ok(roles);

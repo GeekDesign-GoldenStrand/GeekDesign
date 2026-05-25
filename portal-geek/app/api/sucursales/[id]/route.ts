@@ -1,4 +1,4 @@
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { SucursalIdParams, UpdateSucursalSchema } from "@/lib/schemas/sucursales";
 import { getSucursal, updateSucursal, deleteSucursal } from "@/lib/services/sucursales";
 import { ok, noContent } from "@/lib/utils/api";
@@ -6,7 +6,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Direccion", "Administrador"], async (_req, ctx) => {
+export const GET = withSectionParams<Params>("sucursales", "read", async (_req, ctx) => {
   try {
     // Route params come as strings, so we validate and coerce them before reaching the service layer.
     const { id } = SucursalIdParams.parse(await ctx.params);
@@ -17,7 +17,7 @@ export const GET = withRoleParams<Params>(["Direccion", "Administrador"], async 
   }
 });
 
-export const PUT = withRoleParams<Params>(["Direccion", "Administrador"], async (req, ctx) => {
+export const PUT = withSectionParams<Params>("sucursales", "write", async (req, ctx) => {
   try {
     const { id } = SucursalIdParams.parse(await ctx.params);
 
@@ -31,7 +31,7 @@ export const PUT = withRoleParams<Params>(["Direccion", "Administrador"], async 
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Direccion", "Administrador"], async (_req, ctx) => {
+export const DELETE = withSectionParams<Params>("sucursales", "write", async (_req, ctx) => {
   try {
     const { id } = SucursalIdParams.parse(await ctx.params);
 

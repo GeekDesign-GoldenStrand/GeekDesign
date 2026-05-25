@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
 import { addItem } from "@/lib/cart/storage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -25,6 +27,7 @@ interface Props {
   nombreServicio: string;
   materiales: Material[];
   variables: Variable[];
+  disenioFile?: UploadedFile | null;
 }
 
 const formatPeso = (n: number) =>
@@ -32,7 +35,13 @@ const formatPeso = (n: number) =>
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, variables }: Props) {
+export function FormulaVariablesForm({
+  servicioId,
+  nombreServicio,
+  materiales,
+  variables,
+  disenioFile,
+}: Props) {
   const editables = useMemo(() => variables.filter((v) => v.editable_por_cliente), [variables]);
   const defaultValues = useMemo(
     () => Object.fromEntries(editables.map((v) => [v.nombre_variable, v.valor_default])),
@@ -46,8 +55,7 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
+  const router = useRouter();
   const lastRequestId = useRef(0);
 
   useEffect(() => {
@@ -109,7 +117,6 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
     setValues({ ...defaultValues });
     setCantidad(1);
     setNotas("");
-    setFeedback(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -146,10 +153,10 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
       },
       cantidad,
       precioCalculado: precioUnitario,
+      ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
     });
     window.dispatchEvent(new CustomEvent("carrito:updated"));
-    setFeedback(`${nombreServicio} agregado al carrito`);
-    setTimeout(() => setFeedback(null), 2500);
+    router.push("/tienda/carrito");
   }
 
   if (materiales.length === 0) {
@@ -290,7 +297,6 @@ export function FormulaVariablesForm({ servicioId, nombreServicio, materiales, v
           <p className="text-[12px] text-[#666]">Calculando…</p>
         )}
         {calcError && <p className="text-[13px] font-medium text-[#c14a4a]">{calcError}</p>}
-        {feedback && <p className="text-[13px] font-medium text-[#2e7d32]">{feedback}</p>}
 
         <div className="flex gap-[12px]">
           <button

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
+import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,6 +37,9 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   if (!["Instalador", "Contratista"].includes(form.tipo)) errs.tipo = "Seleccione un tipo válido.";
   if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
   if (form.notas && form.notas.length > 500) errs.notas = "Máximo 500 caracteres.";
+  if (!form.costo_instalacion.trim()) errs.costo_instalacion = "La tarifa base es requerida.";
+  else if (!isValidMoney(form.costo_instalacion))
+    errs.costo_instalacion = "Debe ser un número mayor o igual a 0.";
   return errs;
 }
 
@@ -50,6 +54,7 @@ function parseServerFieldErrors(serverError: string | null): Record<string, stri
     "ubicacion",
     "notas",
     "estatus",
+    "costo_instalacion",
   ];
   const parsed: Record<string, string> = {};
   for (const field of fields) {
@@ -75,6 +80,7 @@ export type InstaladorFormData = {
   ubicacion: string;
   notas: string;
   estatus: string;
+  costo_instalacion: string;
 };
 
 interface EditarInstaladorModalProps {
@@ -137,6 +143,7 @@ export function EditarInstaladorModal({
       ubicacion: form.ubicacion || undefined,
       notas: form.notas || undefined,
       estatus: form.estatus as UpdateInstaladorInput["estatus"],
+      costo_instalacion: parseFloat(form.costo_instalacion),
     });
   }
 
@@ -193,6 +200,32 @@ export function EditarInstaladorModal({
             </select>
             {allErrors.tipo && <p className={ERROR_MSG}>{allErrors.tipo}</p>}
           </div>
+        </div>
+
+        <div>
+          <label className={LABEL}>
+            Tarifa base <span className="text-[#e42200]">*</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#8e908f] pointer-events-none">
+              $
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={form.costo_instalacion}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (isValidMoneyInput(raw)) setField("costo_instalacion", raw);
+              }}
+              className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
+            />
+          </div>
+          {allErrors.costo_instalacion && (
+            <p className={ERROR_MSG}>{allErrors.costo_instalacion}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">

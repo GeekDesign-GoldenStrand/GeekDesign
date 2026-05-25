@@ -24,6 +24,12 @@ export interface CarritoItem {
   configuracion: CarritoConfiguracion;
   cantidad: number;
   precioCalculado: number;
+  // Storage key of the design file uploaded by the client (disenios/ prefix).
+  // Saved here so the checkout flow can reference it when creating ArchivosDisenio.
+  disenioKey?: string;
+  // Original filename as entered by the user (e.g. "logo_cliente.ai").
+  // Persisted alongside the key so ArchivosDisenio.nombre_archivo is human-readable.
+  disenioNombre?: string;
 }
 
 // ─── Read / Write ─────────────────────────────────────────────────────────────

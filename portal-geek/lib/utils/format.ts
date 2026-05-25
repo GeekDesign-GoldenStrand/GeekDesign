@@ -23,6 +23,23 @@ export function formatPhoneNumber(phone: string | null | undefined): string {
 }
 
 /**
+ * Extracts the 10-digit national number from raw phone input. When a number is
+ * pasted with the Mexican country code (e.g. "+52 1 272 703 3148" from WhatsApp),
+ * strips the leading 52 and optional mobile 1 prefix instead of truncating the
+ * tail, which would silently corrupt the number.
+ */
+export function normalizePhone(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length > 10 && digits.startsWith("52")) {
+    digits = digits.slice(2);
+    if (digits.length > 10 && digits.startsWith("1")) {
+      digits = digits.slice(1);
+    }
+  }
+  return digits.slice(0, 10);
+}
+
+/**
  * Formats a date timestamp string into "dd MMM yyyy" format.
  */
 export function formatDate(dateString: string): string {

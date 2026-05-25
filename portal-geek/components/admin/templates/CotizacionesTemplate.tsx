@@ -16,6 +16,7 @@ export type Cotizacion = {
   folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
+  archivos: { id: number; nombre: string }[];
 };
 
 // Component props

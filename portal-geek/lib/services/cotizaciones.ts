@@ -52,6 +52,7 @@ const INCLUDE_CONFIG = {
       detalles: {
         include: {
           servicio: true,
+          archivo: true,
         },
       },
     },
@@ -633,6 +634,25 @@ export async function approveQuotation(quotationId: number) {
     // D5: drop only the line items the cliente rejected during validation.
     // Active detalles stay attached to the same pedido — their VariablesCotizacion
     // links remain valid.
+    //
+    // Referential integrity: VariablesCotizacion.id_detalle has no onDelete rule in
+    // the schema (PostgreSQL default = RESTRICT), so we must remove the variable rows
+    // for the rejected detalles first, or the deleteMany below raises a FK violation.
+    const rejectedDetalles = await tx.detallePedido.findMany({
+      where: {
+        id_pedido: quotation.id_pedido,
+        notas: { contains: "[ESTADO:rechazado]" },
+      },
+      select: { id_detalle: true },
+    });
+
+    if (rejectedDetalles.length > 0) {
+      const rejectedIds = rejectedDetalles.map((d) => d.id_detalle);
+      await tx.variablesCotizacion.deleteMany({
+        where: { id_detalle: { in: rejectedIds } },
+      });
+    }
+
     await tx.detallePedido.deleteMany({
       where: {
         id_pedido: quotation.id_pedido,
@@ -880,12 +900,39 @@ export async function createCotizacionFromCart(
 
     // 7. Create each DetallePedido and its VariablesCotizacion rows.
     for (const { item, precioUnitario, subtotal, formulaVariables } of pricedItems) {
+      // Resolve ArchivosDisenio: create a real row when the client uploaded a
+      // design file, otherwise fall back to the seed placeholder so the NOT NULL
+      // FK constraint is always satisfied.
+      let archivoId = placeholderArchivoId;
+      if (item.disenio_key) {
+        // Prefer the original filename sent by the client; fall back to the UUID
+        // segment of the key only as a last resort (should never happen in practice).
+        const nombre = item.disenio_nombre ?? item.disenio_key.split("/").pop() ?? item.disenio_key;
+        // Truncate to 20 chars to respect ARCHIVOSDISENIO.formato VarChar(20).
+        // A malformed or crafted extension longer than 20 chars would otherwise
+        // cause a DB transaction rollback with a 500 error.
+        const ext = (nombre.includes(".") ? nombre.split(".").pop()!.toLowerCase() : "bin").slice(
+          0,
+          20
+        );
+        const archivo = await tx.archivosDisenio.create({
+          data: {
+            nombre_archivo: nombre,
+            // Store the bucket key as url_archivo; the admin UI / PDF generator
+            // can build a signed download URL from it on demand.
+            url_archivo: item.disenio_key,
+            formato: ext,
+          },
+        });
+        archivoId = archivo.id_archivo;
+      }
+
       const detalle = await tx.detallePedido.create({
         data: {
           id_pedido: pedido.id_pedido,
           id_servicio: item.id_servicio,
           id_material: item.id_material,
-          id_archivo: placeholderArchivoId,
+          id_archivo: archivoId,
           cantidad: item.cantidad,
           precio_unitario: precioUnitario,
           subtotal,

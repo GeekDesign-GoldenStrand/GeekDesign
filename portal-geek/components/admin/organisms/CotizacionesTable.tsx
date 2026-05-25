@@ -3,6 +3,7 @@
 import { CaretDown, Info } from "@phosphor-icons/react";
 import Link from "next/link";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { formatDate } from "@/lib/utils/date";
 
 import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
@@ -16,6 +17,7 @@ type Cotizacion = {
   folio: string | null;
   estatus: string;
   fecha_estimada: string | null;
+  archivos: { id: number; nombre: string }[];
 };
 
 type Props = {
@@ -129,15 +131,18 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   />
                 </div>
               </div>
-              <div className="flex justify-center">
-                <Link
-                  className="text-black hover:text-[#e42200] transition-colors p-2"
-                  href={`cotizaciones/${c.id_cotizacion}`}
-                >
-                  <Info size={18} />
-                </Link>
-              </div>
-            </div>
+              <div className="flex justify-center items-center gap-1">
+                    <DesignFileLink
+                      archivos={c.archivos}
+                      className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                    />
+                    <Link
+                      className="text-black hover:text-[#e42200] transition-colors p-2"
+                      href={`cotizaciones/${c.id_cotizacion}`}
+                    >
+                      <Info size={18} />
+                    </Link>
+               </div>
 
             {/* Mobile Card */}
             <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
@@ -206,12 +211,18 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <Link
-                  className="text-black hover:text-[#e42200] transition-colors p-2"
-                  href={`cotizaciones/${c.id_cotizacion}`}
-                >
-                  <Info size={18} />
-                </Link>
+                <div className="flex items-center gap-2">
+                  <DesignFileLink
+                    archivos={c.archivos}
+                    className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                  />
+                  <Link
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
+                    href={`cotizaciones/${c.id_cotizacion}`}
+                  >
+                    <Info size={18} />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
