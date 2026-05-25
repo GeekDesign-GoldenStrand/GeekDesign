@@ -5,7 +5,7 @@
 export function formatPhoneNumber(phone: string | null | undefined): string {
   if (!phone) return "";
 
-  const digits = phone.replace(/\D/g, "").slice(0, 10);
+  const digits = normalizePhone(phone);
 
   const isMetro = /^(55|33|81)/.test(digits);
   if (isMetro) {
