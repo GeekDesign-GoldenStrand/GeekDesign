@@ -6,7 +6,6 @@ import Link from "next/link";
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { SESSION_COOKIE_NAME, readSessionCotizacionId } from "@/lib/services/cotizacion-access";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
-import { QUOTATION_STATUS } from "@/types/cotizacion";
 
 export const metadata: Metadata = { title: "Detalle de cotización" };
 
@@ -52,31 +51,6 @@ export default async function CotizacionDetallePage({ params }: Props) {
           >
             <MagnifyingGlass size={22} weight="bold" />
             Solicitar enlace de acceso
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (
-    quote.estatus.descripcion === QUOTATION_STATUS.APROBADA ||
-    quote.estatus.descripcion.toLowerCase() === "confirmada"
-  ) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4">
-        <div className="max-w-[500px] w-full bg-white rounded-[24px] border border-[#E8E8E8] p-10 text-center shadow-[0_12px_40px_rgba(0,0,0,0.04)]">
-          <div className="w-20 h-20 rounded-full bg-[#FFF9F1] flex items-center justify-center text-[#F16C20] mx-auto mb-8 animate-pulse">
-            <WarningCircle size={44} weight="bold" />
-          </div>
-          <h2 className="text-[28px] font-black text-[#1e1e1e] mb-4">Vista en construcción</h2>
-          <p className="text-[#575757] text-[18px] font-medium leading-relaxed mb-10">
-            La vista está en construcción. Próximamente estará disponible.
-          </p>
-          <Link
-            href="/storefront"
-            className="inline-flex items-center justify-center gap-3 h-[64px] px-8 bg-[#DF2646] text-white rounded-[12px] font-bold text-[16px] hover:bg-[#C41E3A] transition-all shadow-lg shadow-[#DF2646]/20"
-          >
-            Volver al inicio
           </Link>
         </div>
       </div>
