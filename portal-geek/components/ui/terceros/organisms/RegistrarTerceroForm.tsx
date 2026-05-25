@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { z } from "zod";
 
+import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
+import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
+import { normalizePhone } from "@/lib/utils/format";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -44,7 +47,7 @@ const proveedorSchema = z.object({
     .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   ubicacion: z
     .string()
-    .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado"),
 });
 
 const instaladorSchema = z.object({
@@ -71,7 +74,7 @@ const instaladorSchema = z.object({
   notas: z.string().max(500, "Máximo 500 caracteres."),
   ubicacion: z
     .string()
-    .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado"),
 });
 
 type TerceroType = "Proveedor" | "Instalador";
@@ -328,6 +331,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
               />
               {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
+              <CharCounter value={form.nombre_proveedor} max={30} />
             </div>
             <div>
               <label className={LABEL}>Apodo</label>
@@ -340,6 +344,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("apodo")}`}
               />
               {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
+              <CharCounter value={form.apodo} max={30} />
             </div>
           </div>
 
@@ -384,8 +389,7 @@ export function RegistrarTerceroForm({
                 inputMode="numeric"
                 value={formatPhone(form.telefono)}
                 onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setField("telefono", digits);
+                  setField("telefono", normalizePhone(e.target.value));
                 }}
                 className={`${FIELD} ${getFieldClass("telefono")}`}
               />
@@ -406,27 +410,16 @@ export function RegistrarTerceroForm({
           </div>
 
           <div>
-            <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
-          </div>
-
-          <div>
             <label className={LABEL}>Descripción</label>
             <textarea
               rows={3}
+              maxLength={500}
               placeholder="Detalles adicionales del proveedor..."
               value={form.descripcion_proveedor}
               onChange={(e) => setField("descripcion_proveedor", e.target.value)}
               className={`${FIELD} ${getFieldClass("descripcion_proveedor")} resize-none`}
             />
+            <CharCounter value={form.descripcion_proveedor} max={500} />
           </div>
         </>
       ) : (
@@ -445,6 +438,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
               />
               {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
+              <CharCounter value={form.nombre_proveedor} max={30} />
             </div>
             <div>
               <label className={LABEL}>Apodo</label>
@@ -457,6 +451,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("apodo")}`}
               />
               {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
+              <CharCounter value={form.apodo} max={30} />
             </div>
           </div>
 
@@ -500,8 +495,7 @@ export function RegistrarTerceroForm({
                 inputMode="numeric"
                 value={formatPhone(form.telefono)}
                 onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setField("telefono", digits);
+                  setField("telefono", normalizePhone(e.target.value));
                 }}
                 className={`${FIELD} ${getFieldClass("telefono")}`}
               />

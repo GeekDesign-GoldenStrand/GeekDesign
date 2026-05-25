@@ -996,216 +996,62 @@ async function main() {
       },
     ];
 
-    const createdPedidos: Pedidos[] = [];
+    // Idempotency guard: demo cotizaciones use fixed folios (COT-001…) which
+    // are @unique, and pedidos use autoincrement IDs. Re-running the seed would
+    // collide on `folio` and accumulate duplicate pedidos, so only seed the
+    // demo orders/quotations when their folios are not already present.
+    const existingDemoCotizaciones = await prisma.cotizaciones.count({
+      where: { folio: { in: demoCotizaciones.map((c) => c.folio) } },
+    });
 
-    for (const pedido of demoPedidos) {
-      const createdPedido = await prisma.pedidos.create({
-        data: {
-          cliente: {
-            connect: {
-              id_cliente: 1,
+    if (existingDemoCotizaciones > 0) {
+      console.log("Demo cotizaciones already seeded, skipping");
+    } else {
+      // Capture the actual autoincrement IDs instead of assuming 1..N.
+      const createdPedidoIds: number[] = [];
+      for (const pedido of demoPedidos) {
+        const created = await prisma.pedidos.create({
+          data: {
+            cliente: {
+              connect: {
+                id_cliente: 1,
+              },
             },
-          },
 
-          estatus: {
-            connect: {
-              descripcion: pedido.status,
+            estatus: {
+              connect: {
+                descripcion: pedido.status,
+              },
             },
-          },
 
-          estado_factura: {
-            connect: {
-              id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+            estado_factura: {
+              connect: {
+                id_estado_factura: invoiceStatusMap[pedido.estado_factura],
+              },
             },
-          },
 
-          sucursal: {
-            connect: {
-              id_sucursal: 1,
+            sucursal: {
+              connect: {
+                id_sucursal: 1,
+              },
             },
+
+            fecha_creacion: pedido.fecha_creacion,
+            fecha_estimada: pedido.fecha_estimada,
+            notas: pedido.notas,
           },
+        });
+        createdPedidoIds.push(created.id_pedido);
+      }
 
-          fecha_creacion: pedido.fecha_creacion,
-          fecha_estimada: pedido.fecha_estimada,
-          notas: pedido.notas,
-        },
-      });
+      const cotizacionesData = demoCotizaciones.map((cotizacion, index) => ({
+        ...cotizacion,
+        id_pedido: createdPedidoIds[index],
+      }));
 
-      createdPedidos.push(createdPedido);
+      await prisma.cotizaciones.createMany({ data: cotizacionesData });
+      console.log(`Seeded ${cotizacionesData.length} demo cotizaciones`);
     }
-
-    const demoDetallesPedido = [
-      // Pedido 1: mezcla de servicios pendientes y en producción
-      {
-        pedidoIndex: 0,
-        servicio: servicioCorte.id_servicio,
-        material: material.id_material,
-        estatus: "Pendiente",
-        cantidad: 10,
-        precio_unitario: 150,
-        subtotal: 1500,
-        notas: "Corte inicial de piezas MDF",
-      },
-      {
-        pedidoIndex: 0,
-        servicio: servicioGrabado.id_servicio,
-        material: material.id_material,
-        estatus: "En producción",
-        cantidad: 10,
-        precio_unitario: 80,
-        subtotal: 800,
-        notas: "Grabado de logotipo",
-      },
-
-      // Pedido 2: varios servicios en distintos estatus
-      {
-        pedidoIndex: 1,
-        servicio: servicioCorte.id_servicio,
-        material: materialAcrilico.id_material,
-        estatus: "Finalizado",
-        cantidad: 5,
-        precio_unitario: 180,
-        subtotal: 900,
-        notas: "Corte de acrílico transparente",
-      },
-      {
-        pedidoIndex: 1,
-        servicio: servicioRotulacion.id_servicio,
-        material: materialVinil.id_material,
-        estatus: "Pendiente",
-        cantidad: 3,
-        precio_unitario: 250,
-        subtotal: 750,
-        notas: "Vinil para señalética",
-      },
-
-      // Pedido 3: pedido con bordado
-      {
-        pedidoIndex: 2,
-        servicio: servicioBordado.id_servicio,
-        material: materialTela.id_material,
-        estatus: "En producción",
-        cantidad: 20,
-        precio_unitario: 90,
-        subtotal: 1800,
-        notas: "Bordado de playeras",
-      },
-
-      // Pedido 4: servicios entregados/finalizados
-      {
-        pedidoIndex: 3,
-        servicio: servicioGrabado.id_servicio,
-        material: materialMetal.id_material,
-        estatus: "Entregado",
-        cantidad: 4,
-        precio_unitario: 300,
-        subtotal: 1200,
-        notas: "Grabado en placas metálicas",
-      },
-      {
-        pedidoIndex: 3,
-        servicio: servicioRotulacion.id_servicio,
-        material: materialVinil.id_material,
-        estatus: "Finalizado",
-        cantidad: 2,
-        precio_unitario: 500,
-        subtotal: 1000,
-        notas: "Rotulación finalizada",
-      },
-
-      // Pedido 5: cancelado
-      {
-        pedidoIndex: 4,
-        servicio: servicioCorte.id_servicio,
-        material: material.id_material,
-        estatus: "Cancelado",
-        cantidad: 12,
-        precio_unitario: 120,
-        subtotal: 1440,
-        notas: "Servicio cancelado por el cliente",
-      },
-
-      // Pedido 6
-      {
-        pedidoIndex: 5,
-        servicio: servicioRotulacion.id_servicio,
-        material: materialVinil.id_material,
-        estatus: "Pendiente",
-        cantidad: 6,
-        precio_unitario: 350,
-        subtotal: 2100,
-        notas: "Rotulación exterior",
-      },
-      {
-        pedidoIndex: 5,
-        servicio: servicioGrabado.id_servicio,
-        material: materialAcrilico.id_material,
-        estatus: "Pendiente",
-        cantidad: 6,
-        precio_unitario: 120,
-        subtotal: 720,
-        notas: "Grabado complementario",
-      },
-
-      // Pedido 7
-      {
-        pedidoIndex: 6,
-        servicio: servicioCorte.id_servicio,
-        material: materialAcrilico.id_material,
-        estatus: "En producción",
-        cantidad: 8,
-        precio_unitario: 110,
-        subtotal: 880,
-        notas: "Corte de acrílico para prototipo",
-      },
-
-      // Pedido 8
-      {
-        pedidoIndex: 7,
-        servicio: servicioGrabado.id_servicio,
-        material: materialMetal.id_material,
-        estatus: "Pendiente",
-        cantidad: 10,
-        precio_unitario: 320,
-        subtotal: 3200,
-        notas: "Grabado de placa conmemorativa",
-      },
-    ];
-
-    await prisma.detallePedido.createMany({
-      data: demoDetallesPedido.map((detalle) => ({
-        id_pedido: createdPedidos[detalle.pedidoIndex].id_pedido,
-        id_servicio: detalle.servicio,
-        id_material: detalle.material,
-        id_archivo: 1,
-        id_estatus: orderStatusMap[detalle.estatus],
-        cantidad: detalle.cantidad,
-        responsable_recoleccion: "Cliente Demo",
-        notas: detalle.notas,
-        precio_unitario: detalle.precio_unitario,
-        subtotal: detalle.subtotal,
-      })),
-    });
-
-    console.log(`Seeded ${demoDetallesPedido.length} demo detalles de pedido`);
-
-    await prisma.cotizaciones.createMany({
-      data: demoCotizaciones
-        .map((cotizacion, index) => {
-          const pedido = createdPedidos[index];
-
-          if (!pedido) {
-            return null;
-          }
-
-          return {
-            ...cotizacion,
-            id_pedido: pedido.id_pedido,
-          };
-        })
-        .filter((cotizacion): cotizacion is NonNullable<typeof cotizacion> => cotizacion !== null),
-    });
-    console.log(`Seeded ${demoCotizaciones.length} demo cotizaciones`);
   }
 
   await resyncSequences();
