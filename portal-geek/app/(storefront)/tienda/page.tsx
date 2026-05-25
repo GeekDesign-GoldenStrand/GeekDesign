@@ -6,8 +6,8 @@ import { AnnouncementBar } from "@/components/storefront/molecules/AnnouncementB
 import { CTABanner } from "@/components/storefront/molecules/CTABanner";
 import { HeroBanner } from "@/components/storefront/organisms/HeroBanner";
 import { ServiceGrid } from "@/components/storefront/organisms/ServiceGrid";
-import { getServiceImageUrls } from "@/lib/utils/images";
 import { listServicios } from "@/lib/services/servicios";
+import { getServiceImageUrls } from "@/lib/utils/images";
 
 export const metadata: Metadata = { title: "Tienda" };
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import { getServiceImageUrls } from "@/lib/utils/images";
+
 import { ServiceCard } from "../atoms/ServiceCard";
 
 interface ServiceCarouselProps {

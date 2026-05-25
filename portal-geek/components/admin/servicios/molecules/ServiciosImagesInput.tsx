@@ -1,6 +1,7 @@
 "use client";
 
-import { CloudArrowUp, File, Trash, Warning } from "@phosphor-icons/react";
+import type { File } from "@phosphor-icons/react";
+import { CloudArrowUp, Trash, Warning } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 
 import { deleteFile, uploadFile } from "@/lib/utils/upload";
@@ -52,24 +53,23 @@ export function ServiciosImagesInput({
 
   // Propagate key changes up when done slots change
   useEffect(() => {
-    const doneKeys = slots
-      .filter((s) => s.status === "done" && s.key)
-      .map((s) => s.key!);
+    const doneKeys = slots.filter((s) => s.status === "done" && s.key).map((s) => s.key!);
     onKeysChange(doneKeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slots]);
 
   // Clean up object URLs on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       slots.forEach((s) => {
         if (s.previewUrl.startsWith("blob:")) {
           URL.revokeObjectURL(s.previewUrl);
         }
       });
-    };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    []
+  );
 
   async function handleUpload(file: File) {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -96,9 +96,7 @@ export function ServiciosImagesInput({
 
     try {
       const key = await uploadFile(file, "servicios");
-      setSlots((prev) =>
-        prev.map((s) => (s.id === slotId ? { ...s, status: "done", key } : s))
-      );
+      setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, status: "done", key } : s)));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al subir la imagen";
       onError(`Fallo al subir "${file.name}": ${msg}`);
@@ -164,9 +162,7 @@ export function ServiciosImagesInput({
 
   return (
     <div className="space-y-3">
-      <label className="block text-[14px] font-medium text-[#1e1e1e]">
-        Imágenes del servicio:
-      </label>
+      <label className="block text-[14px] font-medium text-[#1e1e1e]">Imágenes del servicio:</label>
 
       {/* Grid showing current images */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -253,7 +249,9 @@ export function ServiciosImagesInput({
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             className={`aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer p-4 transition-colors select-none ${
-              dragging ? "border-[#8b434a] bg-[#fff8f9]" : "border-gray-300 hover:border-[#8b434a] bg-gray-50"
+              dragging
+                ? "border-[#8b434a] bg-[#fff8f9]"
+                : "border-gray-300 hover:border-[#8b434a] bg-gray-50"
             }`}
           >
             <CloudArrowUp

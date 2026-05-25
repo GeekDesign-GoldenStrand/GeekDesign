@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ServicioDetalleClient } from "@/components/storefront/organisms/ServicioDetalleClient";
-import { getServiceImageUrls } from "@/lib/utils/images";
 import { getServicioWithDetails } from "@/lib/services/servicios";
+import { getServiceImageUrls } from "@/lib/utils/images";
 
 export const metadata: Metadata = { title: "Servicio" };
 

@@ -7,7 +7,12 @@ interface ServiceCatalogCardProps {
   imagenUrl?: string | null;
 }
 
-export function ServiceCatalogCard({ id, nombre, descripcion, imagenUrl }: ServiceCatalogCardProps) {
+export function ServiceCatalogCard({
+  id,
+  nombre,
+  descripcion,
+  imagenUrl,
+}: ServiceCatalogCardProps) {
   return (
     <Link href={`/tienda/servicios/${id}`} className="block group">
       <div className="relative rounded-[10px] overflow-hidden">

@@ -618,9 +618,15 @@ describe("PUT /api/servicios/[id]", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
 
     const mockTx = {
-      servicios: { update: jest.fn().mockResolvedValue({ id_servicio: 1, nombre_servicio: "Updated" }) },
+      servicios: {
+        update: jest.fn().mockResolvedValue({ id_servicio: 1, nombre_servicio: "Updated" }),
+      },
       servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
-      formulas: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn(), create: jest.fn() },
+      formulas: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn(),
+        create: jest.fn(),
+      },
       formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
       formulaConstantes: { createMany: jest.fn() },
     };

@@ -286,7 +286,7 @@ export async function updateServicio(
 
   try {
     return await prisma.$transaction(async (tx) => {
-      const updateData: Record<string, any> = { ...servicioData };
+      const updateData: Prisma.ServiciosUpdateInput = { ...servicioData };
       if (imagenes !== undefined) {
         updateData.imagen_url = imagenes && imagenes.length > 0 ? JSON.stringify(imagenes) : null;
       }

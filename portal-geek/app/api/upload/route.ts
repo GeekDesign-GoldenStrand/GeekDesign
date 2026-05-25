@@ -98,7 +98,9 @@ export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload)
       select: { id_material: true },
     });
     if (materialInUse) {
-      throw new ConflictError("Esta imagen ya está en uso por un material y no puede eliminarse desde aquí.");
+      throw new ConflictError(
+        "Esta imagen ya está en uso por un material y no puede eliminarse desde aquí."
+      );
     }
 
     const servicioInUse = await prisma.servicios.findFirst({
@@ -110,7 +112,9 @@ export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload)
       select: { id_servicio: true },
     });
     if (servicioInUse) {
-      throw new ConflictError("Esta imagen ya está en uso por un servicio y no puede eliminarse desde aquí.");
+      throw new ConflictError(
+        "Esta imagen ya está en uso por un servicio y no puede eliminarse desde aquí."
+      );
     }
 
     await deleteObject(key);

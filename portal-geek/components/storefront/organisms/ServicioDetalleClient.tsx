@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
 import { DesignUploadZone } from "@/components/storefront/molecules/DesignUploadZone";
@@ -31,11 +31,12 @@ export function ServicioDetalleClient({
 }: Props) {
   const [disenioFile, setDisenioFile] = useState<UploadedFile | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(imagenUrls[0] || null);
+  const [prevUrls, setPrevUrls] = useState<string[]>(imagenUrls);
 
-  // Sync selected image if urls list changes
-  useEffect(() => {
+  if (imagenUrls !== prevUrls) {
+    setPrevUrls(imagenUrls);
     setSelectedImage(imagenUrls[0] || null);
-  }, [imagenUrls]);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px]">

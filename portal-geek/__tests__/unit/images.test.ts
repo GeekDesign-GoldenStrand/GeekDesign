@@ -24,9 +24,9 @@ describe("getServiceImageUrls helper", () => {
   });
 
   it("resuelve llaves de S3 normales a través de la API proxy", () => {
-    expect(getServiceImageUrls("servicios/2026/05/550e8400-e29b-41d4-a716-446655440000.jpg")).toEqual([
-      "/api/images/servicios/2026/05/550e8400-e29b-41d4-a716-446655440000.jpg",
-    ]);
+    expect(
+      getServiceImageUrls("servicios/2026/05/550e8400-e29b-41d4-a716-446655440000.jpg")
+    ).toEqual(["/api/images/servicios/2026/05/550e8400-e29b-41d4-a716-446655440000.jpg"]);
   });
 
   it("parsea correctamente un arreglo serializado como JSON con múltiples llaves/URLs", () => {
@@ -43,14 +43,10 @@ describe("getServiceImageUrls helper", () => {
   });
 
   it("maneja JSON corrupto o inválido envolviendo la cadena en un arreglo de un solo elemento", () => {
-    expect(getServiceImageUrls("[invalid-json")).toEqual([
-      "/api/images/[invalid-json",
-    ]);
+    expect(getServiceImageUrls("[invalid-json")).toEqual(["/api/images/[invalid-json"]);
   });
 
   it("maneja un string que empieza con corchetes pero no es un arreglo JSON", () => {
-    expect(getServiceImageUrls("[not-array]")).toEqual([
-      "/api/images/[not-array]",
-    ]);
+    expect(getServiceImageUrls("[not-array]")).toEqual(["/api/images/[not-array]"]);
   });
 });

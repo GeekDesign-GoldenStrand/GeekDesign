@@ -7,9 +7,9 @@ import { InstaladorToggle } from "@/components/admin/servicios/molecules/Instala
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { MaterialesSection } from "@/components/admin/servicios/molecules/MaterialesSection";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
+import { ServiciosImagesInput } from "@/components/admin/servicios/molecules/ServiciosImagesInput";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
-import { ServiciosImagesInput } from "@/components/admin/servicios/molecules/ServiciosImagesInput";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { useNuevoServicioForm } from "@/lib/hooks/useNuevoServicioForm";
 
