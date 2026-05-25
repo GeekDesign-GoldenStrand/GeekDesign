@@ -2,14 +2,17 @@ import type { MaterialCardProps } from "@/types";
 
 export type MaterialApiRow = {
   id_material: number;
+  id_material_padre: number | null;
+  es_grupo: boolean;
   nombre_material: string;
   descripcion_material: string | null;
-  unidad_medida: string;
+  unidad_medida: string | null;
   ancho: string | number | null;
   alto: string | number | null;
   grosor: string | number | null;
   color: string | null;
   imagen_url: string | null;
+  subMateriales?: MaterialApiRow[];
 };
 
 export function normalizeDecimal(value: string | number | null | undefined): string {
@@ -18,16 +21,25 @@ export function normalizeDecimal(value: string | number | null | undefined): str
 }
 
 export function mapMaterialRow(item: MaterialApiRow): MaterialCardProps {
+  const tipo: MaterialCardProps["tipo"] = item.id_material_padre
+    ? "sub"
+    : item.es_grupo
+      ? "grupo"
+      : "individual";
+
   return {
     id: item.id_material,
     name: item.nombre_material,
-    unit: item.unidad_medida,
+    unit: item.unidad_medida ?? "-",
     color: item.color ?? "-",
     width: normalizeDecimal(item.ancho),
     height: normalizeDecimal(item.alto),
     thickness: normalizeDecimal(item.grosor),
     description: item.descripcion_material ?? "",
     imageUrl: item.imagen_url ?? "",
+    id_material_padre: item.id_material_padre,
+    tipo,
+    subMateriales: item.subMateriales?.map(mapMaterialRow),
   };
 }
 

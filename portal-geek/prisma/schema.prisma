@@ -58,7 +58,7 @@ model Usuarios {
   id_usuario         Int       @id @default(autoincrement())
   nombre_completo    String    @db.VarChar(100)
   correo_electronico String    @unique @db.VarChar(150)
-  contrasena_hash    String    @db.VarChar(255)
+  contrasena_hash    String?   @db.VarChar(255)
   id_rol             Int
   estatus            String    @db.VarChar(20) // Activo / Inactivo
   fecha_creacion     DateTime  @default(now())
@@ -75,6 +75,7 @@ model Usuarios {
   historialCotizaciones HistorialEstadosCotizacion[]
   variablesCotizacion   VariablesCotizacion[]
   formulasCreadas       Formulas[]
+  detalles_modificados DetallePedido[] @relation("DetallePedidoUsuarioModificacion")
 
   @@map("USUARIOS")
 }
@@ -193,14 +194,19 @@ model Servicios {
 
 model Materiales {
   id_material          Int      @id @default(autoincrement())
+  id_material_padre    Int?
+  es_grupo             Boolean  @default(false)
   nombre_material      String   @db.VarChar(100)
   descripcion_material String?
-  unidad_medida        String   @db.VarChar(30)
+  unidad_medida        String?  @db.VarChar(30)
   ancho                Decimal? @db.Decimal(10, 2)
   alto                 Decimal? @db.Decimal(10, 2)
   grosor               Decimal? @db.Decimal(10, 2)
   color                String?  @db.VarChar(50)
   imagen_url           String?  @db.VarChar(500)
+
+  padre              Materiales?  @relation("SubMateriales", fields: [id_material_padre], references: [id_material])
+  subMateriales      Materiales[] @relation("SubMateriales")
 
   opciones           OpcionesProducto[]
   detallesPedido     DetallePedido[]
@@ -328,6 +334,7 @@ model Proveedores {
   descripcion_proveedor String?
   costo                 Decimal? @db.Decimal(10, 2)  // FIX: era Float?
   ubicacion             String?  @db.VarChar(255)
+  color                 String?  @db.VarChar(50)   // CSS hex o nombre de color para PDF de OC
   estatus               String   @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   servicios         Servicios[]
@@ -381,6 +388,7 @@ model Instaladores {
   costo_instalacion Decimal @db.Decimal(10, 2)  // FIX: era Float
   notas             String? @db.VarChar(500)
   ubicacion         String? @db.VarChar(255)
+  color             String? @db.VarChar(50)   // CSS hex o nombre de color para PDF de OC
   estatus           String  @db.VarChar(20)  // Activo / Inactivo / Baneado
 
   servicios           Servicios[]
@@ -430,6 +438,7 @@ model EstatusPedidos {
   id_estatus  Int       @id @default(autoincrement())
   descripcion String    @unique @db.VarChar(50)
   pedidos     Pedidos[]
+  detalles    DetallePedido[]
 
   @@map("ESTATUSPEDIDOS")
 }
@@ -448,6 +457,7 @@ model Pedidos {
   id_estatus        Int
   id_sucursal       Int?
   id_estado_factura Int?
+  nombre_oportunidad String?  @db.VarChar(150)
   fecha_creacion    DateTime  @default(now())
   fecha_fin         DateTime?
   fecha_estimada    DateTime?
@@ -489,9 +499,11 @@ model DetallePedido {
   id_servicio             Int
   id_material             Int
   id_archivo              Int
+  id_estatus              Int?
+  id_usuario_modificacion Int?
+  fecha_modificacion      DateTime?
+
   cantidad                Int
-  // D3: ancho_cm/alto_cm/grosor_cm/color/opciones_seleccionadas removed.
-  // Source of truth for dimensions/sizing is VariablesCotizacion (linked by id_detalle).
   responsable_recoleccion String   @db.VarChar(100)
   notas                   String?
   precio_unitario         Decimal  @db.Decimal(10, 2)
@@ -501,6 +513,9 @@ model DetallePedido {
   servicio Servicios       @relation(fields: [id_servicio], references: [id_servicio])
   material Materiales      @relation(fields: [id_material], references: [id_material])
   archivo  ArchivosDisenio @relation(fields: [id_archivo], references: [id_archivo])
+  estatus  EstatusPedidos? @relation(fields: [id_estatus], references: [id_estatus])
+
+  usuario_modificacion Usuarios? @relation("DetallePedidoUsuarioModificacion", fields: [id_usuario_modificacion], references: [id_usuario])
 
   variablesCotizacion VariablesCotizacion[]
 
@@ -558,6 +573,9 @@ model Cotizaciones {
   id_estatus_cotizacion Int
   folio                 String?   @unique @db.VarChar(50)
   monto_total           Decimal   @db.Decimal(10, 2)
+  porcentaje_descuento  Decimal?  @db.Decimal(4, 2)
+  motivo_descuento      String?   @db.VarChar(255)
+  nombre_oportunidad    String?   @db.VarChar(150)
   empresa_cliente       String?   @db.VarChar(100)
   fecha_creacion        DateTime  @default(now())
   fecha_fin             DateTime?

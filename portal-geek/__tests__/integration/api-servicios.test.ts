@@ -122,8 +122,16 @@ describe("GET /api/servicios", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 cuando un Colaborador pide lista completa", async () => {
+  it("retorna 403 cuando un Colaborador pide lista completa (servicios es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await createApp({ GET: routes.GET }).get("/api/servicios");
+
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 403 cuando Finanzas pide lista completa", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await createApp({ GET: routes.GET }).get("/api/servicios");
 

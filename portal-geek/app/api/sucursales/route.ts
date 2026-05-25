@@ -1,13 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { withRole } from "@/lib/auth/guards";
+import { withSection } from "@/lib/auth/guards";
 import { CreateSucursalSchema } from "@/lib/schemas/sucursales";
 import { listSucursales, createSucursal, getSucursalesOptions } from "@/lib/services/sucursales";
 import { paginated, created } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
-export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
+export const GET = withSection("sucursales", "read", async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get("mode");
@@ -46,7 +46,7 @@ export const GET = withRole(["Direccion", "Administrador"], async (req: NextRequ
   }
 });
 
-export const POST = withRole(["Direccion", "Administrador"], async (req: NextRequest) => {
+export const POST = withSection("sucursales", "write", async (req: NextRequest) => {
   try {
     // Validate creation data before sending it to the service layer.
     // This keeps the database protected from malformed branch records.

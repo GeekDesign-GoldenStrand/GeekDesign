@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { ServicioIdParams, UpdateServicioSchema } from "@/lib/schemas/servicios";
 import {
   getServicioParaAdmin,
@@ -26,8 +26,9 @@ export const GET = withRoleParams<Params>(
   }
 );
 
-export const PUT = withRoleParams<Params>(
-  ["Administrador", "Direccion"],
+export const PUT = withSectionParams<Params>(
+  "servicios",
+  "write",
   async (req: NextRequest, ctx, session) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
@@ -39,9 +40,10 @@ export const PUT = withRoleParams<Params>(
   }
 );
 
-export const DELETE = withRoleParams<Params>(
-  ["Administrador", "Direccion"],
-  async (_req: NextRequest, ctx) => {
+export const DELETE = withSectionParams<Params>(
+  "servicios",
+  "write",
+  async (req: NextRequest, ctx) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
       await deleteServicio(id);

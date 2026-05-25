@@ -24,3 +24,7 @@ export const PedidoIdParams = z.object({
 
 export type CreatePedidoInput = z.infer<typeof CreatePedidoSchema>;
 export type UpdatePedidoInput = z.infer<typeof UpdatePedidoSchema>;
+
+export const DetallePedidoIdParams = z.object({
+  id: z.coerce.number().int().positive(),
+});

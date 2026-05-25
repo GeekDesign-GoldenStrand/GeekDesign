@@ -16,6 +16,13 @@ jest.mock("@/lib/db/client", () => ({
     },
     estatusCotizacion: {
       findUnique: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([
+        { id_estatus: 1, descripcion: "Pendiente" },
+        { id_estatus: 2, descripcion: "Validada" },
+        { id_estatus: 3, descripcion: "Rechazada" },
+        { id_estatus: 4, descripcion: "Aprobada" },
+        { id_estatus: 5, descripcion: "Cancelada" },
+      ]),
     },
     estatusPedidos: {
       findUnique: jest.fn(),
@@ -28,6 +35,9 @@ jest.mock("@/lib/db/client", () => ({
     },
     detallePedido: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    variablesCotizacion: {
       deleteMany: jest.fn(),
     },
     historialEstadosPedidos: {
@@ -97,6 +107,7 @@ describe("Req. ST-08-09 Integration Tests", () => {
         estatus: { descripcion: "Validada" },
         cliente: { nombre_cliente: "Test User" },
         variablesCotizacion: [],
+        historial: [],
       };
 
       (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockQuote);
@@ -161,6 +172,8 @@ describe("Req. ST-08-09 Integration Tests", () => {
         id_estado_factura: 4,
         descripcion: "Aprobacion_diseno",
       });
+      // findMany returns empty: no rejected detalles → variablesCotizacion.deleteMany not called.
+      (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([]);
       (prisma.detallePedido.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
       (prisma.pedidos.update as jest.Mock).mockResolvedValue({
         id_pedido: 101,
