@@ -16,6 +16,17 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 // Public endpoint — no auth required. Rate-limited by IP to cap anonymous abuse.
 // Only issues presigned PUTs for the "disenios" category.
 // The browser still uploads directly to GCS; the server never touches the bytes.
+//
+// ACCEPTED RISK — no content scanning:
+// Validation here is purely metadata-based (client-supplied MIME + filename).
+// A malicious client could upload arbitrary bytes under a valid extension (.dxf,
+// .ai, .eps). There is no server-side byte inspection because the upload goes
+// directly browser → GCS via presigned PUT, bypassing the Next.js process.
+// Mitigation: the admin download route (/api/admin/archivos/[id]) generates a
+// short-lived signed GET URL and the admin UI displays an unscanned-content
+// warning on every design file link (see DesignFileLink component).
+// Future hardening: wire in an async scan (GCS Object Finalize → Cloud Function
+// → ClamAV/VirusTotal) and gate admin downloads on a scan_status field.
 const RATE_LIMIT = { maxAttempts: 10, windowMs: 60_000 };
 
 export async function POST(req: NextRequest) {
