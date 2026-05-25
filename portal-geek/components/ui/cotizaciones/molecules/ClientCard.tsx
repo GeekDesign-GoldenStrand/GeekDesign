@@ -1,8 +1,8 @@
 import { User } from "@phosphor-icons/react";
 import React from "react";
 
-import type { Cliente } from "@/lib/utils/cotizacion";
 import { formatPhoneNumber } from "@/lib/utils/format";
+import type { Cliente } from "@/types/cotizacion";
 
 import { ClientBadge } from "../atoms/ClientBadge";
 import { FieldRow } from "../atoms/FieldRow";

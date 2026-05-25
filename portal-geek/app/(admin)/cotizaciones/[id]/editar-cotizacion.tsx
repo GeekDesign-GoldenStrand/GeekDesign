@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import type { LineItem } from "@/lib/utils/cotizacion";
+import type { LineItem } from "@/types/cotizacion";
 
 interface ClienteOption {
   id_cliente: number;

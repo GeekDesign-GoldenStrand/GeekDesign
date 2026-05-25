@@ -1,9 +1,9 @@
 import { ArrowRight, Clock } from "@phosphor-icons/react";
 import React from "react";
 
-import type { HistorialEstado } from "@/lib/utils/cotizacion";
-import { USERS } from "@/lib/utils/cotizacion";
 import { formatDate } from "@/lib/utils/date";
+import type { HistorialEstado } from "@/types/cotizacion";
+import { USERS } from "@/types/cotizacion";
 
 import { SectionCard } from "../atoms/SectionCard";
 

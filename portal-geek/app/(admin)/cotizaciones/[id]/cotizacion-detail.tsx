@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { CotizacionDetailPage } from "@/components/ui/cotizaciones/templates/CotizacionDetailPage";
-import type { Cotizacion } from "@/lib/utils/cotizacion";
+import type { Cotizacion } from "@/types/cotizacion";
 
 async function getCotizacion(id: string): Promise<Cotizacion> {
   const res = await fetch(`/api/cotizaciones/${id}`);

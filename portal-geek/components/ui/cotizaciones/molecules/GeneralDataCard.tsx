@@ -1,8 +1,8 @@
 import { ArrowSquareOut, FileText } from "@phosphor-icons/react";
 import React from "react";
 
-import type { EstatusCotizacion } from "@/lib/utils/cotizacion";
 import { formatDate } from "@/lib/utils/date";
+import type { EstatusCotizacion } from "@/types/cotizacion";
 
 import { FieldRow } from "../atoms/FieldRow";
 import { SectionCard } from "../atoms/SectionCard";

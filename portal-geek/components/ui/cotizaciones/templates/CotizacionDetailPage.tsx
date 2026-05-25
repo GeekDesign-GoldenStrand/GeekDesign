@@ -9,7 +9,7 @@ import type {
   FormulaVariable,
   HistorialEstado,
   LineItem,
-} from "@/lib/utils/cotizacion";
+} from "@/types/cotizacion";
 
 import { ClientCard } from "../molecules/ClientCard";
 import { GeneralDataCard } from "../molecules/GeneralDataCard";

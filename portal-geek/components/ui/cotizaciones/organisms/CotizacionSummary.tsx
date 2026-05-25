@@ -4,8 +4,8 @@ import { Info, Tag, Trash } from "@phosphor-icons/react";
 import React, { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import type { LineItem } from "@/lib/utils/cotizacion";
 import { formatDate } from "@/lib/utils/date";
+import type { LineItem } from "@/types/cotizacion";
 
 function fmt(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
