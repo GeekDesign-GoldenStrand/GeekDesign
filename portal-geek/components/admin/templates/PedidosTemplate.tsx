@@ -212,28 +212,38 @@ export function PedidosTemplate({
                 {/* Servicios */}
                 <div className="mb-3">
                   <p className="text-[13px] font-semibold text-[#575757] mb-2">Servicio</p>
-                  <div className="space-y-2">
-                    {[
-                      { id: 1, name: "Corte Láser" },
-                      { id: 2, name: "Grabado Láser" },
-                    ].map((service) => (
-                      <label key={service.id} className="flex items-center gap-2 text-[13px]">
-                        <input
-                          type="checkbox"
-                          checked={serviceIds.includes(service.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setServiceIds([...serviceIds, service.id]);
-                            } else {
-                              setServiceIds(serviceIds.filter((id) => id !== service.id));
-                            }
-                          }}
-                          className="accent-[#ff6b6b]"
-                        />
-                        {service.name}
-                      </label>
-                    ))}
-                  </div>
+
+                  {services.length === 0 ? (
+                    <p className="text-[12px] text-[#8e908f]">
+                      No hay servicios disponibles para filtrar.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {services.map((service) => (
+                        <label
+                          key={service.id_servicio}
+                          className="flex items-center gap-2 text-[13px]"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={serviceIds.includes(service.id_servicio)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setServiceIds([...serviceIds, service.id_servicio]);
+                              } else {
+                                setServiceIds(
+                                  serviceIds.filter((id) => id !== service.id_servicio)
+                                );
+                              }
+                            }}
+                            className="accent-[#ff6b6b]"
+                          />
+
+                          {service.nombre_servicio}
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}

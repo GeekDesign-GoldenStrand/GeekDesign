@@ -13,9 +13,9 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
-jest.mock("@/lib/auth/guards", () => ({
-  withSection:
-    (_section: string, _action: string, handler: unknown) => async (req: NextRequest) => {
+jest.mock("@/lib/auth/guards", () => {
+  const authorizeRequest =
+    (allowedRoles: string[], handler: unknown) => async (req: NextRequest) => {
       const session = await mockGetSession();
 
       if (!session) {
@@ -24,7 +24,7 @@ jest.mock("@/lib/auth/guards", () => ({
         });
       }
 
-      if (!["Direccion", "Colaborador"].includes(session.role)) {
+      if (!allowedRoles.includes(session.role)) {
         return new Response(
           JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
           { status: 403 }
@@ -32,8 +32,15 @@ jest.mock("@/lib/auth/guards", () => ({
       }
 
       return (handler as (req: NextRequest) => Promise<Response>)(req);
-    },
-}));
+    };
+
+  return {
+    withRole: (roles: string[], handler: unknown) => authorizeRequest(roles, handler),
+
+    withSection: (_section: string, _action: string, handler: unknown) =>
+      authorizeRequest(["Direccion", "Colaborador"], handler),
+  };
+});
 
 jest.mock("@/lib/services/pedidos", () => ({
   listPedidos: jest.fn(),
