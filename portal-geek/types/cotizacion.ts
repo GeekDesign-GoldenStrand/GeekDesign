@@ -104,6 +104,7 @@ export interface LineItem {
   // ArchivosDisenio attached to this detalle. Optional because legacy
   // detalles created before the placeholder upload existed could be null
   // (Prisma model guarantees the relation, but defensive on the client).
+  archivo_id?: number;
   archivo_url?: string;
   archivo_nombre?: string;
 }

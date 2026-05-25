@@ -125,7 +125,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
                 />
                 <Link
-                  className="text-black hover:text-[#e42200] transition-colors p-2"
+                  className="text-black hover:text-[#e42200] transition-colors p-2 relative"
                   href={`cotizaciones/${c.id_cotizacion}`}
                 >
                   <Info size={18} />
@@ -206,7 +206,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
                   />
                   <Link
-                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
+                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] relative hover:text-[#e42200] transition-colors"
                     href={`cotizaciones/${c.id_cotizacion}`}
                   >
                     <Info size={18} />

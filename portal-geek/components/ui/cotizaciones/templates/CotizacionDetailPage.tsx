@@ -61,6 +61,7 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
     variables: variablesByDetalle[d.id_detalle] ?? [],
     archivo_url: d.archivo?.url_archivo,
     archivo_nombre: d.archivo?.nombre_archivo,
+    archivo_id: d.archivo?.id_archivo,
   }));
 
   // ── Map API historial ─────────────────────
