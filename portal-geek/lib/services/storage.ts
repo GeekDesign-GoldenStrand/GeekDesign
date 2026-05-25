@@ -63,10 +63,37 @@ export async function presignPut(
 }
 
 // Short-lived read URL. Use this for any user-scoped or sensitive object.
-export async function presignGet(key: string, ttlSeconds?: number): Promise<string> {
-  return getSignedUrl(getStorage(), new GetObjectCommand({ Bucket: getBucket(), Key: key }), {
-    expiresIn: clampTtl(ttlSeconds),
-  });
+// Pass `filename` to force a Content-Disposition: attachment header so the
+// browser downloads the file with the original name instead of the UUID key.
+// Especially important for opaque MIME types like application/postscript (.ai/.eps)
+// and application/octet-stream (.dxf) that browsers can't display inline.
+export async function presignGet(
+  key: string,
+  ttlSeconds?: number,
+  filename?: string
+): Promise<string> {
+  return getSignedUrl(
+    getStorage(),
+    new GetObjectCommand({
+      Bucket: getBucket(),
+      Key: key,
+      ...(filename
+        ? {
+            // RFC 6266 / RFC 5987: `filename=` only supports US-ASCII and browsers
+            // treat percent-encoded sequences literally (i.e. the file would download
+            // as "logo%20client.ai" instead of "logo client.ai").
+            // The `filename*=UTF-8''` extended parameter carries the full Unicode name;
+            // the ASCII `filename=` fallback is for older clients that don't support it.
+            ResponseContentDisposition: [
+              "attachment",
+              `filename="${filename.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_")}"`,
+              `filename*=UTF-8''${encodeURIComponent(filename)}`,
+            ].join("; "),
+          }
+        : {}),
+    }),
+    { expiresIn: clampTtl(ttlSeconds) }
+  );
 }
 
 // Returns a stable public URL when STORAGE_PUBLIC_BASE_URL is configured
