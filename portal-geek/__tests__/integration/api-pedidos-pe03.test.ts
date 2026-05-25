@@ -14,24 +14,26 @@ jest.mock("@/lib/auth/session", () => ({
 }));
 
 jest.mock("@/lib/auth/guards", () => ({
-  withRole: (roles: string[], handler: unknown) => async (req: NextRequest) => {
-    const session = await mockGetSession();
+  withSection:
+    (_section: string, _action: string, handler: unknown) =>
+    async (req: NextRequest) => {
+      const session = await mockGetSession();
 
-    if (!session) {
-      return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
-        status: 401,
-      });
-    }
+      if (!session) {
+        return new Response(JSON.stringify({ data: null, error: "No autenticado" }), {
+          status: 401,
+        });
+      }
 
-    if (!roles.includes(session.role)) {
-      return new Response(
-        JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
-        { status: 403 }
-      );
-    }
+      if (!["Direccion", "Colaborador"].includes(session.role)) {
+        return new Response(
+          JSON.stringify({ data: null, error: "Sin permisos para realizar esta acción" }),
+          { status: 403 }
+        );
+      }
 
-    return (handler as (req: NextRequest) => Promise<Response>)(req);
-  },
+      return (handler as (req: NextRequest) => Promise<Response>)(req);
+    },
 }));
 
 jest.mock("@/lib/services/pedidos", () => ({
