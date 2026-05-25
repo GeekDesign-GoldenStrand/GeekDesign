@@ -1044,6 +1044,59 @@ async function main() {
     }
   }
 
+  // ── Backfill DetallePedido for existing pedidos (PE-03 / PE-05) ────────────
+  // Demo pedidos are seeded as headers only. Without line items the
+  // "Semáforo de servicios" (PE-03) renders empty and the order detail modal
+  // (PE-05) shows zero products. Seed a few detalles per pedido, spread across
+  // servicios and statuses so the semaphore is populated. Idempotent: only runs
+  // when no DetallePedido rows exist yet.
+  const detalleCount = await prisma.detallePedido.count();
+
+  if (detalleCount > 0) {
+    console.log("DetallePedido already present, skipping detalle backfill");
+  } else {
+    const pedidosToFill = await prisma.pedidos.findMany({ orderBy: { id_pedido: "asc" } });
+    const orderStatusRowsForDetalle = await prisma.estatusPedidos.findMany();
+
+    const statusByName: Record<string, number> = {};
+    orderStatusRowsForDetalle.forEach((s) => (statusByName[s.descripcion] = s.id_estatus));
+
+    const statusCycle = ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
+    const servicioCycle = [1, 2, 3, 4]; // Corte Láser, Grabado Láser, Bordado, Rotulación
+    const materialCycle = [1, 2, 3, 4];
+
+    let detallesCreated = 0;
+
+    for (const [pedidoIndex, pedido] of pedidosToFill.entries()) {
+      const lineCount = 2 + (pedidoIndex % 2); // 2 or 3 line items per pedido
+
+      for (let line = 0; line < lineCount; line++) {
+        const idx = pedidoIndex + line;
+        const cantidad = 1 + (idx % 5);
+        const precioUnitario = 250 + (idx % 4) * 125;
+
+        await prisma.detallePedido.create({
+          data: {
+            id_pedido: pedido.id_pedido,
+            id_servicio: servicioCycle[idx % servicioCycle.length],
+            id_material: materialCycle[idx % materialCycle.length],
+            id_archivo: 1, // placeholder design (seeded above)
+            id_estatus: statusByName[statusCycle[idx % statusCycle.length]] ?? null,
+            cantidad,
+            responsable_recoleccion: "Demo Recolector",
+            notas: "Detalle demo",
+            precio_unitario: precioUnitario,
+            subtotal: precioUnitario * cantidad,
+          },
+        });
+
+        detallesCreated++;
+      }
+    }
+
+    console.log(`Seeded ${detallesCreated} demo DetallePedido rows`);
+  }
+
   await resyncSequences();
 }
 

@@ -9,6 +9,7 @@ import {
   type PedidoServiceOption,
 } from "@/components/admin/molecules/PedidosServiceTabs";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import PedidoDetailModal from "@/components/admin/organisms/PedidoDetailModal";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
 
 // Frontend type for an order
@@ -106,6 +107,7 @@ export function PedidosTemplate({
   showServiceTabs = true,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
@@ -350,6 +352,7 @@ export function PedidosTemplate({
           onStatusChange={onStatusChange}
           selectedServiceId={selectedServiceId}
           onDetalleStatusChange={onDetalleStatusChange}
+          onShowDetail={setDetailId}
         />
 
         {/* Pagination */}
@@ -393,6 +396,16 @@ export function PedidosTemplate({
           </div>
         </div>
       </section>
+
+      {/* PE-05 — order detail window opened from the info icon */}
+      {detailId !== null && (
+        <PedidoDetailModal
+          key={detailId}
+          pedidoId={detailId}
+          selectedServiceId={selectedServiceId}
+          onClose={() => setDetailId(null)}
+        />
+      )}
     </>
   );
 }

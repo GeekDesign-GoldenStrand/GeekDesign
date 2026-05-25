@@ -2,6 +2,7 @@
 
 import {
   PencilSimple,
+  Info,
   CheckCircle,
   WarningCircle,
   StopCircle,
@@ -148,9 +149,15 @@ interface Props {
   onStatusChange: (id: number, status: string) => void;
   selectedServiceId: number | null;
   onDetalleStatusChange: (detalleId: number, status: string) => void;
+  onShowDetail: (id: number) => void;
 }
 
-export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange }: Props) {
+export function PedidosTable({
+  pedidos,
+  selectedServiceId,
+  onDetalleStatusChange,
+  onShowDetail,
+}: Props) {
   if (pedidos.length === 0) {
     return (
       <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron pedidos.</div>
@@ -281,6 +288,16 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                     archivos={p.archivos}
                     className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => onShowDetail(p.id_pedido)}
+                    className="text-black hover:text-[#e42200] p-2"
+                    title="Ver detalle del pedido"
+                    aria-label={`Ver detalle del pedido ${p.id_pedido}`}
+                  >
+                    <Info size={18} />
+                  </button>
 
                   <a
                     href={`/pedidos/${p.id_pedido}`}
@@ -437,6 +454,16 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                       archivos={p.archivos}
                       className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
                     />
+
+                    <button
+                      type="button"
+                      onClick={() => onShowDetail(p.id_pedido)}
+                      className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
+                      title="Ver detalle del pedido"
+                      aria-label={`Ver detalle del pedido ${p.id_pedido}`}
+                    >
+                      <Info size={18} />
+                    </button>
 
                     <a
                       href={`/pedidos/${p.id_pedido}`}
