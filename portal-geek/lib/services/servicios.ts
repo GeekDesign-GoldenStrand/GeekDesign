@@ -231,12 +231,25 @@ export async function getServicioParaAdmin(id: number): Promise<ServicioParaAdmi
   return servicio;
 }
 
+// imagen_url is stored as a JSON-encoded string[]. Legacy rows may hold a single
+// raw URL or null, so we degrade gracefully instead of throwing.
+function parseImagenUrl(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === "string") : [];
+  } catch {
+    return typeof raw === "string" && raw.length > 0 ? [raw] : [];
+  }
+}
+
 export function toServicioAdminDetalle(s: ServicioParaAdmin): ServicioAdminDetalle {
   const formulaActiva = s.formulas[0] ?? null;
   return {
     id_servicio: s.id_servicio,
     nombre_servicio: s.nombre_servicio,
     descripcion_servicio: s.descripcion_servicio,
+    imagenes: parseImagenUrl(s.imagen_url),
     id_sucursal: s.id_sucursal,
     sucursal: { id_sucursal: s.sucursal.id_sucursal, nombre_sucursal: s.sucursal.nombre_sucursal },
     id_instalador: s.id_instalador,

@@ -12,6 +12,7 @@ import {
   deleteServicio,
   updateServicio,
   createServicio,
+  toServicioAdminDetalle,
 } from "@/lib/services/servicios";
 import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
@@ -636,5 +637,55 @@ describe("createServicio", () => {
         }),
       })
     );
+  });
+});
+
+// Regression coverage for the ADMIN-02 merge bug that dropped imagenes from the
+// "Nuevo servicio" form. Specifically guards the imagen_url ⇄ imagenes round-trip
+// so that edit-mode loads existing images instead of silently starting empty.
+describe("toServicioAdminDetalle imagenes parsing", () => {
+  // Minimal ServicioParaAdmin shape — only fields the mapper reads.
+  function makeServicio(imagen_url: string | null) {
+    return {
+      id_servicio: 1,
+      nombre_servicio: "Test",
+      descripcion_servicio: null,
+      imagen_url,
+      id_sucursal: 1,
+      sucursal: { id_sucursal: 1, nombre_sucursal: "Principal" },
+      id_instalador: null,
+      costo_instalador_override: null,
+      instalador: null,
+      id_proveedor: null,
+      costo_proveedor_override: null,
+      proveedor: null,
+      maquinas: [],
+      formulas: [],
+      servicioMateriales: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+  }
+
+  it("parsea imagen_url JSON a array de strings", () => {
+    const out = toServicioAdminDetalle(
+      makeServicio(JSON.stringify(["servicios/a.png", "servicios/b.png"]))
+    );
+    expect(out.imagenes).toEqual(["servicios/a.png", "servicios/b.png"]);
+  });
+
+  it("retorna [] cuando imagen_url es null", () => {
+    expect(toServicioAdminDetalle(makeServicio(null)).imagenes).toEqual([]);
+  });
+
+  it("degrada legacy: trata un imagen_url no-JSON como una sola key", () => {
+    const out = toServicioAdminDetalle(makeServicio("servicios/legacy.png"));
+    expect(out.imagenes).toEqual(["servicios/legacy.png"]);
+  });
+
+  it("filtra entradas no-string del JSON parseado", () => {
+    const out = toServicioAdminDetalle(
+      makeServicio(JSON.stringify(["ok.png", 42, null, "ok2.png"]))
+    );
+    expect(out.imagenes).toEqual(["ok.png", "ok2.png"]);
   });
 });

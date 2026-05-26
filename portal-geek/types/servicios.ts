@@ -123,6 +123,7 @@ export type ServicioAdminDetalle = {
   id_servicio: number;
   nombre_servicio: string;
   descripcion_servicio: string | null;
+  imagenes: string[];
   id_sucursal: number;
   sucursal: { id_sucursal: number; nombre_sucursal: string };
   id_instalador: number | null;

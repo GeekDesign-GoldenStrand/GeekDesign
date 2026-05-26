@@ -1,7 +1,7 @@
 "use client";
 
 import { CloudArrowUp, Trash, Warning } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { deleteFile, uploadFile } from "@/lib/utils/upload";
 
@@ -35,8 +35,18 @@ export function ServiciosImagesInput({
   const [slots, setSlots] = useState<SlotState[]>([]);
   const [dragging, setDragging] = useState(false);
 
-  // Initialize slots from initialKeys (saved images)
+  // Sync slots from initialKeys only when the *content* actually changes — not on
+  // every reference change. The parent calls setForm with a spread each update,
+  // which gives form.imagenes a new array reference even when it stays []. Without
+  // this content-based guard, effect #1 reset slots, effect #2 fired onKeysChange,
+  // parent re-spread form, parent re-rendered with a new initialKeys reference,
+  // effect #1 fired again → infinite loop (Maximum update depth exceeded).
+  const initialKeysSig = useMemo(() => initialKeys.join("|"), [initialKeys]);
+  const lastInitialKeysSig = useRef<string>(initialKeysSig);
   useEffect(() => {
+    if (initialKeysSig === lastInitialKeysSig.current) return;
+    lastInitialKeysSig.current = initialKeysSig;
+
     if (initialKeys.length === 0) {
       setSlots([]);
     } else if (slots.length === 0) {
@@ -50,7 +60,7 @@ export function ServiciosImagesInput({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialKeys]);
+  }, [initialKeysSig]);
 
   // Propagate key changes up when done slots change
   useEffect(() => {
