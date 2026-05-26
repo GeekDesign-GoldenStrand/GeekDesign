@@ -6,10 +6,10 @@
  * Storefront-side PDF download. Cookie auth via the magic-link session;
  * the WorkOrderTemplate render is mocked at the @react-pdf/renderer seam.
  */
-import type * as PdfRouteModuleType from "@/app/api/storefront/cotizaciones/[folio]/pdf/route";
 import { prisma } from "@/lib/db/client";
 import { readSessionCotizacionId } from "@/lib/services/cotizacion-access";
 
+import type { NextRouteHandler } from "../helpers/next-supertest";
 import { createApp } from "../helpers/next-supertest";
 
 // jose is ESM and not transpiled by next/jest. Stubbed so the route module loads.
@@ -87,10 +87,11 @@ const aprobadaQuote = {
 };
 
 describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
-  let routes: typeof PdfRouteModuleType;
+  let pdfGET: NextRouteHandler;
 
   beforeAll(async () => {
-    routes = await import("@/app/api/storefront/cotizaciones/[folio]/pdf/route");
+    const mod = await import("@/app/api/storefront/cotizaciones/[folio]/pdf/route");
+    pdfGET = mod.GET as unknown as NextRouteHandler;
   });
 
   beforeEach(() => {
@@ -106,7 +107,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
     mockReadSession.mockResolvedValue(42);
     mockFindCotizacion.mockResolvedValue(aprobadaQuote);
 
-    const res = await createApp({ GET: routes.GET }, paramExtractor)
+    const res = await createApp({ GET: pdfGET }, paramExtractor)
       .get("/api/storefront/cotizaciones/GD-2026-00042/pdf")
       .set("Cookie", "cotizacion_session=valid-jwt");
 
@@ -120,7 +121,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
     mockReadSession.mockResolvedValue(null);
     // findUnique should not be reached; assert below.
 
-    const res = await createApp({ GET: routes.GET }, paramExtractor).get(
+    const res = await createApp({ GET: pdfGET }, paramExtractor).get(
       "/api/storefront/cotizaciones/GD-2026-00042/pdf"
     );
 
@@ -133,7 +134,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
   it("cookie inválida/expirada (readSession devuelve null) → 307 mismo fallback (no enumeración)", async () => {
     mockReadSession.mockResolvedValue(null);
 
-    const res = await createApp({ GET: routes.GET }, paramExtractor)
+    const res = await createApp({ GET: pdfGET }, paramExtractor)
       .get("/api/storefront/cotizaciones/GD-2026-00042/pdf")
       .set("Cookie", "cotizacion_session=bad-jwt");
 
@@ -145,7 +146,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
     mockReadSession.mockResolvedValue(99); // session for cotización 99
     mockFindCotizacion.mockResolvedValue(aprobadaQuote); // but loaded one is id 42
 
-    const res = await createApp({ GET: routes.GET }, paramExtractor)
+    const res = await createApp({ GET: pdfGET }, paramExtractor)
       .get("/api/storefront/cotizaciones/GD-2026-00042/pdf")
       .set("Cookie", "cotizacion_session=valid-jwt-for-other");
 
@@ -157,7 +158,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
     mockReadSession.mockResolvedValue(42);
     mockFindCotizacion.mockResolvedValue(null);
 
-    const res = await createApp({ GET: routes.GET }, paramExtractor)
+    const res = await createApp({ GET: pdfGET }, paramExtractor)
       .get("/api/storefront/cotizaciones/GD-9999-99999/pdf")
       .set("Cookie", "cotizacion_session=valid-jwt");
 
@@ -174,7 +175,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
         estatus: { descripcion: estatus },
       });
 
-      const res = await createApp({ GET: routes.GET }, paramExtractor)
+      const res = await createApp({ GET: pdfGET }, paramExtractor)
         .get("/api/storefront/cotizaciones/GD-2026-00042/pdf")
         .set("Cookie", "cotizacion_session=valid-jwt");
 
@@ -190,7 +191,7 @@ describe("GET /api/storefront/cotizaciones/[folio]/pdf (ST-19)", () => {
       folio: "GD-2026-12345",
     });
 
-    const res = await createApp({ GET: routes.GET }, paramExtractor)
+    const res = await createApp({ GET: pdfGET }, paramExtractor)
       .get("/api/storefront/cotizaciones/GD-2026-12345/pdf")
       .set("Cookie", "cotizacion_session=valid-jwt");
 

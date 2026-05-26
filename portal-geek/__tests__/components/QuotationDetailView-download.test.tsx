@@ -27,7 +27,7 @@ jest.mock("framer-motion", () => ({
           children,
           ...props
         }: React.PropsWithChildren<Record<string, unknown>>) {
-          const Tag = tag as keyof JSX.IntrinsicElements;
+          const Tag = tag as unknown as React.ElementType;
           // Strip framer-only props (animate, initial, transition, etc.)
           const cleaned = Object.fromEntries(
             Object.entries(props).filter(
