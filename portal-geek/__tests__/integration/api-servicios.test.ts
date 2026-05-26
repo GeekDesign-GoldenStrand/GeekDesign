@@ -22,6 +22,10 @@ jest.mock("@/lib/db/client", () => ({
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    servicioMaterial: {
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     formulas: {
       create: jest.fn(),
       updateMany: jest.fn(),
@@ -45,6 +49,27 @@ const mockGetSession = jest.fn();
 jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
+
+const SERVICIO_PARA_ADMIN_MOCK = {
+  id_servicio: 1,
+  id_estatus: 1,
+  id_sucursal: 1,
+  id_instalador: null,
+  id_proveedor: null,
+  nombre_servicio: "Corte Láser",
+  descripcion_servicio: "Corte con láser CO2",
+  estatus_servicio: true,
+  imagen_url: null,
+  costo_instalador_override: null,
+  costo_proveedor_override: null,
+  fecha_modificacion: new Date("2026-05-08"),
+  sucursal: { id_sucursal: 1, nombre_sucursal: "Sucursal Principal" },
+  maquinas: [],
+  instalador: null,
+  proveedor: null,
+  formulas: [],
+  servicioMateriales: [],
+};
 
 describe("GET /api/servicios", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -143,10 +168,47 @@ describe("GET /api/servicios/[id]", () => {
     });
   }
 
-  it("retorna 200 con detalle del servicio (ruta pública, formula + materiales)", async () => {
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const res = await detailApp().get("/api/servicios/1");
+
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 403 cuando el rol no es Administrador ni Direccion", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await detailApp().get("/api/servicios/1");
+
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 200 con detalle del servicio (Administrador)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    const res = await detailApp().get("/api/servicios/1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.id_servicio).toBe(1);
+    expect(res.body.data.nombre_servicio).toBe("Corte Láser");
+  });
+
+  it("retorna 200 con detalle del servicio (Direccion)", async () => {
+    mockGetSession.mockResolvedValue({ id: 2, role: "Direccion" });
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    const res = await detailApp().get("/api/servicios/1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.id_servicio).toBe(1);
+  });
+
+  it("retorna 200 con detalle del servicio incluyendo formula y materiales", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockFindFirst.mockResolvedValue({
-      id_servicio: 1,
-      nombre_servicio: "Corte Láser",
+      ...SERVICIO_PARA_ADMIN_MOCK,
       formulas: [
         {
           id_formula: 1,
@@ -167,12 +229,13 @@ describe("GET /api/servicios/[id]", () => {
     const res = await detailApp().get("/api/servicios/1");
 
     expect(res.status).toBe(200);
-    expect(res.body.data.servicio.id_servicio).toBe(1);
-    expect(res.body.data.servicio.formulas).toHaveLength(1);
-    expect(res.body.data.servicio.servicioMateriales).toHaveLength(1);
+    expect(res.body.data.id_servicio).toBe(1);
+    expect(res.body.data.formulaActiva).not.toBeNull();
+    expect(res.body.data.materiales).toHaveLength(1);
   });
 
   it("retorna 404 cuando el servicio no existe", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockFindFirst.mockResolvedValue(null);
 
     const res = await detailApp().get("/api/servicios/999");
@@ -186,20 +249,21 @@ describe("GET /api/servicios/[id]", () => {
   // detail page renders a "Cotización en línea no disponible" fallback in
   // place of the variables form.
   it("returns 200 with empty formulas[] when servicio has no Activa formula", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockFindFirst.mockResolvedValue({
-      id_servicio: 1,
-      nombre_servicio: "Servicio Sin Fórmula",
+      ...SERVICIO_PARA_ADMIN_MOCK,
       formulas: [],
-      servicioMateriales: [],
     });
 
     const res = await detailApp().get("/api/servicios/1");
 
     expect(res.status).toBe(200);
-    expect(res.body.data.servicio.formulas).toEqual([]);
+    expect(res.body.data.formulaActiva).toBeNull();
   });
 
   it("retorna 422 cuando el id no es un número válido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
     const res = await detailApp().get("/api/servicios/abc");
 
     expect(res.status).toBe(422);
@@ -517,6 +581,127 @@ describe("POST /api/servicios", () => {
   });
 });
 
+describe("PUT /api/servicios/[id] — ADMIN-02 Modificar servicio", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/servicios/[id]/route");
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  function putApp() {
+    return createApp({ PUT: routes.PUT }, (url) => {
+      const segments = url.pathname.split("/");
+      return { id: segments[segments.length - 1] };
+    });
+  }
+
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const res = await putApp().put("/api/servicios/1").send({ nombre_servicio: "Nuevo" });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 403 cuando el rol no es Administrador ni Direccion", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await putApp().put("/api/servicios/1").send({ nombre_servicio: "Nuevo" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 422 cuando el body tiene datos inválidos (nombre_servicio vacío)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const res = await putApp().put("/api/servicios/1").send({ nombre_servicio: "" });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("nombre_servicio");
+  });
+
+  it("retorna 404 cuando el servicio no existe o está inactivo", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst.mockResolvedValue(null);
+
+    const res = await putApp().put("/api/servicios/999").send({ nombre_servicio: "Nuevo" });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toContain("no encontrado");
+  });
+
+  it("retorna 422 cuando el id no es un número válido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const res = await putApp().put("/api/servicios/abc").send({ nombre_servicio: "Nuevo" });
+
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 200 con el servicio actualizado (Administrador)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    mockTransaction.mockImplementation(async (callback) => {
+      const tx = {
+        servicios: { update: jest.fn().mockResolvedValue({ id_servicio: 1 }) },
+        servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+        servicioMaterial: { deleteMany: jest.fn(), createMany: jest.fn() },
+        formulas: {
+          findMany: jest.fn().mockResolvedValue([]),
+          updateMany: jest.fn(),
+          create: jest.fn().mockResolvedValue({ id_formula: 1 }),
+        },
+        formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
+        formulaConstantes: { createMany: jest.fn() },
+        sucursales: { findFirst: jest.fn().mockResolvedValue({ id_sucursal: 1 }) },
+        instaladores: { findFirst: jest.fn() },
+        proveedores: { findFirst: jest.fn() },
+        maquinas: { findMany: jest.fn().mockResolvedValue([]) },
+        materiales: { findMany: jest.fn().mockResolvedValue([]) },
+      };
+      return callback(tx);
+    });
+
+    const res = await putApp()
+      .put("/api/servicios/1")
+      .send({ nombre_servicio: "Corte Láser Actualizado", id_sucursal: 1 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.id_servicio).toBe(1);
+  });
+
+  it("retorna 422 cuando FK de sucursal no existe (ValidationError)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    mockTransaction.mockImplementation(async (callback) => {
+      const tx = {
+        servicios: { update: jest.fn() },
+        servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+        servicioMaterial: { deleteMany: jest.fn(), createMany: jest.fn() },
+        formulas: { findMany: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
+        formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
+        formulaConstantes: { createMany: jest.fn() },
+        sucursales: { findFirst: jest.fn().mockResolvedValue(null) },
+        instaladores: { findFirst: jest.fn() },
+        proveedores: { findFirst: jest.fn() },
+        maquinas: { findMany: jest.fn().mockResolvedValue([]) },
+        materiales: { findMany: jest.fn().mockResolvedValue([]) },
+      };
+      return callback(tx);
+    });
+
+    const res = await putApp().put("/api/servicios/1").send({ id_sucursal: 99 });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("Sucursal");
+  });
+});
+
 describe("DELETE /api/servicios/[id] — ADMIN-03 Eliminar servicio (soft delete)", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let routes: any;
@@ -625,12 +810,14 @@ describe("PUT /api/servicios/[id]", () => {
 
   it("retorna 200 y actualiza el servicio con imágenes serializadas", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
 
     const mockTx = {
       servicios: {
         update: jest.fn().mockResolvedValue({ id_servicio: 1, nombre_servicio: "Updated" }),
       },
       servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+      servicioMaterial: { deleteMany: jest.fn(), createMany: jest.fn() },
       formulas: {
         findMany: jest.fn().mockResolvedValue([]),
         updateMany: jest.fn(),

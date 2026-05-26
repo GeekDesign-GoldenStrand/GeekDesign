@@ -40,10 +40,6 @@ export function ViewServicios() {
 
   const activosCount = servicios.filter((s) => s.estatus_servicio).length;
 
-  const handleVerDetalle = (id: number) => {
-    console.warn("TODO: Ver detalle del servicio", id);
-  };
-
   const handleEliminar = (id: number) => {
     const servicio = servicios.find((s) => s.id_servicio === id);
     if (!servicio) return;
@@ -99,7 +95,6 @@ export function ViewServicios() {
             <ServicioCard
               key={servicio.id_servicio}
               servicio={servicio}
-              onVerDetalle={handleVerDetalle}
               onEliminar={handleEliminar}
             />
           ))}
