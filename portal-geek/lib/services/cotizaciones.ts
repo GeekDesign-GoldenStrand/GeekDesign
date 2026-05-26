@@ -139,6 +139,8 @@ export async function listCotizaciones(
     estatus?: string[];
     search?: string;
     includeFinished?: boolean;
+    fechaFinDesde?: string;
+    fechaFinHasta?: string;
   }
 ): Promise<{ items: CotizacionWithRelations[]; total: number }> {
   const skip = (page - 1) * pageSize;
@@ -163,6 +165,18 @@ export async function listCotizaciones(
     where.estatus = { descripcion: { in: filters.estatus } };
   }
 
+  if (filters?.fechaFinDesde || filters?.fechaFinHasta) {
+    const range: Prisma.DateTimeFilter = {};
+    if (filters.fechaFinDesde) range.gte = new Date(filters.fechaFinDesde);
+    if (filters.fechaFinHasta) {
+      // Include the entire "hasta" day by pinning to end-of-day.
+      const hasta = new Date(filters.fechaFinHasta);
+      hasta.setHours(23, 59, 59, 999);
+      range.lte = hasta;
+    }
+    where.fecha_fin = range;
+  }
+
   const orConditions: Prisma.CotizacionesWhereInput[] = [];
 
   if (filters?.empresa) {
@@ -174,28 +188,8 @@ export async function listCotizaciones(
 
   if (filters?.search) {
     orConditions.push(
-      {
-        cliente: {
-          nombre_cliente: {
-            contains: filters.search,
-            mode: "insensitive",
-          },
-        },
-      },
-      {
-        empresa_cliente: {
-          contains: filters.search,
-          mode: "insensitive",
-        },
-      },
-      {
-        estatus: {
-          descripcion: {
-            contains: filters.search,
-            mode: "insensitive",
-          },
-        },
-      }
+      { folio: { contains: filters.search, mode: "insensitive" } },
+      { nombre_oportunidad: { contains: filters.search, mode: "insensitive" } }
     );
   }
 
