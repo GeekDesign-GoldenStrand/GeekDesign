@@ -12,6 +12,7 @@ import {
   EditarProveedorModal,
   TercerosGrid,
 } from "@/components/ui/terceros";
+import { PaginacionNumerada } from "@/components/ui/terceros/molecules/PaginacionNumerada";
 import type { InstaladorFormData } from "@/components/ui/terceros/organisms/EditarInstaladorModal";
 import type { ProveedorFormData } from "@/components/ui/terceros/organisms/EditarProveedorModal";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
@@ -31,6 +32,7 @@ type DbInstalador = {
   telefono: string;
   notas: string | null;
   costo_instalacion: string;
+  color: string | null;
 };
 
 type DbProveedor = {
@@ -43,6 +45,7 @@ type DbProveedor = {
   correo: string | null;
   telefono: string | null;
   descripcion_proveedor: string | null;
+  color: string | null;
 };
 
 function mapInstalador(item: DbInstalador): TerceroRow {
@@ -82,7 +85,10 @@ export function TercerosView() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("Todos");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const PAGE_SIZE = 12;
 
   // PROV-02 – edit
   const [editingProveedorId, setEditingProveedorId] = useState<number | null>(null);
@@ -137,6 +143,11 @@ export function TercerosView() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Reset to the first page whenever the visible set changes.
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, search]);
+
   async function handleStatusChange(
     id: number,
     newStatus: TerceroStatus,
@@ -184,6 +195,7 @@ export function TercerosView() {
         ubicacion: d.ubicacion ?? "",
         descripcion_proveedor: d.descripcion_proveedor ?? "",
         estatus: d.estatus,
+        color: d.color ?? "",
       });
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
@@ -214,7 +226,7 @@ export function TercerosView() {
             ? {
                 ...r,
                 companyName: updated.nombre_proveedor,
-                contactName: updated.nombre_proveedor,
+                contactName: updated.apodo ?? updated.nombre_proveedor,
                 location: updated.ubicacion ?? "",
                 email: updated.correo ?? "",
                 phone: updated.telefono ?? "",
@@ -285,6 +297,7 @@ export function TercerosView() {
         notas: d.notas ?? "",
         estatus: d.estatus,
         costo_instalacion: d.costo_instalacion,
+        color: d.color ?? "",
       });
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
@@ -392,6 +405,11 @@ export function TercerosView() {
       }),
     }));
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp in case the current page fell out of range (e.g. after a deletion).
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const initialModalType = activeTab === "Instaladores" ? "Instalador" : "Proveedor";
 
   return (
@@ -411,7 +429,10 @@ export function TercerosView() {
         ) : loadError ? (
           <p className="text-[#e42200] text-[14px]">{loadError}</p>
         ) : (
-          <TercerosGrid items={filtered} />
+          <>
+            <TercerosGrid items={paginated} />
+            <PaginacionNumerada page={safePage} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </main>
 
