@@ -151,6 +151,40 @@ describe("PUT /api/proveedores/[id] — PROV-02 Modificar proveedor", () => {
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("tipo");
   });
+
+  it("acepta un color hexadecimal válido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockUpdate.mockResolvedValue({ ...BASE_PROVEEDOR, color: "#8B5CF6" });
+
+    const res = await makeApp("PUT", { PUT: routes.PUT })
+      .put("/api/proveedores/1")
+      .send({ color: "#8B5CF6" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.color).toBe("#8B5CF6");
+  });
+
+  it("retorna 422 cuando color es una cadena vacía", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await makeApp("PUT", { PUT: routes.PUT })
+      .put("/api/proveedores/1")
+      .send({ color: "" });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("color");
+  });
+
+  it("retorna 422 cuando color excede 50 caracteres", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await makeApp("PUT", { PUT: routes.PUT })
+      .put("/api/proveedores/1")
+      .send({ color: "#" + "A".repeat(50) });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("color");
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

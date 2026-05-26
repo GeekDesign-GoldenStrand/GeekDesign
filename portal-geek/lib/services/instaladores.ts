@@ -39,6 +39,7 @@ export async function createInstalador(data: CreateInstaladorInput): Promise<Ins
       notas: data.notas || null,
       ubicacion: data.ubicacion || null,
       estatus: data.estatus,
+      color: data.color,
     },
   });
 }
