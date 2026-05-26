@@ -19,6 +19,7 @@ import React from "react";
 import { WorkOrderTemplate } from "@/components/pdf/templates/WorkOrderTemplate";
 import { prisma } from "@/lib/db/client";
 import { readSessionCotizacionId, SESSION_COOKIE_NAME } from "@/lib/services/cotizacion-access";
+import { buildWorkOrderContext } from "@/lib/services/cotizacion-pdf";
 import { apiError } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
@@ -67,40 +68,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Params> }) {
       return apiError("El PDF está disponible una vez que la cotización es Aprobada", 409);
     }
 
-    // Map Prisma payload → WorkOrderTemplate context. The template tolerates
-    // missing optional fields, but its specs need at least servicio + material.
-    const context = {
-      quotation: {
-        id_cotizacion: quote.id_cotizacion,
-        folio: quote.folio,
-        monto_total: Number(quote.monto_total),
-        fecha_creacion: quote.fecha_creacion,
-        fecha_validacion: quote.fecha_validacion,
-        fecha_aprobacion: quote.fecha_aprobacion,
-      },
-      client: {
-        nombre_cliente: quote.cliente.nombre_cliente,
-        empresa: quote.cliente.empresa,
-        correo_electronico: quote.cliente.correo_electronico,
-        numero_telefono: quote.cliente.numero_telefono,
-      },
-      specs: (quote.pedido?.detalles ?? []).map((d) => ({
-        servicio: d.servicio ? { nombre_servicio: d.servicio.nombre_servicio } : null,
-        material: d.material ? { nombre_material: d.material.nombre_material } : null,
-        archivo: d.archivo ? { url_archivo: d.archivo.url_archivo } : null,
-        notas: d.notas,
-        cantidad: d.cantidad,
-        precio_unitario: Number(d.precio_unitario),
-        subtotal: Number(d.subtotal),
-      })),
-      branch: {
-        nombre_sucursal: quote.pedido?.sucursal?.nombre_sucursal ?? "Geek Design",
-        direccion:
-          quote.pedido?.sucursal?.direccion ??
-          "Av. Mediterráneo 236 B Fracc. Pirámides, Villa Corregidora, Querétaro",
-      },
-    };
-
+    const context = buildWorkOrderContext(quote);
     const buffer = await renderToBuffer(<WorkOrderTemplate context={context} />);
 
     // Sanitize the filename: the folio is server-generated today (GD-YYYY-NNNNN)

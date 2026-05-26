@@ -373,7 +373,7 @@ export function QuotationDetailView({ quotation }: Props) {
           {/* ST-19: download approved cotización as PDF. */}
           {quotation.estatus === "Aprobada" && quotation.folio && (
             <a
-              href={`/api/storefront/cotizaciones/${quotation.folio}/pdf`}
+              href={`/api/storefront/cotizaciones/${encodeURIComponent(quotation.folio)}/pdf`}
               download={`${quotation.folio}.pdf`}
               className="h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center gap-2 bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
             >
@@ -792,7 +792,7 @@ export function QuotationDetailView({ quotation }: Props) {
               {/* ST-19: download approved cotización as PDF. */}
               {quotation.estatus === "Aprobada" && quotation.folio && (
                 <a
-                  href={`/api/storefront/cotizaciones/${quotation.folio}/pdf`}
+                  href={`/api/storefront/cotizaciones/${encodeURIComponent(quotation.folio)}/pdf`}
                   download={`${quotation.folio}.pdf`}
                   className="w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all flex items-center justify-center gap-2 bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
                 >
