@@ -13,8 +13,9 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(
-  ["Administrador", "Direccion"],
+export const GET = withSectionParams<Params>(
+  "servicios",
+  "read",
   async (_req: NextRequest, ctx, _session) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
@@ -43,7 +44,7 @@ export const PUT = withSectionParams<Params>(
 export const DELETE = withSectionParams<Params>(
   "servicios",
   "write",
-  async (req: NextRequest, ctx) => {
+  async (_req: NextRequest, ctx) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
       await deleteServicio(id);

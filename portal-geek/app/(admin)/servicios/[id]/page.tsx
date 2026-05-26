@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { ADMIN_ROLES } from "@/lib/auth/guards";
+import { can } from "@/lib/auth/access";
+import type { Role } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
 import { getServicioParaAdmin, toServicioAdminDetalle } from "@/lib/services/servicios";
 import { NotFoundError } from "@/lib/utils/errors";
@@ -27,7 +28,7 @@ async function fetchServicio(id: number): Promise<ServicioAdminDetalle | null> {
 
 export default async function DetalleServicioPage({ params }: Props) {
   const session = await getSession();
-  if (!session || !ADMIN_ROLES.includes(session.role)) redirect("/login");
+  if (!session || !can(session.role as Role, "servicios", "read")) redirect("/login");
 
   const { id } = await params;
   const idNum = parseInt(id, 10);
