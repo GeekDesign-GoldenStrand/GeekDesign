@@ -11,6 +11,7 @@ import {
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import PedidoDetailModal from "@/components/admin/organisms/PedidoDetailModal";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
+import type { UserRole } from "@/types";
 
 // Frontend type for an order
 type Pedido = {
@@ -74,6 +75,7 @@ type Props = {
   backButtonHref?: string;
   backButtonLabel?: string;
   showServiceTabs?: boolean;
+  role?: UserRole;
 };
 
 export function PedidosTemplate({
@@ -105,6 +107,7 @@ export function PedidosTemplate({
   backButtonHref,
   backButtonLabel,
   showServiceTabs = true,
+  role,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -404,6 +407,7 @@ export function PedidosTemplate({
           pedidoId={detailId}
           selectedServiceId={selectedServiceId}
           onClose={() => setDetailId(null)}
+          role={role}
         />
       )}
     </>
