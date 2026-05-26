@@ -4,7 +4,7 @@
 //
 // Response shape:
 //   200 application/pdf   — Content-Disposition: attachment; filename="<folio>.pdf"
-//   302 /tienda/cotizacion?estado=acceso-requerido
+//   307 /tienda/cotizacion?estado=acceso-requerido
 //                         — no session, wrong session, or folio doesn't exist
 //                           (single anti-enumeration branch)
 //   409                   — cotización exists for this session but is not yet Aprobada
@@ -103,11 +103,20 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Params> }) {
 
     const buffer = await renderToBuffer(<WorkOrderTemplate context={context} />);
 
+    // Sanitize the filename: the folio is server-generated today (GD-YYYY-NNNNN)
+    // and can't contain quotes or CR/LF, but the DB column has no format
+    // constraint. Whitelist [A-Za-z0-9._-] so a future folio shape change
+    // can't inject header bytes (CWE-93).
+    const safeName = (quote.folio ?? `cotizacion-${quote.id_cotizacion}`).replace(
+      /[^A-Za-z0-9._-]/g,
+      "_"
+    );
+
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${quote.folio}.pdf"`,
+        "Content-Disposition": `attachment; filename="${safeName}.pdf"`,
       },
     });
   } catch (err) {
