@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
+import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
 import type {
   InstaladorOption,
@@ -48,6 +49,12 @@ export function useServicioForm({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Snapshot of the images that were already persisted on the servicio when the
+  // form mounted. Used by the submit-failure cleanup to delete only the keys
+  // uploaded *during this session*, leaving server-owned keys untouched. On
+  // create this is [], so the diff equals "everything uploaded this session".
+  const initialImagenes = useRef<string[]>(initialData?.imagenes ?? []);
 
   const sucursales = useFetch<{ data: SucursalOption[] }>("/api/sucursales?mode=options");
   const instaladores = useFetch<{ data: InstaladorOption[] }>("/api/instaladores?mode=options");
@@ -133,6 +140,7 @@ export function useServicioForm({
           descripcion_servicio: form.descripcion_servicio || undefined,
           id_sucursal: form.id_sucursal,
           estatus_servicio: true,
+          imagenes: form.imagenes,
           id_maquinas: form.id_maquinas,
           id_instalador: form.id_instalador,
           costo_instalador_override: form.costo_instalador_override,
@@ -152,6 +160,16 @@ export function useServicioForm({
 
       setSubmitSuccess(true);
     } catch (err) {
+      // Drop only the keys uploaded in this session (form.imagenes minus the
+      // initial snapshot). Server-owned images stay intact on edit; on create
+      // the snapshot is [] so the diff is "everything uploaded this session".
+      if (form.imagenes.length > 0) {
+        const sessionKeys = form.imagenes.filter((key) => !initialImagenes.current.includes(key));
+        sessionKeys.forEach((key) => {
+          void deleteFile(key).catch(() => {});
+        });
+        setForm((prev) => ({ ...prev, imagenes: initialImagenes.current }));
+      }
       setSubmitError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setSubmitting(false);
@@ -203,6 +221,7 @@ export function useServicioForm({
       updateMaterialProveedor,
       handleSubmit,
       setForm,
+      setSubmitError,
       onCancel: onCancel ?? defaultCancel,
       onSuccessRedirect: onSuccess ?? defaultSuccessRedirect,
     },
