@@ -39,7 +39,7 @@ export const CreateMaterialSchema = z.object({
   ancho: dimensionValidator("El ancho"),
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
-  color: z.string().min(1, "El color es requerido.").max(50, "Máximo 50 caracteres."),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
   imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
 });
 
@@ -73,7 +73,7 @@ export const CreateSubMaterialSchema = z.object({
   ancho: dimensionValidator("El ancho"),
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
-  color: z.string().min(1, "El color es requerido.").max(50, "Máximo 50 caracteres."),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
   imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
 });
 

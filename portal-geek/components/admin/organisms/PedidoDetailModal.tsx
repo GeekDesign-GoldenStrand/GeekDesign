@@ -468,7 +468,7 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
                             onClick={() =>
                               downloadBase64Pdf(
                                 orden.pdf_base64,
-                                `OC-${pedidoId}-${orden.nombre.replace(/\s+/g, "-")}.pdf`
+                                `OC-${pedidoId}-${orden.nombre.replace(/[^A-Za-z0-9._-]/g, "_")}.pdf`
                               )
                             }
                             title={`Descargar OC de ${orden.nombre}`}

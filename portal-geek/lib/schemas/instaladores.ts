@@ -23,7 +23,7 @@ export const CreateInstaladorSchema = z.object({
   notas: z.string().max(500).optional(),
   ubicacion: z.string().max(255).optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
-  color: z.string().min(1, "El color es requerido.").max(50),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
 });
 
 export const UpdateInstaladorSchema = CreateInstaladorSchema.partial();
