@@ -23,6 +23,7 @@ export const CreateInstaladorSchema = z.object({
   notas: z.string().max(500).optional(),
   ubicacion: z.string().max(255).optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
+  color: z.string().min(1, "El color es requerido.").max(50),
 });
 
 export const UpdateInstaladorSchema = CreateInstaladorSchema.partial();
