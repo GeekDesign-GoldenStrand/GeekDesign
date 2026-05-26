@@ -95,7 +95,7 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
     const res = await GET(req);
 
     expect(res.status).toBe(200);
-    expect(listPedidos).toHaveBeenCalledWith(1, 10, [1], [], false, null, null, null);
+    expect(listPedidos).toHaveBeenCalledWith(1, 10, [1], [], false, null, null, null, null, null);
   });
 
   it("allows Colaborador to filter pedidos by serviceId", async () => {
@@ -106,7 +106,7 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
     const res = await GET(req);
 
     expect(res.status).toBe(200);
-    expect(listPedidos).toHaveBeenCalledWith(1, 10, [1], [], false, null, null, null);
+    expect(listPedidos).toHaveBeenCalledWith(1, 10, [1], [], false, null, null, null, null, null);
   });
 
   it("supports multiple serviceId filters", async () => {
@@ -117,7 +117,18 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
     const res = await GET(req);
 
     expect(res.status).toBe(200);
-    expect(listPedidos).toHaveBeenCalledWith(1, 10, [1, 2], [], false, null, null, null);
+    expect(listPedidos).toHaveBeenCalledWith(
+      1,
+      10,
+      [1, 2],
+      [],
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    );
   });
 
   it("returns 422 when serviceId is not a number", async () => {
