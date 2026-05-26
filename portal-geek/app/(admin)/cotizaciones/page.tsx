@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { CotizacionesTemplate } from "@/components/admin/templates/CotizacionesTemplate";
+import { useClientes } from "@/lib/hooks/useClientes";
 
 // Frontend type for a quotation entry
 type Cotizacion = {
@@ -38,8 +39,6 @@ type CotizacionApi = {
   } | null;
 };
 
-type ClienteApi = { id_cliente: number; nombre_cliente: string };
-
 export default function CotizacionesPage() {
   // Local state for quotations list and pagination/search controls
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
@@ -57,25 +56,23 @@ export default function CotizacionesPage() {
   const [filterFechaFinHasta, setFilterFechaFinHasta] = useState("");
 
   // Clients catalog used by the filter sidebar dropdown
-  const [clientes, setClientes] = useState<{ id: number; nombre: string }[]>([]);
+  const clientes = useClientes();
 
-  // Load clients once on mount for the filter dropdown
+  // Reset to page 1 whenever a filter or the search query changes — without
+  // this, applying a narrower filter while on page N can land the user on an
+  // empty page. Page itself is intentionally excluded from the deps so
+  // pagination clicks don't loop back to page 1.
   useEffect(() => {
-    async function loadClientes() {
-      try {
-        const res = await fetch(`/api/clientes?page=1&pageSize=100`);
-        const json = await res.json();
-        const mapped = (json.data ?? []).map((c: ClienteApi) => ({
-          id: c.id_cliente,
-          nombre: c.nombre_cliente,
-        }));
-        setClientes(mapped);
-      } catch {
-        console.error("Error loading clients");
-      }
-    }
-    loadClientes();
-  }, []);
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    search,
+    filterCliente,
+    filterEmpresa,
+    filterEstatus,
+    filterFechaFinDesde,
+    filterFechaFinHasta,
+  ]);
 
   // Fetch quotations from API with filters and pagination
   const fetchCotizaciones = useCallback(async () => {

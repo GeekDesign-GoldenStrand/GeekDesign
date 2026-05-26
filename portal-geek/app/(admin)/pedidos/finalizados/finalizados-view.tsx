@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
+import { useClientes } from "@/lib/hooks/useClientes";
 import type { UserRole } from "@/types";
 
 const FINAL_PEDIDO_STATUSES = ["Entregado", "Cancelado"];
@@ -89,8 +90,6 @@ interface Props {
   role: UserRole;
 }
 
-type ClienteApi = { id_cliente: number; nombre_cliente: string };
-
 export function FinalizadosView({ role }: Props) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [search, setSearch] = useState("");
@@ -103,26 +102,16 @@ export function FinalizadosView({ role }: Props) {
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
-  const [clientes, setClientes] = useState<{ id: number; nombre: string }[]>([]);
+  const clientes = useClientes();
 
   const pageSize = 10;
 
+  // Reset to page 1 whenever a filter or the search query changes — see the
+  // matching effect in cotizaciones/page.tsx for the rationale.
   useEffect(() => {
-    async function loadClientes() {
-      try {
-        const res = await fetch(`/api/clientes?page=1&pageSize=100`);
-        const json = await res.json();
-        const mapped = (json.data ?? []).map((c: ClienteApi) => ({
-          id: c.id_cliente,
-          nombre: c.nombre_cliente,
-        }));
-        setClientes(mapped);
-      } catch {
-        console.error("Error loading clients");
-      }
-    }
-    loadClientes();
-  }, []);
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, serviceIds, empresa, cliente, fechaEstimadaDesde, fechaEstimadaHasta]);
 
   const fetchPedidos = useCallback(async () => {
     try {

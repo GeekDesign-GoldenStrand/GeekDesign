@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
+import { useClientes } from "@/lib/hooks/useClientes";
 import type { UserRole } from "@/types";
 
 interface PedidoDetalle {
@@ -89,8 +90,6 @@ interface Props {
   role: UserRole;
 }
 
-type ClienteApi = { id_cliente: number; nombre_cliente: string };
-
 export function PedidosView({ role }: Props) {
   // Local state for orders list and pagination/search controls
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -108,25 +107,14 @@ export function PedidosView({ role }: Props) {
   const pageSize = 10;
 
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
-  const [clientes, setClientes] = useState<{ id: number; nombre: string }[]>([]);
+  const clientes = useClientes();
 
-  // Load clients once on mount for the filter dropdown
+  // Reset to page 1 whenever a filter or the search query changes — see the
+  // matching effect in cotizaciones/page.tsx for the rationale.
   useEffect(() => {
-    async function loadClientes() {
-      try {
-        const res = await fetch(`/api/clientes?page=1&pageSize=100`);
-        const json = await res.json();
-        const mapped = (json.data ?? []).map((c: ClienteApi) => ({
-          id: c.id_cliente,
-          nombre: c.nombre_cliente,
-        }));
-        setClientes(mapped);
-      } catch {
-        console.error("Error loading clients");
-      }
-    }
-    loadClientes();
-  }, []);
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, serviceIds, empresa, cliente, fechaEstimadaDesde, fechaEstimadaHasta]);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
