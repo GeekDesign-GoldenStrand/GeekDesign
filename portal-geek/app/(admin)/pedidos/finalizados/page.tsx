@@ -27,6 +27,7 @@ interface Pedido {
   fecha_estimada?: string | null;
   monto_total?: number | null;
   folio?: string | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -50,6 +51,7 @@ interface PedidoApi {
   id_pedido: number;
   fecha_creacion: string;
   fecha_estimada?: string | null;
+  nombre_oportunidad?: string | null;
 
   cotizaciones?: {
     folio?: string | null;
@@ -82,6 +84,8 @@ interface PedidoApi {
   serviceStatusSummary?: ServiceStatusSummary;
 }
 
+type ClienteApi = { id_cliente: number; nombre_cliente: string };
+
 export default function PedidosFinalizadosPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [search, setSearch] = useState("");
@@ -89,12 +93,31 @@ export default function PedidosFinalizadosPage() {
   const [total, setTotal] = useState(0);
 
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [estatuses, setEstatuses] = useState<string[]>(FINAL_PEDIDO_STATUSES);
   const [empresa, setEmpresa] = useState<string | null>(null);
   const [cliente, setCliente] = useState<string | null>(null);
+  const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
+  const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
+  const [clientes, setClientes] = useState<{ id: number; nombre: string }[]>([]);
 
   const pageSize = 10;
+
+  useEffect(() => {
+    async function loadClientes() {
+      try {
+        const res = await fetch(`/api/clientes?page=1&pageSize=100`);
+        const json = await res.json();
+        const mapped = (json.data ?? []).map((c: ClienteApi) => ({
+          id: c.id_cliente,
+          nombre: c.nombre_cliente,
+        }));
+        setClientes(mapped);
+      } catch {
+        console.error("Error loading clients");
+      }
+    }
+    loadClientes();
+  }, []);
 
   const fetchPedidos = useCallback(async () => {
     try {
@@ -113,6 +136,8 @@ export default function PedidosFinalizadosPage() {
 
       if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
+      if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
+      if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
@@ -122,6 +147,7 @@ export default function PedidosFinalizadosPage() {
         fecha_creacion: p.fecha_creacion,
         fecha_estimada: p.fecha_estimada ?? null,
         folio: p.cotizaciones?.[0]?.folio ?? null,
+        nombre_oportunidad: p.nombre_oportunidad ?? null,
         monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
         cliente: p.cliente,
         estatus: p.estatus,
@@ -143,7 +169,7 @@ export default function PedidosFinalizadosPage() {
     } catch {
       console.error("Error loading finalized orders");
     }
-  }, [page, search, serviceIds, empresa, cliente]);
+  }, [page, search, serviceIds, empresa, cliente, fechaEstimadaDesde, fechaEstimadaHasta]);
 
   useEffect(() => {
     fetchPedidos();
@@ -196,16 +222,15 @@ export default function PedidosFinalizadosPage() {
       total={total}
       onDelete={() => {}}
       onStatusChange={() => {}}
-      onlyActive={false}
-      setOnlyActive={() => {}}
-      serviceIds={serviceIds}
-      setServiceIds={setServiceIds}
-      estatuses={estatuses}
-      setEstatuses={setEstatuses}
+      clientes={clientes}
       empresa={empresa}
       setEmpresa={setEmpresa}
       cliente={cliente}
       setCliente={setCliente}
+      fechaEstimadaDesde={fechaEstimadaDesde}
+      setFechaEstimadaDesde={setFechaEstimadaDesde}
+      fechaEstimadaHasta={fechaEstimadaHasta}
+      setFechaEstimadaHasta={setFechaEstimadaHasta}
       services={services}
       selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
       onServiceSelect={handleServiceSelect}

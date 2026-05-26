@@ -94,7 +94,9 @@ export async function listPedidos(
   onlyActive?: boolean,
   empresa?: string | null,
   cliente?: string | null,
-  search?: string | null
+  search?: string | null,
+  fechaEstimadaDesde?: string | null,
+  fechaEstimadaHasta?: string | null
 ): Promise<{ items: PedidoListItem[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
@@ -133,32 +135,21 @@ export async function listPedidos(
     }
   }
 
+  if (fechaEstimadaDesde || fechaEstimadaHasta) {
+    const range: Prisma.DateTimeFilter = {};
+    if (fechaEstimadaDesde) range.gte = new Date(fechaEstimadaDesde);
+    if (fechaEstimadaHasta) {
+      const hasta = new Date(fechaEstimadaHasta);
+      hasta.setHours(23, 59, 59, 999);
+      range.lte = hasta;
+    }
+    where.fecha_estimada = range;
+  }
+
   if (search) {
     where.OR = [
-      {
-        cliente: {
-          nombre_cliente: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      },
-      {
-        cliente: {
-          empresa: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      },
-      {
-        estatus: {
-          descripcion: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      },
+      { nombre_oportunidad: { contains: search, mode: "insensitive" } },
+      { cotizaciones: { some: { folio: { contains: search, mode: "insensitive" } } } },
     ];
   }
 
