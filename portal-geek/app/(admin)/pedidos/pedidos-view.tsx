@@ -27,6 +27,7 @@ interface Pedido {
   fecha_estimada?: string | null;
   monto_total?: number | null;
   folio?: string | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -51,6 +52,7 @@ interface PedidoApi {
   id_pedido: number;
   fecha_creacion: string;
   fecha_estimada?: string | null;
+  nombre_oportunidad?: string | null;
 
   cotizaciones?: {
     folio?: string | null;
@@ -87,6 +89,8 @@ interface Props {
   role: UserRole;
 }
 
+type ClienteApi = { id_cliente: number; nombre_cliente: string };
+
 export function PedidosView({ role }: Props) {
   // Local state for orders list and pagination/search controls
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -94,16 +98,35 @@ export function PedidosView({ role }: Props) {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filter states (active flag, service IDs, statuses, company, client)
-  const [onlyActive, setOnlyActive] = useState(true);
+  // Filter states (service IDs from tabs, company, client, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [estatuses, setEstatuses] = useState<string[]>([]);
   const [empresa, setEmpresa] = useState<string | null>(null);
   const [cliente, setCliente] = useState<string | null>(null);
+  const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
+  const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
 
   const pageSize = 10;
 
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
+  const [clientes, setClientes] = useState<{ id: number; nombre: string }[]>([]);
+
+  // Load clients once on mount for the filter dropdown
+  useEffect(() => {
+    async function loadClientes() {
+      try {
+        const res = await fetch(`/api/clientes?page=1&pageSize=100`);
+        const json = await res.json();
+        const mapped = (json.data ?? []).map((c: ClienteApi) => ({
+          id: c.id_cliente,
+          nombre: c.nombre_cliente,
+        }));
+        setClientes(mapped);
+      } catch {
+        console.error("Error loading clients");
+      }
+    }
+    loadClientes();
+  }, []);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
@@ -112,15 +135,16 @@ export function PedidosView({ role }: Props) {
 
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
-      params.set("onlyActive", onlyActive ? "true" : "false");
+      params.set("onlyActive", "true");
 
       if (search) params.set("search", search);
 
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
-      estatuses.forEach((e) => params.append("estatus", e));
 
       if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
+      if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
+      if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
@@ -131,6 +155,7 @@ export function PedidosView({ role }: Props) {
         fecha_creacion: p.fecha_creacion,
         fecha_estimada: p.fecha_estimada ?? null,
         folio: p.cotizaciones?.[0]?.folio ?? null,
+        nombre_oportunidad: p.nombre_oportunidad ?? null,
         // Take latest quotation amount if it exists
         monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
         cliente: p.cliente,
@@ -153,7 +178,7 @@ export function PedidosView({ role }: Props) {
     } catch {
       console.error("Error loading orders");
     }
-  }, [page, search, onlyActive, serviceIds, estatuses, empresa, cliente]);
+  }, [page, search, serviceIds, empresa, cliente, fechaEstimadaDesde, fechaEstimadaHasta]);
 
   // Effect: reload orders whenever filters or pagination change
   useEffect(() => {
@@ -230,16 +255,15 @@ export function PedidosView({ role }: Props) {
       total={total}
       onDelete={handleDelete}
       onStatusChange={handleStatusChange}
-      onlyActive={onlyActive}
-      setOnlyActive={setOnlyActive}
-      serviceIds={serviceIds}
-      setServiceIds={setServiceIds}
-      estatuses={estatuses}
-      setEstatuses={setEstatuses}
+      clientes={clientes}
       empresa={empresa}
       setEmpresa={setEmpresa}
       cliente={cliente}
       setCliente={setCliente}
+      fechaEstimadaDesde={fechaEstimadaDesde}
+      setFechaEstimadaDesde={setFechaEstimadaDesde}
+      fechaEstimadaHasta={fechaEstimadaHasta}
+      setFechaEstimadaHasta={setFechaEstimadaHasta}
       services={services}
       selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
       onServiceSelect={handleServiceSelect}
