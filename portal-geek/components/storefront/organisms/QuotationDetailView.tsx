@@ -7,6 +7,7 @@ import {
   WarningCircle,
   Clock,
   SpinnerGap,
+  DownloadSimple,
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -368,6 +369,17 @@ export function QuotationDetailView({ quotation }: Props) {
                 bannerConfig.buttonText
               )}
             </button>
+          )}
+          {/* ST-19: download approved cotización as PDF. */}
+          {quotation.estatus === "Aprobada" && quotation.folio && (
+            <a
+              href={`/api/storefront/cotizaciones/${quotation.folio}/pdf`}
+              download={`${quotation.folio}.pdf`}
+              className="h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center gap-2 bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
+            >
+              <DownloadSimple size={20} weight="bold" />
+              Descargar PDF
+            </a>
           )}
         </div>
       </div>
@@ -775,6 +787,18 @@ export function QuotationDetailView({ quotation }: Props) {
                     bannerConfig.buttonText
                   )}
                 </button>
+              )}
+
+              {/* ST-19: download approved cotización as PDF. */}
+              {quotation.estatus === "Aprobada" && quotation.folio && (
+                <a
+                  href={`/api/storefront/cotizaciones/${quotation.folio}/pdf`}
+                  download={`${quotation.folio}.pdf`}
+                  className="w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all flex items-center justify-center gap-2 bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
+                >
+                  <DownloadSimple size={20} weight="bold" />
+                  Descargar PDF de mi cotización
+                </a>
               )}
 
               {isActionable && (
