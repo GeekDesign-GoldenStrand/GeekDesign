@@ -121,5 +121,6 @@ export function mapServicioDetalladoToFormState(
     formulaChunks,
     variables,
     constantes,
+    imagenes: [],
   };
 }

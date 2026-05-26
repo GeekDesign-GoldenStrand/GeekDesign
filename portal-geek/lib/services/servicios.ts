@@ -311,7 +311,7 @@ export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
 ): Promise<ServicioSimple> {
-  const { id_maquinas, formula, materiales, ...servicioData } = data;
+  const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
     // 1. Resolve the "Activo" EstatusServicio — frontend does not send id_estatus.
@@ -319,9 +319,12 @@ export async function createServicio(
       where: { descripcion: "Activo" },
     });
 
+    const imagen_url = imagenes && imagenes.length > 0 ? JSON.stringify(imagenes) : null;
+
     const servicio = await tx.servicios.create({
       data: {
         ...servicioData,
+        imagen_url,
         id_estatus: estatusActivo.id_estatus_servicio,
       } as Prisma.ServiciosUncheckedCreateInput,
     });
@@ -444,12 +447,16 @@ export async function updateServicio(
   });
   if (!existing) throw new NotFoundError(`Servicio con id ${id} no encontrado`);
 
-  const { id_maquinas, formula, materiales, ...servicioData } = data;
+  const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
 
   await prisma.$transaction(async (tx) => {
     await validateServicioFKs(tx, data);
 
-    await tx.servicios.update({ where: { id_servicio: id }, data: servicioData });
+    const updateData: Prisma.ServiciosUpdateInput = { ...servicioData };
+    if (imagenes !== undefined) {
+      updateData.imagen_url = imagenes && imagenes.length > 0 ? JSON.stringify(imagenes) : null;
+    }
+    await tx.servicios.update({ where: { id_servicio: id }, data: updateData });
 
     if (id_maquinas !== undefined) {
       await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });

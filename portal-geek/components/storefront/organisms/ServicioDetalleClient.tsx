@@ -16,6 +16,7 @@ interface Props {
   materiales: Material[];
   variables: Variable[];
   puedeCotizarEnLinea: boolean;
+  imagenUrls?: string[];
 }
 
 export function ServicioDetalleClient({
@@ -26,27 +27,50 @@ export function ServicioDetalleClient({
   materiales,
   variables,
   puedeCotizarEnLinea,
+  imagenUrls = [],
 }: Props) {
   const [disenioFile, setDisenioFile] = useState<UploadedFile | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(imagenUrls[0] || null);
+  const urlsKey = imagenUrls.join("|");
+  const [prevKey, setPrevKey] = useState(urlsKey);
+
+  if (urlsKey !== prevKey) {
+    setPrevKey(urlsKey);
+    setSelectedImage(imagenUrls[0] || null);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px]">
       {/* ── Izquierda: galería + upload ── */}
       <div className="flex flex-col gap-[16px]">
-        <div className="bg-[#ffd9e2] rounded-[14px] aspect-square flex items-center justify-center">
-          <span className="font-medium text-[16px] text-[#1e1e1e]">
-            Imagen principal del producto
-          </span>
+        <div className="bg-[#ffd9e2] rounded-[14px] aspect-square overflow-hidden flex items-center justify-center border border-gray-200">
+          {selectedImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selectedImage} alt={nombreServicio} className="w-full h-full object-cover" />
+          ) : (
+            <span className="font-medium text-[16px] text-[#1e1e1e]">
+              Imagen principal del producto
+            </span>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-[12px]">
-          {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="bg-[#ffd9e2] rounded-[10px] aspect-square flex items-center justify-center"
-            />
-          ))}
-        </div>
+        {imagenUrls.length > 1 && (
+          <div className="grid grid-cols-4 gap-[12px]">
+            {imagenUrls.map((url, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setSelectedImage(url)}
+                className={`bg-white rounded-[10px] aspect-square overflow-hidden border-2 transition-all hover:scale-105 active:scale-95 ${
+                  selectedImage === url ? "border-[#df2646]" : "border-gray-200"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
 
         <DesignUploadZone
           maxFiles={1}

@@ -11,6 +11,7 @@ import {
   getServicioParaAdmin,
   deleteServicio,
   updateServicio,
+  createServicio,
 } from "@/lib/services/servicios";
 import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
@@ -539,5 +540,101 @@ describe("updateServicio", () => {
     await updateServicio(1, { id_instalador: null }, 1);
 
     expect(mockTx.instaladores.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("serializa el arreglo de imagenes como JSON string en imagen_url al actualizar", async () => {
+    await updateServicio(
+      1,
+      {
+        nombre_servicio: "Corte Láser Modificado",
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
+      },
+      1
+    );
+
+    expect(mockTx.servicios.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
+        }),
+      })
+    );
+  });
+});
+
+describe("createServicio", () => {
+  const mockTx = {
+    estatusServicio: { findFirstOrThrow: jest.fn() },
+    servicios: { create: jest.fn() },
+    servicioMaquina: { createMany: jest.fn() },
+    servicioMaterial: { createMany: jest.fn() },
+    formulas: { create: jest.fn() },
+    formulaVariables: { createMany: jest.fn() },
+    formulaConstantes: { createMany: jest.fn() },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTransaction.mockImplementation(async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+      callback(mockTx)
+    );
+    mockTx.estatusServicio.findFirstOrThrow.mockResolvedValue({ id_estatus_servicio: 1 });
+    mockTx.servicios.create.mockResolvedValue({ id_servicio: 10, nombre_servicio: "Test" });
+  });
+
+  it("serializa el arreglo de imagenes como JSON string en imagen_url al crear", async () => {
+    await createServicio(
+      {
+        nombre_servicio: "Nuevo Servicio",
+        id_sucursal: 1,
+        estatus_servicio: true,
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
+        id_maquinas: [],
+        materiales: [],
+      },
+      1
+    );
+
+    expect(mockTx.servicios.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
+        }),
+      })
+    );
+  });
+
+  it("asigna imagen_url como null si no hay imagenes", async () => {
+    await createServicio(
+      {
+        nombre_servicio: "Nuevo Servicio",
+        id_sucursal: 1,
+        estatus_servicio: true,
+        imagenes: [],
+        id_maquinas: [],
+        materiales: [],
+      },
+      1
+    );
+
+    expect(mockTx.servicios.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: null,
+        }),
+      })
+    );
   });
 });
