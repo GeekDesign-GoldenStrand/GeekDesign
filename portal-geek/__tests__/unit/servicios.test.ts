@@ -8,10 +8,12 @@ import {
   listServicios,
   getServicio,
   getServicioWithDetails,
+  getServicioParaAdmin,
   deleteServicio,
   updateServicio,
+  createServicio,
 } from "@/lib/services/servicios";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 jest.mock("@/lib/db/client", () => ({
   prisma: {
@@ -102,6 +104,27 @@ const SERVICIO_CON_DETALLES = {
       proveedorPrecio: { id_proveedor_precio: 1, precio: "200" },
     },
   ],
+};
+
+const SERVICIO_PARA_ADMIN_MOCK = {
+  id_servicio: 1,
+  id_estatus: 1,
+  id_sucursal: 1,
+  id_instalador: null,
+  id_proveedor: null,
+  nombre_servicio: "Corte Láser",
+  descripcion_servicio: "Corte con láser CO2",
+  estatus_servicio: true,
+  imagen_url: null,
+  costo_instalador_override: null,
+  costo_proveedor_override: null,
+  fecha_modificacion: new Date("2026-05-08"),
+  sucursal: { id_sucursal: 1, nombre_sucursal: "Sucursal Principal" },
+  maquinas: [],
+  instalador: null,
+  proveedor: null,
+  formulas: [],
+  servicioMateriales: [],
 };
 
 describe("listServicios", () => {
@@ -307,6 +330,52 @@ describe("getServicioWithDetails", () => {
   });
 });
 
+describe("getServicioParaAdmin", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("retorna el servicio cuando existe y está activo", async () => {
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    const result = await getServicioParaAdmin(1);
+
+    expect(result).toEqual(SERVICIO_PARA_ADMIN_MOCK);
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_servicio: 1, estatus_servicio: true } })
+    );
+  });
+
+  it("incluye relaciones esperadas (sucursal, instalador, proveedor, servicioMateriales)", async () => {
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    await getServicioParaAdmin(1);
+
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          sucursal: true,
+          instalador: true,
+          proveedor: true,
+        }),
+      })
+    );
+  });
+
+  it("solo incluye fórmulas con estatus Activa", async () => {
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+
+    await getServicioParaAdmin(1);
+
+    const callArg = mockFindFirst.mock.calls[0][0];
+    expect(callArg.include.formulas.where).toEqual({ estatus: "Activa" });
+  });
+
+  it("lanza NotFoundError cuando el servicio no existe o está inactivo", async () => {
+    mockFindFirst.mockResolvedValue(null);
+
+    await expect(getServicioParaAdmin(999)).rejects.toThrow(NotFoundError);
+  });
+});
+
 describe("deleteServicio (soft delete)", () => {
   beforeEach(() => jest.clearAllMocks());
 
@@ -339,22 +408,44 @@ describe("deleteServicio (soft delete)", () => {
   });
 });
 
-describe("updateServicio — stale FormulaVariables.estatus", () => {
+describe("updateServicio", () => {
   const mockTx = {
     servicios: { update: jest.fn() },
     servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+    servicioMaterial: { deleteMany: jest.fn(), createMany: jest.fn() },
     formulas: { findMany: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
     formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
     formulaConstantes: { createMany: jest.fn() },
+    sucursales: { findFirst: jest.fn() },
+    instaladores: { findFirst: jest.fn() },
+    proveedores: { findFirst: jest.fn() },
+    maquinas: { findMany: jest.fn() },
+    materiales: { findMany: jest.fn() },
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
     mockTransaction.mockImplementation(async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
       callback(mockTx)
     );
     mockTx.servicios.update.mockResolvedValue(SERVICIO);
     mockTx.formulas.create.mockResolvedValue({ id_formula: 99, estatus: "Activa" });
+    mockTx.sucursales.findFirst.mockResolvedValue({ id_sucursal: 1 });
+    mockTx.instaladores.findFirst.mockResolvedValue({ id_instalador: 1 });
+    mockTx.proveedores.findFirst.mockResolvedValue({ id_proveedor: 1 });
+    mockTx.maquinas.findMany.mockResolvedValue([]);
+    mockTx.materiales.findMany.mockResolvedValue([]);
+  });
+
+  it("lanza NotFoundError antes de la transaction si el servicio no existe", async () => {
+    mockFindFirst.mockResolvedValue(null);
+
+    await expect(updateServicio(999, { nombre_servicio: "Nuevo" }, 1)).rejects.toThrow(
+      NotFoundError
+    );
+
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 
   it("deactiva las FormulaVariables de las fórmulas activas antes de deactivarlas", async () => {
@@ -399,5 +490,151 @@ describe("updateServicio — stale FormulaVariables.estatus", () => {
     await updateServicio(1, { formula: { expresion: "x", variables: [], constantes: [] } }, 1);
 
     expect(calls).toEqual(["variables.updateMany", "formulas.updateMany", "formulas.create"]);
+  });
+
+  it("sincroniza materiales: delete + insert cuando materiales viene en el payload", async () => {
+    const materiales = [
+      { id_material: 10, id_proveedor_precio: null },
+      { id_material: 20, id_proveedor_precio: 5 },
+    ];
+    mockTx.materiales.findMany.mockResolvedValue([{ id_material: 10 }, { id_material: 20 }]);
+
+    await updateServicio(1, { materiales }, 1);
+
+    expect(mockTx.servicioMaterial.deleteMany).toHaveBeenCalledWith({ where: { id_servicio: 1 } });
+    expect(mockTx.servicioMaterial.createMany).toHaveBeenCalledWith({
+      data: [
+        { id_servicio: 1, id_material: 10, id_proveedor_precio: null },
+        { id_servicio: 1, id_material: 20, id_proveedor_precio: 5 },
+      ],
+    });
+  });
+
+  it("no toca servicioMaterial cuando materiales no viene en el payload", async () => {
+    await updateServicio(1, { nombre_servicio: "Nuevo nombre" }, 1);
+
+    expect(mockTx.servicioMaterial.deleteMany).not.toHaveBeenCalled();
+    expect(mockTx.servicioMaterial.createMany).not.toHaveBeenCalled();
+  });
+
+  it("solo hace deleteMany si materiales es array vacío (limpiar todos)", async () => {
+    await updateServicio(1, { materiales: [] }, 1);
+
+    expect(mockTx.servicioMaterial.deleteMany).toHaveBeenCalledWith({ where: { id_servicio: 1 } });
+    expect(mockTx.servicioMaterial.createMany).not.toHaveBeenCalled();
+  });
+
+  it("lanza ValidationError si id_sucursal no existe (FK validation)", async () => {
+    mockTx.sucursales.findFirst.mockResolvedValue(null);
+
+    await expect(updateServicio(1, { id_sucursal: 99 }, 1)).rejects.toThrow(ValidationError);
+  });
+
+  it("lanza ValidationError si alguna máquina no existe", async () => {
+    mockTx.maquinas.findMany.mockResolvedValue([{ id_maquina: 1 }]);
+
+    await expect(updateServicio(1, { id_maquinas: [1, 999] }, 1)).rejects.toThrow(ValidationError);
+  });
+
+  it("no valida id_instalador si se envía null (desasignar)", async () => {
+    await updateServicio(1, { id_instalador: null }, 1);
+
+    expect(mockTx.instaladores.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("serializa el arreglo de imagenes como JSON string en imagen_url al actualizar", async () => {
+    await updateServicio(
+      1,
+      {
+        nombre_servicio: "Corte Láser Modificado",
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
+      },
+      1
+    );
+
+    expect(mockTx.servicios.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
+        }),
+      })
+    );
+  });
+});
+
+describe("createServicio", () => {
+  const mockTx = {
+    estatusServicio: { findFirstOrThrow: jest.fn() },
+    servicios: { create: jest.fn() },
+    servicioMaquina: { createMany: jest.fn() },
+    servicioMaterial: { createMany: jest.fn() },
+    formulas: { create: jest.fn() },
+    formulaVariables: { createMany: jest.fn() },
+    formulaConstantes: { createMany: jest.fn() },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTransaction.mockImplementation(async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+      callback(mockTx)
+    );
+    mockTx.estatusServicio.findFirstOrThrow.mockResolvedValue({ id_estatus_servicio: 1 });
+    mockTx.servicios.create.mockResolvedValue({ id_servicio: 10, nombre_servicio: "Test" });
+  });
+
+  it("serializa el arreglo de imagenes como JSON string en imagen_url al crear", async () => {
+    await createServicio(
+      {
+        nombre_servicio: "Nuevo Servicio",
+        id_sucursal: 1,
+        estatus_servicio: true,
+        imagenes: [
+          "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+          "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+        ],
+        id_maquinas: [],
+        materiales: [],
+      },
+      1
+    );
+
+    expect(mockTx.servicios.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: JSON.stringify([
+            "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
+            "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
+          ]),
+        }),
+      })
+    );
+  });
+
+  it("asigna imagen_url como null si no hay imagenes", async () => {
+    await createServicio(
+      {
+        nombre_servicio: "Nuevo Servicio",
+        id_sucursal: 1,
+        estatus_servicio: true,
+        imagenes: [],
+        id_maquinas: [],
+        materiales: [],
+      },
+      1
+    );
+
+    expect(mockTx.servicios.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imagen_url: null,
+        }),
+      })
+    );
   });
 });

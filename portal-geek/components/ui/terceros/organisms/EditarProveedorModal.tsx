@@ -9,22 +9,25 @@ import {
   UBICACION_REGEX,
   type UpdateProveedorInput,
 } from "@/lib/schemas/proveedores";
-import { normalizePhone } from "@/lib/utils/format";
+import { formatPhoneNumber, normalizePhone } from "@/lib/utils/format";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function formatPhone(digits: string): string {
-  const metro = /^(55|33|81)/.test(digits);
-  if (metro) {
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-    return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-  }
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-}
+const COLORS: { value: string; label: string }[] = [
+  { value: "#EF4444", label: "Rojo" },
+  { value: "#F97316", label: "Naranja" },
+  { value: "#EAB308", label: "Amarillo" },
+  { value: "#22C55E", label: "Verde" },
+  { value: "#14B8A6", label: "Verde azulado" },
+  { value: "#3B82F6", label: "Azul" },
+  { value: "#6366F1", label: "Índigo" },
+  { value: "#8B5CF6", label: "Violeta" },
+  { value: "#EC4899", label: "Rosa" },
+  { value: "#F43F5E", label: "Carmín" },
+  { value: "#64748B", label: "Gris pizarra" },
+  { value: "#78716C", label: "Marrón" },
+];
 
 function validateFields(form: ProveedorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
@@ -50,6 +53,7 @@ function validateFields(form: ProveedorFormData): Record<string, string> {
   }
   if (form.descripcion_proveedor.length > 500)
     errs.descripcion_proveedor = "Máximo 500 caracteres.";
+  if (!form.color) errs.color = "Selecciona un color identificador.";
   return errs;
 }
 
@@ -81,6 +85,7 @@ export type ProveedorFormData = {
   ubicacion: string;
   descripcion_proveedor: string;
   estatus: string;
+  color: string;
 };
 
 interface EditarProveedorModalProps {
@@ -143,6 +148,7 @@ export function EditarProveedorModal({
       descripcion_proveedor: form.descripcion_proveedor || undefined,
       ubicacion: form.ubicacion || undefined,
       estatus: form.estatus as UpdateProveedorInput["estatus"],
+      color: form.color,
     });
   }
 
@@ -223,7 +229,7 @@ export function EditarProveedorModal({
               type="tel"
               inputMode="numeric"
               placeholder="442 123 4567"
-              value={formatPhone(form.telefono)}
+              value={formatPhoneNumber(form.telefono)}
               onChange={(e) => {
                 setField("telefono", normalizePhone(e.target.value));
               }}
@@ -256,6 +262,45 @@ export function EditarProveedorModal({
             <option value="Inactivo">Inactivo</option>
             <option value="Baneado">Baneado</option>
           </select>
+        </div>
+
+        <div>
+          <label className={LABEL}>Color identificador</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {COLORS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                title={c.label}
+                onClick={() => setField("color", c.value)}
+                className={`w-7 h-7 rounded-full border-2 transition-all ${
+                  form.color === c.value
+                    ? "border-[#1e1e1e] scale-110 shadow-md ring-2 ring-offset-1 ring-[#1e1e1e]/20"
+                    : "border-transparent hover:scale-105 hover:border-[#b9b8b8]"
+                }`}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+            <button
+              type="button"
+              title="Sin color"
+              onClick={() => setField("color", "")}
+              className={`w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center text-[10px] font-bold ${
+                !form.color
+                  ? "border-[#1e1e1e] bg-[#f5f5f5] text-[#1e1e1e] scale-110 shadow-md"
+                  : "border-[#b9b8b8] bg-white text-[#8e908f] hover:scale-105"
+              }`}
+            >
+              ∅
+            </button>
+          </div>
+          {form.color ? (
+            <p className="text-[12px] text-[#8e908f] mt-1">
+              Color seleccionado: <span className="font-medium text-[#1e1e1e]">{form.color}</span>
+            </p>
+          ) : (
+            allErrors.color && <p className={ERROR_MSG}>{allErrors.color}</p>
+          )}
         </div>
 
         <div>

@@ -11,8 +11,12 @@ jest.mock("@/lib/services/storage", () => ({
 }));
 
 const mockFindFirst = jest.fn();
+const mockServiciosFindFirst = jest.fn();
 jest.mock("@/lib/db/client", () => ({
-  prisma: { materiales: { findFirst: (...a: unknown[]) => mockFindFirst(...a) } },
+  prisma: {
+    materiales: { findFirst: (...a: unknown[]) => mockFindFirst(...a) },
+    servicios: { findFirst: (...a: unknown[]) => mockServiciosFindFirst(...a) },
+  },
 }));
 
 const mockGetSession = jest.fn();
@@ -143,6 +147,7 @@ describe("DELETE /api/upload", () => {
     jest.clearAllMocks();
     mockGetSession.mockResolvedValue({ id: 2, role: "Direccion" });
     mockFindFirst.mockResolvedValue(null);
+    mockServiciosFindFirst.mockResolvedValue(null);
   });
 
   it("retorna 401 cuando no hay sesión", async () => {
@@ -178,6 +183,15 @@ describe("DELETE /api/upload", () => {
 
   it("retorna 409 cuando la clave ya está en uso por un material", async () => {
     mockFindFirst.mockResolvedValue({ id_material: 7 });
+    const res = await createApp({ DELETE: routes.DELETE }).delete(
+      `/api/upload?key=${encodeURIComponent(ORPHAN_KEY)}`
+    );
+    expect(res.status).toBe(409);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("retorna 409 cuando la clave ya está en uso por un servicio", async () => {
+    mockServiciosFindFirst.mockResolvedValue({ id_servicio: 3 });
     const res = await createApp({ DELETE: routes.DELETE }).delete(
       `/api/upload?key=${encodeURIComponent(ORPHAN_KEY)}`
     );

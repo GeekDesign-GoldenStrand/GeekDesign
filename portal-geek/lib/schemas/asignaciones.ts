@@ -6,7 +6,7 @@ export const AssignmentSchema = z.object({
     .array(
       z.object({
         id: z.number().int().positive(),
-        precio: z.number().positive().multipleOf(0.01),
+        precio: z.coerce.number().positive().multipleOf(0.01),
         notas: z.string().max(500).optional(),
       })
     )

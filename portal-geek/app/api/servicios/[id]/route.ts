@@ -2,21 +2,30 @@ import type { NextRequest } from "next/server";
 
 import { withSectionParams } from "@/lib/auth/guards";
 import { ServicioIdParams, UpdateServicioSchema } from "@/lib/schemas/servicios";
-import { getServicioWithDetails, updateServicio, deleteServicio } from "@/lib/services/servicios";
+import {
+  getServicioParaAdmin,
+  toServicioAdminDetalle,
+  updateServicio,
+  deleteServicio,
+} from "@/lib/services/servicios";
 import { ok, noContent } from "@/lib/utils/api";
 import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-// Public — returns active service with full details (opciones, materiales, precio base)
-export async function GET(_req: NextRequest, ctx: { params: Promise<Params> }) {
-  try {
-    const { id } = ServicioIdParams.parse(await ctx.params);
-    return ok(await getServicioWithDetails(id));
-  } catch (err) {
-    return handleError(err);
+export const GET = withSectionParams<Params>(
+  "servicios",
+  "read",
+  async (_req: NextRequest, ctx, _session) => {
+    try {
+      const { id } = ServicioIdParams.parse(await ctx.params);
+      const raw = await getServicioParaAdmin(id);
+      return ok(toServicioAdminDetalle(raw));
+    } catch (err) {
+      return handleError(err);
+    }
   }
-}
+);
 
 export const PUT = withSectionParams<Params>(
   "servicios",
@@ -35,7 +44,7 @@ export const PUT = withSectionParams<Params>(
 export const DELETE = withSectionParams<Params>(
   "servicios",
   "write",
-  async (req: NextRequest, ctx) => {
+  async (_req: NextRequest, ctx) => {
     try {
       const { id } = ServicioIdParams.parse(await ctx.params);
       await deleteServicio(id);

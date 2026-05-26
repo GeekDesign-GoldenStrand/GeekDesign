@@ -63,7 +63,7 @@ const BASE_MATERIAL = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
-  color: "Plata",
+  color: "#C0C0C0",
   imagen_url: KEY,
   subMateriales: [],
 };
@@ -75,7 +75,7 @@ const VALID_PAYLOAD = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
-  color: "Plata",
+  color: "#C0C0C0",
   imagen_url: KEY,
 };
 

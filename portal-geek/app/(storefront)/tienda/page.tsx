@@ -7,6 +7,7 @@ import { CTABanner } from "@/components/storefront/molecules/CTABanner";
 import { HeroBanner } from "@/components/storefront/organisms/HeroBanner";
 import { ServiceGrid } from "@/components/storefront/organisms/ServiceGrid";
 import { listServicios } from "@/lib/services/servicios";
+import { getServiceImageUrls } from "@/lib/utils/images";
 
 export const metadata: Metadata = { title: "Tienda" };
 
@@ -43,14 +44,18 @@ export default async function StorefrontHome({ searchParams }: Props) {
               Catálogo de Servicios
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {services.slice(0, 6).map((s) => (
-                <ServiceCatalogCard
-                  key={s.id_servicio}
-                  id={s.id_servicio}
-                  nombre={s.nombre_servicio}
-                  descripcion={s.descripcion_servicio}
-                />
-              ))}
+              {services.slice(0, 6).map((s) => {
+                const images = getServiceImageUrls(s.imagen_url);
+                return (
+                  <ServiceCatalogCard
+                    key={s.id_servicio}
+                    id={s.id_servicio}
+                    nombre={s.nombre_servicio}
+                    descripcion={s.descripcion_servicio}
+                    imagenUrl={images[0] || null}
+                  />
+                );
+              })}
             </div>
           </div>
         </section>

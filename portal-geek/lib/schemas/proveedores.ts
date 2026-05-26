@@ -33,6 +33,7 @@ export const CreateProveedorSchema = z.object({
     .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado")
     .optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
 });
 
 export const UpdateProveedorSchema = CreateProveedorSchema.partial();
