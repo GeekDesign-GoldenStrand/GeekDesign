@@ -443,4 +443,82 @@ describe("POST /api/pedidos/[id]/orden-compra-interna", () => {
       expect(res.status).toBe(404);
     });
   });
+
+  // ── 6. Missing color on tercero ───────────────────────────────────────────
+  // color is nullable in the migration (no DEFAULT), so existing rows have
+  // color = NULL until the admin assigns one in the back-office.
+  // The route must return 422 (not 500) so the client can surface a clear,
+  // actionable message instead of a generic server error.
+
+  describe("6. proveedor with no color set", () => {
+    beforeEach(() => {
+      const entryNoColor = {
+        ...PROVEEDOR_ENTRY,
+        proveedor: { ...PROVEEDOR, color: null },
+      };
+      mockGetOrderThirdParties.mockResolvedValue({
+        pedido: PEDIDO,
+        sucursal: SUCURSAL,
+        proveedorMap: new Map([[10, entryNoColor]]),
+        instaladorMap: new Map(),
+      });
+    });
+
+    it("returns 422", async () => {
+      const res = await createApp({ POST: purchaseOrderPOST }, paramExtractor)
+        .post("/api/pedidos/1/orden-compra-interna")
+        .send();
+
+      expect(res.status).toBe(422);
+    });
+
+    it("error message mentions the proveedor name and color", async () => {
+      const res = await createApp({ POST: purchaseOrderPOST }, paramExtractor)
+        .post("/api/pedidos/1/orden-compra-interna")
+        .send();
+
+      expect(res.body.error).toMatch(/color/i);
+      expect(res.body.error).toMatch(/Proveedor Test/);
+    });
+
+    it("never calls generatePurchaseOrderPDF", async () => {
+      await createApp({ POST: purchaseOrderPOST }, paramExtractor)
+        .post("/api/pedidos/1/orden-compra-interna")
+        .send();
+
+      expect(mockGeneratePDF).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("6b. instalador with no color set", () => {
+    beforeEach(() => {
+      const entryNoColor = {
+        ...INSTALADOR_ENTRY,
+        instalador: { ...INSTALADOR, color: null },
+      };
+      mockGetOrderThirdParties.mockResolvedValue({
+        pedido: PEDIDO,
+        sucursal: SUCURSAL,
+        proveedorMap: new Map(),
+        instaladorMap: new Map([[20, entryNoColor]]),
+      });
+    });
+
+    it("returns 422", async () => {
+      const res = await createApp({ POST: purchaseOrderPOST }, paramExtractor)
+        .post("/api/pedidos/1/orden-compra-interna")
+        .send();
+
+      expect(res.status).toBe(422);
+    });
+
+    it("error message mentions the instalador name and color", async () => {
+      const res = await createApp({ POST: purchaseOrderPOST }, paramExtractor)
+        .post("/api/pedidos/1/orden-compra-interna")
+        .send();
+
+      expect(res.body.error).toMatch(/color/i);
+      expect(res.body.error).toMatch(/Instalador Test/);
+    });
+  });
 });

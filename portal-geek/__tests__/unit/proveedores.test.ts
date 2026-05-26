@@ -319,6 +319,7 @@ describe("createProveedor", () => {
     telefono: "4421230001",
     correo: "ventas@empresa.mx",
     estatus: "Activo" as const,
+    color: "#3B82F6",
   };
 
   beforeEach(() => {

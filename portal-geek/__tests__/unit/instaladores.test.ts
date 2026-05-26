@@ -59,6 +59,7 @@ const CREATE_INPUT = {
   correo: "juan@example.com",
   costo_instalacion: 350,
   estatus: "Activo" as const,
+  color: "#3B82F6",
 };
 
 // ---------------------------------------------------------------------------
@@ -93,6 +94,7 @@ describe("createInstalador", () => {
         notas: null,
         ubicacion: null,
         estatus: "Activo",
+        color: "#3B82F6",
       },
     });
   });
@@ -114,10 +116,21 @@ describe("createInstalador", () => {
         notas: null,
         ubicacion: "CDMX",
         estatus: "Activo",
+        color: "#3B82F6",
       },
     });
     expect(result.apodo).toBe("Juanito");
     expect(result.ubicacion).toBe("CDMX");
+  });
+
+  it("pasa el campo color a prisma.create", async () => {
+    mockCreate.mockResolvedValue({ ...INSTALADOR, color: "#EF4444" });
+
+    await createInstalador({ ...CREATE_INPUT, color: "#EF4444" });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ color: "#EF4444" }) })
+    );
   });
 });
 
@@ -256,6 +269,18 @@ describe("updateInstalador", () => {
 
     await expect(updateInstalador(1, { nombre_instalador: "Test" })).rejects.toThrow(
       "Error de base de datos"
+    );
+  });
+
+  it("actualiza el color cuando se proporciona", async () => {
+    const updated = { ...INSTALADOR, color: "#22C55E" };
+    mockUpdate.mockResolvedValue(updated);
+
+    const result = await updateInstalador(1, { color: "#22C55E" });
+
+    expect(result.color).toBe("#22C55E");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ color: "#22C55E" }) })
     );
   });
 });

@@ -22,7 +22,7 @@ import {
   type ProveedorEntry,
 } from "@/lib/services/pedidos";
 import { apiError } from "@/lib/utils/api";
-import { DataInconsistencyError, handleError } from "@/lib/utils/errors";
+import { DataInconsistencyError, ValidationError, handleError } from "@/lib/utils/errors";
 import {
   calcularTotalesOrden,
   generatePurchaseOrderPDF,
@@ -115,7 +115,7 @@ function resolveProveedorSpec(
   entry: ProveedorEntry
 ): OrdenSpec {
   if (!entry.proveedor.color) {
-    throw new DataInconsistencyError(
+    throw new ValidationError(
       `El proveedor "${entry.proveedor.nombre_proveedor}" no tiene un color asignado. ` +
         `Asigna un color antes de generar la Orden de Compra.`
     );
@@ -140,7 +140,7 @@ function resolveInstaladorSpec(
   entry: InstaladorEntry
 ): OrdenSpec {
   if (!entry.instalador.color) {
-    throw new DataInconsistencyError(
+    throw new ValidationError(
       `El instalador "${entry.instalador.nombre_instalador}" no tiene un color asignado. ` +
         `Asigna un color antes de generar la Orden de Compra.`
     );

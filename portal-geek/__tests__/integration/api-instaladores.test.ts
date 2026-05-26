@@ -31,6 +31,7 @@ const VALID_PAYLOAD = {
   correo: "juan@example.com",
   costo_instalacion: 350,
   estatus: "Activo",
+  color: "#3B82F6",
 };
 
 const CREATED_INSTALADOR = {
@@ -365,6 +366,29 @@ describe("POST /api/instaladores", () => {
       .send({ ...VALID_PAYLOAD, nombre_instalador: "" });
 
     expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando color está ausente", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const { color: _color, ...payloadSinColor } = VALID_PAYLOAD;
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send(payloadSinColor);
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("color");
+  });
+
+  it("retorna 422 cuando color es cadena vacía", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, color: "" });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("color");
   });
 });
 

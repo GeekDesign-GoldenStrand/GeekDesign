@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 import { prisma } from "@/lib/db/client";
+import { CreateMaterialSchema, CreateSubMaterialSchema } from "@/lib/schemas/materiales";
 import {
   createGrupo,
   createMaterial,
@@ -57,7 +58,7 @@ const BASE_MATERIAL = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
-  color: "Plata",
+  color: "#C0C0C0",
   imagen_url: KEY,
   subMateriales: [],
 };
@@ -69,7 +70,7 @@ const VALID_INPUT = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
-  color: "Plata",
+  color: "#C0C0C0",
   imagen_url: KEY,
 };
 
@@ -305,7 +306,7 @@ describe("createSubMaterial", () => {
     ancho: 1200,
     alto: 2400,
     grosor: 3,
-    color: "Verde",
+    color: "#22C55E",
     imagen_url: KEY,
   };
 
@@ -456,5 +457,76 @@ describe("deleteMaterial", () => {
     mockFindUnique.mockResolvedValue(null);
     await expect(deleteMaterial(999)).rejects.toThrow(NotFoundError);
     expect(mockDelete).not.toHaveBeenCalled();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Schema — color validation (CreateMaterialSchema & CreateSubMaterialSchema)
+// ──────────────────────────────────────────────────────────────────────────────
+const SCHEMA_MATERIAL_BASE = {
+  nombre_material: "Acrílico espejo",
+  descripcion_material: "Material de alta reflectividad",
+  unidad_medida: "mm" as const,
+  ancho: 1200,
+  alto: 2400,
+  grosor: 3,
+  imagen_url: KEY,
+};
+
+const SCHEMA_SUB_BASE = {
+  tipo: "sub" as const,
+  id_material_padre: 2,
+  nombre_material: "Acrílico Verde",
+  descripcion_material: "Color verde",
+  unidad_medida: "mm" as const,
+  ancho: 1200,
+  alto: 2400,
+  grosor: 3,
+  imagen_url: KEY,
+};
+
+describe("CreateMaterialSchema — color", () => {
+  it.each(["#3B82F6", "#000000", "#FFFFFF", "#aabbcc", "#A1B2C3"])(
+    "accepts a valid 6-digit HEX color: %s",
+    (color) => {
+      expect(CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color }).success).toBe(true);
+    }
+  );
+
+  it.each([
+    ["named color", "Plata"],
+    ["named color", "Verde"],
+    ["empty string", ""],
+    ["missing hash", "3B82F6"],
+    ["8-digit with alpha", "#3B82F6FF"],
+    ["invalid hex chars", "#GGGGGG"],
+  ])("rejects an invalid color (%s): %s", (_label, color) => {
+    const result = CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe("El color debe ser un HEX válido (ej. #3B82F6).");
+    }
+  });
+});
+
+describe("CreateSubMaterialSchema — color", () => {
+  it.each(["#3B82F6", "#000000", "#FFFFFF", "#aabbcc"])(
+    "accepts a valid 6-digit HEX color: %s",
+    (color) => {
+      expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(true);
+    }
+  );
+
+  it.each([
+    ["named color", "Verde"],
+    ["missing hash", "3B82F6"],
+    ["8-digit with alpha", "#3B82F6FF"],
+    ["invalid hex chars", "#GGGGGG"],
+  ])("rejects an invalid color (%s): %s", (_label, color) => {
+    const result = CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe("El color debe ser un HEX válido (ej. #3B82F6).");
+    }
   });
 });

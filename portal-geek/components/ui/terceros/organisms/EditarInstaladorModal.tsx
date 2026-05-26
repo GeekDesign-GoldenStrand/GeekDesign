@@ -10,6 +10,21 @@ import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const COLORS: { value: string; label: string }[] = [
+  { value: "#EF4444", label: "Rojo" },
+  { value: "#F97316", label: "Naranja" },
+  { value: "#EAB308", label: "Amarillo" },
+  { value: "#22C55E", label: "Verde" },
+  { value: "#14B8A6", label: "Verde azulado" },
+  { value: "#3B82F6", label: "Azul" },
+  { value: "#6366F1", label: "Índigo" },
+  { value: "#8B5CF6", label: "Violeta" },
+  { value: "#EC4899", label: "Rosa" },
+  { value: "#F43F5E", label: "Carmín" },
+  { value: "#64748B", label: "Gris pizarra" },
+  { value: "#78716C", label: "Marrón" },
+];
+
 function validateFields(form: InstaladorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
   if (!form.nombre_instalador.trim()) errs.nombre_instalador = "El nombre es requerido.";
@@ -29,6 +44,7 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   if (!form.costo_instalacion.trim()) errs.costo_instalacion = "La tarifa base es requerida.";
   else if (!isValidMoney(form.costo_instalacion))
     errs.costo_instalacion = "Debe ser un número mayor o igual a 0.";
+  if (!form.color) errs.color = "Selecciona un color identificador.";
   return errs;
 }
 
@@ -44,6 +60,7 @@ function parseServerFieldErrors(serverError: string | null): Record<string, stri
     "notas",
     "estatus",
     "costo_instalacion",
+    "color",
   ];
   const parsed: Record<string, string> = {};
   for (const field of fields) {
@@ -70,6 +87,7 @@ export type InstaladorFormData = {
   notas: string;
   estatus: string;
   costo_instalacion: string;
+  color: string;
 };
 
 interface EditarInstaladorModalProps {
@@ -133,6 +151,7 @@ export function EditarInstaladorModal({
       notas: form.notas || undefined,
       estatus: form.estatus as UpdateInstaladorInput["estatus"],
       costo_instalacion: parseFloat(form.costo_instalacion),
+      color: form.color,
     });
   }
 
@@ -275,6 +294,45 @@ export function EditarInstaladorModal({
               <option value="Baneado">Baneado</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className={LABEL}>Color identificador</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {COLORS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                title={c.label}
+                onClick={() => setField("color", c.value)}
+                className={`w-7 h-7 rounded-full border-2 transition-all ${
+                  form.color === c.value
+                    ? "border-[#1e1e1e] scale-110 shadow-md ring-2 ring-offset-1 ring-[#1e1e1e]/20"
+                    : "border-transparent hover:scale-105 hover:border-[#b9b8b8]"
+                }`}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+            <button
+              type="button"
+              title="Sin color"
+              onClick={() => setField("color", "")}
+              className={`w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center text-[10px] font-bold ${
+                !form.color
+                  ? "border-[#1e1e1e] bg-[#f5f5f5] text-[#1e1e1e] scale-110 shadow-md"
+                  : "border-[#b9b8b8] bg-white text-[#8e908f] hover:scale-105"
+              }`}
+            >
+              ∅
+            </button>
+          </div>
+          {form.color ? (
+            <p className="text-[12px] text-[#8e908f] mt-1">
+              Color seleccionado: <span className="font-medium text-[#1e1e1e]">{form.color}</span>
+            </p>
+          ) : (
+            allErrors.color && <p className={ERROR_MSG}>{allErrors.color}</p>
+          )}
         </div>
 
         <div>
