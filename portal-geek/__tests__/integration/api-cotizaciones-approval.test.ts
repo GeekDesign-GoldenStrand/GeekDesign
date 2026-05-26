@@ -97,6 +97,17 @@ describe("Req. ST-08-09 Integration Tests", () => {
     mockVerifySessionFor.mockResolvedValue(true);
   });
 
+  const mockCotizacion = (estatus: string) => ({
+    id_cotizacion: 203,
+    folio: "COT-203",
+    id_cliente: 1,
+    monto_total: 1500,
+    estatus: { descripcion: estatus },
+    cliente: { nombre_cliente: "Cliente Test" },
+    variablesCotizacion: [],
+    historial: [],
+  });
+
   describe("Phase 1: GET /api/cotizaciones/[folio]", () => {
     it("should return 200 and the quotation details when found", async () => {
       const mockQuote = {
@@ -272,4 +283,26 @@ describe("Req. ST-08-09 Integration Tests", () => {
       expect(res.status).toBe(200);
     });
   });
+
+  it("COT05-C1: returns 200 and includes quotation status", async () => {
+    (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockCotizacion("Pendiente"));
+
+    const res = await createApp({ GET: detailGET }, paramExtractor).get("/api/cotizaciones/203");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.id_cotizacion).toBe(203);
+    expect(res.body.data.estatus.descripcion).toBe("Pendiente");
+  });
+
+  it.each(["Pendiente", "Validada", "Aprobada", "Rechazada", "Cancelada"])(
+    "COT05-C2: returns quotation status %s",
+    async (estatus) => {
+      (prisma.cotizaciones.findUnique as jest.Mock).mockResolvedValue(mockCotizacion(estatus));
+
+      const res = await createApp({ GET: detailGET }, paramExtractor).get("/api/cotizaciones/203");
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.estatus.descripcion).toBe(estatus);
+    }
+  );
 });
