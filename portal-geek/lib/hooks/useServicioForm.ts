@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
+import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
 import type {
   InstaladorOption,
@@ -133,6 +134,7 @@ export function useServicioForm({
           descripcion_servicio: form.descripcion_servicio || undefined,
           id_sucursal: form.id_sucursal,
           estatus_servicio: true,
+          imagenes: form.imagenes,
           id_maquinas: form.id_maquinas,
           id_instalador: form.id_instalador,
           costo_instalador_override: form.costo_instalador_override,
@@ -152,6 +154,16 @@ export function useServicioForm({
 
       setSubmitSuccess(true);
     } catch (err) {
+      // On create, drop any S3 uploads we made in this session — they'd otherwise
+      // be orphaned. On edit, existing images on the servicio are server-owned, so
+      // we only clean up keys uploaded *during* this edit session. The form has no
+      // way to distinguish, so we conservatively clean only on create.
+      if (mode === "create" && form.imagenes.length > 0) {
+        form.imagenes.forEach((key) => {
+          void deleteFile(key).catch(() => {});
+        });
+        setForm((prev) => ({ ...prev, imagenes: [] }));
+      }
       setSubmitError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setSubmitting(false);
@@ -203,6 +215,7 @@ export function useServicioForm({
       updateMaterialProveedor,
       handleSubmit,
       setForm,
+      setSubmitError,
       onCancel: onCancel ?? defaultCancel,
       onSuccessRedirect: onSuccess ?? defaultSuccessRedirect,
     },
