@@ -56,6 +56,7 @@ export function EditarMaterialForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showImpactConfirm, setShowImpactConfirm] = useState(false);
+  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [impacto, setImpacto] = useState<{
     servicios: number;
@@ -212,6 +213,7 @@ export function EditarMaterialForm({
         const responsePayload = await res.json().catch(() => ({}));
         setServerError(responsePayload?.error ?? `Error ${res.status}`);
         setShowImpactConfirm(false);
+        setShowFinalConfirm(false);
         setDeleting(false);
         return;
       }
@@ -221,6 +223,7 @@ export function EditarMaterialForm({
     } catch {
       setServerError("Error de red. Intenta de nuevo.");
       setShowImpactConfirm(false);
+      setShowFinalConfirm(false);
       setDeleting(false);
     }
   }
@@ -478,11 +481,44 @@ export function EditarMaterialForm({
               </button>
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => {
+                  setShowImpactConfirm(false);
+                  setShowFinalConfirm(true);
+                }}
                 disabled={deleting || impactoLoading || Boolean(impactoError)}
                 className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
               >
-                {deleting ? "Eliminando..." : "Eliminar definitivamente"}
+                Eliminar definitivamente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinalConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Última confirmación</h3>
+            <p className="text-[14px] text-[#575757] mb-6">
+              Revisa tus materiales y servicios y asegúrate de que tengan al menos un material
+              registrado.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowFinalConfirm(false)}
+                className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+                disabled={deleting}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
+              >
+                {deleting ? "Eliminando..." : "Entendido, eliminar"}
               </button>
             </div>
           </div>
