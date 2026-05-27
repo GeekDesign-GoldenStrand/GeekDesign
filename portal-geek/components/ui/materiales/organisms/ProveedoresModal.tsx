@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import { MailIcon, PhoneIcon, UsersIcon, XIcon } from "@/components/ui/atoms/icons";
 import type { MaterialProveedor } from "@/lib/services/materiales";
 
@@ -97,18 +98,8 @@ export function ProveedoresModal({
   if (!isOpen || materialId === null) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      aria-hidden="true"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="proveedores-modal-title"
-        className="bg-white rounded-[12px] shadow-lg w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen onClose={onClose} size="xl" ariaLabel="Proveedores" noPadding>
+      <div className="flex min-h-0 flex-col">
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -136,7 +127,11 @@ export function ProveedoresModal({
         <div className="p-6 overflow-y-auto space-y-2">
           {isLoading && <p className="text-[#8e908f] text-[14px]">Cargando proveedores...</p>}
 
-          {fetchError && <p className="text-[#e42200] text-[14px]">{fetchError}</p>}
+          {fetchError && (
+            <p role="alert" className="text-[#e42200] text-[14px]">
+              {fetchError}
+            </p>
+          )}
 
           {proveedores?.length === 0 && !fetchError && (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
@@ -152,6 +147,6 @@ export function ProveedoresModal({
           ))}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

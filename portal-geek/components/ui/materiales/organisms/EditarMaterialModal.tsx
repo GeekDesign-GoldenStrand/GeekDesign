@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import { EditarMaterialForm } from "@/components/ui/materiales/organisms/EditarMaterialForm";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
 import type { MaterialCardProps } from "@/types";
@@ -58,61 +59,23 @@ export function EditarMaterialModal({
   const isLoading = !freshMaterial && !fetchError;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      aria-hidden="true"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="editar-material-title"
-        className="bg-white rounded-[12px] shadow-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <h2 id="editar-material-title" className="text-[20px] font-medium text-[#1e1e1e]">
-            Editar Material
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar modal"
-            className="text-[#8e908f] hover:text-[#e42200] transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
+    <Modal isOpen onClose={onClose} title="Editar Material" size="2xl">
+      {isLoading && <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>}
 
-        <div className="p-6 overflow-y-auto">
-          {isLoading && (
-            <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>
-          )}
+      {fetchError && (
+        <p role="alert" className="text-[#e42200] text-[14px]">
+          {fetchError}
+        </p>
+      )}
 
-          {fetchError && <p className="text-[#e42200] text-[14px]">{fetchError}</p>}
-
-          {!isLoading && !fetchError && freshMaterial && (
-            <EditarMaterialForm
-              material={freshMaterial}
-              onUpdated={onUpdated}
-              onDeleted={onDeleted}
-              onClose={onClose}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+      {!isLoading && !fetchError && freshMaterial && (
+        <EditarMaterialForm
+          material={freshMaterial}
+          onUpdated={onUpdated}
+          onDeleted={onDeleted}
+          onClose={onClose}
+        />
+      )}
+    </Modal>
   );
 }
