@@ -368,7 +368,7 @@ export function RegistrarMaterialForm({
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. Rojo, Verde menta"
+              placeholder="Ej. Rojo, #FF2400"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
