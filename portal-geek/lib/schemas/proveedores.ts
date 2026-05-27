@@ -29,7 +29,10 @@ export const CreateProveedorSchema = z.object({
   ubicacion: z
     .string()
     .max(100, "Máximo 100 caracteres.")
-    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Solo se permiten caracteres en inglés y español.")
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    )
     .optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),

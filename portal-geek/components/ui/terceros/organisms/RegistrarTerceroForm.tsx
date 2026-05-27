@@ -53,7 +53,10 @@ const proveedorSchema = z.object({
   ubicacion: z
     .string()
     .max(100, "Máximo 100 caracteres.")
-    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Solo se permiten caracteres en inglés y español."),
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    ),
   color: z
     .string()
     .min(1, "Selecciona un color identificador.")
@@ -85,7 +88,10 @@ const instaladorSchema = z.object({
   ubicacion: z
     .string()
     .max(100, "Máximo 100 caracteres.")
-    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Solo se permiten caracteres en inglés y español."),
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    ),
   costo_instalacion: z
     .string()
     .min(1, "La tarifa base es requerida.")

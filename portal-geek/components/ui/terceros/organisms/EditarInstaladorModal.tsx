@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
+import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
 import { formatPhoneNumber } from "@/lib/utils/format";
 import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 
