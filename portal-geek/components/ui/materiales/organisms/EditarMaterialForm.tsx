@@ -55,7 +55,36 @@ export function EditarMaterialForm({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImpactConfirm, setShowImpactConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [impacto, setImpacto] = useState<{
+    servicios: number;
+    proveedores: number;
+    instaladores: number;
+  } | null>(null);
+  const [impactoLoading, setImpactoLoading] = useState(false);
+  const [impactoError, setImpactoError] = useState<string | null>(null);
+
+  async function handleFirstConfirm() {
+    setImpactoError(null);
+    setImpacto(null);
+    setImpactoLoading(true);
+    setShowDeleteConfirm(false);
+    setShowImpactConfirm(true);
+    try {
+      const res = await fetch(`/api/materiales/${material.id}/impacto`);
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setImpactoError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setImpacto(payload?.data ?? { servicios: 0, proveedores: 0, instaladores: 0 });
+    } catch {
+      setImpactoError("Error de red al calcular el impacto.");
+    } finally {
+      setImpactoLoading(false);
+    }
+  }
 
   function setField(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -182,6 +211,7 @@ export function EditarMaterialForm({
       if (!res.ok) {
         const responsePayload = await res.json().catch(() => ({}));
         setServerError(responsePayload?.error ?? `Error ${res.status}`);
+        setShowImpactConfirm(false);
         setDeleting(false);
         return;
       }
@@ -190,6 +220,7 @@ export function EditarMaterialForm({
       onClose();
     } catch {
       setServerError("Error de red. Intenta de nuevo.");
+      setShowImpactConfirm(false);
       setDeleting(false);
     }
   }
@@ -376,13 +407,70 @@ export function EditarMaterialForm({
             </h3>
             <p className="text-[14px] text-[#575757] mb-6">
               {isGrupo
-                ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
-                : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`}
+                ? `¿Estás seguro que quieres eliminar el grupo "${material.name}"? Esto también eliminará todos sus sub-materiales.`
+                : `¿Estás seguro que quieres eliminar el material "${material.name}"?`}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
+                className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleFirstConfirm}
+                className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showImpactConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Acción irreversible</h3>
+
+            {impactoLoading && (
+              <p className="text-[14px] text-[#575757] mb-6">Calculando impacto...</p>
+            )}
+
+            {impactoError && (
+              <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2 mb-4">
+                {impactoError}
+              </div>
+            )}
+
+            {!impactoLoading && !impactoError && impacto && (
+              <>
+                <p className="text-[14px] text-[#575757] mb-3">
+                  Esta acción no se puede deshacer. Afectará a:
+                </p>
+                <ul className="text-[14px] text-[#1e1e1e] mb-6 list-disc pl-5 space-y-1">
+                  <li>
+                    <strong>{impacto.servicios}</strong>{" "}
+                    {impacto.servicios === 1 ? "servicio" : "servicios"}
+                  </li>
+                  <li>
+                    <strong>{impacto.proveedores}</strong>{" "}
+                    {impacto.proveedores === 1 ? "proveedor" : "proveedores"}
+                  </li>
+                  <li>
+                    <strong>{impacto.instaladores}</strong>{" "}
+                    {impacto.instaladores === 1 ? "instalador" : "instaladores"}
+                  </li>
+                </ul>
+              </>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowImpactConfirm(false)}
                 className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
                 disabled={deleting}
               >
@@ -391,10 +479,10 @@ export function EditarMaterialForm({
               <button
                 type="button"
                 onClick={handleDelete}
-                disabled={deleting}
+                disabled={deleting || impactoLoading || Boolean(impactoError)}
                 className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
               >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
+                {deleting ? "Eliminando..." : "Eliminar definitivamente"}
               </button>
             </div>
           </div>

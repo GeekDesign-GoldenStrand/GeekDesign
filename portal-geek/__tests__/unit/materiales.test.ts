@@ -368,95 +368,119 @@ describe("updateMaterial", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-// deleteMaterial
+// deleteMaterial — force delete (per stakeholder, ignores in-use relations)
 // ──────────────────────────────────────────────────────────────────────────────
 describe("deleteMaterial", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let txMock: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => fn(prisma));
+
+    txMock = {
+      materiales: {
+        findUnique: jest.fn(),
+        delete: jest.fn().mockResolvedValue(undefined),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      opcionesProducto: {
+        findMany: jest.fn().mockResolvedValue([]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      valoresOpcion: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      matrizDePrecios: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      servicioMaterial: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      proveedorPrecios: {
+        findMany: jest.fn().mockResolvedValue([]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      gastos: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      detallePedido: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      pedidoMaquina: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    };
+
+    mockTransaction.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (fn: (tx: any) => Promise<void>) => fn(txMock)
+    );
   });
 
-  it("elimina correctamente cuando no hay relaciones", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("elimina un material individual sin relaciones", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: false,
       subMateriales: [],
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [],
     });
-    mockDelete.mockResolvedValue(BASE_MATERIAL);
 
     await expect(deleteMaterial(1)).resolves.toBeUndefined();
-    expect(mockDelete).toHaveBeenCalledWith({ where: { id_material: 1 } });
+    expect(txMock.materiales.delete).toHaveBeenCalledWith({ where: { id_material: 1 } });
   });
 
-  it("lanza ConflictError cuando el grupo tiene sub-materiales activos", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("forza el borrado de un grupo con sub-materiales (borra subs primero)", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: true,
-      subMateriales: [{ id_material: 2 }],
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [],
+      subMateriales: [
+        { id_material: 2, imagen_url: null },
+        { id_material: 3, imagen_url: null },
+      ],
     });
 
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    await expect(deleteMaterial(1)).resolves.toBeUndefined();
+    expect(txMock.materiales.deleteMany).toHaveBeenCalledWith({
+      where: { id_material: { in: [2, 3] } },
+    });
+    expect(txMock.materiales.delete).toHaveBeenCalledWith({ where: { id_material: 1 } });
   });
 
-  it("lanza ConflictError cuando hay opciones de producto asociadas", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("cascada por OpcionesProducto → ValoresOpcion + MatrizDePrecios", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: false,
       subMateriales: [],
-      opciones: [{ id_opcion: 1 }],
-      detallesPedido: [],
-      pedidoMaquinas: [],
     });
+    txMock.opcionesProducto.findMany.mockResolvedValue([{ id_opcion: 10 }, { id_opcion: 11 }]);
 
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    await deleteMaterial(1);
+
+    expect(txMock.matrizDePrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_opcion: { in: [10, 11] } },
+    });
+    expect(txMock.valoresOpcion.deleteMany).toHaveBeenCalledWith({
+      where: { id_opcion: { in: [10, 11] } },
+    });
+    expect(txMock.opcionesProducto.deleteMany).toHaveBeenCalledWith({
+      where: { id_opcion: { in: [10, 11] } },
+    });
   });
 
-  it("lanza ConflictError cuando hay detalles de pedido asociados", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("limpia Gastos.id_proveedor_precio antes de borrar ProveedorPrecios", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: false,
       subMateriales: [],
-      opciones: [],
-      detallesPedido: [{ id_detalle: 1 }],
-      pedidoMaquinas: [],
     });
+    txMock.proveedorPrecios.findMany.mockResolvedValue([{ id_proveedor_precio: 99 }]);
 
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
-  });
+    await deleteMaterial(1);
 
-  it("lanza ConflictError cuando hay pedidos de máquina asociados", async () => {
-    mockFindUnique.mockResolvedValue({
-      id_material: 1,
-      imagen_url: null,
-      es_grupo: false,
-      subMateriales: [],
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [{ id_pedido_maquina: 1 }],
+    expect(txMock.gastos.updateMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [99] } },
+      data: { id_proveedor_precio: null },
     });
-
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(txMock.proveedorPrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [99] } },
+    });
   });
 
   it("lanza NotFoundError cuando el material no existe", async () => {
-    mockFindUnique.mockResolvedValue(null);
+    txMock.materiales.findUnique.mockResolvedValue(null);
     await expect(deleteMaterial(999)).rejects.toThrow(NotFoundError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(txMock.materiales.delete).not.toHaveBeenCalled();
   });
 });
 
