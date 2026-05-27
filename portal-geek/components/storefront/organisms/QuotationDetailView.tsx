@@ -305,11 +305,6 @@ export function QuotationDetailView({ quotation }: Props) {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="max-w-[1240px] mx-auto py-10 px-4 space-y-12"
     >
-      {/* Persistent Search Section */}
-      <div className="mb-8">
-        <FolioSearch />
-      </div>
-
       {/* Folio and Date */}
       <div>
         <h2 className="text-[24px] font-bold text-[#1e1e1e]">
@@ -822,6 +817,11 @@ export function QuotationDetailView({ quotation }: Props) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Persistent Search Section */}
+      <div className="pt-8 border-t border-[#E8E8E8]">
+        <FolioSearch />
       </div>
 
       {/* Cancel Modal */}

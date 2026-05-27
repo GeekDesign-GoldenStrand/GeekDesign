@@ -45,18 +45,42 @@ describe("UBICACION_REGEX", () => {
     "San Pedro Garza García, Nuevo León",
     "Ciudad de México, CDMX",
     "León, Guanajuato",
-  ])("accepts a valid 'Municipio, Estado' value: %s", (value) => {
+    "Av. Universidad 100",
+    "Calle 123 #45-A",
+    "Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro.",
+  ])("accepts a valid value: %s", (value) => {
     expect(UBICACION_REGEX.test(value)).toBe(true);
   });
 
   it.each([
-    ["missing comma", "Querétaro"],
-    ["digits", "111, 111"],
     ["emojis", "😀😀😀"],
-    ["empty estado", "Querétaro,"],
-    ["two commas", "Querétaro, Querétaro, México"],
-    ["leading comma", ", Querétaro"],
+    ["russian", "Москва"],
+    ["japanese", "東京"],
   ])("rejects an invalid value (%s): %s", (_label, value) => {
     expect(UBICACION_REGEX.test(value)).toBe(false);
+  });
+});
+
+describe("CreateProveedorSchema — ubicacion", () => {
+  it("accepts a valid address within 100 characters", () => {
+    const result = CreateProveedorSchema.safeParse({
+      ...BASE,
+      ubicacion: "Av. Universidad 100, Col. Centro",
+      color: "#3B82F6",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an address that exceeds 100 characters", () => {
+    const longAddress = "A".repeat(101);
+    const result = CreateProveedorSchema.safeParse({
+      ...BASE,
+      ubicacion: longAddress,
+      color: "#3B82F6",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe("Máximo 100 caracteres.");
+    }
   });
 });

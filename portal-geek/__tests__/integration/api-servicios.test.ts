@@ -83,10 +83,8 @@ describe("GET /api/servicios", () => {
     jest.clearAllMocks();
   });
 
-  // TODO: Este test asume que activo=true es ruta pública, pero el GET actual
-  // está protegido con withRole(["Administrador"]). Requiere decisión de producto.
-
-  it.skip("retorna 200 con lista paginada cuando activo=true (ruta pública)", async () => {
+  it("retorna 200 con lista paginada filtrando por activo=true", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindMany.mockResolvedValue([
       { id_servicio: 1, nombre_servicio: "Corte Láser", estatus_servicio: true },
     ]);
@@ -100,8 +98,8 @@ describe("GET /api/servicios", () => {
     expect(res.body.page).toBe(1);
   });
 
-  // TODO: Mismo issue que el test anterior — espera 200 sin sesión en ruta admin-only.
-  it.skip("respeta parámetros de paginación", async () => {
+  it("respeta parámetros de paginación", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindMany.mockResolvedValue([]);
     mockCount.mockResolvedValue(0);
 
