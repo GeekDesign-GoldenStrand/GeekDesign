@@ -486,47 +486,42 @@ const SCHEMA_SUB_BASE = {
 };
 
 describe("CreateMaterialSchema — color", () => {
-  it.each(["#3B82F6", "#000000", "#FFFFFF", "#aabbcc", "#A1B2C3"])(
-    "accepts a valid 6-digit HEX color: %s",
+  it.each(["Rojo", "Verde menta", "Plata", "Negro mate", "#3B82F6"])(
+    "accepts a descriptive color: %s",
     (color) => {
       expect(CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color }).success).toBe(true);
     }
   );
 
   it.each([
-    ["named color", "Plata"],
-    ["named color", "Verde"],
     ["empty string", ""],
-    ["missing hash", "3B82F6"],
-    ["8-digit with alpha", "#3B82F6FF"],
-    ["invalid hex chars", "#GGGGGG"],
+    ["only whitespace", "   "],
+    ["forbidden chars", "Rojo<script>"],
   ])("rejects an invalid color (%s): %s", (_label, color) => {
-    const result = CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe("El color debe ser un HEX válido (ej. #3B82F6).");
-    }
+    expect(CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color }).success).toBe(false);
   });
 });
 
 describe("CreateSubMaterialSchema — color", () => {
-  it.each(["#3B82F6", "#000000", "#FFFFFF", "#aabbcc"])(
-    "accepts a valid 6-digit HEX color: %s",
-    (color) => {
-      expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(true);
-    }
-  );
+  it.each(["Verde", "Verde menta", "#22C55E"])("accepts a descriptive color: %s", (color) => {
+    expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(true);
+  });
 
   it.each([
-    ["named color", "Verde"],
-    ["missing hash", "3B82F6"],
-    ["8-digit with alpha", "#3B82F6FF"],
-    ["invalid hex chars", "#GGGGGG"],
+    ["empty string", ""],
+    ["forbidden chars", "Verde{}"],
   ])("rejects an invalid color (%s): %s", (_label, color) => {
-    const result = CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe("El color debe ser un HEX válido (ej. #3B82F6).");
-    }
+    expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(false);
+  });
+});
+
+describe("CreateMaterialSchema — descripcion opcional", () => {
+  it("acepta payload sin descripcion_material", () => {
+    const { descripcion_material: _omit, ...rest } = {
+      ...SCHEMA_MATERIAL_BASE,
+      color: "Plata",
+    };
+    void _omit;
+    expect(CreateMaterialSchema.safeParse(rest).success).toBe(true);
   });
 });
