@@ -32,6 +32,10 @@ const SESSION_COOKIE = "cotizacion_session";
 // createCotizacionFromCart.
 const CLIENTE_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 const CLIENTE_COOKIE = "cliente_recognido";
+// Explicit purpose claim on the recognized-client JWT. Because this token is
+// signed with the same AUTH_SECRET as the session token, verifying the purpose
+// guards against token confusion if other JWT payloads gain an id_cliente field.
+const CLIENTE_JWT_PURPOSE = "cliente_recognido";
 
 function getSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
@@ -144,7 +148,7 @@ export const SESSION_COOKIE_MAX_AGE = SESSION_TTL_SECONDS;
  * to prefill checkout — carries no cotización access.
  */
 export async function signClienteJWT(id_cliente: number): Promise<string> {
-  return new SignJWT({ id_cliente })
+  return new SignJWT({ id_cliente, purpose: CLIENTE_JWT_PURPOSE })
     .setProtectedHeader({ alg: JWT_ALG })
     .setIssuedAt()
     .setExpirationTime(`${CLIENTE_TTL_SECONDS}s`)
@@ -153,11 +157,13 @@ export async function signClienteJWT(id_cliente: number): Promise<string> {
 
 /**
  * Decode a "recognized client" cookie JWT and return its id_cliente, or null
- * on any failure (missing/expired/tampered).
+ * on any failure (missing/expired/tampered/wrong-purpose). The purpose check
+ * rejects any other token signed with the same secret.
  */
 export async function readClienteId(jwt: string): Promise<number | null> {
   try {
     const { payload } = await jwtVerify(jwt, getSecret(), { algorithms: [JWT_ALG] });
+    if (payload.purpose !== CLIENTE_JWT_PURPOSE) return null;
     return typeof payload.id_cliente === "number" ? payload.id_cliente : null;
   } catch {
     return null;
