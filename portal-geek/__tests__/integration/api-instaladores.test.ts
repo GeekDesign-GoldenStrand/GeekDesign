@@ -348,12 +348,12 @@ describe("POST /api/instaladores", () => {
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando ubicacion supera 255 caracteres", async () => {
+  it("retorna 422 cuando ubicacion supera 100 caracteres", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, ubicacion: "A".repeat(256) });
+      .send({ ...VALID_PAYLOAD, ubicacion: "A".repeat(101) });
 
     expect(res.status).toBe(422);
   });
