@@ -125,10 +125,34 @@ export default function AsignarServicios({
     }
   }
 
+  const formId = "asignar-servicios-form";
+
   return (
-    <ModalShell title={`Asignar servicios — ${nickname} (${model})`} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col text-[13px] text-[#575757] mb-6">
+    <ModalShell
+      title={`Asignar servicios — ${nickname} (${model})`}
+      onClose={onClose}
+      footer={
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={formId}
+            disabled={isLoading}
+            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+          >
+            {isLoading ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit}>
+        <div className="flex flex-col text-[13px] text-[#575757]">
           <label className="font-medium mb-1">Servicios</label>
           <MultiSelect
             options={servicioOptions}
@@ -143,27 +167,10 @@ export default function AsignarServicios({
         </div>
 
         {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mb-4">
+          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
             {error}
           </p>
         )}
-
-        <div className="flex justify-end gap-3 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
-            {isLoading ? "Guardando..." : "Guardar"}
-          </button>
-        </div>
       </form>
     </ModalShell>
   );

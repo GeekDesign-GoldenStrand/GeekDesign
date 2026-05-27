@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface MultiSelectOption {
   value: string | number;
@@ -77,6 +77,20 @@ export default function MultiSelect({
   };
 
   const isMaxReached = maxSelected !== undefined && selected.length >= maxSelected;
+
+  // Close the dropdown when the user clicks outside — without this it stays
+  // open and overlays anything below (notably the modal action buttons).
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
 
   return (
     <div className="flex flex-col gap-1 w-full font-ibm-plex-sans mb-6" ref={containerRef}>
