@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UBICACION_REGEX } from "./proveedores";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 
@@ -21,7 +22,11 @@ export const CreateInstaladorSchema = z.object({
   correo: z.email("Correo electrónico inválido.").max(150),
   costo_instalacion: z.number().nonnegative("El costo de instalación no puede ser negativo."),
   notas: z.string().max(500).optional(),
-  ubicacion: z.string().max(255).optional(),
+  ubicacion: z
+    .string()
+    .max(100, "Máximo 100 caracteres.")
+    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Solo se permiten caracteres en inglés y español.")
+    .optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
 });

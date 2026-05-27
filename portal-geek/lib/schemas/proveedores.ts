@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
-// "Municipio, Estado": letters/accents/spaces on each side of a single comma. No
-// digits, emojis or symbols — those passed the old single-comma check.
-export const UBICACION_REGEX = /^[a-zA-ZÀ-ÿ.\-' ]+,\s*[a-zA-ZÀ-ÿ.\-' ]+$/;
+// Accepts English and Spanish characters, numbers, spaces, and common address punctuation.
+export const UBICACION_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-'#°/()\s_&@:;"]*$/;
 
 export const CreateProveedorSchema = z.object({
   nombre_proveedor: z
@@ -29,8 +28,8 @@ export const CreateProveedorSchema = z.object({
   descripcion_proveedor: z.string().max(500, "Máximo 500 caracteres.").optional(),
   ubicacion: z
     .string()
-    .max(255)
-    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado")
+    .max(100, "Máximo 100 caracteres.")
+    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Solo se permiten caracteres en inglés y español.")
     .optional(),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
