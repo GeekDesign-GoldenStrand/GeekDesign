@@ -12,10 +12,7 @@ const colorValidator = z
   .max(50, "Máximo 50 caracteres.")
   .refine((v) => !COLOR_BLOCKED.test(v), "El color contiene caracteres no permitidos.");
 
-const descripcionOpcionalValidator = z
-  .string()
-  .max(500, "Máximo 500 caracteres.")
-  .optional();
+const descripcionOpcionalValidator = z.string().max(500, "Máximo 500 caracteres.").optional();
 
 export const UNIDADES_MEDIDA = ["mm", "in", "cm", "mu", "pt"] as const;
 

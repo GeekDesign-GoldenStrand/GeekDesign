@@ -42,7 +42,6 @@ const mockCount = prisma.materiales.count as jest.Mock;
 const mockFindUnique = prisma.materiales.findUnique as jest.Mock;
 const mockCreate = prisma.materiales.create as jest.Mock;
 const mockUpdate = prisma.materiales.update as jest.Mock;
-const mockDelete = prisma.materiales.delete as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
 
 const KEY = "materiales/2026/05/00000000-0000-4000-8000-000000000001.jpg";

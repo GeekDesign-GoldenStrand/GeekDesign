@@ -514,8 +514,8 @@ export function EditarMaterialForm({
             <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Última confirmación</h3>
             <p className="text-[14px] text-[#575757] mb-6">
               <strong className="text-[#1e1e1e]">
-                Revisa tus proveedores, instaladores y servicios. Asegúrate de que tengan al menos un material
-                registrado.
+                Revisa tus proveedores, instaladores y servicios. Asegúrate de que tengan al menos
+                un material registrado.
               </strong>
             </p>
             <div className="flex justify-end gap-3">
