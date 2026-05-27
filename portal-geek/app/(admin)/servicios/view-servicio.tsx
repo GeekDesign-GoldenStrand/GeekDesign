@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
 import { ConfirmarEliminarServicioModal } from "@/components/admin/servicios/organisms/ConfirmarEliminarServicioModal";
 import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
@@ -67,39 +68,42 @@ export function ViewServicios() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">Servicios</h1>
+    <div className="min-h-screen bg-white">
+      <AdminHeader title="Servicios" />
+      <main className="p-4 md:p-8">
+        <ServiciosToolbar activosCount={activosCount} />
 
-      <ServiciosToolbar activosCount={activosCount} />
+        {deleteSuccess && (
+          <SuccessModal
+            message="Servicio eliminado correctamente."
+            onClose={() => setDeleteSuccess(false)}
+          />
+        )}
 
-      {deleteSuccess && (
-        <SuccessModal
-          message="Servicio eliminado correctamente."
-          onClose={() => setDeleteSuccess(false)}
-        />
-      )}
+        {loading && <div className="text-center py-12 text-gray-500">Cargando servicios...</div>}
 
-      {loading && <div className="text-center py-12 text-gray-500">Cargando servicios...</div>}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">{error}</div>
+        )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">{error}</div>
-      )}
+        {!loading && !error && servicios.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            No hay servicios registrados todavía.
+          </div>
+        )}
 
-      {!loading && !error && servicios.length === 0 && (
-        <div className="text-center py-12 text-gray-500">No hay servicios registrados todavía.</div>
-      )}
-
-      {!loading && !error && servicios.length > 0 && (
-        <div className="space-y-4">
-          {servicios.map((servicio) => (
-            <ServicioCard
-              key={servicio.id_servicio}
-              servicio={servicio}
-              onEliminar={handleEliminar}
-            />
-          ))}
-        </div>
-      )}
+        {!loading && !error && servicios.length > 0 && (
+          <div className="space-y-4">
+            {servicios.map((servicio) => (
+              <ServicioCard
+                key={servicio.id_servicio}
+                servicio={servicio}
+                onEliminar={handleEliminar}
+              />
+            ))}
+          </div>
+        )}
+      </main>
 
       <ConfirmarEliminarServicioModal
         isOpen={servicioAEliminar !== null}

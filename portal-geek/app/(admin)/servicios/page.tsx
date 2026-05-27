@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
+
+import { requireSection } from "@/lib/auth/page-guard";
+
 import { ViewServicios } from "./view-servicio";
 
-// Role/section access is enforced in layout.tsx (requireSection).
 export const dynamic = "force-dynamic";
 
-export default function ServiciosPage() {
+export const metadata: Metadata = { title: "Servicios | Geek Design" };
+
+export default async function ServiciosPage() {
+  await requireSection("servicios");
+
   return <ViewServicios />;
 }
