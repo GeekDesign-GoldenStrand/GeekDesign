@@ -413,7 +413,7 @@ export function TercerosView() {
   const initialModalType = activeTab === "Instaladores" ? "Instalador" : "Proveedor";
 
   return (
-    <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-white">
+    <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-[#f5f5f5]">
       <AdminHeader title="Terceros" />
       <main className="p-4 md:p-8">
         <AdminToolbar
