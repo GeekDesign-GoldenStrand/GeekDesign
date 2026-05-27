@@ -2,7 +2,6 @@ import {
   Buildings,
   CubeTransparent,
   CurrencyDollar,
-  Microscope,
   Handshake,
   Briefcase,
   Package,
@@ -11,8 +10,12 @@ import {
   Storefront,
   PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
+import Image from "next/image";
 
 import type { Section } from "@/lib/auth/access";
+import maquina_icono from "@/public/maquina icono.svg";
+import maquina_icono_fill from "@/public/maquina-icono-fill.svg";
+import maquina_icono_hover from "@/public/maquina-icono-hover.svg";
 
 export type NavItem =
   | {
@@ -20,6 +23,15 @@ export type NavItem =
       href: string;
       label: string;
       icon: React.ReactNode;
+      // Optional active-state icon. Used for non-Phosphor icons (custom SVG
+      // assets) that can't pick up the active state via `weight: "fill"`.
+      // Phosphor entries leave this undefined and rely on NavLink's
+      // cloneElement weight swap.
+      iconActive?: React.ReactNode;
+      // Optional hover-state icon. Same rationale as iconActive — Phosphor
+      // entries get hover via currentColor on the parent link; custom SVGs
+      // need a dedicated asset.
+      iconHover?: React.ReactNode;
       // The policy section this item links to. Visibility is derived from
       // can(role, section, "read") — see SidebarNav. Omit for items visible to
       // any authenticated user.
@@ -74,7 +86,12 @@ export const navItems: NavItem[] = [
   {
     href: "/maquinas",
     label: "Máquinas",
-    icon: <Microscope size={ICON_SIZE} />,
+    // Custom SVG asset (not Phosphor) — wrap in <Image> so it's a valid React
+    // child, and supply separate `iconHover`/`iconActive` variants since
+    // NavLink's color/weight swap doesn't apply to <Image>.
+    icon: <Image src={maquina_icono} alt="" width={ICON_SIZE} height={ICON_SIZE} />,
+    iconHover: <Image src={maquina_icono_hover} alt="" width={ICON_SIZE} height={ICON_SIZE} />,
+    iconActive: <Image src={maquina_icono_fill} alt="" width={ICON_SIZE} height={ICON_SIZE} />,
     section: "maquinas",
   },
   { type: "divider" },
