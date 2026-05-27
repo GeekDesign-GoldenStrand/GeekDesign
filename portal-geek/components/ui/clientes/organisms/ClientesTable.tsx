@@ -65,12 +65,14 @@ export function ClientesTable({
     <div className="w-full">
       {/* Table Header - Hidden on mobile */}
       <div className="hidden lg:flex items-center w-full h-[55px] bg-[#d1d1d1] rounded-[8px] px-6 mb-4">
-        <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">Nombre</div>
-        <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">Empresa</div>
-        <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">RFC</div>
-        <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">Correo</div>
-        <div className="flex-1 font-bold text-[18px] text-black font-ibm-plex">Teléfono</div>
-        <div className="flex-1 font-bold text-[18px] text-black text-center font-ibm-plex">
+        <div className="flex-1 min-w-0 font-bold text-[18px] text-black font-ibm-plex">Nombre</div>
+        <div className="flex-1 min-w-0 font-bold text-[18px] text-black font-ibm-plex">Empresa</div>
+        <div className="flex-1 min-w-0 font-bold text-[18px] text-black font-ibm-plex">RFC</div>
+        <div className="flex-1 min-w-0 font-bold text-[18px] text-black font-ibm-plex">Correo</div>
+        <div className="flex-1 min-w-0 font-bold text-[18px] text-black font-ibm-plex">
+          Teléfono
+        </div>
+        <div className="flex-1 min-w-0 font-bold text-[18px] text-black text-center font-ibm-plex">
           Categoría
         </div>
       </div>
@@ -83,37 +85,46 @@ export function ClientesTable({
             className="flex flex-col lg:flex-row lg:items-center w-full min-h-[88px] bg-white rounded-[8px] p-6 lg:px-6 shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_15px_rgba(0,0,0,0.15)] gap-4 lg:gap-0"
           >
             {/* Nombre */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Nombre
               </span>
-              <div className="font-semibold text-[18px] text-black font-ibm-plex">
+              <div
+                className="font-semibold text-[18px] text-black font-ibm-plex truncate"
+                title={cliente.nombre_cliente}
+              >
                 {cliente.nombre_cliente}
               </div>
             </div>
 
             {/* Empresa */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Empresa
               </span>
-              <div className="font-medium text-[17px] text-[#1e1e1e] font-ibm-plex">
+              <div
+                className="font-medium text-[17px] text-[#1e1e1e] font-ibm-plex truncate"
+                title={cliente.empresa || undefined}
+              >
                 {cliente.empresa || "—"}
               </div>
             </div>
 
             {/* RFC */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 RFC
               </span>
-              <div className="font-medium text-[16px] text-[#1e1e1e] font-mono">
+              <div
+                className="font-medium text-[16px] text-[#1e1e1e] font-mono truncate"
+                title={cliente.rfc || undefined}
+              >
                 {cliente.rfc || "—"}
               </div>
             </div>
 
             {/* Correo */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Correo
               </span>
@@ -121,6 +132,7 @@ export function ClientesTable({
                 <a
                   href={`mailto:${cliente.correo_electronico}`}
                   className="hover:text-[#e42200] hover:underline transition-all"
+                  title={cliente.correo_electronico}
                 >
                   {cliente.correo_electronico}
                 </a>
@@ -128,11 +140,11 @@ export function ClientesTable({
             </div>
 
             {/* Teléfono */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                 Teléfono
               </span>
-              <div className="font-medium text-[17px] text-[#1e1e1e] font-ibm-plex">
+              <div className="font-medium text-[17px] text-[#1e1e1e] font-ibm-plex truncate">
                 <a
                   href={`tel:${cliente.numero_telefono}`}
                   className="hover:text-[#e42200] hover:underline transition-all"
@@ -143,7 +155,7 @@ export function ClientesTable({
             </div>
 
             {/* Categoría */}
-            <div className="flex-1 flex lg:justify-center items-center">
+            <div className="flex-1 min-w-0 flex lg:justify-center items-center">
               <div className="w-full lg:w-auto">
                 <span className="lg:hidden block text-[14px] font-bold text-[#8e908f] uppercase mb-1">
                   Categoría

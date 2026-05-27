@@ -88,9 +88,12 @@ export function MaterialCard({
     >
       <div className="flex items-center justify-between md:contents">
         {visibleColumns.name && (
-          <div className="flex flex-col md:flex md:items-center md:justify-center">
+          <div className="flex flex-col md:flex md:items-center md:justify-center min-w-0">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Nombre</span>
-            <p className="text-[15px] lg:text-[16px] text-[#1e1e1e] font-semibold md:font-normal truncate">
+            <p
+              className="text-[15px] lg:text-[16px] text-[#1e1e1e] font-semibold md:font-normal truncate max-w-full"
+              title={name}
+            >
               {name}
             </p>
           </div>
@@ -106,11 +109,13 @@ export function MaterialCard({
       </div>
 
       {visibleColumns.description && (
-        <div className="flex flex-col md:flex md:items-center md:justify-center">
+        <div className="flex flex-col md:flex md:items-center md:justify-center min-w-0">
           <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">
             Descripción
           </span>
-          <p className="text-[12px] text-[#575757] line-clamp-2">{description || "-"}</p>
+          <p className="text-[12px] text-[#575757] line-clamp-2 max-w-full break-words">
+            {description || "-"}
+          </p>
         </div>
       )}
 

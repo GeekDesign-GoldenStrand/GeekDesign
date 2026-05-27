@@ -2,7 +2,6 @@
 
 import {
   PencilSimple,
-  Info,
   CheckCircle,
   WarningCircle,
   StopCircle,
@@ -197,9 +196,19 @@ export function PedidosTable({
 
           return (
             <div key={p.id_pedido}>
-              {/* Desktop Row */}
+              {/* Desktop Row — entire row opens the pedido detail */}
               <div
-                className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
+                role="button"
+                tabIndex={0}
+                onClick={() => onShowDetail(p.id_pedido)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onShowDetail(p.id_pedido);
+                  }
+                }}
+                aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
                 style={{
                   gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
                 }}
@@ -213,10 +222,10 @@ export function PedidosTable({
                 </span>
 
                 {/* Empresa */}
-                <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
+                <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
 
                 {/* Nombre de oportunidad */}
-                <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
+                <span className="truncate px-2 min-w-0">{p.cliente?.nombre_cliente}</span>
 
                 {/* Monto */}
                 <span className="whitespace-nowrap">
@@ -236,6 +245,7 @@ export function PedidosTable({
                     >
                       <select
                         value={selectedServiceStatus}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           const uiValue = e.target.value;
                           const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
@@ -284,24 +294,23 @@ export function PedidosTable({
 
                 {/* Acciones */}
                 <div className="flex justify-center items-center gap-1">
-                  <DesignFileLink
-                    archivos={p.archivos}
-                    className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => onShowDetail(p.id_pedido)}
-                    className="text-black hover:text-[#e42200] p-2"
-                    title="Ver detalle del pedido"
-                    aria-label={`Ver detalle del pedido ${p.id_pedido}`}
+                  {/* Fixed slot so the optional design-file clip doesn't shift the edit icon */}
+                  <span
+                    className="flex w-[34px] shrink-0 justify-center"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Info size={18} />
-                  </button>
+                    <DesignFileLink
+                      archivos={p.archivos}
+                      className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                    />
+                  </span>
 
                   <a
                     href={`/pedidos/${p.id_pedido}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="text-black hover:text-[#e42200] p-2"
+                    title="Editar pedido"
+                    aria-label={`Editar pedido ${p.folio ?? p.id_pedido}`}
                   >
                     <PencilSimple size={18} />
                   </a>
@@ -309,7 +318,19 @@ export function PedidosTable({
               </div>
 
               {/* Mobile Card */}
-              <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onShowDetail(p.id_pedido)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onShowDetail(p.id_pedido);
+                  }
+                }}
+                aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4 cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+              >
                 {/* Header: pedido id + service status control/semaphore */}
                 <div className="flex justify-between items-start gap-4">
                   <div>
@@ -332,6 +353,7 @@ export function PedidosTable({
                       >
                         <select
                           value={selectedServiceStatus}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) => {
                             const uiValue = e.target.value;
                             const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
@@ -449,26 +471,17 @@ export function PedidosTable({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <DesignFileLink
                       archivos={p.archivos}
                       className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
                     />
 
-                    <button
-                      type="button"
-                      onClick={() => onShowDetail(p.id_pedido)}
-                      className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
-                      title="Ver detalle del pedido"
-                      aria-label={`Ver detalle del pedido ${p.id_pedido}`}
-                    >
-                      <Info size={18} />
-                    </button>
-
                     <a
                       href={`/pedidos/${p.id_pedido}`}
                       className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
                       title="Editar pedido"
+                      aria-label={`Editar pedido ${p.folio ?? p.id_pedido}`}
                     >
                       <PencilSimple size={18} />
                     </a>
