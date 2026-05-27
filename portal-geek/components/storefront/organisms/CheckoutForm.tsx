@@ -10,24 +10,50 @@ interface Sucursal {
   nombre_sucursal: string;
 }
 
+export interface InitialContact {
+  nombre: string;
+  empresa: string;
+  correo: string;
+  telefono: string;
+}
+
 interface Props {
   sucursales: Sucursal[];
+  initialContact?: InitialContact | null;
 }
 
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
-export function CheckoutForm({ sucursales }: Props) {
+export function CheckoutForm({ sucursales, initialContact }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<CarritoItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  const [nombre, setNombre] = useState("");
-  const [empresa, setEmpresa] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [telefono, setTelefono] = useState("");
+  const [nombre, setNombre] = useState(initialContact?.nombre ?? "");
+  const [empresa, setEmpresa] = useState(initialContact?.empresa ?? "");
+  const [correo, setCorreo] = useState(initialContact?.correo ?? "");
+  const [telefono, setTelefono] = useState(initialContact?.telefono ?? "");
   const [idSucursal, setIdSucursal] = useState<number | null>(sucursales[0]?.id_sucursal ?? null);
   const [notas, setNotas] = useState("");
+
+  // Whether the form is showing prefilled data from a recognized client. Hidden
+  // once they clear it (e.g. on a shared computer or "not me").
+  const [recognized, setRecognized] = useState(Boolean(initialContact));
+
+  async function handleForgetMe() {
+    setRecognized(false);
+    setNombre("");
+    setEmpresa("");
+    setCorreo("");
+    setTelefono("");
+    try {
+      await fetch("/api/storefront/cliente-recognido", { method: "DELETE" });
+    } catch {
+      // Best-effort: clearing the inputs already removed the visible PII; the
+      // cookie will expire on its own if this network call fails.
+    }
+  }
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +159,21 @@ export function CheckoutForm({ sucursales }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-[24px]">
       <section className="bg-white rounded-[10px] border border-[#c2c0c0] p-[24px] flex flex-col gap-[16px]">
         <h2 className="font-bold text-[20px] text-[#1e1e1e]">Tus datos</h2>
+
+        {recognized && (
+          <div className="flex items-center justify-between gap-[12px] rounded-[8px] bg-[#fff8f9] border border-[#e6d2d4] px-[14px] py-[10px]">
+            <p className="text-[14px] text-[#1e1e1e]">
+              Cotizando como <span className="font-semibold">{nombre || correo}</span>.
+            </p>
+            <button
+              type="button"
+              onClick={handleForgetMe}
+              className="text-[14px] font-semibold text-[#8b434a] underline hover:text-[#7a3a41]"
+            >
+              ¿No eres tú?
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[6px]">
           <label htmlFor="nombre" className="text-[14px] font-semibold text-[#1e1e1e]">

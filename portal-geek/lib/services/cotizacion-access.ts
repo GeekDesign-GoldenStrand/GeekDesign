@@ -22,6 +22,17 @@ const SESSION_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 const JWT_ALG = "HS256";
 const SESSION_COOKIE = "cotizacion_session";
 
+// "Recognized client" cookie — separate, long-lived identity used ONLY to
+// prefill the checkout form. It does NOT grant access to any cotización; it
+// is set when a client proves email control via the magic link, and refreshed
+// on every subsequent link click, so an active (e.g. monthly) client stays
+// recognized across the window. Prefill behind this signed cookie is safe:
+// it can only exist after a verified magic-link visit, so it does not
+// reintroduce the email-enumeration / PII-takeover hole closed in
+// createCotizacionFromCart.
+const CLIENTE_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
+const CLIENTE_COOKIE = "cliente_recognido";
+
 function getSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
@@ -127,6 +138,34 @@ export async function readSessionCotizacionId(jwt: string): Promise<number | nul
 
 export const SESSION_COOKIE_NAME = SESSION_COOKIE;
 export const SESSION_COOKIE_MAX_AGE = SESSION_TTL_SECONDS;
+
+/**
+ * Sign a long-lived "recognized client" JWT bound to an id_cliente. Used only
+ * to prefill checkout — carries no cotización access.
+ */
+export async function signClienteJWT(id_cliente: number): Promise<string> {
+  return new SignJWT({ id_cliente })
+    .setProtectedHeader({ alg: JWT_ALG })
+    .setIssuedAt()
+    .setExpirationTime(`${CLIENTE_TTL_SECONDS}s`)
+    .sign(getSecret());
+}
+
+/**
+ * Decode a "recognized client" cookie JWT and return its id_cliente, or null
+ * on any failure (missing/expired/tampered).
+ */
+export async function readClienteId(jwt: string): Promise<number | null> {
+  try {
+    const { payload } = await jwtVerify(jwt, getSecret(), { algorithms: [JWT_ALG] });
+    return typeof payload.id_cliente === "number" ? payload.id_cliente : null;
+  } catch {
+    return null;
+  }
+}
+
+export const CLIENTE_COOKIE_NAME = CLIENTE_COOKIE;
+export const CLIENTE_COOKIE_MAX_AGE = CLIENTE_TTL_SECONDS;
 
 function escapeHtml(str: string): string {
   return str
