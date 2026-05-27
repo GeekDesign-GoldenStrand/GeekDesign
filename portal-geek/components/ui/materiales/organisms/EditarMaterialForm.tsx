@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ConfirmDialog } from "@/components/ui/atoms";
 import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
@@ -368,38 +369,20 @@ export function EditarMaterialForm({
         </div>
       </div>
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">
-              {isGrupo ? "¿Eliminar grupo?" : "¿Eliminar material?"}
-            </h3>
-            <p className="text-[14px] text-[#575757] mb-6">
-              {isGrupo
-                ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
-                : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`}
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-                disabled={deleting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
-              >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={isGrupo ? "¿Eliminar grupo?" : "¿Eliminar material?"}
+        confirmLabel="Sí, eliminar"
+        loading={deleting}
+        zClassName="z-[100]"
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        description={
+          isGrupo
+            ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
+            : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`
+        }
+      />
     </form>
   );
 }
