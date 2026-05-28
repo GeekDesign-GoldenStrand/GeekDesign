@@ -17,6 +17,22 @@ interface Props {
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
+const getMinDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getMaxDate = () => {
+  const today = new Date();
+  const year = today.getFullYear() + 2;
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function CheckoutForm({ sucursales }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<CarritoItem[]>([]);
@@ -28,6 +44,7 @@ export function CheckoutForm({ sucursales }: Props) {
   const [telefono, setTelefono] = useState("");
   const [idSucursal, setIdSucursal] = useState<number | null>(sucursales[0]?.id_sucursal ?? null);
   const [notas, setNotas] = useState("");
+  const [fechaEstimada, setFechaEstimada] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +89,7 @@ export function CheckoutForm({ sucursales }: Props) {
         },
         id_sucursal: idSucursal,
         notas: notas.trim() || undefined,
+        fecha_estimada: fechaEstimada || undefined,
         items: items.map((i) => ({
           id_servicio: i.servicioId,
           id_material: i.id_material,
@@ -206,6 +224,22 @@ export function CheckoutForm({ sucursales }: Props) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex flex-col gap-[6px]">
+          <label htmlFor="fechaEstimada" className="text-[14px] font-semibold text-[#1e1e1e]">
+            Fecha deseada de entrega <span className="text-[#c14a4a]">*</span>
+          </label>
+          <input
+            id="fechaEstimada"
+            type="date"
+            required
+            value={fechaEstimada}
+            onChange={(e) => setFechaEstimada(e.target.value)}
+            min={getMinDate()}
+            max={getMaxDate()}
+            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] cursor-pointer"
+          />
         </div>
 
         <div className="flex flex-col gap-[6px]">

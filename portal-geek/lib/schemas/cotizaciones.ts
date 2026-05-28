@@ -146,6 +146,27 @@ export const SolicitarCotizacionSchema = z.object({
   cliente: SolicitarClienteSchema,
   id_sucursal: z.number().int().positive(),
   notas: z.string().max(2000).optional(),
+  fecha_estimada: z.coerce
+    .date()
+    .optional()
+    .nullable()
+    .refine((val) => {
+      if (!val) return true;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      // Subtract 24 hours to accommodate timezone differences
+      const limit = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      return val >= limit;
+    }, "La fecha estimada no puede ser anterior a la fecha actual")
+    .refine((val) => {
+      if (!val) return true;
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 2);
+      maxDate.setHours(23, 59, 59, 999);
+      // Add 24 hours to accommodate timezone differences
+      const limit = new Date(maxDate.getTime() + 24 * 60 * 60 * 1000);
+      return val <= limit;
+    }, "La fecha estimada no puede superar los 2 años a partir de hoy"),
   items: z.array(SolicitarItemSchema).min(1, "El carrito está vacío"),
 });
 
