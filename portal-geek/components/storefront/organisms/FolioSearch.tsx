@@ -30,13 +30,21 @@ export function FolioSearch() {
     setSubmitting(true);
     setFeedback(null);
     try {
-      await fetch(`/api/storefront/cotizaciones/${encodeURIComponent(f)}/access-link`, {
+      const res = await fetch(`/api/storefront/cotizaciones/${encodeURIComponent(f)}/access-link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo_electronico: m }),
       });
-      // Generic confirmation regardless of outcome (anti-enumeration).
-      setFeedback("Si los datos son correctos, te enviamos un correo con el enlace de acceso.");
+      // A 429 is rate-limiting (depends only on request volume, never on whether
+      // the folio/email match) — surface it so the user knows to wait instead of
+      // expecting an email that will never arrive. Any other outcome gets the
+      // generic anti-enumeration confirmation.
+      if (res.status === 429) {
+        const json = await res.json().catch(() => null);
+        setFeedback(json?.error ?? "Demasiados intentos. Intenta de nuevo en unos minutos.");
+      } else {
+        setFeedback("Si los datos son correctos, te enviamos un correo con el enlace de acceso.");
+      }
     } catch {
       setFeedback("No pudimos procesar la solicitud. Intenta de nuevo en unos minutos.");
     } finally {

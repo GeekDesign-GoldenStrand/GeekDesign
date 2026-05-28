@@ -18,9 +18,11 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
-const mockCheckRateLimit = jest.fn(() => ({ allowed: true, remaining: 4 }));
+const mockPeekRateLimit = jest.fn(() => ({ allowed: true, remaining: 4, retryAfterMs: 0 }));
 jest.mock("@/lib/utils/rate-limit", () => ({
-  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...(args as [])),
+  peekRateLimit: (...args: unknown[]) => mockPeekRateLimit(...(args as [])),
+  recordAttempt: jest.fn(),
+  clearRateLimit: jest.fn(),
 }));
 
 jest.mock("@/lib/services/auth", () => ({ loginUser: jest.fn() }));
@@ -54,7 +56,7 @@ describe("AU-01 POST /api/auth/login", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCheckRateLimit.mockReturnValue({ allowed: true, remaining: 4 });
+    mockPeekRateLimit.mockReturnValue({ allowed: true, remaining: 4, retryAfterMs: 0 });
   });
 
   it("AU01-I1: 200 + cookie de sesión con credenciales válidas", async () => {
@@ -99,7 +101,7 @@ describe("AU-01 POST /api/auth/login", () => {
   });
 
   it("AU01-I3b: 401 cuando se excede el rate limit (mismo mensaje genérico)", async () => {
-    mockCheckRateLimit.mockReturnValue({ allowed: false, remaining: 0 });
+    mockPeekRateLimit.mockReturnValue({ allowed: false, remaining: 0, retryAfterMs: 1000 });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/auth/login")
