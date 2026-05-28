@@ -124,9 +124,12 @@ export function useServicioForm({
       const hasSubstance = form.formulaChunks.some(
         (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
       );
+      // Strip UI-only "global" placeholders (the synthetic IVA chip). The evaluator
+      // injects `iva` implicitly via buildScope, and the schema rejects reserved names.
+      const constantesPayload = form.constantes.filter((c) => c.origen !== "global");
       const formulaPayload =
         hasSubstance && expresion.length > 0
-          ? { expresion, variables: form.variables, constantes: form.constantes }
+          ? { expresion, variables: form.variables, constantes: constantesPayload }
           : undefined;
 
       const url = mode === "edit" ? `/api/servicios/${servicioId}` : "/api/servicios";
