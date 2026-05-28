@@ -24,7 +24,8 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
   });
 
   it("acepta notas válidas en español e inglés con puntuación común", () => {
-    const validNotas = "Hola, esta es una nota válida. Hello! This is a valid note with standard punctuation: numbers 123, quotes 'test' & \"test\", symbols (€, $, %, &).";
+    const validNotas =
+      "Hola, esta es una nota válida. Hello! This is a valid note with standard punctuation: numbers 123, quotes 'test' & \"test\", symbols (€, $, %, &).";
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,

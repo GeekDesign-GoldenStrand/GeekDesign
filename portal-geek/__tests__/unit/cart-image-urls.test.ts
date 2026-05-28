@@ -24,7 +24,10 @@ describe("CarritoItem — imagenUrls", () => {
   });
 
   it("agrega un item con imagenUrls y lo persiste en localStorage", () => {
-    const { items } = addItem({ ...baseItem, imagenUrls: ["/api/images/img1.jpg", "/api/images/img2.jpg"] });
+    const { items } = addItem({
+      ...baseItem,
+      imagenUrls: ["/api/images/img1.jpg", "/api/images/img2.jpg"],
+    });
     expect(items[0].imagenUrls).toEqual(["/api/images/img1.jpg", "/api/images/img2.jpg"]);
 
     // sobrevive la serialización a JSON

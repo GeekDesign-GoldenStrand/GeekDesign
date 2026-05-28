@@ -80,7 +80,9 @@ export function CheckoutForm({ sucursales }: Props) {
     if (notas.trim()) {
       const regex = /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/;
       if (!regex.test(notas)) {
-        setError("Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis");
+        setError(
+          "Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis"
+        );
         return;
       }
     }
@@ -255,9 +257,7 @@ export function CheckoutForm({ sucursales }: Props) {
             <label htmlFor="notas" className="text-[14px] font-semibold text-[#1e1e1e]">
               Notas adicionales (opcional)
             </label>
-            <span className="text-[12px] text-[#666]">
-              {notas.length}/500
-            </span>
+            <span className="text-[12px] text-[#666]">{notas.length}/500</span>
           </div>
           <textarea
             id="notas"
