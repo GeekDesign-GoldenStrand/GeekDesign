@@ -37,7 +37,10 @@ export function EditarMaterialForm({
   onClose,
 }: EditarMaterialFormProps) {
   const isGrupo = material.tipo === "grupo";
-  const needsDimensions = !isGrupo;
+  const isCategoria = material.tipo === "categoria";
+  // Categorías y grupos comparten formulario "ligero": solo nombre/descripción/imagen.
+  const isLight = isGrupo || isCategoria;
+  const needsDimensions = !isLight;
 
   const [form, setForm] = useState({
     nombre_material: material.name,
@@ -77,7 +80,7 @@ export function EditarMaterialForm({
   }
 
   function validate() {
-    if (isGrupo) {
+    if (isLight) {
       const payload: Record<string, unknown> = {
         nombre_material: form.nombre_material.trim(),
         descripcion_material: form.descripcion_material.trim() || undefined,
@@ -141,7 +144,7 @@ export function EditarMaterialForm({
 
     // For individual/sub: strip the placeholder imagen_url unless a new image was uploaded
     let bodyPayload: Record<string, unknown>;
-    if (isGrupo) {
+    if (isLight) {
       bodyPayload = validatedPayload;
     } else {
       const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
@@ -202,10 +205,12 @@ export function EditarMaterialForm({
         </div>
       )}
 
-      {isGrupo && (
+      {isLight && (
         <div className="flex items-center gap-2 px-3 py-2 bg-[#fff3e0] border border-[#ffb74d] rounded-[6px]">
           <span className="text-[13px] text-[#e65100]">
-            Grupo de materiales — edita el nombre, descripción e imagen del grupo.
+            {isCategoria
+              ? "Categoría — edita el nombre, descripción e imagen."
+              : "Grupo de materiales — edita el nombre, descripción e imagen del grupo."}
           </span>
         </div>
       )}
@@ -224,7 +229,7 @@ export function EditarMaterialForm({
       </div>
 
       <div>
-        <label className={LABEL}>Descripción {isGrupo ? "" : "*"}</label>
+        <label className={LABEL}>Descripción {isLight ? "" : "*"}</label>
         <textarea
           rows={3}
           maxLength={500}
@@ -372,12 +377,18 @@ export function EditarMaterialForm({
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
             <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">
-              {isGrupo ? "¿Eliminar grupo?" : "¿Eliminar material?"}
+              {isCategoria
+                ? "¿Eliminar categoría?"
+                : isGrupo
+                  ? "¿Eliminar grupo?"
+                  : "¿Eliminar material?"}
             </h3>
             <p className="text-[14px] text-[#575757] mb-6">
-              {isGrupo
-                ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
-                : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`}
+              {isCategoria
+                ? `Esta acción no se puede deshacer. La categoría "${material.name}" será eliminada permanentemente. Si contiene grupos o materiales, la eliminación será bloqueada.`
+                : isGrupo
+                  ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
+                  : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`}
             </p>
             <div className="flex justify-end gap-3">
               <button

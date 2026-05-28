@@ -22,7 +22,7 @@ import type {
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
-type Tipo = "individual" | "grupo" | "sub";
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
 
 function buildDefaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
   return {
@@ -53,6 +53,40 @@ type FetchAction =
   | { type: "update"; row: MaterialCardProps }
   | { type: "remove"; id: number };
 
+// Recursive tree updaters (max 3 levels: categoría → grupo|individual → variante).
+function insertChild(
+  nodes: MaterialCardProps[],
+  parentId: number,
+  child: MaterialCardProps
+): MaterialCardProps[] {
+  return nodes.map((n) => {
+    if (n.id === parentId) {
+      return { ...n, subMateriales: [...(n.subMateriales ?? []), child] };
+    }
+    if (n.subMateriales?.length) {
+      return { ...n, subMateriales: insertChild(n.subMateriales, parentId, child) };
+    }
+    return n;
+  });
+}
+
+function replaceNode(nodes: MaterialCardProps[], row: MaterialCardProps): MaterialCardProps[] {
+  return nodes.map((n) => {
+    if (n.id === row.id) return { ...row, subMateriales: n.subMateriales };
+    if (n.subMateriales?.length) {
+      return { ...n, subMateriales: replaceNode(n.subMateriales, row) };
+    }
+    return n;
+  });
+}
+
+function removeNode(nodes: MaterialCardProps[], id: number): MaterialCardProps[] {
+  const filtered = nodes.filter((n) => n.id !== id);
+  return filtered.map((n) =>
+    n.subMateriales?.length ? { ...n, subMateriales: removeNode(n.subMateriales, id) } : n
+  );
+}
+
 function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   switch (action.type) {
     case "start":
@@ -63,54 +97,20 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
       return { ...state, loading: false, error: "No se pudieron cargar los materiales" };
 
     case "add": {
-      // Sub-material: inject into parent group's subMateriales
-      if (action.row.tipo === "sub" && action.row.id_material_padre !== null) {
+      if (action.row.id_material_padre != null) {
         return {
           ...state,
-          rows: state.rows.map((r) =>
-            r.id === action.row.id_material_padre
-              ? { ...r, subMateriales: [...(r.subMateriales ?? []), action.row] }
-              : r
-          ),
+          rows: insertChild(state.rows, action.row.id_material_padre, action.row),
         };
       }
       return { ...state, rows: [action.row, ...state.rows] };
     }
 
-    case "update": {
-      // Sub-material: update within parent group
-      if (action.row.tipo === "sub" && action.row.id_material_padre !== null) {
-        return {
-          ...state,
-          rows: state.rows.map((r) =>
-            r.id === action.row.id_material_padre
-              ? {
-                  ...r,
-                  subMateriales: (r.subMateriales ?? []).map((s) =>
-                    s.id === action.row.id ? action.row : s
-                  ),
-                }
-              : r
-          ),
-        };
-      }
-      return { ...state, rows: state.rows.map((r) => (r.id === action.row.id ? action.row : r)) };
-    }
+    case "update":
+      return { ...state, rows: replaceNode(state.rows, action.row) };
 
-    case "remove": {
-      const isTopLevel = state.rows.some((r) => r.id === action.id);
-      if (isTopLevel) {
-        return { ...state, rows: state.rows.filter((r) => r.id !== action.id) };
-      }
-      // Sub-material: remove from parent's list
-      return {
-        ...state,
-        rows: state.rows.map((r) => ({
-          ...r,
-          subMateriales: (r.subMateriales ?? []).filter((s) => s.id !== action.id),
-        })),
-      };
-    }
+    case "remove":
+      return { ...state, rows: removeNode(state.rows, action.id) };
   }
 }
 
@@ -169,7 +169,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
       })
       .then((payload) => {
         if (abortController.signal.aborted) return;
-        const items = ((payload?.data ?? []) as MaterialApiRow[]).map(mapMaterialRow);
+        const items = ((payload?.data ?? []) as MaterialApiRow[]).map((row) => mapMaterialRow(row));
         const total = payload?.total ?? 0;
         dispatch({
           type: "success",
@@ -260,6 +260,12 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setShowAddModal(true);
   }
 
+  function handleAddGrupo(categoriaId: number) {
+    setAddModalTipo("grupo");
+    setAddModalPadreId(categoriaId);
+    setShowAddModal(true);
+  }
+
   function handleOpenAddModal() {
     setAddModalTipo("individual");
     setAddModalPadreId(undefined);
@@ -315,6 +321,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
               onEditMaterial={handleEditClick}
               onViewProveedores={handleViewProveedores}
               onAddSubMaterial={handleAddSubMaterial}
+              onAddGrupo={handleAddGrupo}
               page={page}
               totalPages={totalPages}
               onPageChange={handlePageChange}

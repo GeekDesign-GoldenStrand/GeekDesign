@@ -196,6 +196,7 @@ model Materiales {
   id_material          Int      @id @default(autoincrement())
   id_material_padre    Int?
   es_grupo             Boolean  @default(false)
+  es_categoria         Boolean  @default(false)
   nombre_material      String   @db.VarChar(100)
   descripcion_material String?
   unidad_medida        String?  @db.VarChar(30)

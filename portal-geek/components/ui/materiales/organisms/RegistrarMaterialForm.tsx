@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
 import {
+  CreateCategoriaMaterialSchema,
   CreateGrupoMaterialSchema,
   CreateMaterialSchema,
   CreateSubMaterialSchema,
@@ -17,9 +18,9 @@ import {
 } from "@/lib/utils/materiales";
 import type { MaterialCardProps } from "@/types";
 
-type Tipo = "individual" | "grupo" | "sub";
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
 
-interface GrupoOption {
+interface MaterialOption {
   id_material: number;
   nombre_material: string;
 }
@@ -47,7 +48,8 @@ export function RegistrarMaterialForm({
   initialPadreId,
 }: RegistrarMaterialFormProps) {
   const [tipo, setTipo] = useState<Tipo>(initialTipo);
-  const [grupos, setGrupos] = useState<GrupoOption[]>([]);
+  const [grupos, setGrupos] = useState<MaterialOption[]>([]);
+  const [categorias, setCategorias] = useState<MaterialOption[]>([]);
 
   const [form, setForm] = useState({
     nombre_material: "",
@@ -72,11 +74,20 @@ export function RegistrarMaterialForm({
     fetch("/api/materiales?mode=grupos")
       .then((r) => r.json())
       .then((payload) => {
-        const data = (payload?.data ?? []) as Array<{
-          id_material: number;
-          nombre_material: string;
-        }>;
+        const data = (payload?.data ?? []) as MaterialOption[];
         setGrupos(data);
+      })
+      .catch(() => {});
+  }, [tipo]);
+
+  // Fetch categorías when tipo is "grupo" or "individual" (para selector opcional).
+  useEffect(() => {
+    if (tipo !== "grupo" && tipo !== "individual") return;
+    fetch("/api/materiales?mode=categorias")
+      .then((r) => r.json())
+      .then((payload) => {
+        const data = (payload?.data ?? []) as MaterialOption[];
+        setCategorias(data);
       })
       .catch(() => {});
   }, [tipo]);
@@ -101,9 +112,32 @@ export function RegistrarMaterialForm({
   }
 
   function validate() {
+    if (tipo === "categoria") {
+      const payload = {
+        tipo: "categoria" as const,
+        nombre_material: form.nombre_material.trim(),
+        descripcion_material: form.descripcion_material.trim() || undefined,
+        imagen_url: form.imagen_url.trim() || undefined,
+      };
+      const result = CreateCategoriaMaterialSchema.safeParse(payload);
+      if (result.success) {
+        setErrors({});
+        return payload;
+      }
+      const nextErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string;
+        if (!nextErrors[field]) nextErrors[field] = issue.message;
+      }
+      setErrors(nextErrors);
+      return null;
+    }
+
     if (tipo === "grupo") {
+      const padre = form.id_material_padre ? Number(form.id_material_padre) : null;
       const payload = {
         tipo: "grupo" as const,
+        id_material_padre: padre,
         nombre_material: form.nombre_material.trim(),
         descripcion_material: form.descripcion_material.trim() || undefined,
         imagen_url: form.imagen_url.trim() || undefined,
@@ -150,7 +184,9 @@ export function RegistrarMaterialForm({
     }
 
     // individual
+    const padreIndividual = form.id_material_padre ? Number(form.id_material_padre) : null;
     const payload = {
+      id_material_padre: padreIndividual,
       nombre_material: form.nombre_material.trim(),
       descripcion_material: form.descripcion_material.trim(),
       unidad_medida: form.unidad_medida.trim(),
@@ -226,9 +262,29 @@ export function RegistrarMaterialForm({
             }}
             className={SELECT_FIELD}
           >
+            <option value="categoria">Categoría</option>
+            <option value="grupo">Grupo</option>
+            <option value="sub">Variante</option>
             <option value="individual">Material individual</option>
-            <option value="grupo">Grupo de materiales</option>
-            <option value="sub">Sub-material (variante)</option>
+          </select>
+        </div>
+      )}
+
+      {/* Categoría picker — opcional para grupos e individuales */}
+      {(tipo === "grupo" || tipo === "individual") && (
+        <div>
+          <label className={LABEL}>Categoría (opcional)</label>
+          <select
+            value={form.id_material_padre}
+            onChange={(e) => setField("id_material_padre", e.target.value)}
+            className={SELECT_FIELD}
+          >
+            <option value="">Sin categoría</option>
+            {categorias.map((c) => (
+              <option key={c.id_material} value={c.id_material}>
+                {c.nombre_material}
+              </option>
+            ))}
           </select>
         </div>
       )}
@@ -268,7 +324,15 @@ export function RegistrarMaterialForm({
         <input
           type="text"
           maxLength={100}
-          placeholder={tipo === "grupo" ? "Ej. Acrílicos" : "Ej. Acrílico espejo"}
+          placeholder={
+            tipo === "categoria"
+              ? "Ej. Maderas"
+              : tipo === "grupo"
+                ? "Ej. MDF"
+                : tipo === "sub"
+                  ? "Ej. MDF 3mm"
+                  : "Ej. Acrílico espejo"
+          }
           value={form.nombre_material}
           onChange={(e) => setField("nombre_material", e.target.value)}
           className={`${FIELD} ${getFieldClass("nombre_material")}`}
@@ -277,7 +341,9 @@ export function RegistrarMaterialForm({
       </div>
 
       <div>
-        <label className={LABEL}>Descripción {tipo !== "grupo" ? "*" : ""}</label>
+        <label className={LABEL}>
+          Descripción {tipo !== "grupo" && tipo !== "categoria" ? "*" : ""}
+        </label>
         <textarea
           rows={3}
           maxLength={500}
@@ -379,7 +445,9 @@ export function RegistrarMaterialForm({
       )}
 
       <div>
-        <label className={LABEL}>Imagen {tipo !== "grupo" ? "*" : ""}</label>
+        <label className={LABEL}>
+          Imagen {tipo !== "grupo" && tipo !== "categoria" ? "*" : ""}
+        </label>
         <MaterialImageInput
           onUploaded={(key) => setField("imagen_url", key ?? "")}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}

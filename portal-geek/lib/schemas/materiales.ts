@@ -27,9 +27,10 @@ const dimensionValidator = (label: string) =>
     .refine((v) => Math.floor(Math.abs(v)).toString().length <= 8, "Máximo 8 dígitos enteros.")
     .refine((v) => (v.toString().split(".")[1] ?? "").length <= 2, "Máximo 2 decimales.");
 
-// ── Individual material (existing, backward-compatible) ───────────────────────
+// ── Individual material (puede vivir bajo una categoría) ──────────────────────
 
 export const CreateMaterialSchema = z.object({
+  id_material_padre: z.number().int().positive().nullable().optional(),
   nombre_material: nombreValidator,
   descripcion_material: z
     .string()
@@ -43,10 +44,27 @@ export const CreateMaterialSchema = z.object({
   imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
 });
 
-// ── Group (top-level, no dimensions) ─────────────────────────────────────────
+// ── Categoría (top-level, agrupa grupos e individuales) ──────────────────────
+
+export const CreateCategoriaMaterialSchema = z.object({
+  tipo: z.literal("categoria"),
+  nombre_material: nombreValidator,
+  descripcion_material: z.string().max(500, "Máximo 500 caracteres.").optional(),
+  imagen_url: z
+    .string()
+    .max(500, "Máximo 500 caracteres.")
+    .refine(
+      (v) => !v || isValidKey(v, "materiales"),
+      "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
+    )
+    .optional(),
+});
+
+// ── Group (vive bajo una categoría opcional, sin dimensiones) ────────────────
 
 export const CreateGrupoMaterialSchema = z.object({
   tipo: z.literal("grupo"),
+  id_material_padre: z.number().int().positive().nullable().optional(),
   nombre_material: nombreValidator,
   descripcion_material: z.string().max(500, "Máximo 500 caracteres.").optional(),
   imagen_url: z
@@ -90,6 +108,7 @@ export const MaterialIdParams = z.object({
 });
 
 export type CreateMaterialInput = z.infer<typeof CreateMaterialSchema>;
+export type CreateCategoriaMaterialInput = z.infer<typeof CreateCategoriaMaterialSchema>;
 export type CreateGrupoMaterialInput = z.infer<typeof CreateGrupoMaterialSchema>;
 export type CreateSubMaterialInput = z.infer<typeof CreateSubMaterialSchema>;
 export type UpdateMaterialInput = z.infer<typeof UpdateMaterialSchema>;

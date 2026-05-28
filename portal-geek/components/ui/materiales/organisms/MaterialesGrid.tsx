@@ -1,5 +1,6 @@
 import { MaterialesEmptyState } from "@/components/ui/materiales/molecules/MaterialesEmptyState";
 import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
+import { CategoriaCard } from "@/components/ui/materiales/organisms/CategoriaCard";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
 import { MaterialGroupCard } from "@/components/ui/materiales/organisms/MaterialGroupCard";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
@@ -10,6 +11,7 @@ interface MaterialesGridProps {
   onEditMaterial: (material: MaterialCardProps) => void;
   onViewProveedores: (materialId: number, materialName: string) => void;
   onAddSubMaterial: (groupId: number) => void;
+  onAddGrupo: (categoriaId: number) => void;
   // Server-side pagination state.
   page: number;
   totalPages: number;
@@ -41,6 +43,7 @@ export function MaterialesGrid({
   onEditMaterial,
   onViewProveedores,
   onAddSubMaterial,
+  onAddGrupo,
   page,
   totalPages,
   onPageChange,
@@ -50,8 +53,9 @@ export function MaterialesGrid({
   const enabledColumns = COLUMN_META.filter((column) => visibleColumns[column.key]);
   const templateColumns = `${enabledColumns.map((column) => column.width).join(" ")} auto`;
 
+  const categorias = items.filter((item) => item.tipo === "categoria");
   const groups = items.filter((item) => item.tipo === "grupo");
-  const individuals = items.filter((item) => item.tipo !== "grupo");
+  const individuals = items.filter((item) => item.tipo === "individual");
   const hasItems = items.length > 0;
 
   return (
@@ -76,7 +80,21 @@ export function MaterialesGrid({
         <MaterialesEmptyState hasSearch={hasSearch} onClearFilters={onClearFilters} />
       ) : (
         <div className="space-y-2">
-          {/* Groups first */}
+          {/* Categorías first (cada una envuelve sus grupos + individuales) */}
+          {categorias.map((cat) => (
+            <CategoriaCard
+              key={cat.id}
+              categoria={cat}
+              visibleColumns={visibleColumns}
+              gridTemplateColumns={templateColumns}
+              onEdit={onEditMaterial}
+              onViewProveedores={onViewProveedores}
+              onAddSubMaterial={onAddSubMaterial}
+              onAddGrupo={onAddGrupo}
+            />
+          ))}
+
+          {/* Grupos huérfanos (sin categoría) */}
           {groups.map((group) => (
             <MaterialGroupCard
               key={group.id}
@@ -89,7 +107,7 @@ export function MaterialesGrid({
             />
           ))}
 
-          {/* Individual materials after groups */}
+          {/* Individuales huérfanos (sin categoría) */}
           {individuals.map((item) => (
             <MaterialCard
               key={item.id}

@@ -105,6 +105,16 @@ export function MaterialesFilterPanel({
                 <input
                   type="radio"
                   name="material-tipo"
+                  checked={tipoFilter === "categorias"}
+                  onChange={() => onTipoFilterChange("categorias")}
+                  className="h-3.5 w-3.5 accent-[#6b7280]"
+                />
+                Solo categorías
+              </label>
+              <label className="flex items-center gap-2 text-[13px] text-[#1e1e1e] cursor-pointer">
+                <input
+                  type="radio"
+                  name="material-tipo"
                   checked={tipoFilter === "grupos"}
                   onChange={() => onTipoFilterChange("grupos")}
                   className="h-3.5 w-3.5 accent-[#6b7280]"
