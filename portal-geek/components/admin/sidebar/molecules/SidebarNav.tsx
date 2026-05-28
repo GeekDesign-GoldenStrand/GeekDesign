@@ -9,7 +9,7 @@ import type { UserRole } from "@/types";
 import { NavLink } from "../atoms/NavLink";
 import { navItems } from "../navItems";
 
-export function SidebarNav({ role }: { role: UserRole }) {
+export function SidebarNav({ role, expanded }: { role: UserRole; expanded: boolean }) {
   const pathname = usePathname();
 
   // Visibility follows the policy: an item shows when the role may read its
@@ -34,6 +34,7 @@ export function SidebarNav({ role }: { role: UserRole }) {
             label={item.label}
             icon={item.icon}
             isActive={isActive}
+            expanded={expanded}
           />
         );
       })}
