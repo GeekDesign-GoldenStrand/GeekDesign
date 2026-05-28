@@ -1,12 +1,14 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 export const LoginSchema = z.object({
-  email: z.email("Correo inválido").max(150),
+  email: emailField({ max: 150, message: "Correo inválido" }),
   password: z.string().min(1, "Contraseña requerida").max(255),
 });
 
 export const ForgotPasswordSchema = z.object({
-  email: z.email("Correo inválido").max(150),
+  email: emailField({ max: 150, message: "Correo inválido" }),
 });
 
 export const ResetPasswordSchema = z

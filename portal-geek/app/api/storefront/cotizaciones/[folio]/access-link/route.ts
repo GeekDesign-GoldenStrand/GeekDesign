@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { issueAccessToken } from "@/lib/services/cotizacion-access";
 import { ok } from "@/lib/utils/api";
+import { emailField } from "@/lib/utils/email";
 import { handleError, RateLimitError } from "@/lib/utils/errors";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
@@ -17,7 +18,7 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 const LINK_RATE_LIMIT = { maxAttempts: 3, windowMs: 15 * 60_000 };
 
 const BodySchema = z.object({
-  correo_electronico: z.string().email(),
+  correo_electronico: emailField({ max: 150 }),
 });
 
 type Params = { folio: string };
