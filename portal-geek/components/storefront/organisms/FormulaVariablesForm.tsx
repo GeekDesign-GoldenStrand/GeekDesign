@@ -104,7 +104,7 @@ export function FormulaVariablesForm({
       } finally {
         if (reqId === lastRequestId.current) setCalculating(false);
       }
-    }, 150);
+    }, 400);
     return () => clearTimeout(timer);
   }, [idMaterial, values, servicioId, editables]);
 
