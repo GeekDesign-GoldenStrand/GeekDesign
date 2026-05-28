@@ -1,4 +1,4 @@
-import { MagnifyingGlass, Question, ShoppingCart, Tag } from "@phosphor-icons/react/dist/ssr";
+import { MagnifyingGlass, ShoppingCart, Tag } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 
 import { CartBadge } from "../atoms/CartBadge";
@@ -36,7 +36,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
           <SearchBar />
         </div>
 
-        {/* Actions — public storefront: Ayuda + cart only */}
+        {/* Actions — public storefront */}
         <div className="flex items-center gap-3 md:gap-5 shrink-0">
           <Link
             href="/tienda/promocionales"
@@ -62,17 +62,6 @@ export function Navbar({ categories = [] }: NavbarProps) {
             />
             <span className="hidden lg:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
               Seguimiento
-            </span>
-          </Link>
-
-          <Link
-            href="/tienda/ayuda"
-            className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
-            aria-label="Ayuda"
-          >
-            <Question size={28} weight="light" className="text-[#1e1e1e]" aria-hidden="true" />
-            <span className="hidden md:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
-              Ayuda
             </span>
           </Link>
 
