@@ -101,7 +101,7 @@ export function MaterialImageInput({
   const borderColor = hasError
     ? "border-[#e42200]"
     : uploadedKey
-      ? "border-[#00c853]"
+      ? "border-[#006aff]"
       : "border-[#b9b8b8]";
 
   return (

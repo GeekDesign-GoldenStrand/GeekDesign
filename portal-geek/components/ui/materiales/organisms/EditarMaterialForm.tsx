@@ -24,7 +24,7 @@ const FIELD =
 const SELECT_FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
@@ -352,11 +352,11 @@ export function EditarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Color *</label>
+            <label className={LABEL}>Descripción de color *</label>
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. Rojo, #FF2400"
+              placeholder="Ej. Rojo"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
@@ -402,7 +402,7 @@ export function EditarMaterialForm({
           <button
             type="submit"
             disabled={loading || deleting}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+            className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
           >
             {loading ? "Actualizando..." : "Guardar cambios"}
           </button>
