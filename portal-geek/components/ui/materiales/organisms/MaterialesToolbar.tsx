@@ -70,20 +70,18 @@ export function MaterialesToolbar({
         </button>
       </div>
 
-      {isFilterOpen && (
-        // Filter panel is controlled by page state to keep filters centralized.
-        <MaterialesFilterPanel
-          visibleColumns={visibleColumns}
-          sortOrder={sortOrder}
-          tipoFilter={tipoFilter}
-          onToggleColumn={onToggleColumn}
-          onSortChange={onSortChange}
-          onTipoFilterChange={onTipoFilterChange}
-          onReset={onResetFilters}
-          onClose={onCloseFilter}
-          canViewProveedores={canViewProveedores}
-        />
-      )}
+      <MaterialesFilterPanel
+        open={isFilterOpen}
+        visibleColumns={visibleColumns}
+        sortOrder={sortOrder}
+        tipoFilter={tipoFilter}
+        onToggleColumn={onToggleColumn}
+        onSortChange={onSortChange}
+        onTipoFilterChange={onTipoFilterChange}
+        onReset={onResetFilters}
+        onClose={onCloseFilter}
+        canViewProveedores={canViewProveedores}
+      />
     </div>
   );
 }
