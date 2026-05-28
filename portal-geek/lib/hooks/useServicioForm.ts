@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
+import { stripUiOnlyConstants } from "@/lib/utils/servicio-mappers";
 import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
 import type {
@@ -124,9 +125,7 @@ export function useServicioForm({
       const hasSubstance = form.formulaChunks.some(
         (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
       );
-      // Strip UI-only "global" placeholders (the synthetic IVA chip). The evaluator
-      // injects `iva` implicitly via buildScope, and the schema rejects reserved names.
-      const constantesPayload = form.constantes.filter((c) => c.origen !== "global");
+      const constantesPayload = stripUiOnlyConstants(form.constantes);
       const formulaPayload =
         hasSubstance && expresion.length > 0
           ? { expresion, variables: form.variables, constantes: constantesPayload }
