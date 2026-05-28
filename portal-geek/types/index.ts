@@ -80,6 +80,7 @@ export interface MaterialCardProps {
   width: string;
   height: string;
   thickness: string;
+  feedRate: string;
   description: string;
   imageUrl: string;
   id_material_padre: number | null;

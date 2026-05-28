@@ -11,6 +11,7 @@ export type MaterialApiRow = {
   ancho: string | number | null;
   alto: string | number | null;
   grosor: string | number | null;
+  velocidad_avance: string | number | null;
   color: string | null;
   imagen_url: string | null;
   subMateriales?: MaterialApiRow[];
@@ -38,6 +39,7 @@ export function mapMaterialRow(item: MaterialApiRow, parentIsGroup = false): Mat
     width: normalizeDecimal(item.ancho),
     height: normalizeDecimal(item.alto),
     thickness: normalizeDecimal(item.grosor),
+    feedRate: normalizeDecimal(item.velocidad_avance),
     description: item.descripcion_material ?? "",
     imageUrl: item.imagen_url ?? "",
     id_material_padre: item.id_material_padre,

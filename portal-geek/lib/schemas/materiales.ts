@@ -47,6 +47,7 @@ export const CreateMaterialSchema = z.object({
   ancho: dimensionValidator("El ancho"),
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
+  velocidad_avance: dimensionValidator("La velocidad de avance"),
   color: colorValidator,
   imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
 });
@@ -95,6 +96,7 @@ export const CreateSubMaterialSchema = z.object({
   ancho: dimensionValidator("El ancho"),
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
+  velocidad_avance: dimensionValidator("La velocidad de avance"),
   color: colorValidator,
   imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
 });

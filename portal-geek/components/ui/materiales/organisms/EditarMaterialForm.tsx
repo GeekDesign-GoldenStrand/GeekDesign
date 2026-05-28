@@ -28,7 +28,7 @@ const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-const REQUIRED_NUMERIC = ["ancho", "alto", "grosor"] as const;
+const REQUIRED_NUMERIC = ["ancho", "alto", "grosor", "velocidad_avance"] as const;
 
 // Confirmation modals invert the usual color semantics on purpose: the
 // destructive action is the unstyled (white/bordered) button, the cancel is
@@ -58,6 +58,7 @@ export function EditarMaterialForm({
     ancho: material.width === "-" ? "" : material.width,
     alto: material.height === "-" ? "" : material.height,
     grosor: material.thickness === "-" ? "" : material.thickness,
+    velocidad_avance: material.feedRate === "-" ? "" : material.feedRate,
     color: material.color === "-" ? "" : material.color,
   });
 
@@ -109,7 +110,7 @@ export function EditarMaterialForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (["ancho", "alto", "grosor"].includes(key)) {
+      if (["ancho", "alto", "grosor", "velocidad_avance"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
       }
@@ -152,6 +153,7 @@ export function EditarMaterialForm({
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
+      velocidad_avance: parseOptionalNumber(form.velocidad_avance),
       color: form.color.trim(),
       imagen_url: newImageKey ?? "placeholder-for-validation",
     };
@@ -345,9 +347,7 @@ export function EditarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>
-                Grosor (mm) *
-              </label>
+              <label className={LABEL}>Grosor (mm) *</label>
               <input
                 type="number"
                 min={0}
@@ -362,6 +362,23 @@ export function EditarMaterialForm({
               />
               {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
             </div>
+          </div>
+
+          <div>
+            <label className={LABEL}>Velocidad de avance (mm/s) *</label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              placeholder="0.00"
+              value={form.velocidad_avance}
+              onKeyDown={(e) => {
+                if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+              }}
+              onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
+              className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
+            />
+            {errors.velocidad_avance && <p className={ERROR_MSG}>{errors.velocidad_avance}</p>}
           </div>
 
           <div>

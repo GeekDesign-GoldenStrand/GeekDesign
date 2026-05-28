@@ -57,6 +57,7 @@ const BASE_MATERIAL = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
+  velocidad_avance: 50,
   color: "#C0C0C0",
   imagen_url: KEY,
   subMateriales: [],
@@ -69,6 +70,7 @@ const VALID_INPUT = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
+  velocidad_avance: 50,
   color: "#C0C0C0",
   imagen_url: KEY,
 };
@@ -325,6 +327,7 @@ describe("createSubMaterial", () => {
     ancho: 1200,
     alto: 2400,
     grosor: 3,
+    velocidad_avance: 50,
     color: "#22C55E",
     imagen_url: KEY,
   };
@@ -518,6 +521,7 @@ const SCHEMA_MATERIAL_BASE = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
+  velocidad_avance: 50,
   imagen_url: KEY,
 };
 
@@ -530,6 +534,7 @@ const SCHEMA_SUB_BASE = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
+  velocidad_avance: 50,
   imagen_url: KEY,
 };
 

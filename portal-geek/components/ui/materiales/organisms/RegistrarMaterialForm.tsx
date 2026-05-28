@@ -58,6 +58,7 @@ export function RegistrarMaterialForm({
     ancho: "",
     alto: "",
     grosor: "",
+    velocidad_avance: "",
     color: "",
     imagen_url: "",
     id_material_padre: initialPadreId ? String(initialPadreId) : "",
@@ -102,7 +103,7 @@ export function RegistrarMaterialForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (["ancho", "alto", "grosor"].includes(key)) {
+      if (["ancho", "alto", "grosor", "velocidad_avance"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
       }
@@ -166,6 +167,7 @@ export function RegistrarMaterialForm({
         ancho: parseOptionalNumber(form.ancho),
         alto: parseOptionalNumber(form.alto),
         grosor: parseOptionalNumber(form.grosor),
+        velocidad_avance: parseOptionalNumber(form.velocidad_avance),
         color: form.color.trim(),
         imagen_url: form.imagen_url.trim(),
       };
@@ -193,6 +195,7 @@ export function RegistrarMaterialForm({
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
+      velocidad_avance: parseOptionalNumber(form.velocidad_avance),
       color: form.color.trim(),
       imagen_url: form.imagen_url.trim(),
     };
@@ -414,9 +417,7 @@ export function RegistrarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>
-                Grosor (mm) *
-              </label>
+              <label className={LABEL}>Grosor (mm) *</label>
               <input
                 type="number"
                 min={0}
@@ -431,6 +432,23 @@ export function RegistrarMaterialForm({
               />
               {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
             </div>
+          </div>
+
+          <div>
+            <label className={LABEL}>Velocidad de avance (mm/s) *</label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              placeholder="0.00"
+              value={form.velocidad_avance}
+              onKeyDown={(e) => {
+                if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+              }}
+              onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
+              className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
+            />
+            {errors.velocidad_avance && <p className={ERROR_MSG}>{errors.velocidad_avance}</p>}
           </div>
 
           <div>
