@@ -33,6 +33,10 @@ interface Props {
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
+function stripZodPathPrefix(msg: string): string {
+  return msg.replace(/^[a-zA-Z0-9_.]+: /, "");
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function FormulaVariablesForm({
@@ -88,7 +92,7 @@ export function FormulaVariablesForm({
         const json = await res.json();
         if (reqId !== lastRequestId.current) return;
         if (!res.ok) {
-          setCalcError(json.error ?? "Error al calcular el precio");
+          setCalcError(stripZodPathPrefix(json.error ?? "Error al calcular el precio"));
           setPrecioUnitario(null);
           return;
         }
