@@ -3,6 +3,8 @@
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+
 /**
  * Organism: FolioSearch
  *
@@ -98,14 +100,17 @@ export function FolioSearch() {
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={submitting}
-              className="w-full h-[64px] bg-[#DF2646] text-white rounded-[12px] font-bold text-[16px] flex items-center justify-center gap-3 hover:bg-[#C41E3A] transition-all shadow-lg shadow-[#DF2646]/20 active:scale-95 whitespace-nowrap disabled:opacity-60"
+              variant="primary"
+              section="storefront"
+              size="lg"
+              loading={submitting}
+              className="w-full"
             >
               <MagnifyingGlass size={22} weight="bold" />
               {submitting ? "Enviando..." : "Enviar enlace de acceso"}
-            </button>
+            </Button>
           </form>
           {feedback && (
             <p className="text-[14px] text-[#1e1e1e] font-medium text-center lg:text-left">
