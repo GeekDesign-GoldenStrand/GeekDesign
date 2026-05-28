@@ -52,7 +52,11 @@ const proveedorSchema = z.object({
     .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
   ubicacion: z
     .string()
-    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado"),
+    .max(100, "Máximo 100 caracteres.")
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    ),
   color: z
     .string()
     .min(1, "Selecciona un color identificador.")
@@ -83,7 +87,11 @@ const instaladorSchema = z.object({
   notas: z.string().max(500, "Máximo 500 caracteres."),
   ubicacion: z
     .string()
-    .refine((v) => !v || UBICACION_REGEX.test(v.trim()), "Formato requerido: Municipio, Estado"),
+    .max(100, "Máximo 100 caracteres.")
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    ),
   costo_instalacion: z
     .string()
     .min(1, "La tarifa base es requerida.")
@@ -457,7 +465,8 @@ export function RegistrarTerceroForm({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Querétaro, Querétaro"
+              maxLength={100}
+              placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
@@ -589,7 +598,8 @@ export function RegistrarTerceroForm({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Querétaro, Querétaro"
+              maxLength={100}
+              placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}

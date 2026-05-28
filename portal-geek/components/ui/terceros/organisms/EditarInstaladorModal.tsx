@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
+import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
 import { formatPhoneNumber } from "@/lib/utils/format";
 import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 
@@ -39,7 +40,11 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
   else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
   if (!["Instalador", "Contratista"].includes(form.tipo)) errs.tipo = "Seleccione un tipo válido.";
-  if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+  if (form.ubicacion) {
+    if (form.ubicacion.length > 100) errs.ubicacion = "Máximo 100 caracteres.";
+    else if (!UBICACION_REGEX.test(form.ubicacion.trim()))
+      errs.ubicacion = "Solo se permiten caracteres en inglés y español.";
+  }
   if (form.notas && form.notas.length > 500) errs.notas = "Máximo 500 caracteres.";
   if (!form.costo_instalacion.trim()) errs.costo_instalacion = "La tarifa base es requerida.";
   else if (!isValidMoney(form.costo_instalacion))
@@ -274,7 +279,8 @@ export function EditarInstaladorModal({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Querétaro, Querétaro"
+              maxLength={100}
+              placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}

@@ -47,9 +47,9 @@ function validateFields(form: ProveedorFormData): Record<string, string> {
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
   else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
   if (form.ubicacion) {
-    if (form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+    if (form.ubicacion.length > 100) errs.ubicacion = "Máximo 100 caracteres.";
     else if (!UBICACION_REGEX.test(form.ubicacion.trim()))
-      errs.ubicacion = "Formato requerido: Municipio, Estado";
+      errs.ubicacion = "Solo se permiten caracteres en inglés y español.";
   }
   if (form.descripcion_proveedor.length > 500)
     errs.descripcion_proveedor = "Máximo 500 caracteres.";
@@ -243,7 +243,8 @@ export function EditarProveedorModal({
           <label className={LABEL}>Ubicación</label>
           <input
             type="text"
-            placeholder="Querétaro, Querétaro"
+            maxLength={100}
+            placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
             value={form.ubicacion}
             onChange={(e) => setField("ubicacion", e.target.value)}
             className={`${FIELD} ${getFieldClass("ubicacion")}`}

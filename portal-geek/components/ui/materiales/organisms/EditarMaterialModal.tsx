@@ -59,7 +59,12 @@ export function EditarMaterialModal({
   const isLoading = !freshMaterial && !fetchError;
 
   return (
-    <Modal isOpen onClose={onClose} title="Editar Material" size="2xl">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={freshMaterial?.tipo === "grupo" ? "Editar Grupo de Material" : "Editar Material"}
+      size="2xl"
+    >
       {isLoading && <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>}
 
       {fetchError && (
