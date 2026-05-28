@@ -72,7 +72,7 @@ export function EditarMaterialModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <h2 id="editar-material-title" className="text-[20px] font-medium text-[#1e1e1e]">
-            Editar Material
+            {freshMaterial?.tipo === "grupo" ? "Editar Grupo de Material" : "Editar Material"}
           </h2>
           <button
             onClick={onClose}
