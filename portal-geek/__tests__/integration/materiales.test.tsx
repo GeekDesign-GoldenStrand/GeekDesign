@@ -689,9 +689,7 @@ describe("GET /api/materiales/[id]/impacto", () => {
       { id_servicio: 100 },
       { id_servicio: 101 },
     ]);
-    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([
-      { id_servicio: 100 },
-    ]); // duplicado, se debe colapsar
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([{ id_servicio: 100 }]); // duplicado, se debe colapsar
     (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([
       { id_proveedor: 7 },
       { id_proveedor: 8 },
