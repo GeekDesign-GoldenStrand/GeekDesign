@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
-import "react-phone-number-input/style.css";
 
 import { clearCarrito, getCarrito, getSubtotal, type CarritoItem } from "@/lib/cart/storage";
 
