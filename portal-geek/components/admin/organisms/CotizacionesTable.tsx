@@ -115,27 +115,35 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 ${c.monto_total.toLocaleString("es-MX")} MXN
               </span>
               <div className="flex justify-center">
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
+                  <div
+                    className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
                   >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={14}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
+                    <select
+                      value={c.estatus}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
+                      className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                    >
+                      {getAllowedQuotationStatuses(c.estatus).map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                    <CaretDown
+                      size={14}
+                      weight="bold"
+                      className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className={`px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getStatusStyle(c.estatus)}`}
+                  >
+                    {c.estatus}
+                  </span>
+                )}
               </div>
               <div
                 className="flex justify-center items-center gap-1"
@@ -173,27 +181,35 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     #{c.folio ?? c.id_cotizacion}
                   </p>
                 </div>
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
+                {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
+                  <div
+                    className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
                   >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={12}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
+                    <select
+                      value={c.estatus}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
+                      className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
+                    >
+                      {getAllowedQuotationStatuses(c.estatus).map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                    <CaretDown
+                      size={12}
+                      weight="bold"
+                      className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${getStatusStyle(c.estatus)}`}
+                  >
+                    {c.estatus}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F5F5F5]">
