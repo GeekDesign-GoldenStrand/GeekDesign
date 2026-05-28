@@ -373,6 +373,15 @@ export async function updateCotizacion(
     const montoTotal = computedMontoTotal ?? data.monto_total;
     if (montoTotal !== undefined) updateData.monto_total = montoTotal;
 
+    // Mirror nombre_oportunidad onto the linked Pedido so the Pedidos table
+    // doesn't drift from the cotización it was generated from.
+    if (data.nombre_oportunidad !== undefined && existing.id_pedido) {
+      await tx.pedidos.update({
+        where: { id_pedido: existing.id_pedido },
+        data: { nombre_oportunidad: data.nombre_oportunidad },
+      });
+    }
+
     return tx.cotizaciones.update({
       where: { id_cotizacion: id },
       data: updateData,
