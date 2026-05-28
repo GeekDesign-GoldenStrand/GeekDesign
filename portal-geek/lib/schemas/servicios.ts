@@ -105,7 +105,13 @@ export const CalcularPrecioSchema = z.object({
           .min(1)
           .max(100)
           .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
-        valor: z.number().finite(),
+        // Variable values are physical magnitudes (dimensions, quantities, etc.)
+        // and must be strictly positive. Upper bound is a safety net against
+        // typo overflows; no realistic laser/print dimension exceeds it.
+        valor: z
+          .number()
+          .positive("El valor debe ser mayor que 0")
+          .lte(100000, "Valor demasiado grande"),
       })
     )
     .default([]),
