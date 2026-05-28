@@ -498,6 +498,72 @@ describe("POST /api/servicios", () => {
     expect(res.status).toBe(422);
   });
 
+  it.each(["iva", "precio_material", "costo_instalador", "costo_proveedor"])(
+    "retorna 422 cuando una variable usa el identificador reservado %s",
+    async (reservedName) => {
+      mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+      const res = await createApp({ POST: routes.POST })
+        .post("/api/servicios")
+        .send({
+          nombre_servicio: "Servicio con variable reservada",
+          id_estatus: 1,
+          id_sucursal: 1,
+          formula: {
+            expresion: `${reservedName} * 2`,
+            variables: [
+              {
+                id_tipo_variable: 1,
+                nombre_variable: reservedName,
+                etiqueta: "Etiqueta",
+                editable_por_cliente: true,
+              },
+            ],
+            constantes: [],
+          },
+        });
+
+      expect(res.status).toBe(422);
+      expect(res.body.error).toMatch(/reservado/i);
+    }
+  );
+
+  it.each(["iva", "precio_material", "costo_instalador", "costo_proveedor"])(
+    "retorna 422 cuando una constante usa el identificador reservado %s",
+    async (reservedName) => {
+      mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+      const res = await createApp({ POST: routes.POST })
+        .post("/api/servicios")
+        .send({
+          nombre_servicio: "Servicio con constante reservada",
+          id_estatus: 1,
+          id_sucursal: 1,
+          formula: {
+            expresion: `ancho * ${reservedName}`,
+            variables: [
+              {
+                id_tipo_variable: 1,
+                nombre_variable: "ancho",
+                etiqueta: "Ancho",
+                editable_por_cliente: true,
+              },
+            ],
+            constantes: [
+              {
+                nombre_constante: reservedName,
+                origen: "manual",
+                valor: 0.16,
+              },
+            ],
+          },
+        });
+
+      expect(res.status).toBe(422);
+      expect(res.body.error).toMatch(/reservado/i);
+    }
+  );
+
   it("retorna 422 cuando una constante con origen instalador no provee id_instalador", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
 
