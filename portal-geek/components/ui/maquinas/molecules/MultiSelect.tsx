@@ -97,7 +97,7 @@ export default function MultiSelect({
         {selected.map((s) => (
           <span
             key={s.value}
-            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-sm text-[#8e908f]font-medium border border-red-200"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-sm font-medium border border-red-200"
           >
             {s.label}
             {!disabled && (
@@ -128,7 +128,7 @@ export default function MultiSelect({
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={selected.length === 0 ? placeholder : ""}
-            className="flex-1 min-w-[120px] outline-none text-sm text-[#8e908f] placeholder:text-[#8e908f] bg-transparent"
+            className="flex-1 min-w-[120px] outline-none text-sm text-[#1e1e1e] placeholder:text-[#8e908f] bg-transparent"
           />
         )}
 
@@ -148,14 +148,14 @@ export default function MultiSelect({
         </span>
       </div>
 
-      {isMaxReached && <p className="text-xs text-gray-400">Máximo {maxSelected} seleccionados</p>}
+      {isMaxReached && <p className="text-xs text-gray-500">Máximo {maxSelected} seleccionados</p>}
 
       {/* Dropdown */}
       {open && !disabled && (
         <div className="relative z-50">
           <div className="absolute top-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-gray-400">
+              <p className="px-4 py-3 text-sm text-gray-500">
                 {search ? "Sin resultados" : "No hay más opciones"}
               </p>
             ) : (

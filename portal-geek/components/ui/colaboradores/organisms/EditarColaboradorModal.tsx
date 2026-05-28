@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+
 import type { ColaboradorApiRow } from "./RegistrarColaboradorForm";
 
 interface Rol {
@@ -301,56 +303,28 @@ export function EditarColaboradorModal({
   onClose,
   onSubmit,
 }: EditarColaboradorModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <h2 className="text-[20px] font-medium text-[#1e1e1e]">Editar Colaborador</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[#8e908f] hover:text-[#e42200] transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto">
-          {loadingData && (
-            <p className="py-10 text-center text-[14px] text-[#8e908f]">Cargando datos...</p>
-          )}
-          {fetchError && !loadingData && (
-            <p className="py-10 text-center text-[14px] text-[#e42200]">{fetchError}</p>
-          )}
-          {!loadingData && !fetchError && apiRow && (
-            <EditForm
-              key={apiRow.id_usuario}
-              apiRow={apiRow}
-              editLoading={editLoading}
-              editError={editError}
-              roles={roles}
-              sucursales={sucursales}
-              onClose={onClose}
-              onSubmit={onSubmit}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="lg">
+      {loadingData && (
+        <p className="py-10 text-center text-[14px] text-[#8e908f]">Cargando datos...</p>
+      )}
+      {fetchError && !loadingData && (
+        <p role="alert" className="py-10 text-center text-[14px] text-[#e42200]">
+          {fetchError}
+        </p>
+      )}
+      {!loadingData && !fetchError && apiRow && (
+        <EditForm
+          key={apiRow.id_usuario}
+          apiRow={apiRow}
+          editLoading={editLoading}
+          editError={editError}
+          roles={roles}
+          sucursales={sucursales}
+          onClose={onClose}
+          onSubmit={onSubmit}
+        />
+      )}
+    </Modal>
   );
 }

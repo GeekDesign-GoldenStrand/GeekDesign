@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -12,8 +14,6 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
   const [nombre, setNombre] = useState("");
   const [direccion, setDireccion] = useState("");
   const [estatus, setEstatus] = useState<string[]>([]);
-
-  if (!isOpen) return null;
 
   function toggleEstatus(value: string) {
     setEstatus((prev) =>
@@ -27,10 +27,8 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-[400px] space-y-4">
-        <h2 className="text-lg font-bold text-[#1e1e1e]">Filtrar sucursales</h2>
-
+    <Modal isOpen={isOpen} onClose={onClose} title="Filtrar sucursales" size="md">
+      <div className="space-y-4">
         <div className="space-y-2">
           <label className="block text-sm font-semibold">Nombre</label>
           <input
@@ -76,6 +74,6 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

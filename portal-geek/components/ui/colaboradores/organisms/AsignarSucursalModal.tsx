@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+
 interface Sucursal {
   id_sucursal: number;
   nombre_sucursal: string;
@@ -129,47 +131,18 @@ export function AsignarSucursalModal({
   onClose,
   onSubmit,
 }: AsignarSucursalModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar sucursal</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[#8e908f] hover:text-[#e42200] transition-colors"
-            aria-label="Cerrar"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        <AsignarSucursalForm
-          key={colaboradorId ?? "none"}
-          colaboradorName={colaboradorName}
-          currentSucursalId={currentSucursalId}
-          sucursales={sucursales}
-          loading={loading}
-          serverError={serverError}
-          onClose={onClose}
-          onSubmit={onSubmit}
-        />
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Asignar sucursal" size="md" noPadding>
+      <AsignarSucursalForm
+        key={colaboradorId ?? "none"}
+        colaboradorName={colaboradorName}
+        currentSucursalId={currentSucursalId}
+        sucursales={sucursales}
+        loading={loading}
+        serverError={serverError}
+        onClose={onClose}
+        onSubmit={onSubmit}
+      />
+    </Modal>
   );
 }
