@@ -23,7 +23,7 @@ jest.mock("@/lib/db/client", () => ({
     opcionesProducto: { findMany: jest.fn(), deleteMany: jest.fn() },
     valoresOpcion: { deleteMany: jest.fn() },
     matrizDePrecios: { deleteMany: jest.fn() },
-    servicioMaterial: { deleteMany: jest.fn() },
+    servicioMaterial: { deleteMany: jest.fn(), findMany: jest.fn() },
     gastos: { updateMany: jest.fn() },
     detallePedido: { deleteMany: jest.fn() },
     pedidoMaquina: { deleteMany: jest.fn() },
@@ -661,7 +661,6 @@ describe("GET /api/materiales/[id]/impacto", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (prisma.servicioMaterial.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
   });
 
   it("retorna 401 sin sesión activa", async () => {
@@ -673,12 +672,8 @@ describe("GET /api/materiales/[id]/impacto", () => {
   it("retorna conteo cero cuando el material no tiene relaciones", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue({ id_material: 1, es_grupo: false, subMateriales: [] });
-    (prisma.servicioMaterial as unknown as { findMany: jest.Mock }).findMany = jest
-      .fn()
-      .mockResolvedValue([]);
-    (prisma.opcionesProducto as unknown as { findMany: jest.Mock }).findMany = jest
-      .fn()
-      .mockResolvedValue([]);
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
 
     const res = await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
@@ -690,12 +685,13 @@ describe("GET /api/materiales/[id]/impacto", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue({ id_material: 1, es_grupo: false, subMateriales: [] });
 
-    (prisma.servicioMaterial as unknown as { findMany: jest.Mock }).findMany = jest
-      .fn()
-      .mockResolvedValue([{ id_servicio: 100 }, { id_servicio: 101 }]);
-    (prisma.opcionesProducto as unknown as { findMany: jest.Mock }).findMany = jest
-      .fn()
-      .mockResolvedValue([{ id_servicio: 100 }]); // duplicado, se debe colapsar
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([
+      { id_servicio: 100 },
+      { id_servicio: 101 },
+    ]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([
+      { id_servicio: 100 },
+    ]); // duplicado, se debe colapsar
     (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([
       { id_proveedor: 7 },
       { id_proveedor: 8 },
@@ -721,12 +717,8 @@ describe("GET /api/materiales/[id]/impacto", () => {
       es_grupo: true,
       subMateriales: [{ id_material: 2 }, { id_material: 3 }],
     });
-    (prisma.servicioMaterial as unknown as { findMany: jest.Mock }).findMany = jest
-      .fn()
-      .mockResolvedValue([]);
-    (prisma.opcionesProducto as unknown as { findMany: jest.Mock }).findMany = jest
-      .fn()
-      .mockResolvedValue([]);
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
 
     await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");

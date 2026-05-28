@@ -245,14 +245,6 @@ export function EditarMaterialForm({
         </div>
       )}
 
-      {isGrupo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#fff3e0] border border-[#ffb74d] rounded-[6px]">
-          <span className="text-[13px] text-[#e65100]">
-            Grupo de materiales — edita el nombre, descripción e imagen del grupo.
-          </span>
-        </div>
-      )}
-
       <div>
         <label className={LABEL}>Nombre *</label>
         <input
@@ -304,7 +296,9 @@ export function EditarMaterialForm({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={LABEL}>Ancho *</label>
+              <label className={LABEL}>
+                Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -320,7 +314,9 @@ export function EditarMaterialForm({
               {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
             </div>
             <div>
-              <label className={LABEL}>Alto *</label>
+              <label className={LABEL}>
+                Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -336,7 +332,9 @@ export function EditarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>Grosor (mm) *</label>
+              <label className={LABEL}>
+                Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}

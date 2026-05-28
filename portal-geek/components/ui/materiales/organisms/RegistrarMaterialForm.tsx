@@ -314,7 +314,9 @@ export function RegistrarMaterialForm({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={LABEL}>Ancho *</label>
+              <label className={LABEL}>
+                Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -330,7 +332,9 @@ export function RegistrarMaterialForm({
               {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
             </div>
             <div>
-              <label className={LABEL}>Alto *</label>
+              <label className={LABEL}>
+                Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -346,7 +350,9 @@ export function RegistrarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>Grosor (mm) *</label>
+              <label className={LABEL}>
+                Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}

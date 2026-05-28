@@ -341,7 +341,7 @@ export async function getMaterialImpacto(id: number): Promise<MaterialImpacto> {
 // in use. Per stakeholder request — bypasses the previous ConflictError guard
 // and cascades through OpcionesProducto/ValoresOpcion/MatrizDePrecios,
 // ServicioMaterial, ProveedorPrecios (nulling Gastos refs), DetallePedido and
-// PedidoMaquina. UI must show two confirmation steps before invoking this.
+// PedidoMaquina. UI must show three confirmation steps before invoking this.
 export async function deleteMaterial(id: number): Promise<void> {
   const imagenKeys: string[] = [];
 
