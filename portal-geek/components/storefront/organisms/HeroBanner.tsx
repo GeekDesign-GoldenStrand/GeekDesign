@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* When the centered card is needed again, uncomment the relevant code and remove this line */
 import Link from "next/link";
 
 interface HeroBannerProps {
@@ -30,12 +32,14 @@ export function HeroBanner({
           >
             {titulo}
           </p>
+          {/*}
           <Link
             href={botonHref}
             className="bg-[#e42200] w-full max-w-[241px] h-[46px] md:h-[53px] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex items-center justify-center text-[#fffcfc] text-[15px] md:text-[16.742px] font-medium hover:brightness-95 transition"
           >
             {botonTexto}
           </Link>
+          */}
         </div>
       </div>
     </section>

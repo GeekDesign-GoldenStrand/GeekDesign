@@ -15,6 +15,7 @@ type Cotizacion = {
   empresa: string | null;
   cliente: string;
   folio: string | null;
+  nombre_oportunidad: string | null;
   estatus: string;
   fecha_estimada: string | null;
   archivos: { id: number; nombre: string }[];
@@ -69,16 +70,16 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         {/* Header - Desktop Only */}
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-          style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
+          style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr 0.6fr" }}
         >
-          <span className="whitespace-nowrap">Fecha</span>
-          <span className="whitespace-nowrap">Monto</span>
-          <span className="whitespace-nowrap">Entrega</span>
+          <span className="whitespace-nowrap">Fecha de creación</span>
+          <span className="whitespace-nowrap">Fecha de entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
-          <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Nombre de oportunidad</span>
           <span className="whitespace-nowrap">Folio</span>
+          <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Estatus</span>
-          <span className="whitespace-nowrap disabled hidden">Acciones</span>
+          <span className="whitespace-nowrap">Acciones</span>
         </div>
 
         {/* Rows */}
@@ -105,14 +106,14 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
               </span>
               <span className="whitespace-nowrap">
-                ${c.monto_total.toLocaleString("es-MX")} MXN
-              </span>
-              <span className="whitespace-nowrap">
                 {c.fecha_estimada ? formatDate(c.fecha_estimada) : "—"}
               </span>
               <span className="truncate px-2 min-w-0">{c.empresa || "—"}</span>
               <span className="truncate px-2 min-w-0">{c.cliente}</span>
               <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
+              <span className="whitespace-nowrap">
+                ${c.monto_total.toLocaleString("es-MX")} MXN
+              </span>
               <div className="flex justify-center">
                 <div
                   className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}

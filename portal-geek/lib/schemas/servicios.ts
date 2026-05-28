@@ -17,7 +17,7 @@ const VariableSchema = z.object({
   etiqueta: z.string().min(1).max(100),
   valor_default: z.coerce.number().optional(),
   editable_por_cliente: z.boolean().default(false),
-  unidad: z.string().optional(),
+  unidad: z.string().max(20).optional(),
 });
 
 const ConstanteSchema = z
