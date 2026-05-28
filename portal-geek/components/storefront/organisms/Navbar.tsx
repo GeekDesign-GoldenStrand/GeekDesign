@@ -19,7 +19,7 @@ interface NavbarProps {
 export function Navbar({ categories = [] }: NavbarProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) => pathname.startsWith(href);
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const linkCls = (href: string) =>
     `flex items-center gap-[6px] transition-opacity ${isActive(href) ? "text-[#df2646]" : "text-[#1e1e1e] hover:opacity-70"}`;
