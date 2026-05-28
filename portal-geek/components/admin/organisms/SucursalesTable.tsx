@@ -65,7 +65,7 @@ export function SucursalesTable({ sucursales }: Props) {
               }}
             >
               <span className="whitespace-nowrap">{s.nombre_sucursal}</span>
-              <span className="truncate px-2">{s.direccion}</span>
+              <span className="truncate px-2 min-w-0">{s.direccion}</span>
               <span>{formatHour(s.horario_apertura)}</span>
               <span>{formatHour(s.horario_salida)}</span>
               <div className="flex justify-center">

@@ -23,9 +23,6 @@ export function ViewEditarServicio({ servicio }: Props) {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">
-        Editar: {servicio.nombre_servicio}
-      </h1>
       <ServicioForm
         mode="edit"
         servicioId={servicio.id_servicio}

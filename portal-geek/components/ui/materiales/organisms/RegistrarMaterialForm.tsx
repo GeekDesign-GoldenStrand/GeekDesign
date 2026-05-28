@@ -127,7 +127,7 @@ export function RegistrarMaterialForm({
         tipo: "sub" as const,
         id_material_padre: Number(form.id_material_padre),
         nombre_material: form.nombre_material.trim(),
-        descripcion_material: form.descripcion_material.trim(),
+        descripcion_material: form.descripcion_material.trim() || undefined,
         unidad_medida: form.unidad_medida.trim(),
         ancho: parseOptionalNumber(form.ancho),
         alto: parseOptionalNumber(form.alto),
@@ -152,7 +152,7 @@ export function RegistrarMaterialForm({
     // individual
     const payload = {
       nombre_material: form.nombre_material.trim(),
-      descripcion_material: form.descripcion_material.trim(),
+      descripcion_material: form.descripcion_material.trim() || undefined,
       unidad_medida: form.unidad_medida.trim(),
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
@@ -277,7 +277,7 @@ export function RegistrarMaterialForm({
       </div>
 
       <div>
-        <label className={LABEL}>Descripción {tipo !== "grupo" ? "*" : ""}</label>
+        <label className={LABEL}>Descripción</label>
         <textarea
           rows={3}
           maxLength={500}
@@ -314,7 +314,9 @@ export function RegistrarMaterialForm({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={LABEL}>Ancho *</label>
+              <label className={LABEL}>
+                Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -330,7 +332,9 @@ export function RegistrarMaterialForm({
               {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
             </div>
             <div>
-              <label className={LABEL}>Alto *</label>
+              <label className={LABEL}>
+                Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -346,7 +350,9 @@ export function RegistrarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>Grosor *</label>
+              <label className={LABEL}>
+                Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
                 type="number"
                 min={0}
@@ -368,7 +374,7 @@ export function RegistrarMaterialForm({
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. #d18c59 o Negro"
+              placeholder="Ej. Rojo, #FF2400"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}

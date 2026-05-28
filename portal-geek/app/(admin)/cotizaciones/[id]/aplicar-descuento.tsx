@@ -1,6 +1,6 @@
-import { Trash } from "@phosphor-icons/react";
 import React, { useEffect, useState } from "react";
 
+import { ConfirmDialog } from "@/components/ui/atoms";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 // Discount rules + validator come from the schema module so this modal
 // and the Zod-validated PATCH endpoint can't drift. See
@@ -158,51 +158,34 @@ export default function AplicarDescuento({
     const existingComputed = baseAmount * ((initialPercentage ?? 0) / 100);
 
     return (
-      <ModalShell title="Eliminar descuento" onClose={onClose}>
-        <p className="text-[14px] text-gray-700 mb-2">
-          ¿Estás seguro de que deseas eliminar el descuento de{" "}
-          <span className="font-semibold">{initialPercentage}%</span>?
-        </p>
-        {initialMotivo && (
-          <p className="text-[13px] text-gray-500 mb-2">
-            Motivo: <span className="font-medium text-gray-700">{initialMotivo}</span>
-          </p>
-        )}
-        <p className="text-[13px] text-gray-400 mb-6">
-          El monto total volverá a{" "}
-          <span className="font-medium text-gray-700">{fmt(baseAmount)}</span> (se revertirá el
-          ahorro de {fmt(existingComputed)}).
-        </p>
-
-        {serverError && (
-          <p
-            role="alert"
-            className="mb-4 text-[13px] text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2"
-          >
-            {serverError}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isDeleting}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="flex items-center gap-2 px-5 py-2 text-[14px] font-medium text-white bg-red-600 rounded-[7px] hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <Trash size={14} />
-            {isDeleting ? "Eliminando…" : "Sí, eliminar"}
-          </button>
-        </div>
-      </ModalShell>
+      <ConfirmDialog
+        isOpen
+        title="Eliminar descuento"
+        confirmLabel="Sí, eliminar"
+        loadingLabel="Eliminando…"
+        loading={isDeleting}
+        error={serverError}
+        onClose={onClose}
+        onConfirm={handleDelete}
+        description={
+          <>
+            <p className="mb-2 text-[14px] text-gray-700">
+              ¿Estás seguro de que deseas eliminar el descuento de{" "}
+              <span className="font-semibold">{initialPercentage}%</span>?
+            </p>
+            {initialMotivo && (
+              <p className="mb-2 text-[13px] text-gray-500">
+                Motivo: <span className="font-medium text-gray-700">{initialMotivo}</span>
+              </p>
+            )}
+            <p className="text-[13px] text-gray-400">
+              El monto total volverá a{" "}
+              <span className="font-medium text-gray-700">{fmt(baseAmount)}</span> (se revertirá el
+              ahorro de {fmt(existingComputed)}).
+            </p>
+          </>
+        }
+      />
     );
   }
 

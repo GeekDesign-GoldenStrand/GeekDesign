@@ -24,6 +24,12 @@ export interface MaterialProveedor {
   precio: string;
 }
 
+export interface MaterialImpacto {
+  servicios: number;
+  proveedores: number;
+  instaladores: number;
+}
+
 async function withResolvedImagen(material: Materiales): Promise<Materiales> {
   return { ...material, imagen_url: await resolveImageUrl(material.imagen_url) };
 }
@@ -254,47 +260,158 @@ export async function updateMaterial(
   }
 }
 
+// Compute how many distinct servicios, proveedores e instaladores would be
+// affected by deleting `id` (and, for groups, all its sub-materials).
+//
+// Servicios: distinct servicios referencing any of the material ids through
+// either ServicioMaterial or OpcionesProducto.
+// Proveedores: union of (a) ProveedorPrecios with id_material in scope and
+// (b) the proveedor assigned to any servicio in the impacted services set.
+// Instaladores: union of servicio.id_instalador and InstaladorServicios for
+// any servicio in the impacted set.
+export async function getMaterialImpacto(id: number): Promise<MaterialImpacto> {
+  const target = await prisma.materiales.findUnique({
+    where: { id_material: id },
+    select: {
+      id_material: true,
+      es_grupo: true,
+      subMateriales: { select: { id_material: true } },
+    },
+  });
+
+  if (!target) {
+    throw new NotFoundError(`Material ${id} no encontrado`);
+  }
+
+  const ids = target.es_grupo
+    ? [target.id_material, ...target.subMateriales.map((s) => s.id_material)]
+    : [target.id_material];
+
+  const [servicioMateriales, opciones, proveedorPreciosDirectos] = await Promise.all([
+    prisma.servicioMaterial.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_servicio: true },
+    }),
+    prisma.opcionesProducto.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_servicio: true },
+    }),
+    prisma.proveedorPrecios.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_proveedor: true },
+    }),
+  ]);
+
+  const servicioIds = new Set<number>([
+    ...servicioMateriales.map((sm) => sm.id_servicio),
+    ...opciones.map((o) => o.id_servicio),
+  ]);
+
+  const proveedorIds = new Set<number>(proveedorPreciosDirectos.map((p) => p.id_proveedor));
+  const instaladorIds = new Set<number>();
+
+  if (servicioIds.size > 0) {
+    const servicioIdList = [...servicioIds];
+    const [serviciosRefs, instaladorServicios] = await Promise.all([
+      prisma.servicios.findMany({
+        where: { id_servicio: { in: servicioIdList } },
+        select: { id_proveedor: true, id_instalador: true },
+      }),
+      prisma.instaladorServicios.findMany({
+        where: { id_servicio: { in: servicioIdList } },
+        select: { id_instalador: true },
+      }),
+    ]);
+
+    for (const s of serviciosRefs) {
+      if (s.id_proveedor) proveedorIds.add(s.id_proveedor);
+      if (s.id_instalador) instaladorIds.add(s.id_instalador);
+    }
+    for (const ins of instaladorServicios) instaladorIds.add(ins.id_instalador);
+  }
+
+  return {
+    servicios: servicioIds.size,
+    proveedores: proveedorIds.size,
+    instaladores: instaladorIds.size,
+  };
+}
+
+// Force-deletes a material (and, for groups, its sub-materials) even if it is
+// in use. Per stakeholder request — bypasses the previous ConflictError guard
+// and cascades through OpcionesProducto/ValoresOpcion/MatrizDePrecios,
+// ServicioMaterial, ProveedorPrecios (nulling Gastos refs), DetallePedido and
+// PedidoMaquina. UI must show three confirmation steps before invoking this.
 export async function deleteMaterial(id: number): Promise<void> {
-  let imagenKey: string | null = null;
+  const imagenKeys: string[] = [];
+
   try {
     await prisma.$transaction(async (tx) => {
-      const material = await tx.materiales.findUnique({
+      const target = await tx.materiales.findUnique({
         where: { id_material: id },
         select: {
           id_material: true,
           imagen_url: true,
           es_grupo: true,
-          subMateriales: { select: { id_material: true } },
-          opciones: { select: { id_opcion: true } },
-          detallesPedido: { select: { id_detalle: true } },
-          pedidoMaquinas: { select: { id_pedido_maquina: true } },
+          subMateriales: { select: { id_material: true, imagen_url: true } },
         },
       });
 
-      if (!material) {
+      if (!target) {
         throw new NotFoundError(`Material ${id} no encontrado`);
       }
 
-      if (material.es_grupo && material.subMateriales.length > 0) {
-        throw new ConflictError(
-          `No se puede eliminar el grupo porque tiene ${material.subMateriales.length} sub-material(es) activo(s)`
-        );
+      // For groups, delete sub-materials first so the self-FK doesn't block.
+      const subIds = target.subMateriales.map((s) => s.id_material);
+      const allIds = [...subIds, target.id_material];
+
+      for (const sub of target.subMateriales) {
+        if (sub.imagen_url) imagenKeys.push(sub.imagen_url);
+      }
+      if (target.imagen_url) imagenKeys.push(target.imagen_url);
+
+      // OpcionesProducto → cascade ValoresOpcion + MatrizDePrecios first.
+      const opciones = await tx.opcionesProducto.findMany({
+        where: { id_material: { in: allIds } },
+        select: { id_opcion: true },
+      });
+      const opcionIds = opciones.map((o) => o.id_opcion);
+      if (opcionIds.length > 0) {
+        await tx.matrizDePrecios.deleteMany({ where: { id_opcion: { in: opcionIds } } });
+        await tx.valoresOpcion.deleteMany({ where: { id_opcion: { in: opcionIds } } });
+        await tx.opcionesProducto.deleteMany({ where: { id_opcion: { in: opcionIds } } });
       }
 
-      if (
-        material.detallesPedido.length > 0 ||
-        material.pedidoMaquinas.length > 0 ||
-        material.opciones.length > 0
-      ) {
-        throw new ConflictError(`Material ${id} no se puede eliminar porque ya está en uso`);
+      // ServicioMaterial references both material AND a ProveedorPrecio row;
+      // delete it before its proveedorPrecio so the FK to it goes away.
+      await tx.servicioMaterial.deleteMany({ where: { id_material: { in: allIds } } });
+
+      // ProveedorPrecios → Gastos has nullable FK, set it null then delete.
+      const proveedorPrecios = await tx.proveedorPrecios.findMany({
+        where: { id_material: { in: allIds } },
+        select: { id_proveedor_precio: true },
+      });
+      const proveedorPrecioIds = proveedorPrecios.map((p) => p.id_proveedor_precio);
+      if (proveedorPrecioIds.length > 0) {
+        await tx.gastos.updateMany({
+          where: { id_proveedor_precio: { in: proveedorPrecioIds } },
+          data: { id_proveedor_precio: null },
+        });
+        await tx.proveedorPrecios.deleteMany({
+          where: { id_proveedor_precio: { in: proveedorPrecioIds } },
+        });
       }
 
-      imagenKey = material.imagen_url;
+      await tx.detallePedido.deleteMany({ where: { id_material: { in: allIds } } });
+      await tx.pedidoMaquina.deleteMany({ where: { id_material: { in: allIds } } });
 
-      await tx.materiales.delete({ where: { id_material: id } });
+      if (subIds.length > 0) {
+        await tx.materiales.deleteMany({ where: { id_material: { in: subIds } } });
+      }
+      await tx.materiales.delete({ where: { id_material: target.id_material } });
     });
 
-    await safeDelete(imagenKey);
+    await Promise.all(imagenKeys.map(safeDelete));
   } catch (err) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Material ${id} no encontrado`);

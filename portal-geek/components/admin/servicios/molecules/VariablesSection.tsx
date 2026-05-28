@@ -174,7 +174,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             placeholder="Ej. Ancho de la pieza"
             value={draft.etiqueta}
             onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
-            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             maxLength={MAX_NOMBRE_LEN}
           />
           {previewNombre && (
@@ -198,7 +198,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             placeholder="Ej. 50"
             value={draft.valor_default}
             onChange={(e) => setDraft((d) => ({ ...d, valor_default: e.target.value }))}
-            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
           />
         </div>
 
@@ -215,7 +215,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
                   unidad: getTipoUnidad(selectedTypeId, tiposDisponibles),
                 }));
               }}
-              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             >
               <option value={0}>Selecciona...</option>
               {tiposDisponibles.map((t) => (
@@ -231,7 +231,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             <select
               value={draft.unidad ?? "unidad"}
               onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
-              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             >
               {UNIT_OPTIONS.map((unidad) => (
                 <option key={unidad} value={unidad}>
