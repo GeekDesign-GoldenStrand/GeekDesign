@@ -129,7 +129,12 @@ const SolicitarItemSchema = z.object({
           .min(1)
           .max(100)
           .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
-        valor: z.number().finite(),
+        // Must mirror CalcularPrecioSchema in lib/schemas/servicios.ts:
+        // physical magnitudes are strictly positive with a typo-safety upper bound.
+        valor: z
+          .number()
+          .positive("El valor debe ser mayor que 0")
+          .lte(100000, "Valor demasiado grande"),
       })
     )
     .default([]),

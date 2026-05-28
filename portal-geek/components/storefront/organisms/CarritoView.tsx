@@ -125,17 +125,19 @@ export function CarritoView({ relatedServices }: Props) {
   return (
     <div>
       {/* Announcement banner */}
-      <div className="bg-black h-[67px] flex items-center justify-center px-[42px]">
+      <div className="bg-black min-h-[48px] flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-[42px] py-2">
         <p className="text-[#fffcfc] text-[16.742px] font-medium text-center">
           Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el
           10 de abril | <span className="underline cursor-pointer">Comprar ahora</span>
         </p>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-[42px] py-[40px]">
-        <h1 className="font-bold text-[36px] text-[#1e1e1e] mb-[32px]">Mi carrito</h1>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 lg:px-[42px] py-[24px] md:py-[40px]">
+        <h1 className="font-bold text-[28px] md:text-[36px] text-[#1e1e1e] mb-[24px] md:mb-[32px]">
+          Mi carrito
+        </h1>
 
-        <div className="flex gap-[40px] items-start">
+        <div className="flex flex-col lg:flex-row gap-[24px] lg:gap-[40px] items-stretch lg:items-start">
           {/* ── Left: Cart items ── */}
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="h-px bg-[#c2c0c0]" />
@@ -146,9 +148,9 @@ export function CarritoView({ relatedServices }: Props) {
 
               return (
                 <div key={item.id}>
-                  <div className="py-[24px] flex gap-[24px]">
+                  <div className="py-[24px] flex flex-col md:flex-row gap-[16px] md:gap-[24px]">
                     {/* Preview + edit links */}
-                    <div className="flex flex-col gap-[8px] shrink-0 w-[303px]">
+                    <div className="flex flex-col gap-[8px] shrink-0 w-full md:w-[303px]">
                       <div className="flex items-center gap-[8px]">
                         <button
                           className="bg-[#ebebeb] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] flex items-center justify-center"
@@ -156,7 +158,7 @@ export function CarritoView({ relatedServices }: Props) {
                         >
                           <ChevronLeft />
                         </button>
-                        <div className="bg-white rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] w-[187px] h-[102px] flex items-center justify-center">
+                        <div className="bg-white rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex-1 md:flex-none md:w-[187px] h-[102px] flex items-center justify-center">
                           <p className="text-[14px] text-[#999] text-center leading-snug">
                             Preview del
                             <br />
@@ -183,7 +185,7 @@ export function CarritoView({ relatedServices }: Props) {
                     <div className="flex-1 min-w-0 flex flex-col gap-[12px]">
                       <p className="font-bold text-[18px] text-[#1e1e1e]">{item.nombreServicio}</p>
 
-                      <div className="flex items-center gap-[16px]">
+                      <div className="flex items-center gap-[16px] flex-wrap">
                         <div className="flex items-center border border-[#8e908f] rounded-[10px] h-[49px] w-[167px] px-[12px] gap-[4px]">
                           <span className="text-[18px] text-[#1e1e1e] whitespace-nowrap">
                             Cantidad:
@@ -256,7 +258,7 @@ export function CarritoView({ relatedServices }: Props) {
           </div>
 
           {/* ── Right: Order summary ── */}
-          <div className="border border-[#8e908f] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] w-[523px] shrink-0 p-[32px] flex flex-col gap-[16px]">
+          <div className="border border-[#8e908f] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] w-full lg:w-[523px] lg:shrink-0 p-[20px] md:p-[32px] flex flex-col gap-[16px]">
             <h2 className="font-bold text-[28px] text-[#1e1e1e]">Resumen del pedido</h2>
 
             <div className="flex flex-col gap-[6px]">
@@ -293,11 +295,27 @@ export function CarritoView({ relatedServices }: Props) {
         {/* ── Más productos parecidos ── */}
         {relatedServices.length > 0 && (
           <div className="mt-[48px]">
-            <h2 className="font-bold text-[28px] text-[#1e1e1e] mb-[24px]">
+            <h2 className="font-bold text-[22px] md:text-[28px] text-[#1e1e1e] mb-[16px] md:mb-[24px]">
               Más productos parecidos
             </h2>
 
-            <div className="flex items-center gap-[12px]">
+            {/* Mobile: render the full related list with horizontal scroll
+                (chevrons are inert on touch, and a sliced window would
+                hide everything past page 1 — see PR #85 Copilot review). */}
+            <div className="md:hidden flex gap-[16px] overflow-x-auto -mx-4 px-4 pb-2">
+              {relatedServices.map((s) => (
+                <Link
+                  key={s.id_servicio}
+                  href={`/tienda/servicios/${s.id_servicio}`}
+                  className="bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] shrink-0 w-[200px] h-[160px] flex items-end p-[12px] hover:scale-[1.02] transition-transform"
+                >
+                  <p className="font-bold text-[16.742px] text-[#1e1e1e]">{s.nombre_servicio}</p>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop: paginated window with chevron controls. */}
+            <div className="hidden md:flex items-center gap-[12px]">
               <button
                 onClick={() => setCarouselStart((p) => Math.max(0, p - 1))}
                 disabled={carouselStart === 0}
@@ -307,7 +325,7 @@ export function CarritoView({ relatedServices }: Props) {
                 <ChevronLeft />
               </button>
 
-              <div className="flex gap-[16px] flex-1">
+              <div className="flex gap-[16px] flex-1 min-w-0">
                 {visibleServices.map((s) => (
                   <Link
                     key={s.id_servicio}
