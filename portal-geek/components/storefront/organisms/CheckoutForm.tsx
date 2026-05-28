@@ -206,6 +206,7 @@ export function CheckoutForm({ sucursales }: Props) {
             defaultCountry="MX"
             flags={flags}
             value={telefono}
+            numberInputProps={{ maxLength: 16, inputMode: "tel" }}
             onChange={handlePhoneChange}
             className="flex items-center gap-2 h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:border-none [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:[font:inherit] [&_.PhoneInputInput]:[color:inherit] [&_.PhoneInputInput]:p-0 [&_.PhoneInputInput]:h-full [&_.PhoneInputCountry]:mr-0"
           />
