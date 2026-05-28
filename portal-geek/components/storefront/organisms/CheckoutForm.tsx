@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { clearCarrito, getCarrito, getSubtotal, type CarritoItem } from "@/lib/cart/storage";
+import { EMAIL_ERROR_MESSAGE, isValidEmail } from "@/lib/utils/email";
 
 interface Sucursal {
   id_sucursal: number;
@@ -25,6 +26,7 @@ export function CheckoutForm({ sucursales }: Props) {
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [correo, setCorreo] = useState("");
+  const [correoError, setCorreoError] = useState<string | null>(null);
   const [telefono, setTelefono] = useState("");
   const [idSucursal, setIdSucursal] = useState<number | null>(sucursales[0]?.id_sucursal ?? null);
   const [notas, setNotas] = useState("");
@@ -57,6 +59,11 @@ export function CheckoutForm({ sucursales }: Props) {
     }
     if (idSucursal === null) {
       setError("Selecciona una sucursal");
+      return;
+    }
+    if (!isValidEmail(correo)) {
+      setCorreoError(EMAIL_ERROR_MESSAGE);
+      setError("Revisa los datos del formulario");
       return;
     }
 
@@ -167,13 +174,36 @@ export function CheckoutForm({ sucursales }: Props) {
             id="correo"
             type="email"
             required
+            autoComplete="email"
+            inputMode="email"
+            spellCheck={false}
             value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e]"
+            onChange={(e) => {
+              setCorreo(e.target.value);
+              if (correoError) setCorreoError(null);
+            }}
+            onBlur={() => {
+              if (correo.trim().length === 0) {
+                setCorreoError(null);
+                return;
+              }
+              setCorreoError(isValidEmail(correo) ? null : EMAIL_ERROR_MESSAGE);
+            }}
+            aria-invalid={correoError !== null}
+            aria-describedby={correoError ? "correo-error" : "correo-help"}
+            className={`h-[44px] rounded-[8px] border bg-white px-[12px] text-[14px] text-[#1e1e1e] ${
+              correoError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+            }`}
           />
-          <p className="text-[12px] text-[#666]">
-            Usarás este correo para revisar y aprobar tu cotización.
-          </p>
+          {correoError ? (
+            <p id="correo-error" className="text-[12px] font-medium text-[#c14a4a]">
+              {correoError}
+            </p>
+          ) : (
+            <p id="correo-help" className="text-[12px] text-[#666]">
+              Usarás este correo para revisar y aprobar tu cotización.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-[6px]">
