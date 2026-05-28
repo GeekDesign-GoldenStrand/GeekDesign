@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { can } from "@/lib/auth/access";
 import type { Role } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
@@ -37,5 +38,10 @@ export default async function DetalleServicioPage({ params }: Props) {
   const servicio = await fetchServicio(idNum);
   if (!servicio) notFound();
 
-  return <ViewDetalleServicio servicio={servicio} />;
+  return (
+    <div>
+      <AdminHeader title={servicio.nombre_servicio} />
+      <ViewDetalleServicio servicio={servicio} />
+    </div>
+  );
 }

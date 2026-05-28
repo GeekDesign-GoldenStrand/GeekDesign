@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+
 import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 import { AsignacionCard } from "../molecules/AsignacionCard";
 
@@ -191,11 +193,16 @@ export function AsignarItemsModal({
     }
   }
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-[550px] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel={title}
+      size="xl"
+      noPadding
+      zClassName="z-[60]"
+    >
+      <div className="flex min-h-0 flex-col">
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <div className="flex flex-col gap-4 w-full">
             <div className="flex justify-between items-center">
@@ -321,6 +328,6 @@ export function AsignarItemsModal({
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

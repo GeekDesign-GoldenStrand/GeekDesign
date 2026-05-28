@@ -60,11 +60,6 @@ export function ViewDetalleServicio({ servicio }: Props) {
 
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-3xl font-semibold text-[#1e1e1e]">{servicio.nombre_servicio}</h1>
-      </div>
-
       <div className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-8 space-y-6">
         {/* Descripción + Sucursal */}
         <div className="grid grid-cols-2 gap-6">
