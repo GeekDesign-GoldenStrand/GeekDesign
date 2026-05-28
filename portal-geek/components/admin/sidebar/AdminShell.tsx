@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { UserRole } from "@/types";
 
@@ -12,7 +12,17 @@ export function AdminShell({ role, children }: { role: UserRole; children: React
   const [mobileOpen, setMobileOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    []
+  );
+
   function handleMouseEnter() {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
     timerRef.current = setTimeout(() => setDesktopExpanded(true), 1000);
   }
 
