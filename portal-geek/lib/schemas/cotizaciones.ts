@@ -145,7 +145,14 @@ const SolicitarClienteSchema = z.object({
 export const SolicitarCotizacionSchema = z.object({
   cliente: SolicitarClienteSchema,
   id_sucursal: z.number().int().positive(),
-  notas: z.string().max(2000).optional(),
+  notas: z
+    .string()
+    .max(500, "Las notas no pueden superar los 500 caracteres")
+    .regex(
+      /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/,
+      "Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis"
+    )
+    .optional(),
   fecha_estimada: z.coerce
     .date()
     .optional()

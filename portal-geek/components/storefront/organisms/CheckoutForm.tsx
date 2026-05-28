@@ -77,6 +77,14 @@ export function CheckoutForm({ sucursales }: Props) {
       return;
     }
 
+    if (notas.trim()) {
+      const regex = /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/;
+      if (!regex.test(notas)) {
+        setError("Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis");
+        return;
+      }
+    }
+
     submittingRef.current = true;
     setSubmitting(true);
     try {
@@ -243,12 +251,18 @@ export function CheckoutForm({ sucursales }: Props) {
         </div>
 
         <div className="flex flex-col gap-[6px]">
-          <label htmlFor="notas" className="text-[14px] font-semibold text-[#1e1e1e]">
-            Notas adicionales (opcional)
-          </label>
+          <div className="flex justify-between items-center">
+            <label htmlFor="notas" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Notas adicionales (opcional)
+            </label>
+            <span className="text-[12px] text-[#666]">
+              {notas.length}/500
+            </span>
+          </div>
           <textarea
             id="notas"
             rows={3}
+            maxLength={500}
             value={notas}
             onChange={(e) => setNotas(e.target.value)}
             className="rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] py-[8px] text-[14px] text-[#1e1e1e]"
