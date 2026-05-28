@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 import MaquinaInput from "@/components/ui/atoms/FormInput";
-import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
@@ -47,7 +46,6 @@ export default function EditarMaquina({
   const [machineType, setMachineType] = useState("");
   const [machineDescription, setMachineDescription] = useState(description);
   const [descriptionTouched, setDescriptionTouched] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -57,18 +55,6 @@ export default function EditarMaquina({
   }, [isOpen, description]);
 
   if (!isOpen) return null;
-
-  if (showSuccess) {
-    return (
-      <SuccessModal
-        message="Máquina editada correctamente"
-        onClose={() => {
-          setShowSuccess(false);
-          onClose();
-        }}
-      />
-    );
-  }
 
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,10 +99,8 @@ export default function EditarMaquina({
         onChangeStatus: () => {},
       });
 
-      // Replace the blocking window.alert with SuccessModal; the form Modal
-      // is hidden in the render below while it's up, and its 1.5s timer
-      // calls onClose for us.
-      setShowSuccess(true);
+      window.alert("Máquina editada correctamente");
+      onClose();
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {

@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { Modal } from "@/components/ui/atoms";
-import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
 import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
+import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
 interface ServicioRaw {
@@ -47,7 +46,6 @@ export default function AsignarServicios({
   const [servicioOptions, setServicioOptions] = useState<MultiSelectOption[]>([]);
   const [selectedServicios, setSelectedServicios] = useState<MultiSelectOption[]>([]);
   const [servicioError, setServicioError] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -68,18 +66,6 @@ export default function AsignarServicios({
   }, [isOpen]);
 
   if (!isOpen) return null;
-
-  if (showSuccess) {
-    return (
-      <SuccessModal
-        message="Servicios asignados correctamente"
-        onClose={() => {
-          setShowSuccess(false);
-          onClose();
-        }}
-      />
-    );
-  }
 
   function validate(): boolean {
     if (selectedServicios.length === 0) {
@@ -130,10 +116,8 @@ export default function AsignarServicios({
         onChangeStatus: () => {},
       });
 
-      // Replace the blocking window.alert with SuccessModal; the form Modal
-      // is hidden in the render below while it's up, and its 1.5s timer
-      // calls onClose for us.
-      setShowSuccess(true);
+      window.alert("Servicios asignados correctamente");
+      onClose();
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {
@@ -141,58 +125,53 @@ export default function AsignarServicios({
     }
   }
 
+  const formId = "asignar-servicios-form";
+
   return (
-    <Modal
-      isOpen
-      onClose={onClose}
+    <ModalShell
       title={`Asignar servicios — ${nickname} (${model})`}
-      size="xl"
-      noPadding
-    >
-      {/* Body scrolls independently; footer below stays anchored so the
-          MultiSelect dropdown (absolute, clipped to this body) can't cover
-          the action buttons. */}
-      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="flex flex-col text-[13px] text-[#575757]">
-            <label className="font-medium mb-1">Servicios</label>
-            <MultiSelect
-              options={servicioOptions}
-              value={selectedServicios}
-              onChange={(val) => {
-                setSelectedServicios(val);
-                setServicioError(null);
-              }}
-              placeholder="Seleccionar servicios..."
-            />
-            {servicioError && <p className="text-[12px] text-[#e42200] mt-1">{servicioError}</p>}
-          </div>
-
-          {error && (
-            <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
-              {error}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
+      onClose={onClose}
+      footer={
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
           >
             Cancelar
           </button>
           <button
             type="submit"
+            form={formId}
             disabled={isLoading}
             className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
           >
             {isLoading ? "Guardando..." : "Guardar"}
           </button>
         </div>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit}>
+        <div className="flex flex-col text-[13px] text-[#575757]">
+          <label className="font-medium mb-1">Servicios</label>
+          <MultiSelect
+            options={servicioOptions}
+            value={selectedServicios}
+            onChange={(val) => {
+              setSelectedServicios(val);
+              setServicioError(null);
+            }}
+            placeholder="Seleccionar servicios..."
+          />
+          {servicioError && <p className="text-[12px] text-[#e42200] mt-1">{servicioError}</p>}
+        </div>
+
+        {error && (
+          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
+            {error}
+          </p>
+        )}
       </form>
-    </Modal>
+    </ModalShell>
   );
 }
