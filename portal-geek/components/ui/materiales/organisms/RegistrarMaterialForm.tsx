@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import {
   CreateGrupoMaterialSchema,
   CreateMaterialSchema,
@@ -373,8 +373,10 @@ export function RegistrarMaterialForm({
       )}
 
       <div>
-        <label className={LABEL}>Imagen {tipo !== "grupo" ? "*" : ""}</label>
-        <MaterialImageInput
+        <label className={LABEL}>Imagen</label>
+        <ImageUploader
+          mode="single"
+          category="materiales"
           onUploaded={(key) => setField("imagen_url", key ?? "")}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
           hasError={Boolean(errors.imagen_url)}

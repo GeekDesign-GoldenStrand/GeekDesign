@@ -20,9 +20,10 @@ const imagenKeyValidator = z
   .string()
   .max(500, "Máximo 500 caracteres.")
   .refine(
-    (v) => isValidKey(v, "materiales"),
+    (v) => !v || isValidKey(v, "materiales"),
     "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
-  );
+  )
+  .optional();
 
 const nombreValidator = z
   .string()
@@ -47,7 +48,7 @@ export const CreateMaterialSchema = z.object({
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
   color: colorValidator,
-  imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Group (top-level, no dimensions) ─────────────────────────────────────────
@@ -56,14 +57,7 @@ export const CreateGrupoMaterialSchema = z.object({
   tipo: z.literal("grupo"),
   nombre_material: nombreValidator,
   descripcion_material: descripcionOpcionalValidator,
-  imagen_url: z
-    .string()
-    .max(500, "Máximo 500 caracteres.")
-    .refine(
-      (v) => !v || isValidKey(v, "materiales"),
-      "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
-    )
-    .optional(),
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Sub-material (variant, belongs to a group) ────────────────────────────────
@@ -78,7 +72,7 @@ export const CreateSubMaterialSchema = z.object({
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
   color: colorValidator,
-  imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Update schema ─────────────────────────────────────────────────────────────

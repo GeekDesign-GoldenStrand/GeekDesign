@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -59,6 +59,7 @@ export function EditarMaterialForm({
   });
 
   const [newImageKey, setNewImageKey] = useState<string | null>(null);
+  const [imageCleared, setImageCleared] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -122,6 +123,7 @@ export function EditarMaterialForm({
         descripcion_material: form.descripcion_material.trim() || undefined,
       };
       if (newImageKey) payload.imagen_url = newImageKey;
+      else if (imageCleared) payload.imagen_url = "";
 
       const nameError = !payload.nombre_material ? "El nombre es requerido." : "";
       if (nameError) {
@@ -150,12 +152,13 @@ export function EditarMaterialForm({
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
       color: form.color.trim(),
-      imagen_url: newImageKey ?? "placeholder-for-validation",
+      imagen_url: newImageKey ?? (imageCleared ? "" : "placeholder-for-validation"),
     };
 
-    const schemaToUse = newImageKey
-      ? CreateMaterialSchema
-      : CreateMaterialSchema.omit({ imagen_url: true });
+    const schemaToUse =
+      newImageKey || imageCleared
+        ? CreateMaterialSchema
+        : CreateMaterialSchema.omit({ imagen_url: true });
     const result = schemaToUse.safeParse(payload);
     if (result.success) {
       setErrors({});
@@ -185,7 +188,11 @@ export function EditarMaterialForm({
     } else {
       const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
       void _omit;
-      bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+      bodyPayload = newImageKey
+        ? { ...rest, imagen_url: newImageKey }
+        : imageCleared
+          ? { ...rest, imagen_url: "" }
+          : rest;
     }
 
     setLoading(true);
@@ -356,10 +363,13 @@ export function EditarMaterialForm({
 
       <div>
         <label className={LABEL}>Imagen</label>
-        <MaterialImageInput
+        <ImageUploader
+          mode="single"
+          category="materiales"
           initialPreviewUrl={material.imageUrl}
           onUploaded={(key) => {
             setNewImageKey(key);
+            setImageCleared(key === null && Boolean(material.imageUrl));
             setErrors((prev) => ({ ...prev, imagen_url: "" }));
           }}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
