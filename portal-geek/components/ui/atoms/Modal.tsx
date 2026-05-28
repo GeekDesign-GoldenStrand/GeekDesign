@@ -113,14 +113,18 @@ export function Modal({
             </h2>
             <div className="flex items-center gap-2">
               {headerActions}
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Cerrar modal"
-                className="rounded text-[#8e908f] transition-colors hover:text-[#e42200] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
-              >
-                <X size={20} aria-hidden />
-              </button>
+              {/* Hide the close affordance while non-dismissable (e.g. mid-submit)
+                  so it can't bypass the Escape/backdrop lock. */}
+              {dismissable && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Cerrar modal"
+                  className="rounded text-[#8e908f] transition-colors hover:text-[#e42200] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+                >
+                  <X size={20} aria-hidden />
+                </button>
+              )}
             </div>
           </div>
         )}

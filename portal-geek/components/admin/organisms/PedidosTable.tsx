@@ -202,6 +202,8 @@ export function PedidosTable({
                 tabIndex={0}
                 onClick={() => onShowDetail(p.id_pedido)}
                 onKeyDown={(e) => {
+                  // Ignore keys bubbling from inner controls (status select, links).
+                  if (e.target !== e.currentTarget) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     onShowDetail(p.id_pedido);
@@ -323,6 +325,8 @@ export function PedidosTable({
                 tabIndex={0}
                 onClick={() => onShowDetail(p.id_pedido)}
                 onKeyDown={(e) => {
+                  // Ignore keys bubbling from inner controls (status select, links).
+                  if (e.target !== e.currentTarget) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     onShowDetail(p.id_pedido);

@@ -90,6 +90,8 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               tabIndex={0}
               onClick={() => goToDetail(c.id_cotizacion)}
               onKeyDown={(e) => {
+                // Ignore keys bubbling from inner controls (status select, links).
+                if (e.target !== e.currentTarget) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   goToDetail(c.id_cotizacion);
@@ -151,6 +153,8 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               tabIndex={0}
               onClick={() => goToDetail(c.id_cotizacion)}
               onKeyDown={(e) => {
+                // Ignore keys bubbling from inner controls (status select, links).
+                if (e.target !== e.currentTarget) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   goToDetail(c.id_cotizacion);
