@@ -318,14 +318,10 @@ export function RegistrarMaterialForm({
                 Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.ancho}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("ancho")}`}
               />
@@ -336,14 +332,10 @@ export function RegistrarMaterialForm({
                 Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.alto}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("alto")}`}
               />
@@ -354,14 +346,10 @@ export function RegistrarMaterialForm({
                 Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.grosor}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("grosor")}`}
               />
