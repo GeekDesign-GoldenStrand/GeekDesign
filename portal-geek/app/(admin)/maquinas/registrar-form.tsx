@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import MaquinaInput from "@/components/ui/atoms/FormInput";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
@@ -34,8 +35,21 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
   const [machineNameError, setMachineNameError] = useState<string | null>(null);
   const [machineNicknameError, setMachineNicknameError] = useState<string | null>(null);
   const [machineTypeError, setMachineTypeError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  if (showSuccess) {
+    return (
+      <SuccessModal
+        message="Máquina registrada correctamente"
+        onClose={() => {
+          setShowSuccess(false);
+          onClose();
+        }}
+      />
+    );
+  }
 
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,8 +93,10 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
         onChangeStatus: () => {},
       });
 
-      window.alert("Máquina registrada correctamente");
-      onClose();
+      // Replace the blocking window.alert with SuccessModal; the form Modal
+      // is hidden in the render above while it's up, and its 1.5s timer
+      // calls onClose for us.
+      setShowSuccess(true);
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {

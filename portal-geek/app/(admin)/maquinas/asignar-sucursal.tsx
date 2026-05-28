@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import { Modal } from "@/components/ui/atoms";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { MaquinaCardProps } from "@/types";
 
 interface SucursalRaw {
@@ -48,6 +49,7 @@ export default function AsignarSucursal({
   const [sucursalOptions, setSucursalOptions] = useState<SucursalRaw[]>([]);
   const [selectedSucursal, setSelectedSucursal] = useState<string>("");
   const [sucursalError, setSucursalError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,6 +69,18 @@ export default function AsignarSucursal({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  if (showSuccess) {
+    return (
+      <SuccessModal
+        message="Sucursal asignada correctamente"
+        onClose={() => {
+          setShowSuccess(false);
+          onClose();
+        }}
+      />
+    );
+  }
 
   function validate(): boolean {
     if (!selectedSucursal) {
@@ -117,8 +131,10 @@ export default function AsignarSucursal({
         onChangeStatus: () => {},
       });
 
-      window.alert("Sucursal asignada correctamente");
-      onClose();
+      // Replace the blocking window.alert with SuccessModal; the form Modal
+      // is hidden in the render below while it's up, and its 1.5s timer
+      // calls onClose for us.
+      setShowSuccess(true);
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {
@@ -126,66 +142,70 @@ export default function AsignarSucursal({
     }
   }
 
-  const formId = "asignar-sucursal-form";
-
   return (
-    <ModalShell
-      title={`Asignar sucursal — ${nickname} (${model})`}
+    <Modal
+      isOpen
       onClose={onClose}
-      footer={
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+      title={`Asignar sucursal — ${nickname} (${model})`}
+      size="lg"
+      noPadding
+    >
+      {/* Body scrolls independently; footer below stays anchored. Same shape
+          as asignar-servicios so both modals behave identically. */}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex flex-col text-[13px] text-[#575757]">
+            <label className="font-medium mb-1">Sucursal</label>
+            <select
+              value={selectedSucursal}
+              onChange={(e) => {
+                setSelectedSucursal(e.target.value);
+                setSucursalError(null);
+              }}
+              className={[
+                "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] transition-colors",
+                sucursalError ? "border-[#df2646]" : "border-[#b9b8b8]",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <option value="" disabled>
+                Seleccionar sucursal...
+              </option>
+              {sucursalOptions.map((s) => (
+                <option key={s.id_sucursal} value={s.id_sucursal}>
+                  {s.nombre_sucursal}
+                </option>
+              ))}
+            </select>
+            {sucursalError && <p className="text-[12px] text-[#e42200] mt-1">{sucursalError}</p>}
+          </div>
+
+          {error && (
+            <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+            disabled={isLoading}
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            form={formId}
             disabled={isLoading}
             className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
           >
             {isLoading ? "Guardando..." : "Guardar"}
           </button>
         </div>
-      }
-    >
-      <form id={formId} onSubmit={handleSubmit}>
-        <div className="flex flex-col text-[13px] text-[#575757]">
-          <label className="font-medium mb-1">Sucursal</label>
-          <select
-            value={selectedSucursal}
-            onChange={(e) => {
-              setSelectedSucursal(e.target.value);
-              setSucursalError(null);
-            }}
-            className={[
-              "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] transition-colors",
-              sucursalError ? "border-[#df2646]" : "border-[#b9b8b8]",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <option value="" disabled>
-              Seleccionar sucursal...
-            </option>
-            {sucursalOptions.map((s) => (
-              <option key={s.id_sucursal} value={s.id_sucursal}>
-                {s.nombre_sucursal}
-              </option>
-            ))}
-          </select>
-          {sucursalError && <p className="text-[12px] text-[#e42200] mt-1">{sucursalError}</p>}
-        </div>
-
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
-            {error}
-          </p>
-        )}
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
