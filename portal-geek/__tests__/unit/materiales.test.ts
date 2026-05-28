@@ -42,7 +42,6 @@ const mockCount = prisma.materiales.count as jest.Mock;
 const mockFindUnique = prisma.materiales.findUnique as jest.Mock;
 const mockCreate = prisma.materiales.create as jest.Mock;
 const mockUpdate = prisma.materiales.update as jest.Mock;
-const mockDelete = prisma.materiales.delete as jest.Mock;
 const mockTransaction = prisma.$transaction as jest.Mock;
 
 const KEY = "materiales/2026/05/00000000-0000-4000-8000-000000000001.jpg";
@@ -80,12 +79,12 @@ const VALID_INPUT = {
 describe("getMaterialesOptions", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("consulta solo materiales no-grupo (es_grupo: false)", async () => {
+  it("consulta solo materiales hoja (es_grupo: false, es_categoria: false)", async () => {
     mockFindMany.mockResolvedValue([BASE_MATERIAL]);
 
     const result = await getMaterialesOptions();
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { es_grupo: false } })
+      expect.objectContaining({ where: { es_grupo: false, es_categoria: false } })
     );
     expect(result).toHaveLength(1);
   });
@@ -196,17 +195,25 @@ describe("listMateriales", () => {
 
     await listMateriales(1, 20, undefined, "desc");
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { nombre_material: "desc" } })
+      expect.objectContaining({
+        orderBy: expect.arrayContaining([{ nombre_material: "desc" }]),
+      })
     );
   });
 
-  it("incluye sub-materiales en la consulta", async () => {
+  it("incluye sub-materiales con dos niveles (categoría → grupo|individual → variante)", async () => {
     mockFindMany.mockResolvedValue([BASE_MATERIAL]);
     mockCount.mockResolvedValue(1);
 
     await listMateriales(1, 20);
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ include: { subMateriales: true } })
+      expect.objectContaining({
+        include: {
+          subMateriales: expect.objectContaining({
+            include: { subMateriales: true },
+          }),
+        },
+      })
     );
   });
 });
@@ -224,7 +231,7 @@ describe("getMaterial", () => {
     expect(result).toMatchObject({ ...BASE_MATERIAL, imagen_url: SIGNED_URL });
     expect(mockFindUnique).toHaveBeenCalledWith({
       where: { id_material: 1 },
-      include: { subMateriales: true },
+      include: { subMateriales: { include: { subMateriales: true } } },
     });
   });
 
@@ -238,7 +245,11 @@ describe("getMaterial", () => {
 // createMaterial
 // ──────────────────────────────────────────────────────────────────────────────
 describe("createMaterial", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
 
   it("crea y retorna el nuevo material con imagen resuelta", async () => {
     mockCreate.mockResolvedValue(BASE_MATERIAL);
@@ -249,8 +260,8 @@ describe("createMaterial", () => {
       imagen_url: SIGNED_URL,
     });
     expect(mockCreate).toHaveBeenCalledWith({
-      data: { ...VALID_INPUT, es_grupo: false },
-      include: { subMateriales: true },
+      data: { ...VALID_INPUT, es_grupo: false, es_categoria: false },
+      include: { subMateriales: { include: { subMateriales: true } } },
     });
   });
 });
@@ -259,7 +270,11 @@ describe("createMaterial", () => {
 // createGrupo
 // ──────────────────────────────────────────────────────────────────────────────
 describe("createGrupo", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
 
   it("crea el grupo con es_grupo: true y unidad_medida: null", async () => {
     const GRUPO = { ...BASE_MATERIAL, es_grupo: true, unidad_medida: null, subMateriales: [] };
@@ -268,8 +283,12 @@ describe("createGrupo", () => {
     const result = await createGrupo({ tipo: "grupo", nombre_material: "Acrílicos de colores" });
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ es_grupo: true, unidad_medida: null }),
-        include: { subMateriales: true },
+        data: expect.objectContaining({
+          es_grupo: true,
+          es_categoria: false,
+          unidad_medida: null,
+        }),
+        include: { subMateriales: { include: { subMateriales: true } } },
       })
     );
     expect(result).toMatchObject({ es_grupo: true, unidad_medida: null });
@@ -311,31 +330,35 @@ describe("createSubMaterial", () => {
   };
 
   it("crea el sub-material cuando el padre es un grupo válido", async () => {
-    mockFindUnique.mockResolvedValue({ es_grupo: true });
+    mockFindUnique.mockResolvedValue({ es_grupo: true, es_categoria: false });
     const SUB = { ...BASE_MATERIAL, id_material: 3, id_material_padre: 2, subMateriales: [] };
     mockCreate.mockResolvedValue(SUB);
 
     const result = await createSubMaterial(SUB_INPUT);
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ es_grupo: false, id_material_padre: 2 }),
-        include: { subMateriales: true },
+        data: expect.objectContaining({
+          es_grupo: false,
+          es_categoria: false,
+          id_material_padre: 2,
+        }),
+        include: { subMateriales: { include: { subMateriales: true } } },
       })
     );
     expect(result).toMatchObject({ id_material_padre: 2 });
   });
 
   it("lanza ConflictError cuando el padre no es un grupo (es_grupo: false)", async () => {
-    mockFindUnique.mockResolvedValue({ es_grupo: false });
+    mockFindUnique.mockResolvedValue({ es_grupo: false, es_categoria: false });
 
     await expect(createSubMaterial(SUB_INPUT)).rejects.toThrow(ConflictError);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
-  it("lanza ConflictError cuando el padre no existe", async () => {
+  it("lanza NotFoundError cuando el padre no existe", async () => {
     mockFindUnique.mockResolvedValue(null);
 
-    await expect(createSubMaterial(SUB_INPUT)).rejects.toThrow(ConflictError);
+    await expect(createSubMaterial(SUB_INPUT)).rejects.toThrow(NotFoundError);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 });
@@ -351,6 +374,7 @@ describe("updateMaterial", () => {
   });
 
   it("actualiza y retorna el material modificado", async () => {
+    mockFindUnique.mockResolvedValue({ imagen_url: KEY, es_grupo: false, es_categoria: false });
     const updated = { ...BASE_MATERIAL, nombre_material: "Acrílico opaco" };
     mockUpdate.mockResolvedValue(updated);
 
@@ -360,7 +384,7 @@ describe("updateMaterial", () => {
   });
 
   it("lanza NotFoundError cuando el material no existe (P2025)", async () => {
-    mockUpdate.mockRejectedValue(Object.assign(new Error("Record not found"), { code: "P2025" }));
+    mockFindUnique.mockResolvedValue(null);
     await expect(updateMaterial(999, { nombre_material: "No existe" })).rejects.toThrow(
       NotFoundError
     );
@@ -368,95 +392,119 @@ describe("updateMaterial", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-// deleteMaterial
+// deleteMaterial — force delete (per stakeholder, ignores in-use relations)
 // ──────────────────────────────────────────────────────────────────────────────
 describe("deleteMaterial", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let txMock: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => fn(prisma));
+
+    txMock = {
+      materiales: {
+        findUnique: jest.fn(),
+        delete: jest.fn().mockResolvedValue(undefined),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      opcionesProducto: {
+        findMany: jest.fn().mockResolvedValue([]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      valoresOpcion: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      matrizDePrecios: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      servicioMaterial: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      proveedorPrecios: {
+        findMany: jest.fn().mockResolvedValue([]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      gastos: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      detallePedido: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      pedidoMaquina: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    };
+
+    mockTransaction.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (fn: (tx: any) => Promise<void>) => fn(txMock)
+    );
   });
 
-  it("elimina correctamente cuando no hay relaciones", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("elimina un material individual sin relaciones", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: false,
       subMateriales: [],
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [],
     });
-    mockDelete.mockResolvedValue(BASE_MATERIAL);
 
     await expect(deleteMaterial(1)).resolves.toBeUndefined();
-    expect(mockDelete).toHaveBeenCalledWith({ where: { id_material: 1 } });
+    expect(txMock.materiales.delete).toHaveBeenCalledWith({ where: { id_material: 1 } });
   });
 
-  it("lanza ConflictError cuando el grupo tiene sub-materiales activos", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("forza el borrado de un grupo con sub-materiales (borra subs primero)", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: true,
-      subMateriales: [{ id_material: 2 }],
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [],
+      subMateriales: [
+        { id_material: 2, imagen_url: null },
+        { id_material: 3, imagen_url: null },
+      ],
     });
 
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    await expect(deleteMaterial(1)).resolves.toBeUndefined();
+    expect(txMock.materiales.deleteMany).toHaveBeenCalledWith({
+      where: { id_material: { in: [2, 3] } },
+    });
+    expect(txMock.materiales.delete).toHaveBeenCalledWith({ where: { id_material: 1 } });
   });
 
-  it("lanza ConflictError cuando hay opciones de producto asociadas", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("cascada por OpcionesProducto → ValoresOpcion + MatrizDePrecios", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: false,
       subMateriales: [],
-      opciones: [{ id_opcion: 1 }],
-      detallesPedido: [],
-      pedidoMaquinas: [],
     });
+    txMock.opcionesProducto.findMany.mockResolvedValue([{ id_opcion: 10 }, { id_opcion: 11 }]);
 
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    await deleteMaterial(1);
+
+    expect(txMock.matrizDePrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_opcion: { in: [10, 11] } },
+    });
+    expect(txMock.valoresOpcion.deleteMany).toHaveBeenCalledWith({
+      where: { id_opcion: { in: [10, 11] } },
+    });
+    expect(txMock.opcionesProducto.deleteMany).toHaveBeenCalledWith({
+      where: { id_opcion: { in: [10, 11] } },
+    });
   });
 
-  it("lanza ConflictError cuando hay detalles de pedido asociados", async () => {
-    mockFindUnique.mockResolvedValue({
+  it("limpia Gastos.id_proveedor_precio antes de borrar ProveedorPrecios", async () => {
+    txMock.materiales.findUnique.mockResolvedValue({
       id_material: 1,
       imagen_url: null,
       es_grupo: false,
       subMateriales: [],
-      opciones: [],
-      detallesPedido: [{ id_detalle: 1 }],
-      pedidoMaquinas: [],
     });
+    txMock.proveedorPrecios.findMany.mockResolvedValue([{ id_proveedor_precio: 99 }]);
 
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
-  });
+    await deleteMaterial(1);
 
-  it("lanza ConflictError cuando hay pedidos de máquina asociados", async () => {
-    mockFindUnique.mockResolvedValue({
-      id_material: 1,
-      imagen_url: null,
-      es_grupo: false,
-      subMateriales: [],
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [{ id_pedido_maquina: 1 }],
+    expect(txMock.gastos.updateMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [99] } },
+      data: { id_proveedor_precio: null },
     });
-
-    await expect(deleteMaterial(1)).rejects.toThrow(ConflictError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(txMock.proveedorPrecios.deleteMany).toHaveBeenCalledWith({
+      where: { id_proveedor_precio: { in: [99] } },
+    });
   });
 
   it("lanza NotFoundError cuando el material no existe", async () => {
-    mockFindUnique.mockResolvedValue(null);
+    txMock.materiales.findUnique.mockResolvedValue(null);
     await expect(deleteMaterial(999)).rejects.toThrow(NotFoundError);
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(txMock.materiales.delete).not.toHaveBeenCalled();
   });
 });
 
@@ -486,47 +534,42 @@ const SCHEMA_SUB_BASE = {
 };
 
 describe("CreateMaterialSchema — color", () => {
-  it.each(["#3B82F6", "#000000", "#FFFFFF", "#aabbcc", "#A1B2C3"])(
-    "accepts a valid 6-digit HEX color: %s",
+  it.each(["Rojo", "Verde menta", "Plata", "Negro mate", "#3B82F6"])(
+    "accepts a descriptive color: %s",
     (color) => {
       expect(CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color }).success).toBe(true);
     }
   );
 
   it.each([
-    ["named color", "Plata"],
-    ["named color", "Verde"],
     ["empty string", ""],
-    ["missing hash", "3B82F6"],
-    ["8-digit with alpha", "#3B82F6FF"],
-    ["invalid hex chars", "#GGGGGG"],
+    ["only whitespace", "   "],
+    ["forbidden chars", "Rojo<script>"],
   ])("rejects an invalid color (%s): %s", (_label, color) => {
-    const result = CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe("El color debe ser un HEX válido (ej. #3B82F6).");
-    }
+    expect(CreateMaterialSchema.safeParse({ ...SCHEMA_MATERIAL_BASE, color }).success).toBe(false);
   });
 });
 
 describe("CreateSubMaterialSchema — color", () => {
-  it.each(["#3B82F6", "#000000", "#FFFFFF", "#aabbcc"])(
-    "accepts a valid 6-digit HEX color: %s",
-    (color) => {
-      expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(true);
-    }
-  );
+  it.each(["Verde", "Verde menta", "#22C55E"])("accepts a descriptive color: %s", (color) => {
+    expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(true);
+  });
 
   it.each([
-    ["named color", "Verde"],
-    ["missing hash", "3B82F6"],
-    ["8-digit with alpha", "#3B82F6FF"],
-    ["invalid hex chars", "#GGGGGG"],
+    ["empty string", ""],
+    ["forbidden chars", "Verde{}"],
   ])("rejects an invalid color (%s): %s", (_label, color) => {
-    const result = CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe("El color debe ser un HEX válido (ej. #3B82F6).");
-    }
+    expect(CreateSubMaterialSchema.safeParse({ ...SCHEMA_SUB_BASE, color }).success).toBe(false);
+  });
+});
+
+describe("CreateMaterialSchema — descripcion opcional", () => {
+  it("acepta payload sin descripcion_material", () => {
+    const { descripcion_material: _omit, ...rest } = {
+      ...SCHEMA_MATERIAL_BASE,
+      color: "Plata",
+    };
+    void _omit;
+    expect(CreateMaterialSchema.safeParse(rest).success).toBe(true);
   });
 });

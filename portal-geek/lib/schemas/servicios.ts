@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
+import { RESERVED_IDENTIFIERS } from "@/lib/utils/formula-evaluator";
+
+const reservedNameMessage = `Identificador reservado. No puede usarse: ${RESERVED_IDENTIFIERS.join(", ")}`;
+const isReservedIdentifier = (n: string) => (RESERVED_IDENTIFIERS as readonly string[]).includes(n);
 
 const VariableSchema = z.object({
   id_tipo_variable: z.number().int().positive(),
@@ -8,7 +12,8 @@ const VariableSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido"),
+    .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido")
+    .refine((n) => !isReservedIdentifier(n), { message: reservedNameMessage }),
   etiqueta: z.string().min(1).max(100),
   valor_default: z.coerce.number().optional(),
   editable_por_cliente: z.boolean().default(false),
@@ -21,7 +26,8 @@ const ConstanteSchema = z
       .string()
       .min(1)
       .max(100)
-      .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido"),
+      .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido")
+      .refine((n) => !isReservedIdentifier(n), { message: reservedNameMessage }),
     origen: z.enum(["instalador", "proveedor", "global", "manual"]),
     id_instalador: z.number().int().positive().optional(),
     id_proveedor: z.number().int().positive().optional(),
