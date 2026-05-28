@@ -10,12 +10,9 @@ import {
   Storefront,
   PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
-import Image from "next/image";
 
+import { MaquinaIcon } from "@/components/admin/sidebar/atoms/MaquinaIcon";
 import type { Section } from "@/lib/auth/access";
-import maquina_icono_fill from "@/public/maquina-icono-fill.svg";
-import maquina_icono_hover from "@/public/maquina-icono-hover.svg";
-import maquina_icono from "@/public/maquina-icono.svg";
 
 export type NavItem =
   | {
@@ -86,12 +83,10 @@ export const navItems: NavItem[] = [
   {
     href: "/maquinas",
     label: "Máquinas",
-    // Custom SVG asset (not Phosphor) — wrap in <Image> so it's a valid React
-    // child, and supply separate `iconHover`/`iconActive` variants since
-    // NavLink's color/weight swap doesn't apply to <Image>.
-    icon: <Image src={maquina_icono} alt="" width={ICON_SIZE} height={ICON_SIZE} />,
-    iconHover: <Image src={maquina_icono_hover} alt="" width={ICON_SIZE} height={ICON_SIZE} />,
-    iconActive: <Image src={maquina_icono_fill} alt="" width={ICON_SIZE} height={ICON_SIZE} />,
+    // Inline SVG component (not Phosphor) whose path uses `fill="currentColor"`,
+    // so it picks up the NavLink's text color for idle / hover / active states
+    // just like the Phosphor entries — no separate -hover / -fill assets needed.
+    icon: <MaquinaIcon size={ICON_SIZE} />,
     section: "maquinas",
   },
   { type: "divider" },
