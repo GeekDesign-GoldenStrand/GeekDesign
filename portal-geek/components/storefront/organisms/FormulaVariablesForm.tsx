@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { addItem } from "@/lib/cart/storage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -216,18 +218,18 @@ export function FormulaVariablesForm({
             <label htmlFor="material" className="text-[13px] font-medium text-[#1e1e1e]">
               Material
             </label>
-            <select
+            <Select
               id="material"
-              value={idMaterial ?? ""}
-              onChange={(e) => setIdMaterial(Number(e.target.value))}
-              className="h-[40px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
+              size="sm"
+              value={idMaterial === null ? "" : String(idMaterial)}
+              onChange={(v) => setIdMaterial(v ? Number(v) : null)}
             >
               {materiales.map((m) => (
-                <option key={m.id_material} value={m.id_material}>
+                <SelectOption key={m.id_material} value={String(m.id_material)}>
                   {m.nombre_material}
-                </option>
+                </SelectOption>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Cantidad */}
@@ -327,20 +329,25 @@ export function FormulaVariablesForm({
         {calcError && <p className="text-[13px] font-medium text-[#c14a4a]">{calcError}</p>}
 
         <div className="flex gap-[12px]">
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            section="storefront"
+            size="md"
             disabled={precioUnitario === null || calculating}
-            className="flex-1 bg-[#8b434a] rounded-[10px] h-[48px] text-white font-semibold text-[15px] hover:bg-[#7a3a41] active:scale-[0.99] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1"
           >
             Agregar al carrito
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="md"
             onClick={handleReset}
-            className="flex-1 bg-white border border-[#8b434a] rounded-[10px] h-[48px] text-[#8b434a] font-semibold text-[15px] hover:bg-[#fff0f3] active:scale-[0.99] transition-all duration-150"
+            className="flex-1"
           >
             Restablecer
-          </button>
+          </Button>
         </div>
       </form>
     </div>

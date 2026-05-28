@@ -4,6 +4,7 @@ import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import {
   getCarrito,
   removeItem,
@@ -109,12 +110,9 @@ export function CarritoView({ relatedServices }: Props) {
     return (
       <div className="flex flex-col items-center justify-center gap-[24px] py-[80px]">
         <p className="text-[#1e1e1e] text-[20px] font-semibold">Tu carrito está vacío</p>
-        <Link
-          href="/tienda/servicios"
-          className="bg-[#8b434a] text-white rounded-[10px] px-[32px] h-[52px] flex items-center font-semibold text-[16px] hover:bg-[#7a3a41] transition-colors"
-        >
-          Explorar catálogo
-        </Link>
+        <Button asChild variant="primary" section="storefront" size="md">
+          <Link href="/tienda/servicios">Explorar catálogo</Link>
+        </Button>
       </div>
     );
   }
@@ -283,12 +281,15 @@ export function CarritoView({ relatedServices }: Props) {
               <span>{formatPeso(subtotal)}</span>
             </div>
 
-            <Link
-              href="/tienda/cotizacion/checkout"
-              className="bg-[#8b434a] h-[61px] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] text-[#fffcfc] font-bold text-[16.742px] hover:bg-[#7a3a41] transition-colors w-full flex items-center justify-center"
+            <Button
+              asChild
+              variant="primary"
+              section="storefront"
+              size="lg"
+              className="w-full shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
             >
-              Solicitar cotización
-            </Link>
+              <Link href="/tienda/cotizacion/checkout">Solicitar cotización</Link>
+            </Button>
           </div>
         </div>
 
