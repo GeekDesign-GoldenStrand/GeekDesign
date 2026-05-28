@@ -13,9 +13,9 @@ import {
 import Image from "next/image";
 
 import type { Section } from "@/lib/auth/access";
-import maquina_icono from "@/public/maquina icono.svg";
 import maquina_icono_fill from "@/public/maquina-icono-fill.svg";
 import maquina_icono_hover from "@/public/maquina-icono-hover.svg";
+import maquina_icono from "@/public/maquina-icono.svg";
 
 export type NavItem =
   | {
