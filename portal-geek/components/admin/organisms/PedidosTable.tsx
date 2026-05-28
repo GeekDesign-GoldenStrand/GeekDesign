@@ -123,6 +123,7 @@ interface Pedido {
   fecha_estimada?: string | null;
   folio?: string | null;
   monto_total?: number | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -227,7 +228,7 @@ export function PedidosTable({
                 <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
 
                 {/* Nombre de oportunidad */}
-                <span className="truncate px-2 min-w-0">{p.cliente?.nombre_cliente}</span>
+                <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
 
                 {/* Monto */}
                 <span className="whitespace-nowrap">
@@ -398,6 +399,14 @@ export function PedidosTable({
 
                       <p className="text-[11px] text-[#8e908f]">
                         {p.cliente?.empresa || "Sin empresa"}
+                      </p>
+
+                      <p className="mt-2 text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                        Oportunidad
+                      </p>
+
+                      <p className="text-[12px] font-medium text-[#1e1e1e]">
+                        {p.nombre_oportunidad ?? "—"}
                       </p>
                     </div>
 
