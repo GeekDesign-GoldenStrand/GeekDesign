@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
 import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
 interface ServicioRaw {
@@ -125,53 +125,58 @@ export default function AsignarServicios({
     }
   }
 
-  const formId = "asignar-servicios-form";
-
   return (
-    <ModalShell
-      title={`Asignar servicios — ${nickname} (${model})`}
+    <Modal
+      isOpen
       onClose={onClose}
-      footer={
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+      title={`Asignar servicios — ${nickname} (${model})`}
+      size="lg"
+      noPadding
+    >
+      {/* Body scrolls independently; the action bar below stays anchored so the
+          MultiSelect dropdown (absolute, clipped to the scrollable body) can't
+          cover the Cancelar/Guardar buttons. */}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex flex-col text-[13px] text-[#575757]">
+            <label className="font-medium mb-1">Servicios</label>
+            <MultiSelect
+              options={servicioOptions}
+              value={selectedServicios}
+              onChange={(val) => {
+                setSelectedServicios(val);
+                setServicioError(null);
+              }}
+              placeholder="Seleccionar servicios..."
+            />
+            {servicioError && <p className="text-[12px] text-[#e42200] mt-1">{servicioError}</p>}
+          </div>
+
+          {error && (
+            <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+            disabled={isLoading}
+            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            form={formId}
             disabled={isLoading}
             className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
           >
             {isLoading ? "Guardando..." : "Guardar"}
           </button>
         </div>
-      }
-    >
-      <form id={formId} onSubmit={handleSubmit}>
-        <div className="flex flex-col text-[13px] text-[#575757]">
-          <label className="font-medium mb-1">Servicios</label>
-          <MultiSelect
-            options={servicioOptions}
-            value={selectedServicios}
-            onChange={(val) => {
-              setSelectedServicios(val);
-              setServicioError(null);
-            }}
-            placeholder="Seleccionar servicios..."
-          />
-          {servicioError && <p className="text-[12px] text-[#e42200] mt-1">{servicioError}</p>}
-        </div>
-
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
-            {error}
-          </p>
-        )}
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
