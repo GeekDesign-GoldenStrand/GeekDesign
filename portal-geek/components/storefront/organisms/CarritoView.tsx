@@ -299,11 +299,27 @@ export function CarritoView({ relatedServices }: Props) {
               Más productos parecidos
             </h2>
 
-            <div className="flex items-center gap-[12px] md:overflow-visible overflow-x-auto">
+            {/* Mobile: render the full related list with horizontal scroll
+                (chevrons are inert on touch, and a sliced window would
+                hide everything past page 1 — see PR #85 Copilot review). */}
+            <div className="md:hidden flex gap-[16px] overflow-x-auto -mx-4 px-4 pb-2">
+              {relatedServices.map((s) => (
+                <Link
+                  key={s.id_servicio}
+                  href={`/tienda/servicios/${s.id_servicio}`}
+                  className="bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] shrink-0 w-[200px] h-[160px] flex items-end p-[12px] hover:scale-[1.02] transition-transform"
+                >
+                  <p className="font-bold text-[16.742px] text-[#1e1e1e]">{s.nombre_servicio}</p>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop: paginated window with chevron controls. */}
+            <div className="hidden md:flex items-center gap-[12px]">
               <button
                 onClick={() => setCarouselStart((p) => Math.max(0, p - 1))}
                 disabled={carouselStart === 0}
-                className="hidden md:flex bg-[#ebebeb] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                className="bg-[#ebebeb] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                 aria-label="Anterior"
               >
                 <ChevronLeft />
@@ -314,7 +330,7 @@ export function CarritoView({ relatedServices }: Props) {
                   <Link
                     key={s.id_servicio}
                     href={`/tienda/servicios/${s.id_servicio}`}
-                    className="bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] shrink-0 w-[200px] md:w-auto md:flex-1 h-[160px] md:h-[200px] flex items-end p-[12px] hover:scale-[1.02] transition-transform"
+                    className="bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex-1 h-[200px] flex items-end p-[12px] hover:scale-[1.02] transition-transform"
                   >
                     <p className="font-bold text-[16.742px] text-[#1e1e1e]">{s.nombre_servicio}</p>
                   </Link>
@@ -332,7 +348,7 @@ export function CarritoView({ relatedServices }: Props) {
                   )
                 }
                 disabled={carouselStart + CAROUSEL_VISIBLE >= relatedServices.length}
-                className="hidden md:flex bg-[#fffcfc] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                className="bg-[#fffcfc] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                 aria-label="Siguiente"
               >
                 <ChevronRight />
