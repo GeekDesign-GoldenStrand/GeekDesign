@@ -96,7 +96,8 @@ export async function listPedidos(
   cliente?: string | null,
   search?: string | null,
   fechaEstimadaDesde?: string | null,
-  fechaEstimadaHasta?: string | null
+  fechaEstimadaHasta?: string | null,
+  detalleEstatuses: string[] = []
 ): Promise<{ items: PedidoListItem[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
@@ -113,8 +114,28 @@ export async function listPedidos(
     where.id_estatus = { in: statusIds };
   }
 
-  if (serviceIds.length > 0) {
-    where.detalles = { some: { id_servicio: { in: serviceIds } } };
+  // Combine service + detail-status filters into a single `detalles.some`
+  // so we match pedidos whose detail for the selected service has the chosen
+  // statuses (rather than ANDing two disjoint `some` predicates over different
+  // details).
+  if (serviceIds.length > 0 || detalleEstatuses.length > 0) {
+    const detalleWhere: Prisma.DetallePedidoWhereInput = {};
+    if (serviceIds.length > 0) {
+      detalleWhere.id_servicio = { in: serviceIds };
+    }
+    if (detalleEstatuses.length > 0) {
+      const statusIds = await getPedidoStatusIds(detalleEstatuses);
+      // DetallePedido.id_estatus is nullable, and detalles created via
+      // cotizacion → pedido start as NULL. The table UI renders those as
+      // "Pendiente" (PedidosTable.tsx — detalle?.estatus?.descripcion ??
+      // "Pendiente"), so the filter has to match the same fallback to stay
+      // consistent with what the user sees.
+      const includesPendiente = detalleEstatuses.includes(PEDIDO_STATUS.PENDIENTE);
+      detalleWhere.OR = includesPendiente
+        ? [{ id_estatus: { in: statusIds } }, { id_estatus: null }]
+        : [{ id_estatus: { in: statusIds } }];
+    }
+    where.detalles = { some: detalleWhere };
   }
 
   if (empresa || cliente) {

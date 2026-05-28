@@ -30,8 +30,11 @@ export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
       return num;
     });
 
-    // Multiple status values are allowed
+    // Multiple status values are allowed (pedido-level)
     const estatuses = searchParams.getAll("estatus");
+
+    // Multiple detail-level status values, scoped to the selected service
+    const detalleEstatuses = searchParams.getAll("detalleEstatus");
 
     // Optional filters: company, client, active-only flag, fecha_estimada range
     const empresa = searchParams.get("empresa");
@@ -51,7 +54,8 @@ export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
       cliente,
       search,
       fechaEstimadaDesde,
-      fechaEstimadaHasta
+      fechaEstimadaHasta,
+      detalleEstatuses
     );
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {

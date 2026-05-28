@@ -4,6 +4,16 @@ import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organism
 
 type ClienteOption = { id: number; nombre: string };
 
+// Detail-level statuses (per-service status on a pedido detalle). Keep in
+// sync with getAllowedPedidoStatuses in PedidosTable.
+const DETALLE_STATUS_OPTIONS = [
+  { label: "Pendiente", value: "Pendiente" },
+  { label: "En producción", value: "En producción" },
+  { label: "Finalizado", value: "Finalizado" },
+  { label: "Entregado", value: "Entregado" },
+  { label: "Cancelado", value: "Cancelado" },
+];
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -19,6 +29,12 @@ type Props = {
   setFechaEstimadaDesde: (value: string) => void;
   fechaEstimadaHasta: string;
   setFechaEstimadaHasta: (value: string) => void;
+
+  // When a service is selected via PedidosServiceTabs, the sidebar surfaces
+  // a detail-status filter scoped to that service.
+  selectedServiceId: number | null;
+  detalleEstatuses: string[];
+  setDetalleEstatuses: (v: string[]) => void;
 };
 
 export function PedidosFilterSidebar({
@@ -33,12 +49,18 @@ export function PedidosFilterSidebar({
   setFechaEstimadaDesde,
   fechaEstimadaHasta,
   setFechaEstimadaHasta,
+  selectedServiceId,
+  detalleEstatuses,
+  setDetalleEstatuses,
 }: Props) {
+  const showDetalleStatus = selectedServiceId !== null;
+
   function reset() {
     setCliente(null);
     setEmpresa(null);
     setFechaEstimadaDesde("");
     setFechaEstimadaHasta("");
+    setDetalleEstatuses([]);
   }
 
   return (
@@ -67,6 +89,31 @@ export function PedidosFilterSidebar({
           className={filterSidebarClasses.input}
         />
       </div>
+
+      {showDetalleStatus && (
+        <div>
+          <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del servicio</p>
+          <div className="space-y-2">
+            {DETALLE_STATUS_OPTIONS.map((s) => (
+              <label key={s.value} className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={detalleEstatuses.includes(s.value)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setDetalleEstatuses([...detalleEstatuses, s.value]);
+                    } else {
+                      setDetalleEstatuses(detalleEstatuses.filter((x) => x !== s.value));
+                    }
+                  }}
+                  className={filterSidebarClasses.checkbox}
+                />
+                {s.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <p className="text-[13px] font-semibold text-[#575757] mb-2">Fecha de entrega</p>

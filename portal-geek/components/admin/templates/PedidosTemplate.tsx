@@ -67,6 +67,9 @@ type Props = {
   fechaEstimadaHasta: string;
   setFechaEstimadaHasta: (value: string) => void;
 
+  detalleEstatuses: string[];
+  setDetalleEstatuses: (v: string[]) => void;
+
   services: PedidoServiceOption[];
   selectedServiceId: number | null;
   onServiceSelect: (id: number | null) => void;
@@ -99,6 +102,8 @@ export function PedidosTemplate({
   setFechaEstimadaDesde,
   fechaEstimadaHasta,
   setFechaEstimadaHasta,
+  detalleEstatuses,
+  setDetalleEstatuses,
   services,
   selectedServiceId,
   onServiceSelect,
@@ -187,6 +192,9 @@ export function PedidosTemplate({
           setFechaEstimadaDesde={setFechaEstimadaDesde}
           fechaEstimadaHasta={fechaEstimadaHasta}
           setFechaEstimadaHasta={setFechaEstimadaHasta}
+          selectedServiceId={selectedServiceId}
+          detalleEstatuses={detalleEstatuses}
+          setDetalleEstatuses={setDetalleEstatuses}
         />
 
         {/* Table */}
