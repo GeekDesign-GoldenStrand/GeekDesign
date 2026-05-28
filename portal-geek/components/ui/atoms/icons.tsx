@@ -11,7 +11,8 @@ import {
   Phone,
   Plus,
   Trash,
-  Users,
+  UsersIcon as PhosphorUsers,
+  UserGearIcon as PhosphorUserGear,
   X,
 } from "@phosphor-icons/react";
 import React from "react";
@@ -66,8 +67,12 @@ export function XIcon({ size = 20, className, style }: IconProps) {
   return <X size={size} weight="light" className={className} style={style} />;
 }
 
+export function UserGearIcon({ size = 16, className, style }: IconProps) {
+  return <PhosphorUserGear size={size} className={className} style={style} />;
+}
+
 export function UsersIcon({ size = 16, className, style }: IconProps) {
-  return <Users size={size} className={className} style={style} />;
+  return <PhosphorUsers size={size} className={className} style={style} />;
 }
 
 export function PlusBoxIcon({ size = 16, className, style }: IconProps) {

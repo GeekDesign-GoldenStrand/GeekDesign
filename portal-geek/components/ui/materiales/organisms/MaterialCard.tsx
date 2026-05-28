@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { EditIcon, UsersIcon } from "@/components/ui/atoms/icons";
+import { EditIcon, UserGearIcon } from "@/components/ui/atoms/icons";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialCardRowProps extends MaterialCardProps {
@@ -169,7 +169,7 @@ export function MaterialCard({
             aria-label={`Ver proveedores de ${name}`}
             className="inline-flex items-center gap-1.5 px-3 h-8 rounded-[7px] border border-[#575757] bg-[#e8e8e8] text-[#1e1e1e] text-[12px] font-medium hover:bg-[#d8d8d8] transition-colors whitespace-nowrap"
           >
-            <UsersIcon size={14} />
+            <UserGearIcon size={14} />
             Ver proveedores
           </button>
         </div>
