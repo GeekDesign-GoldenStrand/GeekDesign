@@ -23,5 +23,5 @@ export const EMAIL_ERROR_MESSAGE = "Ingresa un correo electrónico válido (ej. 
 export function emailField(opts: { max?: number; message?: string } = {}) {
   const max = opts.max ?? 254;
   const message = opts.message ?? EMAIL_ERROR_MESSAGE;
-  return z.string().max(max).refine(isValidEmail, { message });
+  return z.string().trim().max(max).refine(isValidEmail, { message });
 }
