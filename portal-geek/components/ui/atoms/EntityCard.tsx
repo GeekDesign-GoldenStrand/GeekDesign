@@ -10,13 +10,15 @@ import { EditIcon, MailIcon, PhoneIcon, TrashIcon } from "./icons";
 interface EntityCardProps {
   children: ReactNode;
   className?: string;
+  gap?: string;
 }
 
-export function EntityCard({ children, className }: EntityCardProps) {
+export function EntityCard({ children, className, gap = "gap-2.5" }: EntityCardProps) {
   return (
     <div
       className={[
-        "bg-white rounded-[7px] shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5 w-full font-ibm-plex",
+        "bg-white rounded-[7px] shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full font-ibm-plex",
+        gap,
         className,
       ]
         .filter(Boolean)

@@ -27,7 +27,9 @@ export default function MaquinaStatusDropdown({
   saving = false,
 }: MaquinaStatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [direction, setDirection] = useState<"down" | "up">("down");
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const cfg = STATUS_CONFIGS[status] ?? DEFAULT;
 
   useEffect(() => {
@@ -40,12 +42,30 @@ export default function MaquinaStatusDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  function handleToggle() {
+    if (saving) return;
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    // Flip upward if there isn't enough room below for the menu.
+    // Estimated height: outer p-2 (16px) + N options at min-h-[30px] + (N-1) gap-2.
+    const estimatedHeight = 16 + options.length * 30 + Math.max(0, options.length - 1) * 8;
+    if (buttonRef.current) {
+      const { bottom } = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - bottom;
+      setDirection(spaceBelow < estimatedHeight + 12 ? "up" : "down");
+    }
+    setIsOpen(true);
+  }
+
   return (
     <div ref={ref} className="relative inline-flex items-center">
       <button
+        ref={buttonRef}
         type="button"
         disabled={saving}
-        onClick={() => !saving && setIsOpen((prev) => !prev)}
+        onClick={handleToggle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className="inline-flex min-h-[30px] items-center justify-between gap-1 rounded-[7px] px-2 shadow-[0_4px_10px_rgba(0,0,0,0.25)] disabled:cursor-default"
@@ -63,7 +83,9 @@ export default function MaquinaStatusDropdown({
       {isOpen && (
         <ul
           role="listbox"
-          className="absolute top-[calc(100%+6px)] left-0 z-50 flex flex-col gap-2 rounded-[7px] bg-white p-2 shadow-[0_4px_20px_rgba(0,0,0,0.18)]"
+          className={`absolute left-0 z-50 flex flex-col gap-2 rounded-[7px] bg-white p-2 shadow-[0_4px_20px_rgba(0,0,0,0.18)] ${
+            direction === "up" ? "bottom-[calc(100%+6px)]" : "top-[calc(100%+6px)]"
+          }`}
           style={{ minWidth: "110px" }}
         >
           {options.map((option) => {
