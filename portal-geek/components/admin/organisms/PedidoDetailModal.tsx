@@ -230,11 +230,18 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
     </Button>
   ) : null;
 
+  const ocErrorBanner = ocError ? (
+    <div className="border-t border-[#e8e8e8] bg-[#ffecec] px-6 py-2 text-[13px] text-[#e42200]">
+      {ocError}
+    </div>
+  ) : null;
+
   return (
     <ModalShell
       title={`Detalle del pedido #${pedidoId}`}
       onClose={onClose}
       headerActions={ocButton}
+      headerBanner={ocErrorBanner}
     >
       {loading && <p className="text-[14px] text-[#8e908f] py-6 text-center">Cargando…</p>}
 
@@ -428,18 +435,11 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
               )}
 
               {/* ── Órdenes de Compra Interna generadas (múltiples terceros) ── */}
-              {canGenerateOC && (ocError || ordenes.length > 0) && (
+              {canGenerateOC && ordenes.length > 0 && (
                 <section>
                   <h3 className="text-[15px] font-semibold text-[#1e1e1e] mb-3">
                     Órdenes de Compra Interna
                   </h3>
-
-                  {/* Inline error */}
-                  {ocError && (
-                    <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
-                      {ocError}
-                    </div>
-                  )}
 
                   {/* List of generated orders when there are multiple terceros */}
                   {ordenes.length > 0 && (

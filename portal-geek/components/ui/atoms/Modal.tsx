@@ -32,6 +32,8 @@ interface ModalProps {
    * its own header/body/footer sections inside the card (e.g. sticky footers).
    */
   noPadding?: boolean;
+  /** Non-scrollable banner rendered between the header row and the body. */
+  headerBanner?: React.ReactNode;
   /** Tailwind z-index class for the overlay. Bump for modals stacked over modals. */
   zClassName?: string;
 }
@@ -54,6 +56,7 @@ export function Modal({
   ariaLabel,
   noPadding = false,
   zClassName = "z-50",
+  headerBanner,
 }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -131,6 +134,7 @@ export function Modal({
             </div>
           </div>
         )}
+        {headerBanner && <div>{headerBanner}</div>}
         {noPadding ? children : <div className="overflow-y-auto p-6">{children}</div>}
       </div>
     </div>,
