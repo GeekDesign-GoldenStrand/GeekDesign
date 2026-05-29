@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
 interface SucursalRaw {
@@ -129,36 +129,54 @@ export default function AsignarSucursal({
   }
 
   return (
-    <ModalShell title={`Asignar sucursal — ${nickname} (${model})`} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col text-[13px] text-[#575757] mb-6">
-          <label className="font-medium mb-1">Sucursal</label>
-          <Select
-            value={selectedSucursal}
-            onChange={(v) => {
-              setSelectedSucursal(v);
-              setSucursalError(null);
-            }}
-            placeholder="Seleccionar sucursal..."
-            size="sm"
-            error={sucursalError ?? undefined}
-          >
-            {sucursalOptions.map((s) => (
-              <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
-                {s.nombre_sucursal}
-              </SelectOption>
-            ))}
-          </Select>
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`Asignar sucursal — ${nickname} (${model})`}
+      size="lg"
+      noPadding
+    >
+      {/* Same shape as asignar-servicios: scrollable body + static footer so
+          the action bar is always visible and isolated from absolute popovers
+          inside the body. */}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex flex-col text-[13px] text-[#575757]">
+            <label className="font-medium mb-1">Sucursal</label>
+            <Select
+              value={selectedSucursal}
+              onChange={(value) => {
+                setSelectedSucursal(value);
+                setSucursalError(null);
+              }}
+              placeholder="Seleccionar sucursal..."
+              size="sm"
+              disabled={isLoading}
+              error={sucursalError ?? undefined}
+            >
+              {sucursalOptions.map((s) => (
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                  {s.nombre_sucursal}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
+
+          {error && (
+            <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
+              {error}
+            </p>
+          )}
         </div>
 
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mb-4">
-            {error}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3 mt-4">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
+          <Button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            variant="secondary"
+            size="sm"
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" size="sm" loading={isLoading}>
@@ -166,6 +184,6 @@ export default function AsignarSucursal({
           </Button>
         </div>
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
