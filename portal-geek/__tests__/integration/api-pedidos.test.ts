@@ -71,7 +71,8 @@ describe("GET /api/pedidos", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -91,7 +92,8 @@ describe("GET /api/pedidos", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -109,12 +111,13 @@ describe("GET /api/pedidos", () => {
       "Geek",
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
-  it("passes empresa and cliente filters correctly", async () => {
-    const req = createMockRequest("http://localhost/api/pedidos?empresa=GeekDesign&cliente=Jorge");
+  it("passes clienteEmpresa filter correctly", async () => {
+    const req = createMockRequest("http://localhost/api/pedidos?clienteEmpresa=GeekDesign");
     await GET(req);
     expect(listPedidos).toHaveBeenCalledWith(
       1,
@@ -122,12 +125,13 @@ describe("GET /api/pedidos", () => {
       [],
       [],
       false,
-      "GeekDesign",
-      "Jorge",
       null,
       null,
       null,
-      []
+      null,
+      null,
+      [],
+      "GeekDesign"
     );
   });
 
@@ -145,7 +149,8 @@ describe("GET /api/pedidos", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -163,7 +168,8 @@ describe("GET /api/pedidos", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -181,7 +187,8 @@ describe("GET /api/pedidos", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -199,13 +206,27 @@ describe("GET /api/pedidos", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
   it("passes onlyActive=true correctly", async () => {
     const req = createMockRequest("http://localhost/api/pedidos?onlyActive=true");
     await GET(req);
-    expect(listPedidos).toHaveBeenCalledWith(1, 20, [], [], true, null, null, null, null, null, []);
+    expect(listPedidos).toHaveBeenCalledWith(
+      1,
+      20,
+      [],
+      [],
+      true,
+      null,
+      null,
+      null,
+      null,
+      null,
+      [],
+      null
+    );
   });
 });
