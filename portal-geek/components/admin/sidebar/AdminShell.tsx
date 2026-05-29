@@ -36,7 +36,12 @@ export function AdminShell({ role, children }: { role: UserRole; children: React
 
   return (
     <SidebarContext.Provider
-      value={{ desktopExpanded, mobileOpen, onMenuOpen: () => setMobileOpen(true) }}
+      value={{
+        desktopExpanded,
+        mobileOpen,
+        onMenuOpen: () => setMobileOpen(true),
+        onMenuClose: () => setMobileOpen(false),
+      }}
     >
       {mobileOpen && (
         <div

@@ -9,13 +9,15 @@ type NavLinkProps = {
   icon: React.ReactNode;
   isActive: boolean;
   expanded: boolean;
+  onClick?: () => void;
 };
 
-export function NavLink({ href, label, icon, isActive, expanded }: NavLinkProps) {
+export function NavLink({ href, label, icon, isActive, expanded, onClick }: NavLinkProps) {
   return (
     <Link
       href={href}
       title={label}
+      onClick={onClick}
       className={`relative flex items-center justify-start pl-5 md:pl-8 w-full h-20 md:h-12 transition-colors ${
         isActive ? "text-[#e42200]" : "text-[#575757] hover:text-[#e42200]"
       }`}
