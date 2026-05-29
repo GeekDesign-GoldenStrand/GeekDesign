@@ -62,7 +62,12 @@ export function CambiarContrasenaForm() {
       const json = (await res.json().catch(() => null)) as { error?: string } | null;
 
       if (!res.ok) {
-        setError(json?.error ?? "Error al cambiar la contraseña");
+        const msg = json?.error ?? "Error al cambiar la contraseña";
+        if (res.status === 422 && /contraseña actual/i.test(msg)) {
+          setFieldErrors({ currentPassword: msg });
+          return;
+        }
+        setError(msg);
         return;
       }
 

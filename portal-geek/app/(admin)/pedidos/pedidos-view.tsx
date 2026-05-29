@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from "react";
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
-import { useClientes } from "@/lib/hooks/useClientes";
 import type { UserRole } from "@/types";
 
 interface PedidoDetalle {
@@ -97,9 +96,8 @@ export function PedidosView({ role }: Props) {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filter states (service IDs from tabs, company, client, fecha range)
+  // Filter states (service IDs from tabs, client, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [empresa, setEmpresa] = useState<string | null>(null);
   const [cliente, setCliente] = useState<string | null>(null);
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
@@ -108,22 +106,13 @@ export function PedidosView({ role }: Props) {
   const pageSize = 10;
 
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
-  const clientes = useClientes();
 
   // Reset to page 1 whenever a filter or the search query changes — see the
   // matching effect in cotizaciones/page.tsx for the rationale.
   useEffect(() => {
     if (page !== 1) setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    search,
-    serviceIds,
-    empresa,
-    cliente,
-    fechaEstimadaDesde,
-    fechaEstimadaHasta,
-    detalleEstatuses,
-  ]);
+  }, [search, serviceIds, cliente, fechaEstimadaDesde, fechaEstimadaHasta, detalleEstatuses]);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
@@ -138,7 +127,6 @@ export function PedidosView({ role }: Props) {
 
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
 
-      if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
@@ -179,16 +167,7 @@ export function PedidosView({ role }: Props) {
     } catch {
       console.error("Error loading orders");
     }
-  }, [
-    page,
-    search,
-    serviceIds,
-    empresa,
-    cliente,
-    fechaEstimadaDesde,
-    fechaEstimadaHasta,
-    detalleEstatuses,
-  ]);
+  }, [page, search, serviceIds, cliente, fechaEstimadaDesde, fechaEstimadaHasta, detalleEstatuses]);
 
   // Effect: reload orders whenever filters or pagination change
   useEffect(() => {
@@ -268,9 +247,6 @@ export function PedidosView({ role }: Props) {
       total={total}
       onDelete={handleDelete}
       onStatusChange={handleStatusChange}
-      clientes={clientes}
-      empresa={empresa}
-      setEmpresa={setEmpresa}
       cliente={cliente}
       setCliente={setCliente}
       fechaEstimadaDesde={fechaEstimadaDesde}

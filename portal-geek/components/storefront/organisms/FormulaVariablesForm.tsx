@@ -30,6 +30,7 @@ interface Props {
   materiales: Material[];
   variables: Variable[];
   disenioFile?: UploadedFile | null;
+  imagenUrls?: string[];
 }
 
 const formatPeso = (n: number) =>
@@ -47,6 +48,7 @@ export function FormulaVariablesForm({
   materiales,
   variables,
   disenioFile,
+  imagenUrls,
 }: Props) {
   const editables = useMemo(() => variables.filter((v) => v.editable_por_cliente), [variables]);
   const defaultValues = useMemo(
@@ -176,6 +178,7 @@ export function FormulaVariablesForm({
       },
       cantidad,
       precioCalculado: precioUnitario,
+      imagenUrls,
       ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
     });
     window.dispatchEvent(new CustomEvent("carrito:updated"));

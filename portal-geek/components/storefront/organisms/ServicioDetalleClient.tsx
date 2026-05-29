@@ -101,6 +101,7 @@ export function ServicioDetalleClient({
             materiales={materiales}
             variables={variables}
             disenioFile={disenioFile}
+            imagenUrls={imagenUrls}
           />
         ) : (
           <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px] flex flex-col gap-[12px]">

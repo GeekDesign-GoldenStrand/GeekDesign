@@ -15,7 +15,7 @@ export function CTABanner() {
         size="lg"
         className="w-[241px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
       >
-        <Link href="/tienda/cotizacion">Solicitar cotización</Link>
+        <Link href="/tienda/cotizacion/personalizada">Solicitar cotización</Link>
       </Button>
     </section>
   );

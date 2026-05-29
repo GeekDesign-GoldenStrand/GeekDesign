@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 type Props = {
   open: boolean;
   onClose: () => void;
+  onApply?: () => void;
   onReset?: () => void;
   title?: string;
   applyLabel?: string;
@@ -16,6 +17,7 @@ type Props = {
 export function FilterSidebar({
   open,
   onClose,
+  onApply,
   onReset,
   title = "Filtros",
   applyLabel = "Aplicar",
@@ -76,7 +78,10 @@ export function FilterSidebar({
             )}
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                onApply?.();
+                onClose();
+              }}
               className="h-9 px-6 rounded-[6px] bg-red-600 text-white text-[13px] font-semibold hover:bg-red-800 transition"
             >
               {applyLabel}

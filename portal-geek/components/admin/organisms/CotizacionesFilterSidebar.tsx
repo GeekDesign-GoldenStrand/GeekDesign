@@ -1,22 +1,19 @@
 "use client";
 
+import { useState } from "react";
+
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
-import { Select, SelectOption } from "@/components/ui/atoms/Select";
 
 type StatusOption = { label: string; value: string };
-type ClienteOption = { id: number; nombre: string };
 
 type Props = {
   open: boolean;
   onClose: () => void;
 
-  clientes: ClienteOption[];
   statusOptions: StatusOption[];
 
   filterCliente: string;
   setFilterCliente: (value: string) => void;
-  filterEmpresa: string;
-  setFilterEmpresa: (value: string) => void;
   filterEstatus: string[];
   setFilterEstatus: (value: string[]) => void;
   filterFechaFinDesde: string;
@@ -28,12 +25,9 @@ type Props = {
 export function CotizacionesFilterSidebar({
   open,
   onClose,
-  clientes,
   statusOptions,
   filterCliente,
   setFilterCliente,
-  filterEmpresa,
-  setFilterEmpresa,
   filterEstatus,
   setFilterEstatus,
   filterFechaFinDesde,
@@ -41,32 +35,52 @@ export function CotizacionesFilterSidebar({
   filterFechaFinHasta,
   setFilterFechaFinHasta,
 }: Props) {
+  const [draftCliente, setDraftCliente] = useState(filterCliente);
+  const [draftEstatus, setDraftEstatus] = useState<string[]>(filterEstatus);
+  const [draftFechaFinDesde, setDraftFechaFinDesde] = useState(filterFechaFinDesde);
+  const [draftFechaFinHasta, setDraftFechaFinHasta] = useState(filterFechaFinHasta);
+
+  // Resync the draft from the currently applied filters every time the
+  // sidebar transitions from closed to open, so abandoned edits don't persist
+  // across reopens. See https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
+    if (open) {
+      setDraftCliente(filterCliente);
+      setDraftEstatus(filterEstatus);
+      setDraftFechaFinDesde(filterFechaFinDesde);
+      setDraftFechaFinHasta(filterFechaFinHasta);
+    }
+  }
+
   function reset() {
+    setDraftCliente("");
+    setDraftEstatus([]);
+    setDraftFechaFinDesde("");
+    setDraftFechaFinHasta("");
     setFilterCliente("");
-    setFilterEmpresa("");
     setFilterEstatus([]);
     setFilterFechaFinDesde("");
     setFilterFechaFinHasta("");
   }
 
+  function apply() {
+    setFilterCliente(draftCliente);
+    setFilterEstatus(draftEstatus);
+    setFilterFechaFinDesde(draftFechaFinDesde);
+    setFilterFechaFinHasta(draftFechaFinHasta);
+  }
+
   return (
-    <FilterSidebar open={open} onClose={onClose} onReset={reset}>
+    <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
-        <Select value={filterCliente} onChange={setFilterCliente} placeholder="Todos" size="sm">
-          {clientes.map((c) => (
-            <SelectOption key={c.id} value={c.nombre}>
-              {c.nombre}
-            </SelectOption>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <p className={filterSidebarClasses.sectionLabel}>Empresa</p>
         <input
-          value={filterEmpresa}
-          onChange={(e) => setFilterEmpresa(e.target.value)}
+          type="search"
+          value={draftCliente}
+          onChange={(e) => setDraftCliente(e.target.value)}
+          placeholder="Buscar cliente"
           className={filterSidebarClasses.input}
         />
       </div>
@@ -78,12 +92,12 @@ export function CotizacionesFilterSidebar({
             <label key={status.value} className="flex items-center gap-2 text-[13px]">
               <input
                 type="checkbox"
-                checked={filterEstatus.includes(status.value)}
+                checked={draftEstatus.includes(status.value)}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    setFilterEstatus([...filterEstatus, status.value]);
+                    setDraftEstatus([...draftEstatus, status.value]);
                   } else {
-                    setFilterEstatus(filterEstatus.filter((s) => s !== status.value));
+                    setDraftEstatus(draftEstatus.filter((s) => s !== status.value));
                   }
                 }}
                 className={filterSidebarClasses.checkbox}
@@ -101,9 +115,9 @@ export function CotizacionesFilterSidebar({
             Desde
             <input
               type="date"
-              value={filterFechaFinDesde}
-              onChange={(e) => setFilterFechaFinDesde(e.target.value)}
-              max={filterFechaFinHasta || undefined}
+              value={draftFechaFinDesde}
+              onChange={(e) => setDraftFechaFinDesde(e.target.value)}
+              max={draftFechaFinHasta || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>
@@ -111,9 +125,9 @@ export function CotizacionesFilterSidebar({
             Hasta
             <input
               type="date"
-              value={filterFechaFinHasta}
-              onChange={(e) => setFilterFechaFinHasta(e.target.value)}
-              min={filterFechaFinDesde || undefined}
+              value={draftFechaFinHasta}
+              onChange={(e) => setDraftFechaFinHasta(e.target.value)}
+              min={draftFechaFinDesde || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>
