@@ -117,4 +117,17 @@ describe("ChangePasswordSchema", () => {
       expect(result.error.issues[0].path).toContain("confirmPassword");
     }
   });
+
+  it("rechaza cuando newPassword es igual a currentPassword (error sobre newPassword)", () => {
+    const result = ChangePasswordSchema.safeParse({
+      currentPassword: "Igual1234",
+      newPassword: "Igual1234",
+      confirmPassword: "Igual1234",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes("newPassword"));
+      expect(issue?.message).toMatch(/distinta de la actual/i);
+    }
+  });
 });

@@ -39,6 +39,10 @@ export const ChangePasswordSchema = z
   .refine((d) => d.newPassword === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
+  })
+  .refine((d) => d.currentPassword !== d.newPassword, {
+    message: "La nueva contraseña debe ser distinta de la actual",
+    path: ["newPassword"],
   });
 
 export type LoginInput = z.infer<typeof LoginSchema>;
