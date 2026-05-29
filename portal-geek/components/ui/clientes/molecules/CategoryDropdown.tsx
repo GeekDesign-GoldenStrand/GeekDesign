@@ -37,14 +37,14 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
       trigger={
         <button
           type="button"
-          className="inline-flex items-center justify-between gap-2 min-w-[110px] px-3 py-1 rounded-full text-sm font-medium font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border whitespace-nowrap"
+          className="rounded-full cursor-pointer flex items-center gap-2 pl-4 pr-3 py-1 text-sm font-medium whitespace-nowrap"
           style={{
             color: style.color,
             backgroundColor: style.bg,
           }}
         >
-          <span className="truncate">{category || "Sin categoría"}</span>
-          <ChevronDownIcon size={12} />
+          <span className="whitespace-nowrap">{category || "Sin categoría"}</span>
+          <CaretDown size={14} weight="bold" />
         </button>
       }
     >
