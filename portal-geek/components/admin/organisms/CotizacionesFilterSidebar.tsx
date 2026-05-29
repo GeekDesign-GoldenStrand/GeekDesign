@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 
 type StatusOption = { label: string; value: string };
@@ -40,21 +42,45 @@ export function CotizacionesFilterSidebar({
   filterFechaFinHasta,
   setFilterFechaFinHasta,
 }: Props) {
+  const [draftCliente, setDraftCliente] = useState(filterCliente);
+  const [draftEmpresa, setDraftEmpresa] = useState(filterEmpresa);
+  const [draftEstatus, setDraftEstatus] = useState<string[]>(filterEstatus);
+  const [draftDesde, setDraftDesde] = useState(filterFechaFinDesde);
+  const [draftHasta, setDraftHasta] = useState(filterFechaFinHasta);
+
+  useEffect(() => {
+    if (!open) return;
+    setDraftCliente(filterCliente);
+    setDraftEmpresa(filterEmpresa);
+    setDraftEstatus(filterEstatus);
+    setDraftDesde(filterFechaFinDesde);
+    setDraftHasta(filterFechaFinHasta);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   function reset() {
-    setFilterCliente("");
-    setFilterEmpresa("");
-    setFilterEstatus([]);
-    setFilterFechaFinDesde("");
-    setFilterFechaFinHasta("");
+    setDraftCliente("");
+    setDraftEmpresa("");
+    setDraftEstatus([]);
+    setDraftDesde("");
+    setDraftHasta("");
+  }
+
+  function apply() {
+    setFilterCliente(draftCliente);
+    setFilterEmpresa(draftEmpresa);
+    setFilterEstatus(draftEstatus);
+    setFilterFechaFinDesde(draftDesde);
+    setFilterFechaFinHasta(draftHasta);
   }
 
   return (
-    <FilterSidebar open={open} onClose={onClose} onReset={reset}>
+    <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
         <select
-          value={filterCliente}
-          onChange={(e) => setFilterCliente(e.target.value)}
+          value={draftCliente}
+          onChange={(e) => setDraftCliente(e.target.value)}
           className={filterSidebarClasses.input}
         >
           <option value="">Todos</option>
@@ -69,8 +95,8 @@ export function CotizacionesFilterSidebar({
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Empresa</p>
         <input
-          value={filterEmpresa}
-          onChange={(e) => setFilterEmpresa(e.target.value)}
+          value={draftEmpresa}
+          onChange={(e) => setDraftEmpresa(e.target.value)}
           className={filterSidebarClasses.input}
         />
       </div>
@@ -82,12 +108,12 @@ export function CotizacionesFilterSidebar({
             <label key={status.value} className="flex items-center gap-2 text-[13px]">
               <input
                 type="checkbox"
-                checked={filterEstatus.includes(status.value)}
+                checked={draftEstatus.includes(status.value)}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    setFilterEstatus([...filterEstatus, status.value]);
+                    setDraftEstatus([...draftEstatus, status.value]);
                   } else {
-                    setFilterEstatus(filterEstatus.filter((s) => s !== status.value));
+                    setDraftEstatus(draftEstatus.filter((s) => s !== status.value));
                   }
                 }}
                 className={filterSidebarClasses.checkbox}
@@ -105,9 +131,9 @@ export function CotizacionesFilterSidebar({
             Desde
             <input
               type="date"
-              value={filterFechaFinDesde}
-              onChange={(e) => setFilterFechaFinDesde(e.target.value)}
-              max={filterFechaFinHasta || undefined}
+              value={draftDesde}
+              onChange={(e) => setDraftDesde(e.target.value)}
+              max={draftHasta || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>
@@ -115,9 +141,9 @@ export function CotizacionesFilterSidebar({
             Hasta
             <input
               type="date"
-              value={filterFechaFinHasta}
-              onChange={(e) => setFilterFechaFinHasta(e.target.value)}
-              min={filterFechaFinDesde || undefined}
+              value={draftHasta}
+              onChange={(e) => setDraftHasta(e.target.value)}
+              min={draftDesde || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>

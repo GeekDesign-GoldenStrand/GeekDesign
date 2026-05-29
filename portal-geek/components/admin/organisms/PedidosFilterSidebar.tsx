@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 
 type ClienteOption = { id: number; nombre: string };
@@ -55,21 +57,46 @@ export function PedidosFilterSidebar({
 }: Props) {
   const showDetalleStatus = selectedServiceId !== null;
 
+  const [draftCliente, setDraftCliente] = useState<string | null>(cliente);
+  const [draftEmpresa, setDraftEmpresa] = useState<string | null>(empresa);
+  const [draftDesde, setDraftDesde] = useState(fechaEstimadaDesde);
+  const [draftHasta, setDraftHasta] = useState(fechaEstimadaHasta);
+  const [draftDetalle, setDraftDetalle] = useState<string[]>(detalleEstatuses);
+
+  useEffect(() => {
+    if (!open) return;
+    setDraftCliente(cliente);
+    setDraftEmpresa(empresa);
+    setDraftDesde(fechaEstimadaDesde);
+    setDraftHasta(fechaEstimadaHasta);
+    setDraftDetalle(detalleEstatuses);
+    // Only re-sync when sidebar opens — values that change while open are drafts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   function reset() {
-    setCliente(null);
-    setEmpresa(null);
-    setFechaEstimadaDesde("");
-    setFechaEstimadaHasta("");
-    setDetalleEstatuses([]);
+    setDraftCliente(null);
+    setDraftEmpresa(null);
+    setDraftDesde("");
+    setDraftHasta("");
+    setDraftDetalle([]);
+  }
+
+  function apply() {
+    setCliente(draftCliente);
+    setEmpresa(draftEmpresa);
+    setFechaEstimadaDesde(draftDesde);
+    setFechaEstimadaHasta(draftHasta);
+    setDetalleEstatuses(draftDetalle);
   }
 
   return (
-    <FilterSidebar open={open} onClose={onClose} onReset={reset}>
+    <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
         <select
-          value={cliente ?? ""}
-          onChange={(e) => setCliente(e.target.value || null)}
+          value={draftCliente ?? ""}
+          onChange={(e) => setDraftCliente(e.target.value || null)}
           className={filterSidebarClasses.input}
         >
           <option value="">Todos</option>
@@ -84,8 +111,8 @@ export function PedidosFilterSidebar({
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Empresa</p>
         <input
-          value={empresa ?? ""}
-          onChange={(e) => setEmpresa(e.target.value || null)}
+          value={draftEmpresa ?? ""}
+          onChange={(e) => setDraftEmpresa(e.target.value || null)}
           className={filterSidebarClasses.input}
         />
       </div>
@@ -98,12 +125,12 @@ export function PedidosFilterSidebar({
               <label key={s.value} className="flex items-center gap-2 text-[13px]">
                 <input
                   type="checkbox"
-                  checked={detalleEstatuses.includes(s.value)}
+                  checked={draftDetalle.includes(s.value)}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setDetalleEstatuses([...detalleEstatuses, s.value]);
+                      setDraftDetalle([...draftDetalle, s.value]);
                     } else {
-                      setDetalleEstatuses(detalleEstatuses.filter((x) => x !== s.value));
+                      setDraftDetalle(draftDetalle.filter((x) => x !== s.value));
                     }
                   }}
                   className={filterSidebarClasses.checkbox}
@@ -122,9 +149,9 @@ export function PedidosFilterSidebar({
             Desde
             <input
               type="date"
-              value={fechaEstimadaDesde}
-              onChange={(e) => setFechaEstimadaDesde(e.target.value)}
-              max={fechaEstimadaHasta || undefined}
+              value={draftDesde}
+              onChange={(e) => setDraftDesde(e.target.value)}
+              max={draftHasta || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>
@@ -132,9 +159,9 @@ export function PedidosFilterSidebar({
             Hasta
             <input
               type="date"
-              value={fechaEstimadaHasta}
-              onChange={(e) => setFechaEstimadaHasta(e.target.value)}
-              min={fechaEstimadaDesde || undefined}
+              value={draftHasta}
+              onChange={(e) => setDraftHasta(e.target.value)}
+              min={draftDesde || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>
