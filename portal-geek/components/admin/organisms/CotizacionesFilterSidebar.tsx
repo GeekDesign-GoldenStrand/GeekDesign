@@ -81,6 +81,7 @@ export function CotizacionesFilterSidebar({
           value={draftCliente}
           onChange={(e) => setDraftCliente(e.target.value)}
           placeholder="Buscar cliente"
+          maxLength={50}
           className={filterSidebarClasses.input}
         />
       </div>

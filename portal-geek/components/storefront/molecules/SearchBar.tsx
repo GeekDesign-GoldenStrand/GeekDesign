@@ -42,6 +42,7 @@ export function SearchBar() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar servicios..."
           aria-label="Buscar servicios"
+          maxLength={50}
           className="bg-transparent outline-none border-none text-[#1e1e1e] text-[14px] md:text-[16.74px] font-medium w-full placeholder:text-[#1e1e1e] placeholder:opacity-50"
         />
       </div>

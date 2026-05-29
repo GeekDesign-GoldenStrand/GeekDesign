@@ -94,6 +94,7 @@ export function PedidosFilterSidebar({
           value={draftCliente ?? ""}
           onChange={(e) => setDraftCliente(e.target.value || null)}
           placeholder="Buscar cliente"
+          maxLength={50}
           className={filterSidebarClasses.input}
         />
       </div>
