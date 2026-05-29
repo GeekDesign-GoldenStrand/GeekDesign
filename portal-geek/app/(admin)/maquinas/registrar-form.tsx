@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import MaquinaInput from "@/components/ui/atoms/FormInput";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import { stripEmoji } from "@/lib/utils/format";
 import type { MaquinaCardProps } from "@/types";
 
 interface MaquinaRaw {
@@ -34,6 +36,23 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
   const [machineNameError, setMachineNameError] = useState<string | null>(null);
   const [machineNicknameError, setMachineNicknameError] = useState<string | null>(null);
   const [machineTypeError, setMachineTypeError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Reset every field + error each time the modal reopens — without this,
+  // closing the modal mid-flow leaves stale validation messages and partial
+  // input that surface again on the next open.
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    setMachineName("");
+    setMachineNickname("");
+    setMachineType("");
+    setMachineDescription("");
+    setMachineNameError(null);
+    setMachineNicknameError(null);
+    setMachineTypeError(null);
+    setSubmitSuccess(false);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -79,8 +98,8 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
         onChangeStatus: () => {},
       });
 
-      window.alert("Máquina registrada correctamente");
-      onClose();
+      // SuccessModal auto-dismisses after 1.5s and then closes this modal.
+      setSubmitSuccess(true);
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {
@@ -105,6 +124,10 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
     return valid;
   }
 
+  if (submitSuccess) {
+    return <SuccessModal message="Máquina registrada correctamente" onClose={onClose} />;
+  }
+
   return (
     <ModalShell title="Registrar máquina" onClose={onClose}>
       <form onSubmit={handleSubmit}>
@@ -114,8 +137,9 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           error={machineNameError}
           placeholder="Ej. CO2 100 Watts"
           required
-          maxInputLength={100}
-          onChange={(e) => setMachineName(e.target.value)}
+          maxInputLength={30}
+          value={machineName}
+          onChange={(e) => setMachineName(stripEmoji(e.target.value))}
         />
         <MaquinaInput
           name="machineNickname"
@@ -123,8 +147,9 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           error={machineNicknameError}
           placeholder="Ej. Cardenal"
           required
-          maxInputLength={100}
-          onChange={(e) => setMachineNickname(e.target.value)}
+          maxInputLength={30}
+          value={machineNickname}
+          onChange={(e) => setMachineNickname(stripEmoji(e.target.value))}
         />
         <div className="flex flex-col text-[13px] text-[#575757] mb-6">
           <label className="font-medium">
@@ -158,7 +183,8 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           longText={true}
           placeholderLongText="Área de trabajo o especificaciones de la máquina"
           maxInputLength={200}
-          onChange={(e) => setMachineDescription(e.target.value)}
+          value={machineDescription}
+          onChange={(e) => setMachineDescription(stripEmoji(e.target.value))}
         />
         {error && (
           <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">

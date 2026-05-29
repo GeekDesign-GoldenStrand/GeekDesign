@@ -37,6 +37,20 @@ export function normalizePhone(raw: string): string {
 }
 
 /**
+ * Removes emoji and other pictographic characters from a string. Used to keep
+ * short identifier-like fields (machine model/nickname, etc.) ASCII-clean —
+ * emoji code points would otherwise eat into the visible-character budget and
+ * render inconsistently across the catalog UI.
+ *
+ * Uses the Unicode `Extended_Pictographic` property, which covers emoji plus
+ * symbol-like pictographs (no need to also strip ZWJ / variation selectors —
+ * the regex catches them via the broader property class).
+ */
+export function stripEmoji(value: string): string {
+  return value.replace(/\p{Extended_Pictographic}/gu, "");
+}
+
+/**
  * Formats a date timestamp string into "dd MMM yyyy" format.
  */
 export function formatDate(dateString: string): string {
