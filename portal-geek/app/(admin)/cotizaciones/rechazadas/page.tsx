@@ -11,6 +11,7 @@ type Cotizacion = {
   empresa: string | null;
   cliente: string;
   folio: string | null;
+  nombre_oportunidad: string | null;
   estatus: string;
   fecha_estimada: string | null;
   archivos: { id: number; nombre: string }[];
@@ -23,6 +24,7 @@ type CotizacionApi = {
   empresa_cliente?: string | null;
   cliente?: { empresa?: string | null; nombre_cliente?: string };
   folio?: string | null;
+  nombre_oportunidad?: string | null;
   estatus?: { descripcion?: string };
   fecha_fin?: string | null;
   fecha_aprobacion?: string | null;
@@ -60,6 +62,7 @@ export default function CotizacionesRechazadasPage() {
         empresa: c.empresa_cliente ?? c.cliente?.empresa ?? null,
         cliente: c.cliente?.nombre_cliente ?? "",
         folio: c.folio ?? null,
+        nombre_oportunidad: c.nombre_oportunidad ?? null,
         estatus: c.estatus?.descripcion ?? "",
         fecha_estimada: c.fecha_fin ?? c.fecha_aprobacion ?? null,
         archivos: (c.pedido?.detalles ?? [])
@@ -96,12 +99,17 @@ export default function CotizacionesRechazadasPage() {
       page={page}
       setPage={setPage}
       total={total}
+      clientes={[]}
       filterCliente=""
       setFilterCliente={() => {}}
       filterEmpresa=""
       setFilterEmpresa={() => {}}
       filterEstatus={["Rechazada", "Cancelada"]}
       setFilterEstatus={() => {}}
+      filterFechaFinDesde=""
+      setFilterFechaFinDesde={() => {}}
+      filterFechaFinHasta=""
+      setFilterFechaFinHasta={() => {}}
       isArchive={true}
     />
   );

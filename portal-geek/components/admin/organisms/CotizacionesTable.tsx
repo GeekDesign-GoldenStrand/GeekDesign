@@ -1,7 +1,7 @@
 "use client";
 
-import { CaretDown, Info } from "@phosphor-icons/react";
-import Link from "next/link";
+import { CaretDown } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 
 import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { formatDate } from "@/lib/utils/date";
@@ -15,6 +15,7 @@ type Cotizacion = {
   empresa: string | null;
   cliente: string;
   folio: string | null;
+  nombre_oportunidad: string | null;
   estatus: string;
   fecha_estimada: string | null;
   archivos: { id: number; nombre: string }[];
@@ -53,11 +54,15 @@ function getAllowedQuotationStatuses(currentStatus: string): string[] {
 }
 
 export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
+  const router = useRouter();
+
   if (cotizaciones.length === 0) {
     return (
       <div className="flex justify-center py-16 text-gray-500">No se encontraron cotizaciones.</div>
     );
   }
+
+  const goToDetail = (id: number) => router.push(`/cotizaciones/${id}`);
 
   return (
     <div className="bg-transparent md:bg-white rounded">
@@ -65,44 +70,57 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         {/* Header - Desktop Only */}
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-          style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
+          style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr 0.6fr" }}
         >
-          <span className="whitespace-nowrap">Fecha</span>
-          <span className="whitespace-nowrap">Monto</span>
-          <span className="whitespace-nowrap">Entrega</span>
+          <span className="whitespace-nowrap">Fecha de creación</span>
+          <span className="whitespace-nowrap">Fecha de entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
-          <span className="whitespace-nowrap">Cliente</span>
+          <span className="whitespace-nowrap">Nombre de oportunidad</span>
           <span className="whitespace-nowrap">Folio</span>
+          <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Estatus</span>
-          <span className="whitespace-nowrap disabled hidden">Acciones</span>
+          <span className="whitespace-nowrap">Acciones</span>
         </div>
 
         {/* Rows */}
         {cotizaciones.map((c) => (
           <div key={c.id_cotizacion}>
-            {/* Desktop Row */}
+            {/* Desktop Row — entire row opens the cotización detail */}
             <div
-              className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
+              role="button"
+              tabIndex={0}
+              onClick={() => goToDetail(c.id_cotizacion)}
+              onKeyDown={(e) => {
+                // Ignore keys bubbling from inner controls (status select, links).
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  goToDetail(c.id_cotizacion);
+                }
+              }}
+              aria-label={`Ver detalle de la cotización ${c.folio ?? c.id_cotizacion}`}
+              className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
               style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
             >
               <span className="whitespace-nowrap">
                 {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
               </span>
               <span className="whitespace-nowrap">
-                ${c.monto_total.toLocaleString("es-MX")} MXN
-              </span>
-              <span className="whitespace-nowrap">
                 {c.fecha_estimada ? formatDate(c.fecha_estimada) : "—"}
               </span>
-              <span className="truncate px-2">{c.empresa || "—"}</span>
-              <span className="truncate px-2">{c.cliente}</span>
+              <span className="truncate px-2 min-w-0">{c.empresa || "—"}</span>
+              <span className="truncate px-2 min-w-0">{c.cliente}</span>
               <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
+              <span className="whitespace-nowrap">
+                ${c.monto_total.toLocaleString("es-MX")} MXN
+              </span>
               <div className="flex justify-center">
                 <div
                   className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
                 >
                   <select
                     value={c.estatus}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
                     className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
                   >
@@ -119,22 +137,33 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                   />
                 </div>
               </div>
-              <div className="flex justify-center items-center gap-1">
+              <div
+                className="flex justify-center items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <DesignFileLink
                   archivos={c.archivos}
                   className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
                 />
-                <Link
-                  className="text-black hover:text-[#e42200] transition-colors p-2 relative"
-                  href={`cotizaciones/${c.id_cotizacion}`}
-                >
-                  <Info size={18} />
-                </Link>
               </div>
             </div>
 
-            {/* Mobile Card */}
-            <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
+            {/* Mobile Card — whole card opens the cotización detail */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => goToDetail(c.id_cotizacion)}
+              onKeyDown={(e) => {
+                // Ignore keys bubbling from inner controls (status select, links).
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  goToDetail(c.id_cotizacion);
+                }
+              }}
+              aria-label={`Ver detalle de la cotización ${c.folio ?? c.id_cotizacion}`}
+              className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4 cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
@@ -149,6 +178,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 >
                   <select
                     value={c.estatus}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
                     className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
                   >
@@ -200,17 +230,11 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <DesignFileLink
                     archivos={c.archivos}
                     className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
                   />
-                  <Link
-                    className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] relative hover:text-[#e42200] transition-colors"
-                    href={`cotizaciones/${c.id_cotizacion}`}
-                  >
-                    <Info size={18} />
-                  </Link>
                 </div>
               </div>
             </div>

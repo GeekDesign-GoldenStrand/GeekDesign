@@ -26,11 +26,13 @@ export const GET = withSection("cotizaciones", "read", async (req: NextRequest) 
   const page = Number(searchParams.get("page") ?? 1);
   const pageSize = Number(searchParams.get("pageSize") ?? 13);
 
-  // Optional filters: client, company, and multiple status values
+  // Optional filters: client, company, multiple status values, and fecha_fin range
   const cliente = searchParams.get("cliente") ?? undefined;
   const empresa = searchParams.get("empresa") ?? undefined;
   const estatus = searchParams.getAll("estatus"); // can appear multiple times
   const search = searchParams.get("search") ?? undefined;
+  const fechaFinDesde = searchParams.get("fechaFinDesde") ?? undefined;
+  const fechaFinHasta = searchParams.get("fechaFinHasta") ?? undefined;
 
   try {
     const { items, total } = await listCotizaciones(page, pageSize, {
@@ -38,6 +40,8 @@ export const GET = withSection("cotizaciones", "read", async (req: NextRequest) 
       empresa,
       estatus: estatus.length > 0 ? estatus : undefined,
       search,
+      fechaFinDesde,
+      fechaFinHasta,
     });
 
     return NextResponse.json(paginated(items, total, page, pageSize));

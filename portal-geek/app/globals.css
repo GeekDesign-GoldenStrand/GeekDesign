@@ -67,10 +67,7 @@ body {
   display: flex;
   width: max-content;
   animation: marquee 40s linear infinite;
-}
-
-.animate-marquee:hover {
-  animation-play-state: paused;
+  animation-play-state: running !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

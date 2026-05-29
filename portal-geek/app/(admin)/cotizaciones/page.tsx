@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { CotizacionesTemplate } from "@/components/admin/templates/CotizacionesTemplate";
+import { useClientes } from "@/lib/hooks/useClientes";
 
 // Frontend type for a quotation entry
 type Cotizacion = {
@@ -12,6 +13,7 @@ type Cotizacion = {
   empresa: string | null;
   cliente: string;
   folio: string | null;
+  nombre_oportunidad: string | null;
   estatus: string;
   fecha_estimada: string | null;
   // Non-placeholder design files attached to any line item of this cotización.
@@ -26,6 +28,7 @@ type CotizacionApi = {
   empresa_cliente?: string | null;
   cliente?: { empresa?: string | null; nombre_cliente?: string };
   folio?: string | null;
+  nombre_oportunidad?: string | null;
   estatus?: { descripcion?: string };
   fecha_fin?: string | null;
   fecha_aprobacion?: string | null;
@@ -45,10 +48,31 @@ export default function CotizacionesPage() {
 
   const pageSize = 13;
 
-  // Filter states (client, company, status)
+  // Filter states (client, company, status, fecha_fin range)
   const [filterCliente, setFilterCliente] = useState("");
   const [filterEmpresa, setFilterEmpresa] = useState("");
   const [filterEstatus, setFilterEstatus] = useState<string[]>([]);
+  const [filterFechaFinDesde, setFilterFechaFinDesde] = useState("");
+  const [filterFechaFinHasta, setFilterFechaFinHasta] = useState("");
+
+  // Clients catalog used by the filter sidebar dropdown
+  const clientes = useClientes();
+
+  // Reset to page 1 whenever a filter or the search query changes — without
+  // this, applying a narrower filter while on page N can land the user on an
+  // empty page. Page itself is intentionally excluded from the deps so
+  // pagination clicks don't loop back to page 1.
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    search,
+    filterCliente,
+    filterEmpresa,
+    filterEstatus,
+    filterFechaFinDesde,
+    filterFechaFinHasta,
+  ]);
 
   // Fetch quotations from API with filters and pagination
   const fetchCotizaciones = useCallback(async () => {
@@ -61,6 +85,8 @@ export default function CotizacionesPage() {
       if (filterCliente) params.set("cliente", filterCliente);
       if (filterEmpresa) params.set("empresa", filterEmpresa);
       filterEstatus.forEach((e) => params.append("estatus", e));
+      if (filterFechaFinDesde) params.set("fechaFinDesde", filterFechaFinDesde);
+      if (filterFechaFinHasta) params.set("fechaFinHasta", filterFechaFinHasta);
 
       const res = await fetch(`/api/cotizaciones?${params.toString()}`);
       const json = await res.json();
@@ -73,6 +99,7 @@ export default function CotizacionesPage() {
         empresa: c.empresa_cliente ?? c.cliente?.empresa ?? null,
         cliente: c.cliente?.nombre_cliente ?? "",
         folio: c.folio ?? null,
+        nombre_oportunidad: c.nombre_oportunidad ?? null,
         estatus: c.estatus?.descripcion ?? "",
         fecha_estimada: c.fecha_fin ?? c.fecha_aprobacion ?? null,
         archivos: (c.pedido?.detalles ?? [])
@@ -89,7 +116,15 @@ export default function CotizacionesPage() {
     } catch {
       console.error("Error loading quotations");
     }
-  }, [search, page, filterCliente, filterEmpresa, filterEstatus]);
+  }, [
+    search,
+    page,
+    filterCliente,
+    filterEmpresa,
+    filterEstatus,
+    filterFechaFinDesde,
+    filterFechaFinHasta,
+  ]);
 
   // Effect: reload quotations whenever filters or pagination change
   useEffect(() => {
@@ -126,12 +161,17 @@ export default function CotizacionesPage() {
       page={page}
       setPage={setPage}
       total={total}
+      clientes={clientes}
       filterCliente={filterCliente}
       setFilterCliente={setFilterCliente}
       filterEmpresa={filterEmpresa}
       setFilterEmpresa={setFilterEmpresa}
       filterEstatus={filterEstatus}
       setFilterEstatus={setFilterEstatus}
+      filterFechaFinDesde={filterFechaFinDesde}
+      setFilterFechaFinDesde={setFilterFechaFinDesde}
+      filterFechaFinHasta={filterFechaFinHasta}
+      setFilterFechaFinHasta={setFilterFechaFinHasta}
     />
   );
 }

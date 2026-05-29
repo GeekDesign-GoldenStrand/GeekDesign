@@ -1,5 +1,13 @@
-import { MagnifyingGlass, ShoppingCart, Tag } from "@phosphor-icons/react/dist/ssr";
+"use client";
+
+import {
+  MagnifyingGlassIcon,
+  QuestionIcon,
+  ShoppingCartIcon,
+  TagIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { CartBadge } from "../atoms/CartBadge";
 import { SearchBar } from "../molecules/SearchBar";
@@ -9,6 +17,16 @@ interface NavbarProps {
 }
 
 export function Navbar({ categories = [] }: NavbarProps) {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+  const linkCls = (href: string) =>
+    `flex items-center gap-[6px] transition-opacity ${isActive(href) ? "text-[#df2646]" : "text-[#1e1e1e] hover:opacity-70"}`;
+
+  const textCls = (href: string) =>
+    `whitespace-nowrap leading-none mt-1 ${isActive(href) ? "underline underline-offset-2" : ""}`;
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b-[1.5px] border-[#c2c0c0] w-full">
       {/* Row 1 — Logo · Search · Actions */}
@@ -36,44 +54,49 @@ export function Navbar({ categories = [] }: NavbarProps) {
           <SearchBar />
         </div>
 
-        {/* Actions — public storefront */}
+        {/* Actions — public storefront: Ayuda + cart only */}
         <div className="flex items-center gap-3 md:gap-5 shrink-0">
           <Link
             href="/tienda/promocionales"
-            className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
+            className={linkCls("/tienda/promocionales")}
             aria-label="Promocionales"
           >
-            <Tag size={28} weight="light" className="text-[#1e1e1e]" aria-hidden="true" />
-            <span className="hidden lg:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
+            <TagIcon size={28} weight="light" aria-hidden="true" />
+            <span
+              className={`hidden lg:block text-[15px] md:text-[16px] font-medium ${textCls("/tienda/promocionales")}`}
+            >
               Promocionales
             </span>
           </Link>
 
           <Link
             href="/tienda/cotizacion"
-            className="flex items-center gap-[6px] hover:opacity-70 transition-opacity"
+            className={linkCls("/tienda/cotizacion")}
             aria-label="Consultar Cotización"
           >
-            <MagnifyingGlass
-              size={28}
-              weight="light"
-              className="text-[#1e1e1e]"
-              aria-hidden="true"
-            />
-            <span className="hidden lg:block text-[#1e1e1e] text-[15px] md:text-[16px] font-medium whitespace-nowrap leading-none mt-1">
+            <MagnifyingGlassIcon size={28} weight="light" aria-hidden="true" />
+            <span
+              className={`hidden lg:block text-[15px] md:text-[16px] font-medium ${textCls("/tienda/cotizacion")}`}
+            >
               Seguimiento
             </span>
           </Link>
 
-          <Link href="/tienda/carrito" className="relative flex items-center gap-1">
-            <ShoppingCart
-              size={32}
-              weight="light"
-              className="text-[#1e1e1e]"
-              aria-label="Carrito"
-            />
+          <Link href="/tienda/ayuda" className={linkCls("/tienda/ayuda")} aria-label="Ayuda">
+            <QuestionIcon size={28} weight="light" aria-hidden="true" />
+            <span
+              className={`hidden md:block text-[15px] md:text-[16px] font-medium ${textCls("/tienda/ayuda")}`}
+            >
+              Ayuda
+            </span>
+          </Link>
+
+          <Link href="/tienda/carrito" className={`relative ${linkCls("/tienda/carrito")} gap-1`}>
+            <ShoppingCartIcon size={32} weight="light" aria-label="Carrito" />
             <CartBadge />
-            <span className="hidden md:block text-[#1e1e1e] text-[16.742px] font-medium whitespace-nowrap">
+            <span
+              className={`hidden md:block text-[16.742px] font-medium ${textCls("/tienda/carrito")}`}
+            >
               Carro
             </span>
           </Link>
@@ -83,15 +106,22 @@ export function Navbar({ categories = [] }: NavbarProps) {
       {/* Row 2 — Category links */}
       {categories.length > 0 && (
         <div className="max-w-[1440px] mx-auto px-4 md:px-[34px] pb-4 flex items-center overflow-x-auto scrollbar-hide gap-6 sm:gap-10 lg:justify-between lg:gap-0 border-t border-gray-50 pt-3">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/tienda/servicios/${cat.id}`}
-              className="text-[#1e1e1e] text-[14px] md:text-[15px] font-bold whitespace-nowrap hover:text-[#df2646] transition-colors shrink-0 leading-none"
-            >
-              {cat.name}
-            </Link>
-          ))}
+          {categories.map((cat) => {
+            const href = `/tienda/servicios/${cat.id}`;
+            return (
+              <Link
+                key={cat.id}
+                href={href}
+                className={`text-[14px] md:text-[15px] font-bold shrink-0 leading-none transition-colors ${
+                  isActive(href)
+                    ? "text-[#df2646] underline underline-offset-2"
+                    : "text-[#1e1e1e] hover:text-[#df2646]"
+                }`}
+              >
+                {cat.name}
+              </Link>
+            );
+          })}
         </div>
       )}
     </header>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
+import { stripUiOnlyConstants } from "@/lib/utils/servicio-mappers";
 import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
 import type {
@@ -124,9 +125,10 @@ export function useServicioForm({
       const hasSubstance = form.formulaChunks.some(
         (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
       );
+      const constantesPayload = stripUiOnlyConstants(form.constantes);
       const formulaPayload =
         hasSubstance && expresion.length > 0
-          ? { expresion, variables: form.variables, constantes: form.constantes }
+          ? { expresion, variables: form.variables, constantes: constantesPayload }
           : undefined;
 
       const url = mode === "edit" ? `/api/servicios/${servicioId}` : "/api/servicios";

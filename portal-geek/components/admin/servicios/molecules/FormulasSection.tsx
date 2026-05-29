@@ -251,7 +251,7 @@ export function FormulaSection({
       </div>
 
       {formulaPreview && (
-        <p className="text-sm text-gray-400 font-mono truncate" title={formulaPreview}>
+        <p className="text-sm text-gray-600 font-mono truncate" title={formulaPreview}>
           {formulaPreview}
         </p>
       )}

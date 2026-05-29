@@ -25,22 +25,24 @@ type VariablesSectionProps = {
 
 const MAX_NOMBRE_LEN = 30;
 
+// Stored value = short symbol (fits FormulaVariables.unidad VarChar(20)).
+// Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
-  "$ - pesos",
-  "cm - centímetros",
-  "cm² - centímetros cuadrados",
-  "m - metros",
-  "m² - metros cuadrados",
-  "pz - piezas",
-  "min - minutos",
-  "horas - horas",
-  "% - porcentaje",
-  "unidad - unidades",
+  { value: "$", label: "$ - pesos" },
+  { value: "cm", label: "cm - centímetros" },
+  { value: "cm²", label: "cm² - centímetros cuadrados" },
+  { value: "m", label: "m - metros" },
+  { value: "m²", label: "m² - metros cuadrados" },
+  { value: "pz", label: "pz - piezas" },
+  { value: "min", label: "min - minutos" },
+  { value: "h", label: "h - horas" },
+  { value: "%", label: "% - porcentaje" },
+  { value: "u", label: "u - unidades" },
 ] as const;
 
 const getTipoUnidad = (id: number, tipos: TipoVariableOption[]) => {
   const tipo = tipos.find((t) => t.id_tipo_variable === id);
-  return tipo?.unidad_default ?? "unidad";
+  return tipo?.unidad_default ?? "u";
 };
 
 export function VariablesSection({ tiposDisponibles, variables, onChange }: VariablesSectionProps) {
@@ -174,7 +176,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             placeholder="Ej. Ancho de la pieza"
             value={draft.etiqueta}
             onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
-            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             maxLength={MAX_NOMBRE_LEN}
           />
           {previewNombre && (
@@ -198,7 +200,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             placeholder="Ej. 50"
             value={draft.valor_default}
             onChange={(e) => setDraft((d) => ({ ...d, valor_default: e.target.value }))}
-            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+            className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
           />
         </div>
 
@@ -215,7 +217,7 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
                   unidad: getTipoUnidad(selectedTypeId, tiposDisponibles),
                 }));
               }}
-              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             >
               <option value={0}>Selecciona...</option>
               {tiposDisponibles.map((t) => (
@@ -229,13 +231,13 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">Unidad</label>
             <select
-              value={draft.unidad ?? "unidad"}
+              value={draft.unidad ?? "u"}
               onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
-              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+              className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             >
-              {UNIT_OPTIONS.map((unidad) => (
-                <option key={unidad} value={unidad}>
-                  {unidad}
+              {UNIT_OPTIONS.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
                 </option>
               ))}
             </select>

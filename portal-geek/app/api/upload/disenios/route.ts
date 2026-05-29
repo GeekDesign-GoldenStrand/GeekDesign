@@ -6,7 +6,8 @@ import { DEFAULT_TTL_SECONDS, deleteObject, presignPut } from "@/lib/services/st
 import { buildKey, extFromFilename, extFromMime, isValidKey } from "@/lib/storage/keys";
 import { ok } from "@/lib/utils/api";
 import { ConflictError, handleError, RateLimitError, ValidationError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
+import { getClientIp } from "@/lib/utils/request-ip";
 
 // Public endpoint — no auth required. Rate-limited by IP to cap anonymous abuse.
 // Only issues presigned PUTs for the "disenios" category.
@@ -22,13 +23,16 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 // warning on every design file link (see DesignFileLink component).
 // Future hardening: wire in an async scan (GCS Object Finalize → Cloud Function
 // → ClamAV/VirusTotal) and gate admin downloads on a scan_status field.
-const RATE_LIMIT = { maxAttempts: 10, windowMs: 60_000 };
+// Only successful presigns count: a customer building a cart with several
+// custom designs (each a separate upload) shouldn't trip the limit, and
+// rejected requests (422) are cheap and must not burn the budget.
+const RATE_LIMIT = { maxAttempts: 20, windowMs: 60_000 };
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
-    const { allowed } = checkRateLimit(`upload-disenios:${ip}`, RATE_LIMIT);
-    if (!allowed) throw new RateLimitError();
+    const rateKey = `upload-disenios:${getClientIp(req, "anonymous")}`;
+    const { allowed, retryAfterMs } = peekRateLimit(rateKey, RATE_LIMIT);
+    if (!allowed) throw RateLimitError.fromMs(retryAfterMs);
 
     // Parse body but force category to "disenios" regardless of what the client sends.
     const raw = PresignUploadSchema.parse(await req.json());
@@ -56,6 +60,7 @@ export async function POST(req: NextRequest) {
     const key = buildKey("disenios", ext);
     const url = await presignPut(key, contentType);
 
+    recordAttempt(rateKey, RATE_LIMIT);
     return ok({ key, url, expiresIn: DEFAULT_TTL_SECONDS });
   } catch (err) {
     return handleError(err);
@@ -68,9 +73,9 @@ export async function POST(req: NextRequest) {
 // disenios/ prefix only. Refuses to delete keys already persisted in ArchivosDisenio.
 export async function DELETE(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
-    const { allowed } = checkRateLimit(`upload-disenios:${ip}`, RATE_LIMIT);
-    if (!allowed) throw new RateLimitError();
+    const rateKey = `upload-disenios:${getClientIp(req, "anonymous")}`;
+    const { allowed, retryAfterMs } = peekRateLimit(rateKey, RATE_LIMIT);
+    if (!allowed) throw RateLimitError.fromMs(retryAfterMs);
 
     const key = new URL(req.url).searchParams.get("key");
     if (!key || !isValidKey(key, "disenios")) {
@@ -88,6 +93,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await deleteObject(key);
+    recordAttempt(rateKey, RATE_LIMIT);
     return ok({ deleted: true });
   } catch (err) {
     return handleError(err);

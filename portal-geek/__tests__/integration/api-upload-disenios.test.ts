@@ -17,9 +17,10 @@ jest.mock("@/lib/services/storage", () => ({
   DEFAULT_TTL_SECONDS: 300,
 }));
 
-// Reset rate-limit state between tests by re-importing the module fresh
+// peekRateLimit gates the request; recordAttempt only fires on success.
 jest.mock("@/lib/utils/rate-limit", () => ({
-  checkRateLimit: jest.fn().mockReturnValue({ allowed: true }),
+  peekRateLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 20, retryAfterMs: 0 }),
+  recordAttempt: jest.fn(),
 }));
 
 const mockFindFirst = jest.fn();
@@ -58,8 +59,8 @@ describe("POST /api/upload/disenios", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFindFirst.mockResolvedValue(null);
-    const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
-    checkRateLimit.mockReturnValue({ allowed: true });
+    const { peekRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
+    peekRateLimit.mockReturnValue({ allowed: true, remaining: 20, retryAfterMs: 0 });
   });
 
   it("devuelve 200 con key y uploadUrl para un PNG válido", async () => {
@@ -118,8 +119,8 @@ describe("POST /api/upload/disenios", () => {
   });
 
   it("devuelve 429 cuando se supera el rate limit", async () => {
-    const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
-    checkRateLimit.mockReturnValue({ allowed: false });
+    const { peekRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
+    peekRateLimit.mockReturnValue({ allowed: false, remaining: 0, retryAfterMs: 30_000 });
 
     const res = await POST(
       makeRequest({ contentType: "image/png", size: 1024, filename: "logo.png" })
@@ -141,8 +142,8 @@ describe("DELETE /api/upload/disenios", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFindFirst.mockResolvedValue(null);
-    const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
-    checkRateLimit.mockReturnValue({ allowed: true });
+    const { peekRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
+    peekRateLimit.mockReturnValue({ allowed: true, remaining: 20, retryAfterMs: 0 });
   });
 
   it("elimina una clave huérfana sin requerir sesión", async () => {
@@ -173,8 +174,8 @@ describe("DELETE /api/upload/disenios", () => {
   });
 
   it("retorna 429 cuando se supera el rate limit", async () => {
-    const { checkRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
-    checkRateLimit.mockReturnValue({ allowed: false });
+    const { peekRateLimit } = jest.requireMock("@/lib/utils/rate-limit");
+    peekRateLimit.mockReturnValue({ allowed: false, remaining: 0, retryAfterMs: 30_000 });
     const res = await DELETE(makeDeleteRequest(ORPHAN_KEY));
     expect(res.status).toBe(429);
     expect(mockDeleteObject).not.toHaveBeenCalled();

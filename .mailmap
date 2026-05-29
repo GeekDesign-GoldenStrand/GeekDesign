@@ -1,0 +1,30 @@
+# Canonical author identities for `git shortlog`, `git log`, and `git blame`.
+# Format:
+#   Canonical Name <canonical@email>
+#   Canonical Name <canonical@email> <alias@email>
+# The second form folds <alias@email> into the canonical identity.
+
+Enrique Ayala <a01711235@tec.mx>
+Enrique Ayala <a01711235@tec.mx> <142268928+KIKW12@users.noreply.github.com>
+
+Ricardo Calzada Hernández <a01707647@tec.mx>
+Ricardo Calzada Hernández <a01707647@tec.mx> <142269072+reAchi301@users.noreply.github.com>
+
+Carlos Martínez Vázquez <149129755+CsVazquezz@users.noreply.github.com>
+
+Ximena Pérez Escalante <a01751827@tec.mx>
+Ximena Pérez Escalante <a01751827@tec.mx> <A01751827@tec.mx>
+Ximena Pérez Escalante <a01751827@tec.mx> <142125448+XimePerezEscalante@users.noreply.github.com>
+
+Ana Paola Hernández Hernández <pauchas836@gmail.com>
+Ana Paola Hernández Hernández <pauchas836@gmail.com> <a01276728@tec.mx>
+
+Ernesto Guillén <a01704967@tec.mx>
+Ernesto Guillén <a01704967@tec.mx> <A01704967@tec.mx>
+Ernesto Guillén <a01704967@tec.mx> <77737337+netogu1llen@users.noreply.github.com>
+
+Charbel Chávez Zavala <charbel_chz@outlook.com>
+Charbel Chávez Zavala <charbel_chz@outlook.com> <121769083+ChzCharbel@users.noreply.github.com>
+
+Jorge Manuel Oyoqui <a01711783@tec.mx>
+Jorge Manuel Oyoqui <a01711783@tec.mx> <141980006+JorgeManuelOyoqui@users.noreply.github.com>

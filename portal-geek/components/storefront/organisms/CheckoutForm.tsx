@@ -2,8 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import flags from "react-phone-number-input/flags";
 
 import { clearCarrito, getCarrito, getSubtotal, type CarritoItem } from "@/lib/cart/storage";
+import { EMAIL_ERROR_MESSAGE, isValidEmail } from "@/lib/utils/email";
 
 interface Sucursal {
   id_sucursal: number;
@@ -25,7 +28,21 @@ export function CheckoutForm({ sucursales }: Props) {
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [correo, setCorreo] = useState("");
-  const [telefono, setTelefono] = useState("");
+  const [correoError, setCorreoError] = useState<string | null>(null);
+  // E.164 format (e.g. "+524421234567") from react-phone-number-input.
+  // The library returns undefined while the user is typing an incomplete number.
+  const [telefono, setTelefono] = useState<string | undefined>(undefined);
+
+  const PHONE_MAX_DIGITS = 15;
+  function handlePhoneChange(next: string | undefined) {
+    if (!next) {
+      setTelefono(undefined);
+      return;
+    }
+    const digitCount = next.replace(/\D/g, "").length;
+    if (digitCount > PHONE_MAX_DIGITS) return; // reject keystroke, value stays put
+    setTelefono(next);
+  }
   const [idSucursal, setIdSucursal] = useState<number | null>(sucursales[0]?.id_sucursal ?? null);
   const [notas, setNotas] = useState("");
 
@@ -59,6 +76,15 @@ export function CheckoutForm({ sucursales }: Props) {
       setError("Selecciona una sucursal");
       return;
     }
+    if (!isValidEmail(correo)) {
+      setCorreoError(EMAIL_ERROR_MESSAGE);
+      setError("Revisa los datos del formulario");
+      return;
+    }
+    if (!telefono || !isValidPhoneNumber(telefono)) {
+      setError("Ingresa un número de teléfono válido para el país seleccionado");
+      return;
+    }
 
     submittingRef.current = true;
     setSubmitting(true);
@@ -68,7 +94,7 @@ export function CheckoutForm({ sucursales }: Props) {
           nombre_cliente: nombre.trim(),
           empresa: empresa.trim() || undefined,
           correo_electronico: correo.trim(),
-          numero_telefono: telefono.trim(),
+          numero_telefono: telefono,
         },
         id_sucursal: idSucursal,
         notas: notas.trim() || undefined,
@@ -167,25 +193,52 @@ export function CheckoutForm({ sucursales }: Props) {
             id="correo"
             type="email"
             required
+            autoComplete="email"
+            inputMode="email"
+            spellCheck={false}
             value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e]"
+            onChange={(e) => {
+              setCorreo(e.target.value);
+              if (correoError) setCorreoError(null);
+            }}
+            onBlur={() => {
+              if (correo.trim().length === 0) {
+                setCorreoError(null);
+                return;
+              }
+              setCorreoError(isValidEmail(correo) ? null : EMAIL_ERROR_MESSAGE);
+            }}
+            aria-invalid={correoError !== null}
+            aria-describedby={correoError ? "correo-error" : "correo-help"}
+            className={`h-[44px] rounded-[8px] border bg-white px-[12px] text-[14px] text-[#1e1e1e] ${
+              correoError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+            }`}
           />
-          <p className="text-[12px] text-[#666]">
-            Usarás este correo para revisar y aprobar tu cotización.
-          </p>
+          {correoError ? (
+            <p id="correo-error" className="text-[12px] font-medium text-[#c14a4a]">
+              {correoError}
+            </p>
+          ) : (
+            <p id="correo-help" className="text-[12px] text-[#666]">
+              Usarás este correo para revisar y aprobar tu cotización.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-[6px]">
           <label htmlFor="telefono" className="text-[14px] font-semibold text-[#1e1e1e]">
             Teléfono <span className="text-[#c14a4a]">*</span>
           </label>
-          <input
+          <PhoneInput
             id="telefono"
-            required
+            international
+            countryCallingCodeEditable={false}
+            defaultCountry="MX"
+            flags={flags}
             value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e]"
+            numberInputProps={{ maxLength: 16, inputMode: "tel" }}
+            onChange={handlePhoneChange}
+            className="flex items-center gap-2 h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:border-none [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:[font:inherit] [&_.PhoneInputInput]:[color:inherit] [&_.PhoneInputInput]:p-0 [&_.PhoneInputInput]:h-full [&_.PhoneInputCountry]:mr-0"
           />
         </div>
 

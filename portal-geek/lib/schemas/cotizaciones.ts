@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
+import { emailField } from "@/lib/utils/email";
 
 export const CreateCotizacionSchema = z.object({
   id_pedido: z.number().int().positive().optional(),
@@ -129,7 +130,12 @@ const SolicitarItemSchema = z.object({
           .min(1)
           .max(100)
           .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
-        valor: z.number().finite(),
+        // Must mirror CalcularPrecioSchema in lib/schemas/servicios.ts:
+        // physical magnitudes are strictly positive with a typo-safety upper bound.
+        valor: z
+          .number()
+          .positive("El valor debe ser mayor que 0")
+          .lte(100000, "Valor demasiado grande"),
       })
     )
     .default([]),
@@ -138,7 +144,7 @@ const SolicitarItemSchema = z.object({
 const SolicitarClienteSchema = z.object({
   nombre_cliente: z.string().min(1).max(100),
   empresa: z.string().max(100).optional(),
-  correo_electronico: z.string().email().max(150),
+  correo_electronico: emailField({ max: 150 }),
   numero_telefono: z.string().min(1).max(20),
 });
 

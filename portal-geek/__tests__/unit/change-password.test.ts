@@ -4,7 +4,7 @@
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
 import { changePassword } from "@/lib/services/change-password";
-import { NotFoundError, UnauthorizedError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 jest.mock("@/lib/db/client", () => ({
   prisma: {
@@ -38,11 +38,13 @@ describe("changePassword (AU-03)", () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it("AU03-U2: lanza UnauthorizedError si la contraseña actual es incorrecta", async () => {
+  it("AU03-U2: lanza ValidationError (422) si la contraseña actual es incorrecta", async () => {
     mockFindUnique.mockResolvedValue({ contrasena_hash: "old-hash" });
     mockVerifyPassword.mockResolvedValue(false);
 
-    await expect(changePassword(1, "mala", "NuevaPass123")).rejects.toThrow(UnauthorizedError);
+    // 422, not 401: the session is valid; only the body field is wrong.
+    // See lib/services/change-password.ts for the full reasoning.
+    await expect(changePassword(1, "mala", "NuevaPass123")).rejects.toThrow(ValidationError);
     expect(mockHashPassword).not.toHaveBeenCalled();
     expect(mockUpdate).not.toHaveBeenCalled();
   });

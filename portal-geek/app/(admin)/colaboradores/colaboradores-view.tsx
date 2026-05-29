@@ -327,25 +327,22 @@ export function ColaboradoresView() {
       <AdminHeader title="Colaboradores" />
 
       <div className="px-4 sm:px-8 pt-6 pb-4">
-        <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            onAgregar={() => setModalOpen(true)}
-            onFiltrar={() => setFilterOpen((v) => !v)}
-          />
-          {filterOpen && (
-            <FiltrarColaboradoresPanel
-              roles={roles}
-              filterEstatus={filterEstatus}
-              filterRoles={filterRoles}
-              onEstatusChange={setFilterEstatus}
-              onRolToggle={handleRolToggle}
-              onReset={handleLimpiarFiltros}
-              onClose={() => setFilterOpen(false)}
-            />
-          )}
-        </div>
+        <AdminToolbar
+          search={search}
+          onSearchChange={setSearch}
+          onAgregar={() => setModalOpen(true)}
+          onFiltrar={() => setFilterOpen(true)}
+        />
+        <FiltrarColaboradoresPanel
+          open={filterOpen}
+          roles={roles}
+          filterEstatus={filterEstatus}
+          filterRoles={filterRoles}
+          onEstatusChange={setFilterEstatus}
+          onRolToggle={handleRolToggle}
+          onReset={handleLimpiarFiltros}
+          onClose={() => setFilterOpen(false)}
+        />
         {statusError && (
           <p role="alert" className="mt-3 text-[14px] text-[#df2646]">
             {statusError}

@@ -67,9 +67,7 @@ export function ViewServicios() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-semibold text-[#1e1e1e] mb-6">Servicios</h1>
-
+    <div className="px-8 pt-6 pb-4">
       <ServiciosToolbar activosCount={activosCount} />
 
       {deleteSuccess && (
