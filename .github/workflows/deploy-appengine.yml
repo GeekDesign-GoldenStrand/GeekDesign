@@ -6,9 +6,16 @@ name: Deploy to App Engine
 # environment. PRs never deploy (no `pull_request` trigger). Production
 # (`main`) is gated behind a GitHub Environment approval rule.
 #
-#   develop branch -> GitHub Environment "develop"    -> version dev-<run>   (no promote)
+#   develop branch -> GitHub Environment "develop"    -> version dev-<run>   (promote — see note below)
 #   staging branch -> GitHub Environment "staging"     -> version stg-<run>   (no promote)
 #   main    branch -> GitHub Environment "production"  -> version prod-<run>  (promote)
+#
+# develop is promoted on purpose: the GCS bucket's CORS allow-list covers the
+# App Engine *service* URL only (https://<service>.<region>.r.appspot.com), not
+# the version-specific subdomains (https://dev-N-dot-<service>...). Without
+# promotion, browsers landing on the version URL get CORS-blocked on the
+# presigned-PUT image-upload flow. Promoting keeps the service URL pointed at
+# the just-deployed version so uploads keep working on develop.
 
 on:
   push:
@@ -69,7 +76,10 @@ jobs:
             develop)
               echo "env_name=develop"                 >> "$GITHUB_OUTPUT"
               echo "version=dev-${GITHUB_RUN_NUMBER}"  >> "$GITHUB_OUTPUT"
-              echo "promote=false"                     >> "$GITHUB_OUTPUT"
+              # promote=true so the service URL serves the just-deployed code;
+              # GCS bucket CORS only allows the service origin (not the version
+              # subdomain), so without promotion image uploads break on develop.
+              echo "promote=true"                      >> "$GITHUB_OUTPUT"
               ;;
             staging)
               echo "env_name=staging"                  >> "$GITHUB_OUTPUT"
@@ -169,3 +179,70 @@ jobs:
           echo "| Service URL | ${{ steps.deploy.outputs.url }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "Deployed version URL: ${{ steps.deploy.outputs.version_url }}"
           echo "Service (promoted) URL: ${{ steps.deploy.outputs.url }}"
+
+    outputs:
+      env_name: ${{ steps.config.outputs.env_name }}
+      url: ${{ steps.deploy.outputs.url }}
+
+  # ── Lighthouse CI — post-deploy perf gate ──────────────────────────────────
+  # Runs against the just-deployed URL (/tienda only — the page the May 2026
+  # audit flagged). Triggers on every environment (develop, staging, production)
+  # so perf regressions are caught before they reach prod. Budgets are
+  # permissive on purpose: every assertion is `warn`, so the workflow never
+  # blocks a deploy. The point is to publish the report and a baseline;
+  # tighten to `error` as perf work lands. Narrow back to production-only
+  # by gating on `needs.deploy.outputs.env_name == 'production'` if the
+  # develop/staging report cadence becomes noisy.
+  lighthouse:
+    name: Lighthouse (${{ needs.deploy.outputs.env_name }})
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: needs.deploy.outputs.url != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.14.x
+
+      # Build the /tienda URL slash-safely. The deploy action's `url` output
+      # may or may not carry a trailing slash depending on the App Engine
+      # response; stripping then re-appending guarantees exactly one.
+      - name: Compute target URL
+        id: target
+        run: |
+          base="${{ needs.deploy.outputs.url }}"
+          echo "url=${base%/}/tienda" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for new version to be reachable
+        run: |
+          url="${{ steps.target.outputs.url }}"
+          for i in 1 2 3 4 5 6; do
+            if curl -sf -o /dev/null "$url"; then
+              echo "Reachable on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::$url did not respond after 6 attempts"
+          exit 1
+
+      - name: Run Lighthouse CI
+        working-directory: portal-geek
+        env:
+          LHCI_URL: ${{ steps.target.outputs.url }}
+        run: |
+          lhci autorun \
+            --collect.url="$LHCI_URL" \
+            --config=./lighthouserc.json
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Lighthouse — ${{ needs.deploy.outputs.env_name }} — ${{ steps.target.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Reports uploaded to temporary public storage (link in the LHCI step log)." >> "$GITHUB_STEP_SUMMARY"
+          echo "All assertions are currently \`warn\` — failures here do not block the deploy." >> "$GITHUB_STEP_SUMMARY"

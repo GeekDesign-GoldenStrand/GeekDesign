@@ -298,13 +298,24 @@ async function main() {
   // ── Service + Product + Material + Pricing ─────────────────────────────────
   const servicioCorte = await prisma.servicios.upsert({
     where: { id_servicio: 1 },
-    update: {},
+    update: {
+      imagen_url: JSON.stringify([
+        "/images/laser_cut_wood.png",
+        "/images/laser_cut_acrylic.png",
+        "/images/laser_cut_sign.png",
+      ]),
+    },
     create: {
       id_estatus: estatusServicioActivo.id_estatus_servicio,
       id_sucursal: sucursal.id_sucursal,
       nombre_servicio: "Corte Láser",
       descripcion_servicio: "Corte con láser CO2",
       estatus_servicio: true,
+      imagen_url: JSON.stringify([
+        "/images/laser_cut_wood.png",
+        "/images/laser_cut_acrylic.png",
+        "/images/laser_cut_sign.png",
+      ]),
     },
   });
 
@@ -322,13 +333,24 @@ async function main() {
 
   const servicioBordado = await prisma.servicios.upsert({
     where: { id_servicio: 3 },
-    update: {},
+    update: {
+      imagen_url: JSON.stringify([
+        "/images/embroidery_close.png",
+        "/images/embroidery_hoop.png",
+        "/images/embroidery_finished.png",
+      ]),
+    },
     create: {
       id_estatus: estatusServicioActivo.id_estatus_servicio,
       id_sucursal: sucursal.id_sucursal,
       nombre_servicio: "Bordado",
       descripcion_servicio: "Bordado personalizado en textiles",
       estatus_servicio: true,
+      imagen_url: JSON.stringify([
+        "/images/embroidery_close.png",
+        "/images/embroidery_hoop.png",
+        "/images/embroidery_finished.png",
+      ]),
     },
   });
 
@@ -873,6 +895,7 @@ async function main() {
         id_pedido: 1,
         folio: "COT-001",
         monto_total: 1500,
+        nombre_oportunidad: "Señalética interior oficinas",
         notas: "Cotización pendiente para señalética interior",
         fecha_creacion: new Date("2026-04-13"),
         id_cliente: 2,
@@ -882,6 +905,7 @@ async function main() {
         id_pedido: 2,
         folio: "COT-002",
         monto_total: 2500,
+        nombre_oportunidad: "Corte y grabado trofeos",
         notas: "Cotización aprobada para corte y grabado trofeos",
         fecha_creacion: new Date("2026-04-15"),
         id_cliente: 3,
@@ -891,6 +915,7 @@ async function main() {
         id_pedido: 3,
         folio: "COT-003",
         monto_total: 1800,
+        nombre_oportunidad: "Grabado placas conmemorativas",
         notas: "Cliente rechazó la propuesta de placas",
         fecha_creacion: new Date("2026-04-17"),
         id_cliente: 4,
@@ -900,6 +925,7 @@ async function main() {
         id_pedido: 4,
         folio: "COT-004",
         monto_total: 2200,
+        nombre_oportunidad: "Rotulación flota vehicular",
         notas: "Cotización aprobada para rotulación flota vehicular",
         fecha_creacion: new Date("2026-04-20"),
         id_cliente: 2,
@@ -909,6 +935,7 @@ async function main() {
         id_pedido: 5,
         folio: "COT-005",
         monto_total: 3000,
+        nombre_oportunidad: "Bordado uniformes corporativos",
         notas: "Cotización cancelada — cambio de presupuesto",
         fecha_creacion: new Date("2026-06-20"),
         id_cliente: clienteDemo.id_cliente,
@@ -918,6 +945,7 @@ async function main() {
         id_pedido: 6,
         folio: "COT-006",
         monto_total: 4500,
+        nombre_oportunidad: "Corte láser piezas madera",
         notas: "Cotización pendiente para corte láser piezas madera",
         fecha_creacion: new Date("2026-04-22"),
         id_cliente: 3,
@@ -927,6 +955,7 @@ async function main() {
         id_pedido: 7,
         folio: "COT-007",
         monto_total: 890,
+        nombre_oportunidad: "Bordado gorras evento",
         notas: "Cotización pendiente para bordado gorras evento",
         fecha_creacion: new Date("2026-04-23"),
         id_cliente: 4,
@@ -936,6 +965,7 @@ async function main() {
         id_pedido: 8,
         folio: "COT-008",
         monto_total: 3200,
+        nombre_oportunidad: "Señalética exterior",
         notas: "Cotización pendiente para señalética exterior",
         fecha_creacion: new Date("2026-04-24"),
         id_cliente: clienteDemo.id_cliente,

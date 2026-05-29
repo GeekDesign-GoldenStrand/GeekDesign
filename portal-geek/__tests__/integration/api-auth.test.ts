@@ -5,7 +5,7 @@ import { loginUser } from "@/lib/services/auth";
 import { changePassword } from "@/lib/services/change-password";
 import { requestPasswordReset, resetPassword } from "@/lib/services/password-reset";
 import { updateUsuario } from "@/lib/services/usuarios";
-import { NotFoundError, UnauthorizedError } from "@/lib/utils/errors";
+import { NotFoundError, UnauthorizedError, ValidationError } from "@/lib/utils/errors";
 
 import { createApp } from "../helpers/next-supertest";
 
@@ -18,9 +18,11 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: () => mockGetSession(),
 }));
 
-const mockCheckRateLimit = jest.fn(() => ({ allowed: true, remaining: 4 }));
+const mockPeekRateLimit = jest.fn(() => ({ allowed: true, remaining: 4, retryAfterMs: 0 }));
 jest.mock("@/lib/utils/rate-limit", () => ({
-  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...(args as [])),
+  peekRateLimit: (...args: unknown[]) => mockPeekRateLimit(...(args as [])),
+  recordAttempt: jest.fn(),
+  clearRateLimit: jest.fn(),
 }));
 
 jest.mock("@/lib/services/auth", () => ({ loginUser: jest.fn() }));
@@ -54,7 +56,7 @@ describe("AU-01 POST /api/auth/login", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCheckRateLimit.mockReturnValue({ allowed: true, remaining: 4 });
+    mockPeekRateLimit.mockReturnValue({ allowed: true, remaining: 4, retryAfterMs: 0 });
   });
 
   it("AU01-I1: 200 + cookie de sesión con credenciales válidas", async () => {
@@ -99,7 +101,7 @@ describe("AU-01 POST /api/auth/login", () => {
   });
 
   it("AU01-I3b: 401 cuando se excede el rate limit (mismo mensaje genérico)", async () => {
-    mockCheckRateLimit.mockReturnValue({ allowed: false, remaining: 0 });
+    mockPeekRateLimit.mockReturnValue({ allowed: false, remaining: 0, retryAfterMs: 1000 });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/auth/login")
@@ -255,17 +257,19 @@ describe("AU-03 PUT /api/auth/change-password", () => {
     expect(mockChangePassword).toHaveBeenCalledWith(9, "Vieja123", "Nueva123");
   });
 
-  it("AU03-I3: 401 cuando la contraseña actual es incorrecta", async () => {
+  it("AU03-I3: 422 cuando la contraseña actual es incorrecta", async () => {
     mockGetSession.mockResolvedValue({ id: 9, email: "ada@x.com", role: "Colaborador" });
-    mockChangePassword.mockRejectedValue(
-      new UnauthorizedError("La contraseña actual es incorrecta")
-    );
+    // Must be 422 (not 401) — the session is valid, only the body field is
+    // wrong. A 401 collides with session-expiry on the client and redirects
+    // to /login as if the change succeeded. See lib/services/change-password.ts.
+    mockChangePassword.mockRejectedValue(new ValidationError("La contraseña actual es incorrecta"));
 
     const res = await createApp({ PUT: routes.PUT })
       .put("/api/auth/change-password")
       .send(validBody);
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe("La contraseña actual es incorrecta");
   });
 
   it("AU03-I4: 422 con body inválido (nueva contraseña débil)", async () => {
@@ -349,5 +353,30 @@ describe("AU-04 PUT /api/usuarios/[id] (modificar rol)", () => {
 
     expect(res.status).toBe(422);
     expect(mockUpdateUsuario).not.toHaveBeenCalled();
+  });
+
+  it("AU04-I5: 422 cuando Dirección intenta cambiar su propio rol", async () => {
+    mockGetSession.mockResolvedValue({ id: 7, email: "dir@x.com", role: "Direccion" });
+
+    const res = await app().put("/api/usuarios/7").send({ id_rol: 2 });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/propio rol/i);
+    expect(mockUpdateUsuario).not.toHaveBeenCalled();
+  });
+
+  it("AU04-I5b: 200 cuando Dirección edita su propio usuario sin tocar id_rol", async () => {
+    mockGetSession.mockResolvedValue({ id: 7, email: "dir@x.com", role: "Direccion" });
+    mockUpdateUsuario.mockResolvedValue({
+      id_usuario: 7,
+      nombre_completo: "Nuevo Nombre",
+      id_rol: 1,
+      rol: { id_rol: 1, nombre_rol: "Direccion" },
+    });
+
+    const res = await app().put("/api/usuarios/7").send({ nombre_completo: "Nuevo Nombre" });
+
+    expect(res.status).toBe(200);
+    expect(mockUpdateUsuario).toHaveBeenCalledWith(7, { nombre_completo: "Nuevo Nombre" });
   });
 });

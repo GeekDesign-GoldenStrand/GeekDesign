@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
+import { emailField } from "@/lib/utils/email";
 
 export const CreateCotizacionSchema = z.object({
   id_pedido: z.number().int().positive().optional(),
@@ -129,7 +130,12 @@ const SolicitarItemSchema = z.object({
           .min(1)
           .max(100)
           .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
-        valor: z.number().finite(),
+        // Must mirror CalcularPrecioSchema in lib/schemas/servicios.ts:
+        // physical magnitudes are strictly positive with a typo-safety upper bound.
+        valor: z
+          .number()
+          .positive("El valor debe ser mayor que 0")
+          .lte(100000, "Valor demasiado grande"),
       })
     )
     .default([]),
@@ -138,14 +144,38 @@ const SolicitarItemSchema = z.object({
 const SolicitarClienteSchema = z.object({
   nombre_cliente: z.string().min(1).max(100),
   empresa: z.string().max(100).optional(),
-  correo_electronico: z.string().email().max(150),
+  correo_electronico: emailField({ max: 150 }),
   numero_telefono: z.string().min(1).max(20),
 });
 
 export const SolicitarCotizacionSchema = z.object({
   cliente: SolicitarClienteSchema,
   id_sucursal: z.number().int().positive(),
-  notas: z.string().max(2000).optional(),
+  notas: z
+    .string()
+    .max(500, "Las notas no pueden superar los 500 caracteres")
+    .regex(
+      /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/,
+      "Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis"
+    )
+    .optional(),
+  fecha_estimada: z.coerce
+    .date()
+    .refine((val) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      // Subtract 24 hours to accommodate timezone differences
+      const limit = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      return val >= limit;
+    }, "La fecha estimada no puede ser anterior a la fecha actual")
+    .refine((val) => {
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 2);
+      maxDate.setHours(23, 59, 59, 999);
+      // Add 24 hours to accommodate timezone differences
+      const limit = new Date(maxDate.getTime() + 24 * 60 * 60 * 1000);
+      return val <= limit;
+    }, "La fecha estimada no puede superar los 2 años a partir de hoy"),
   items: z.array(SolicitarItemSchema).min(1, "El carrito está vacío"),
 });
 

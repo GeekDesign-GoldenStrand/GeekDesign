@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import { SucursalesFilterSidebar } from "@/components/admin/organisms/SucursalesFilterSidebar";
 import { SucursalesTable } from "@/components/admin/organisms/SucursalesTable";
 
 type Sucursal = {
@@ -54,25 +55,7 @@ export function SucursalesTemplate({
   const pageSize = 10;
 
   const [showFilter, setShowFilter] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  // cerrar dropdown al hacer click fuera
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setShowFilter(false);
-      }
-    }
-
-    if (showFilter) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showFilter]);
 
   return (
     <>
@@ -80,89 +63,23 @@ export function SucursalesTemplate({
 
       <section className="max-w-[1350px] mx-auto px-4 sm:px-8 pt-5 space-y-4 font-ibm-plex">
         {/* Toolbar */}
-        <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            onAgregar={() => router.push("/sucursales/registrar")}
-            onFiltrar={() => setShowFilter((prev) => !prev)}
-          />
+        <AdminToolbar
+          search={search}
+          onSearchChange={setSearch}
+          onAgregar={() => router.push("/sucursales/registrar")}
+          onFiltrar={() => setShowFilter(true)}
+        />
 
-          {/* Dropdown filtros */}
-          {showFilter && (
-            <div ref={filterRef} className="absolute right-0 mt-2 z-50">
-              <div className="bg-white p-6 rounded-[14px] w-[calc(100vw-2rem)] sm:w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ff7f7f] text-black">
-                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
-
-                {/* Nombre */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Nombre sucursal</p>
-                  <input
-                    value={filterNombre}
-                    onChange={(e) => setFilterNombre(e.target.value)}
-                    className="w-full border border-[#b9b8b8] rounded-[6px] p-2"
-                  />
-                </div>
-
-                {/* Dirección */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Dirección</p>
-                  <input
-                    value={filterDireccion}
-                    onChange={(e) => setFilterDireccion(e.target.value)}
-                    className="w-full border border-[#b9b8b8] rounded-[6px] p-2"
-                  />
-                </div>
-
-                {/* Estatus */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
-
-                  <div className="space-y-2">
-                    {["Activo", "Inactivo"].map((status) => (
-                      <label key={status} className="flex items-center gap-2 text-[13px]">
-                        <input
-                          type="checkbox"
-                          checked={filterEstatus.includes(status)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFilterEstatus([...filterEstatus, status]);
-                            } else {
-                              setFilterEstatus(filterEstatus.filter((s) => s !== status));
-                            }
-                          }}
-                          className="accent-[#ff7f7f]"
-                        />
-                        {status}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Botones */}
-                <div className="mt-4 flex justify-center gap-3">
-                  <button
-                    onClick={() => {
-                      setFilterNombre("");
-                      setFilterDireccion("");
-                      setFilterEstatus([]);
-                    }}
-                    className="h-7 px-3 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
-                  >
-                    Restablecer
-                  </button>
-
-                  <button
-                    onClick={() => setShowFilter(false)}
-                    className="h-7 px-6 rounded-[6px] bg-[#ff7f7f] text-white text-[12px] font-semibold hover:bg-[#f36a6a]"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <SucursalesFilterSidebar
+          open={showFilter}
+          onClose={() => setShowFilter(false)}
+          filterNombre={filterNombre}
+          setFilterNombre={setFilterNombre}
+          filterDireccion={filterDireccion}
+          setFilterDireccion={setFilterDireccion}
+          filterEstatus={filterEstatus}
+          setFilterEstatus={setFilterEstatus}
+        />
 
         {/* Table */}
         <SucursalesTable sucursales={sucursales} />

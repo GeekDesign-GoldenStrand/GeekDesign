@@ -17,7 +17,7 @@ const VariableSchema = z.object({
   etiqueta: z.string().min(1).max(100),
   valor_default: z.coerce.number().optional(),
   editable_por_cliente: z.boolean().default(false),
-  unidad: z.string().optional(),
+  unidad: z.string().max(20).optional(),
 });
 
 const ConstanteSchema = z
@@ -111,7 +111,13 @@ export const CalcularPrecioSchema = z.object({
           .min(1)
           .max(100)
           .regex(/^[a-zA-Z0-9_]+$/, "Identificador inválido"),
-        valor: z.number().finite(),
+        // Variable values are physical magnitudes (dimensions, quantities, etc.)
+        // and must be strictly positive. Upper bound is a safety net against
+        // typo overflows; no realistic laser/print dimension exceeds it.
+        valor: z
+          .number()
+          .positive("El valor debe ser mayor que 0")
+          .lte(100000, "Valor demasiado grande"),
       })
     )
     .default([]),
