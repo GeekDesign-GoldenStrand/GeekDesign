@@ -3,9 +3,9 @@
 import { InfoIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
@@ -277,7 +277,6 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             </Select>
           </div>
         </div>
-
 
         <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
           <input
