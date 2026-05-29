@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
+import { hasCharRun, repeatedWords } from "@/lib/utils/safe-text";
 import { stripUiOnlyConstants } from "@/lib/utils/servicio-mappers";
 import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
@@ -114,6 +115,28 @@ export function useServicioForm({
       setSubmitError("Error interno: servicioId es requerido en modo edición.");
       return;
     }
+
+    // Pre-flight spam check on the descriptive fields. Run before setSubmitting
+    // so a validation error doesn't trigger the image-cleanup path in the catch.
+    if (hasCharRun(form.nombre_servicio)) {
+      setSubmitError("El nombre del servicio tiene letras repetidas sin coherencia.");
+      return;
+    }
+    if (repeatedWords(form.nombre_servicio)) {
+      setSubmitError("El nombre del servicio repite la misma palabra varias veces.");
+      return;
+    }
+    if (form.descripcion_servicio.trim()) {
+      if (hasCharRun(form.descripcion_servicio)) {
+        setSubmitError("La descripción tiene letras repetidas sin coherencia.");
+        return;
+      }
+      if (repeatedWords(form.descripcion_servicio)) {
+        setSubmitError("La descripción repite la misma palabra varias veces.");
+        return;
+      }
+    }
+
     setSubmitting(true);
     setSubmitError(null);
 
@@ -193,7 +216,32 @@ export function useServicioForm({
     maquinas.error ||
     materiales.error;
 
-  const canSubmit = form.nombre_servicio.trim().length > 0 && form.id_sucursal !== null;
+  // A servicio is only saveable when every required piece is in place. The list
+  // is exposed so the form can render it as a "missing requirements" hint next
+  // to the disabled submit button instead of leaving the user guessing.
+  const missingRequirements: string[] = [];
+  if (form.nombre_servicio.trim().length === 0) {
+    missingRequirements.push("Nombre del servicio");
+  }
+  if (form.id_sucursal === null) {
+    missingRequirements.push("Sucursal");
+  }
+  if (form.id_maquinas.length === 0) {
+    missingRequirements.push("Al menos una máquina");
+  }
+  if (form.materiales.length === 0) {
+    missingRequirements.push("Al menos un material");
+  }
+  if (form.imagenes.length < 2) {
+    missingRequirements.push(`Al menos 2 imágenes (tienes ${form.imagenes.length})`);
+  }
+  const hasFormulaSubstance = form.formulaChunks.some(
+    (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
+  );
+  if (!hasFormulaSubstance) {
+    missingRequirements.push("Fórmula");
+  }
+  const canSubmit = missingRequirements.length === 0;
 
   const defaultCancel = () => router.push("/servicios");
   const defaultSuccessRedirect = () => router.push("/servicios");
@@ -206,6 +254,7 @@ export function useServicioForm({
     initialLoading,
     fetchError,
     canSubmit,
+    missingRequirements,
     options: {
       sucursales: sucursales.data?.data ?? [],
       instaladores: instaladores.data?.data ?? [],
