@@ -65,6 +65,7 @@ export function CheckoutForm({ sucursales }: Props) {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fechaError, setFechaError] = useState<string | null>(null);
 
   // reAchi301 review: `submitting` is React state, so two fast clicks both
   // capture the stale `false` in their closures before the re-render disables
@@ -80,10 +81,23 @@ export function CheckoutForm({ sucursales }: Props) {
     hydrate();
   }, []);
 
+  function isFechaEstimadaValida(fecha: string) {
+    if (!fecha) return false;
+    const min = getMinDate();
+    const max = getMaxDate();
+    return fecha >= min && fecha <= max;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
+    setFechaError(null);
+
+    if (!isFechaEstimadaValida(fechaEstimada)) {
+      setFechaError("Selecciona una fecha válida de entrega");
+      return;
+    }
 
     if (items.length === 0) {
       setError("El carrito está vacío");
@@ -298,11 +312,21 @@ export function CheckoutForm({ sucursales }: Props) {
             type="date"
             required
             value={fechaEstimada}
-            onChange={(e) => setFechaEstimada(e.target.value)}
+            onChange={(e) => {
+              setFechaEstimada(e.target.value);
+              if (!isFechaEstimadaValida(e.target.value)) {
+                setFechaError("Selecciona una fecha válida de entrega");
+              } else {
+                setFechaError(null);
+              }
+            }}
             min={getMinDate()}
             max={getMaxDate()}
             className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] cursor-pointer"
           />
+          {fechaError && (
+            <span className="text-[13px] text-[#c14a4a] font-medium">{fechaError}</span>
+          )}
         </div>
 
         <div className="flex flex-col gap-[6px]">
