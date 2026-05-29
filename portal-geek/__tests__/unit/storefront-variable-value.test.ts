@@ -27,7 +27,7 @@ describe("CalcularPrecioSchema — variable valor bounds", () => {
       variables: [{ nombre_variable: "ancho", valor }],
     });
 
-  it.each([1, 0.1, 50, 1000, 99999.99, 100000])(
+  it.each([1, 0.1, 50, 1000, 99999.99, 100000, 1_000_000, 99_999_999])(
     "acepta valor positivo dentro del rango: %s",
     (v) => {
       expect(wrap(v).success).toBe(true);
@@ -42,13 +42,16 @@ describe("CalcularPrecioSchema — variable valor bounds", () => {
     }
   });
 
-  it.each([100001, 1_000_000, 1e10])("rechaza valor por encima del tope (100000): %s", (v) => {
-    const r = wrap(v);
-    expect(r.success).toBe(false);
-    if (!r.success) {
-      expect(r.error.issues.some((i) => /demasiado grande/i.test(i.message))).toBe(true);
+  it.each([99_999_999.01, 100_000_000, 1e10])(
+    "rechaza valor por encima del tope (99999999): %s",
+    (v) => {
+      const r = wrap(v);
+      expect(r.success).toBe(false);
+      if (!r.success) {
+        expect(r.error.issues.some((i) => /demasiado grande/i.test(i.message))).toBe(true);
+      }
     }
-  });
+  );
 
   it("rechaza NaN / Infinity", () => {
     expect(wrap(NaN).success).toBe(false);
