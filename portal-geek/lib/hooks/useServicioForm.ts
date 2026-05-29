@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
-import { repeatedWords } from "@/lib/utils/safe-text";
+import { hasCharRun, repeatedWords } from "@/lib/utils/safe-text";
 import { stripUiOnlyConstants } from "@/lib/utils/servicio-mappers";
 import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
@@ -118,13 +118,23 @@ export function useServicioForm({
 
     // Pre-flight spam check on the descriptive fields. Run before setSubmitting
     // so a validation error doesn't trigger the image-cleanup path in the catch.
+    if (hasCharRun(form.nombre_servicio)) {
+      setSubmitError("El nombre del servicio tiene letras repetidas sin coherencia.");
+      return;
+    }
     if (repeatedWords(form.nombre_servicio)) {
       setSubmitError("El nombre del servicio repite la misma palabra varias veces.");
       return;
     }
-    if (form.descripcion_servicio.trim() && repeatedWords(form.descripcion_servicio)) {
-      setSubmitError("La descripción repite la misma palabra varias veces.");
-      return;
+    if (form.descripcion_servicio.trim()) {
+      if (hasCharRun(form.descripcion_servicio)) {
+        setSubmitError("La descripción tiene letras repetidas sin coherencia.");
+        return;
+      }
+      if (repeatedWords(form.descripcion_servicio)) {
+        setSubmitError("La descripción repite la misma palabra varias veces.");
+        return;
+      }
     }
 
     setSubmitting(true);

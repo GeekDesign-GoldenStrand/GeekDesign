@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
+import { hasCharRun, repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
@@ -74,6 +74,10 @@ export function ConstantesSection({
 
     if (!draft.etiqueta.trim()) {
       setError("Escribe el nombre de la constante");
+      return;
+    }
+    if (hasCharRun(draft.etiqueta)) {
+      setError("El nombre tiene letras repetidas sin coherencia.");
       return;
     }
     if (repeatedWords(draft.etiqueta)) {

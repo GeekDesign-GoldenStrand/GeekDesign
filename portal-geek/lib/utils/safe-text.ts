@@ -1,15 +1,13 @@
 // Characters NOT allowed in user-facing names (servicio, variable, constante
-// labels). Anything matching — emojis, kaomoji building blocks (°, ╯, ┻, ▽…),
-// decorative symbols, control chars — gets stripped on input so the field
-// stays plain text.
+// labels). Strict whitelist: only letters (incl. Spanish), digits, and spaces
+// are accepted — punctuation, symbols, emojis, kaomoji parts and decorative
+// unicode are all stripped on input so the field stays clean text.
 //
 // Allowed:
 //   letters (ASCII + Spanish: áéíóúÁÉÍÓÚñÑüÜ)
 //   digits 0-9
 //   space
-//   explicit punctuation: ! " # $ % & / ( ) = [ ] ? ¿ ¡
-//   common punctuation:   . , ; : - _ ' + *
-const DISALLOWED_NAME_CHARS = /[^A-Za-z0-9áéíóúÁÉÍÓÚñÑüÜ¡¿!"#$%&/()=?,;:.'+*\[\]_\- ]/gu;
+const DISALLOWED_NAME_CHARS = /[^A-Za-z0-9áéíóúÁÉÍÓÚñÑüÜ ]/gu;
 
 // Strips emojis, kaomoji-only symbols, and other decorative unicode from a
 // user-typed name. Normalizes to NFC first so decomposed accents (e + combining
@@ -32,4 +30,12 @@ export function repeatedWords(input: string): boolean {
     }
   }
   return false;
+}
+
+// Detects 4+ of the same character in a row ("aaaa", "qqqq", "wqwqqqqq"…).
+// Catches keyboard-smash gibberish that repeatedWords misses (since it counts
+// whole words, not character repetition). Safe for Spanish: no native word has
+// 4 of the same consonant or vowel back-to-back.
+export function hasCharRun(input: string): boolean {
+  return /(.)\1{3,}/u.test(input);
 }
