@@ -372,12 +372,14 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   <div
                     role="button"
                     tabIndex={0}
-                    onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
+                    onClick={() =>
+                      router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`)
+                    }
                     onKeyDown={(e) => {
                       if (e.target !== e.currentTarget) return;
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        router.push(`/pedidos/${p.id_pedido}`);
+                        router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`);
                       }
                     }}
                     aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
@@ -430,12 +432,14 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   <div
                     role="button"
                     tabIndex={0}
-                    onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
+                    onClick={() =>
+                      router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`)
+                    }
                     onKeyDown={(e) => {
                       if (e.target !== e.currentTarget) return;
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        router.push(`/pedidos/${p.id_pedido}`);
+                        router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`);
                       }
                     }}
                     aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}

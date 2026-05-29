@@ -14,7 +14,15 @@ async function fetchPedido(id: string): Promise<Pedido> {
   return json.data;
 }
 
-export default function PedidoDetail({ id, role }: { id: string; role: UserRole }) {
+export default function PedidoDetail({
+  id,
+  role,
+  detalleIds,
+}: {
+  id: string;
+  role: UserRole;
+  detalleIds?: number[] | null;
+}) {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +65,7 @@ export default function PedidoDetail({ id, role }: { id: string; role: UserRole 
   return (
     <div>
       <AdminHeader title={title} />
-      <PedidoDetailPage pedido={pedido} role={role} onRefetch={refetch} />
+      <PedidoDetailPage pedido={pedido} role={role} onRefetch={refetch} detalleIds={detalleIds} />
     </div>
   );
 }

@@ -20,9 +20,10 @@ interface Props {
   pedido: Pedido;
   role: UserRole;
   onRefetch: () => Promise<void>;
+  detalleIds?: number[] | null;
 }
 
-export function PedidoDetailPage({ pedido, role, onRefetch }: Props) {
+export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const togglePanel = (panel: ActivePanel) =>
     setActivePanel((prev) => (prev === panel ? null : panel));
@@ -124,16 +125,18 @@ export function PedidoDetailPage({ pedido, role, onRefetch }: Props) {
       </div>
 
       <div className="mb-4">
-        <PedidoDetallesTable detalle={pedido.detalle} />
+        <PedidoDetallesTable detalle={pedido.detalle} detalleIds={detalleIds} />
       </div>
 
       <div className="mb-4">
         <PedidoPagosCard pagos={pedido.pagos} />
       </div>
 
-      <div className="mb-4">
-        <PedidoHistorialCard historial={pedido.historial} />
-      </div>
+      {!detalleIds && (
+        <div className="mb-4">
+          <PedidoHistorialCard historial={pedido.historial} />
+        </div>
+      )}
     </div>
   );
 }

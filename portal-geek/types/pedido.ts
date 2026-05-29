@@ -1,6 +1,12 @@
 // Mirrors PedidoDetalleResponse from lib/services/pedidos.ts.
 // All Date/Decimal values arrive serialized as strings over JSON.
 
+export interface PedidoVariableCotizacion {
+  id_variable: number;
+  valor: string | number | null;
+  variable: { nombre_variable: string; etiqueta: string; unidad: string | null };
+}
+
 export interface PedidoLineItem {
   id_detalle: number;
   id_servicio: number;
@@ -16,6 +22,8 @@ export interface PedidoLineItem {
   servicio: { nombre_servicio: string };
   material: { nombre_material: string };
   archivo: { nombre_archivo: string; url_archivo: string; formato: string };
+  estatus?: { descripcion: string } | null;
+  variablesCotizacion?: PedidoVariableCotizacion[];
 }
 
 export interface PedidoPago {
