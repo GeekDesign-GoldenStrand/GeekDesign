@@ -49,14 +49,6 @@ export async function listSucursales(
   // Conditions are collected dynamically so optional filters can be combined safely.
   const andConditions: Prisma.SucursalesWhereInput[] = [];
 
-  // Branch deletion is implemented as a soft delete.
-  // By default, the table only shows active branches unless a status filter is provided.
-  if (!filters?.estatus || filters.estatus.length === 0) {
-    andConditions.push({
-      estatus: "Activo",
-    });
-  }
-
   if (filters?.search) {
     andConditions.push({
       OR: [
