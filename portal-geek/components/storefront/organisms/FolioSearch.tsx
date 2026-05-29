@@ -87,6 +87,7 @@ export function FolioSearch() {
                   onChange={(e) => setFolio(e.target.value)}
                   placeholder="GD-2026-00203"
                   required
+                  maxLength={50}
                   className="w-full h-[64px] bg-white border border-[#E8E8E8] rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all"
                 />
               </div>
