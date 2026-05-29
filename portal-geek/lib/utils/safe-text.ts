@@ -18,35 +18,18 @@ export function sanitizeUserText(input: string): string {
   return input.normalize("NFC").replace(DISALLOWED_NAME_CHARS, "");
 }
 
-export function excessiveSymbols(input: string): boolean {
-  // Check for excessive use of symbols (e.g., multiple consecutive special characters)
-  const symbolCount = (input.match(/[^A-Za-z0-9áéíóúÁÉÍÓÚñÑüÜ¡¿!"#$%&/()=?,;:.'+*\[\]_\- ]/g) || [])
-    .length;
-  const totalLength = input.length;
-  return totalLength > 0 && symbolCount / totalLength > 0.3; // More than 30% of the string consists of symbols
-}
-
+// Rejects names where the same word appears 4+ times (e.g. "test test test test").
+// Catches lazy/spam input that sanitizeUserText can't filter at the character
+// level. Used in useServicioForm.handleSubmit and the variable/constante add
+// flows before the value is accepted into form state.
 export function repeatedWords(input: string): boolean {
-  // Check for repeated words (e.g., "service service service")
   const words = input.toLowerCase().split(/\s+/);
   const wordCounts: Record<string, number> = {};
   for (const word of words) {
     if (word) {
       wordCounts[word] = (wordCounts[word] || 0) + 1;
-      if (wordCounts[word] > 3) {
-        // More than 3 occurrences of the same word
-        return true;
-      }
+      if (wordCounts[word] > 3) return true;
     }
   }
   return false;
-}
-
-export function randomPatterns(input: string): boolean {
-  // Check for random patterns (e.g., "asdf1234!@#$") or repeated characters (e.g., "!!!!!!" or "abcabcabc")
-  const hasRepeatedChars = /(.)\1{4,}/.test(input); // 5 or more of the same character in a row
-  const hasRandomPattern = /([a-zA-Z0-9]{4,}|[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{4,})/.test(
-    input
-  ); // 4 or more consecutive letters/digits or symbols
-  return hasRepeatedChars || hasRandomPattern;
 }

@@ -38,14 +38,19 @@ describe("CreateServicioSchema — variable unidad length", () => {
     }
   );
 
-  it("rejects unidad longer than 30 characters", () => {
+  it("rejects unidad longer than 20 characters", () => {
     const result = CreateServicioSchema.safeParse(
-      makePayload("centímetros cúbicos por segundo al cuadrado") // 43 chars, over the .max(30) cap
+      makePayload("a".repeat(21)) // 21 chars, just over the .max(20) cap (aligned with FormulaVariables.unidad VarChar(20))
     );
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path[i.path.length - 1] === "unidad");
       expect(issue).toBeDefined();
     }
+  });
+
+  it("accepts unidad of exactly 20 characters (boundary)", () => {
+    const result = CreateServicioSchema.safeParse(makePayload("a".repeat(20)));
+    expect(result.success).toBe(true);
   });
 });
