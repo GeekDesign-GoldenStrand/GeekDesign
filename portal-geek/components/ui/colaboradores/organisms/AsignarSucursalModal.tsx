@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 
 interface Sucursal {
   id_sucursal: number;
@@ -21,10 +23,7 @@ interface AsignarSucursalModalProps {
   onSubmit: (idSucursal: number) => void;
 }
 
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
-const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 function AsignarSucursalForm({
   colaboradorName,
@@ -79,42 +78,33 @@ function AsignarSucursalForm({
         <label htmlFor="asignar-sucursal-select" className={LABEL}>
           Sucursal <span className="text-[#e42200]">*</span>
         </label>
-        <select
+        <Select
           id="asignar-sucursal-select"
           value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
+          onChange={(v) => {
+            setSelected(v);
             if (error) setError("");
           }}
-          className={`${SELECT_FIELD} ${error ? "border-[#e42200]" : ""}`}
+          placeholder="Seleccionar sucursal"
+          size="sm"
           disabled={loading}
+          error={error || undefined}
         >
-          <option value="">Seleccionar sucursal</option>
           {sucursales.map((s) => (
-            <option key={s.id_sucursal} value={s.id_sucursal}>
+            <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
               {s.nombre_sucursal}
-            </option>
+            </SelectOption>
           ))}
-        </select>
-        {error && <p className={ERROR_MSG}>{error}</p>}
+        </Select>
       </div>
 
       <div className="flex justify-end gap-3 mt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={loading}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Asignar"}
-        </button>
+        </Button>
       </div>
     </form>
   );

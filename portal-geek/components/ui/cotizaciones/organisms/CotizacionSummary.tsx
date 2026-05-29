@@ -3,6 +3,7 @@
 import { Info, Tag, Trash } from "@phosphor-icons/react";
 import React, { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import { formatDate } from "@/lib/utils/date";
 import type { LineItem } from "@/types/cotizacion";
@@ -55,13 +56,14 @@ export function CotizacionSummary({
         <ModalShell title="Motivo del descuento" onClose={() => setMotivoModalOpen(false)}>
           <p className="text-[14px] text-gray-700 leading-relaxed">{motivo}</p>
           <div className="flex justify-end mt-6">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => setMotivoModalOpen(false)}
-              className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
             >
               Cerrar
-            </button>
+            </Button>
           </div>
         </ModalShell>
       )}

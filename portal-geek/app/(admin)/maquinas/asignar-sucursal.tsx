@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
@@ -131,29 +133,22 @@ export default function AsignarSucursal({
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col text-[13px] text-[#575757] mb-6">
           <label className="font-medium mb-1">Sucursal</label>
-          <select
+          <Select
             value={selectedSucursal}
-            onChange={(e) => {
-              setSelectedSucursal(e.target.value);
+            onChange={(v) => {
+              setSelectedSucursal(v);
               setSucursalError(null);
             }}
-            className={[
-              "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] transition-colors",
-              sucursalError ? "border-[#df2646]" : "border-[#b9b8b8]",
-            ]
-              .filter(Boolean)
-              .join(" ")}
+            placeholder="Seleccionar sucursal..."
+            size="sm"
+            error={sucursalError ?? undefined}
           >
-            <option value="" disabled>
-              Seleccionar sucursal...
-            </option>
             {sucursalOptions.map((s) => (
-              <option key={s.id_sucursal} value={s.id_sucursal}>
+              <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
                 {s.nombre_sucursal}
-              </option>
+              </SelectOption>
             ))}
-          </select>
-          {sucursalError && <p className="text-[12px] text-[#e42200] mt-1">{sucursalError}</p>}
+          </Select>
         </div>
 
         {error && (
@@ -163,20 +158,12 @@ export default function AsignarSucursal({
         )}
 
         <div className="flex justify-end gap-3 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

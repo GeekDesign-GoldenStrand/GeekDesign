@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { clearCarrito, getCarrito, getSubtotal, type CarritoItem } from "@/lib/cart/storage";
 import { EMAIL_ERROR_MESSAGE, isValidEmail } from "@/lib/utils/email";
 
@@ -288,19 +290,18 @@ export function CheckoutForm({ sucursales }: Props) {
           <label htmlFor="sucursal" className="text-[14px] font-semibold text-[#1e1e1e]">
             Sucursal de entrega <span className="text-[#c14a4a]">*</span>
           </label>
-          <select
+          <Select
             id="sucursal"
-            required
-            value={idSucursal ?? ""}
-            onChange={(e) => setIdSucursal(Number(e.target.value))}
-            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e]"
+            placeholder="Selecciona una sucursal"
+            value={idSucursal === null ? "" : String(idSucursal)}
+            onChange={(v) => setIdSucursal(v ? Number(v) : null)}
           >
             {sucursales.map((s) => (
-              <option key={s.id_sucursal} value={s.id_sucursal}>
+              <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
                 {s.nombre_sucursal}
-              </option>
+              </SelectOption>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="flex flex-col gap-[6px]">
@@ -369,13 +370,9 @@ export function CheckoutForm({ sucursales }: Props) {
 
       {error && <p className="text-[14px] font-medium text-[#c14a4a]">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="bg-[#8b434a] h-[61px] rounded-[10px] text-white font-bold text-[16.742px] hover:bg-[#7a3a41] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <Button type="submit" variant="primary" size="lg" section="storefront" loading={submitting}>
         {submitting ? "Enviando…" : "Enviar para aprobación"}
-      </button>
+      </Button>
     </form>
   );
 }
