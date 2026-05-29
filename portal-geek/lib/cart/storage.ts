@@ -30,6 +30,8 @@ export interface CarritoItem {
   // Original filename as entered by the user (e.g. "logo_cliente.ai").
   // Persisted alongside the key so ArchivosDisenio.nombre_archivo is human-readable.
   disenioNombre?: string;
+  // URLs or keys of service images to show as preview in the cart
+  imagenUrls?: string[];
 }
 
 // ─── Read / Write ─────────────────────────────────────────────────────────────
