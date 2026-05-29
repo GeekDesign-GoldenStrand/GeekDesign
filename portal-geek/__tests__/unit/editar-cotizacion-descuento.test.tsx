@@ -217,6 +217,39 @@ describe("EditarCotizacion discount editing", () => {
     );
   });
 
+  it("preserves a two-digit value typed into the discount input without snapping to the minimum", async () => {
+    await setupReady();
+
+    const input = screen.getByLabelText("Porcentaje");
+
+    fireEvent.change(input, { target: { value: "1" } });
+    expect(input).toHaveValue(1);
+
+    fireEvent.change(input, { target: { value: "10" } });
+    expect(input).toHaveValue(10);
+  });
+
+  it("clamps the discount input to the upper bound when a higher value is typed", async () => {
+    await setupReady();
+
+    const input = screen.getByLabelText("Porcentaje");
+
+    fireEvent.change(input, { target: { value: "50" } });
+    expect(input).toHaveValue(20);
+  });
+
+  it("strips emojis and decorative characters from the discount reason", async () => {
+    await setupReady();
+
+    const input = screen.getByLabelText("Motivo");
+
+    fireEvent.change(input, {
+      target: { value: "Cliente VIP ⋆𐙚₊˚⊹♡ 🎉" },
+    });
+
+    expect(input).toHaveValue("Cliente VIP  ");
+  });
+
   it("does not render discount fields when the quotation has no existing discount", async () => {
     await setupReady({
       porcentajeDescuento: null,

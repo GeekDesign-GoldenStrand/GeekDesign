@@ -9,7 +9,10 @@ import {
   DISCOUNT_STEP,
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
+import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { LineItem } from "@/types/cotizacion";
+
+const DISCOUNT_MOTIVO_MAX_LEN = 80;
 
 interface ClienteOption {
   id_cliente: number;
@@ -407,8 +410,12 @@ export default function EditarCotizacion({
                       return;
                     }
 
-                    const clamped = Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX);
-                    setDiscountPercentage(clamped);
+                    // Only clamp the upper bound on change — clamping the lower
+                    // bound mid-keystroke prevents typing valid multi-digit
+                    // values (e.g. "10" briefly passes through "1", which
+                    // would otherwise jump to DISCOUNT_MIN). The min and the
+                    // step rule are enforced on submit via validateDescuentoPercentage.
+                    setDiscountPercentage(Math.min(parsed, DISCOUNT_MAX));
                   }}
                   className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
@@ -418,11 +425,11 @@ export default function EditarCotizacion({
                 <span className="font-medium">Motivo</span>
                 <input
                   type="text"
-                  maxLength={255}
+                  maxLength={DISCOUNT_MOTIVO_MAX_LEN}
                   value={discountMotivo}
                   onChange={(e) => {
                     setValidationError(null);
-                    setDiscountMotivo(e.target.value);
+                    setDiscountMotivo(sanitizeUserText(e.target.value));
                   }}
                   placeholder="Ej. Cliente frecuente"
                   className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
