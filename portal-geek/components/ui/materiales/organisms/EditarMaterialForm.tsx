@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -24,7 +24,7 @@ interface EditarMaterialFormProps {
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
@@ -50,6 +50,7 @@ export function EditarMaterialForm({
   });
 
   const [newImageKey, setNewImageKey] = useState<string | null>(null);
+  const [imageCleared, setImageCleared] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -113,6 +114,7 @@ export function EditarMaterialForm({
         descripcion_material: form.descripcion_material.trim() || undefined,
       };
       if (newImageKey) payload.imagen_url = newImageKey;
+      else if (imageCleared) payload.imagen_url = "";
 
       const nameError = !payload.nombre_material ? "El nombre es requerido." : "";
       if (nameError) {
@@ -141,12 +143,13 @@ export function EditarMaterialForm({
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
       color: form.color.trim(),
-      imagen_url: newImageKey ?? "placeholder-for-validation",
+      imagen_url: newImageKey ?? (imageCleared ? "" : "placeholder-for-validation"),
     };
 
-    const schemaToUse = newImageKey
-      ? CreateMaterialSchema
-      : CreateMaterialSchema.omit({ imagen_url: true });
+    const schemaToUse =
+      newImageKey || imageCleared
+        ? CreateMaterialSchema
+        : CreateMaterialSchema.omit({ imagen_url: true });
     const result = schemaToUse.safeParse(payload);
     if (result.success) {
       setErrors({});
@@ -176,7 +179,11 @@ export function EditarMaterialForm({
     } else {
       const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
       void _omit;
-      bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+      bodyPayload = newImageKey
+        ? { ...rest, imagen_url: newImageKey }
+        : imageCleared
+          ? { ...rest, imagen_url: "" }
+          : rest;
     }
 
     setLoading(true);
@@ -291,14 +298,10 @@ export function EditarMaterialForm({
                 Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.ancho}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("ancho")}`}
               />
@@ -309,14 +312,10 @@ export function EditarMaterialForm({
                 Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.alto}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("alto")}`}
               />
@@ -327,14 +326,10 @@ export function EditarMaterialForm({
                 Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.grosor}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("grosor")}`}
               />
@@ -343,11 +338,11 @@ export function EditarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Color *</label>
+            <label className={LABEL}>Descripción de color *</label>
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. Rojo, #FF2400"
+              placeholder="Ej. Rojo"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
@@ -359,10 +354,13 @@ export function EditarMaterialForm({
 
       <div>
         <label className={LABEL}>Imagen</label>
-        <MaterialImageInput
+        <ImageUploader
+          mode="single"
+          category="materiales"
           initialPreviewUrl={material.imageUrl}
           onUploaded={(key) => {
             setNewImageKey(key);
+            setImageCleared(key === null && Boolean(material.imageUrl));
             setErrors((prev) => ({ ...prev, imagen_url: "" }));
           }}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
