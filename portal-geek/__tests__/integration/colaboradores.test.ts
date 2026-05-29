@@ -419,6 +419,17 @@ describe("PUT /api/colaboradores/[id] — COL-03 Modificar información", () => 
       .send({ edad: 150 });
     expect(res.status).toBe(422);
   });
+
+  it("retorna 422 cuando Dirección intenta cambiar su propio rol", async () => {
+    mockGetSession.mockResolvedValue({ id: 7, role: "Direccion" });
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/7")
+      .send({ id_rol: 2 });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/propio rol/i);
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
