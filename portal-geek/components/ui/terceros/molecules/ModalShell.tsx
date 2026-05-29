@@ -5,13 +5,6 @@ interface ModalShellProps {
   onClose: () => void;
   children: React.ReactNode;
   headerActions?: React.ReactNode;
-  /**
-   * Optional footer rendered below the scrollable body. Use this for action
-   * buttons (Cancelar / Guardar) so they remain visible no matter how tall
-   * the body content is — and crucially, so floating popovers inside the
-   * body (e.g. MultiSelect dropdown) can't cover them.
-   */
-  footer?: React.ReactNode;
 }
 
 /**
