@@ -17,7 +17,7 @@ const VariableSchema = z.object({
   etiqueta: z.string().min(1).max(30),
   valor_default: z.coerce.number().nonnegative().max(99999999).optional(),
   editable_por_cliente: z.boolean().default(false),
-  unidad: z.string().max(20).optional(),
+  unidad: z.string().max(30).optional(),
 });
 
 const ConstanteSchema = z
@@ -31,7 +31,7 @@ const ConstanteSchema = z
     origen: z.enum(["instalador", "proveedor", "global", "manual"]),
     id_instalador: z.number().int().positive().optional(),
     id_proveedor: z.number().int().positive().optional(),
-    valor: z.number().nonnegative().optional(),
+    valor: z.number().nonnegative().max(99999999).optional(),
     // Future-proof: when ConstantesGlobales is wired, add id_constante_global here.
   })
   .refine(
@@ -117,7 +117,7 @@ export const CalcularPrecioSchema = z.object({
         valor: z
           .number()
           .positive("El valor debe ser mayor que 0")
-          .lte(100000, "Valor demasiado grande"),
+          .max(99999999, "Valor demasiado grande"),
       })
     )
     .default([]),

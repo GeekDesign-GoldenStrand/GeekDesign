@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
 import { ConstantesSection } from "@/components/admin/servicios/molecules/ConstantesSection";
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
@@ -61,6 +63,15 @@ export function ServicioForm(props: ServicioFormProps) {
     actions,
   } = useServicioForm(hookOptions);
 
+  // Scroll the top-of-form error banner into view when it appears, so users
+  // who clicked submit at the bottom of a long form actually see what failed.
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (submitError) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [submitError]);
+
   if (initialLoading) {
     return <div className="text-center py-12 text-gray-500">Cargando datos del formulario...</div>;
   }
@@ -86,6 +97,17 @@ export function ServicioForm(props: ServicioFormProps) {
       onSubmit={actions.handleSubmit}
       className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-8 space-y-6"
     >
+      {submitError && (
+        <div
+          ref={errorRef}
+          role="alert"
+          aria-live="polite"
+          className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm"
+        >
+          {submitError}
+        </div>
+      )}
+
       {/* Row 1: Nombre + Sucursal */}
       <div className="grid grid-cols-2 gap-6">
         <Input
@@ -192,12 +214,6 @@ export function ServicioForm(props: ServicioFormProps) {
           onChange={(c) => actions.updateField("constantes", c)}
         />
       </div>
-
-      {submitError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
-          {submitError}
-        </div>
-      )}
 
       {submitSuccess && (
         <SuccessModal

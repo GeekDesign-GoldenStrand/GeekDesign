@@ -24,20 +24,21 @@ type VariablesSectionProps = {
 };
 
 const MAX_NOMBRE_LEN = 30;
+const MAX_VALOR_DIGITOS = 8;
 
 // Stored value = short symbol (fits FormulaVariables.unidad VarChar(20)).
 // Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
-  { value: "$", label: "$ - pesos" },
-  { value: "cm", label: "cm - centímetros" },
-  { value: "cm²", label: "cm² - centímetros cuadrados" },
-  { value: "m", label: "m - metros" },
-  { value: "m²", label: "m² - metros cuadrados" },
-  { value: "pz", label: "pz - piezas" },
-  { value: "min", label: "min - minutos" },
-  { value: "h", label: "h - horas" },
-  { value: "%", label: "% - porcentaje" },
-  { value: "u", label: "u - unidades" },
+  { value: "$", label: "$" },
+  { value: "cm", label: "cm" },
+  { value: "cm²", label: "cm²" },
+  { value: "m", label: "m" },
+  { value: "m²", label: "m²" },
+  { value: "pz", label: "pz" },
+  { value: "min", label: "min" },
+  { value: "h", label: "hrs " },
+  { value: "%", label: "% " },
+  { value: "u", label: "unid" },
 ] as const;
 
 const getTipoUnidad = (id: number, tipos: TipoVariableOption[]) => {
@@ -192,14 +193,25 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
 
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1 block">
-            Valor de la variable
+            Valor de la variable{" "}
+            <span className="text-gray-400 font-normal">(máx. {MAX_VALOR_DIGITOS} dígitos)</span>
           </label>
           <input
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             placeholder="Ej. 50"
             value={draft.valor_default}
-            onChange={(e) => setDraft((d) => ({ ...d, valor_default: e.target.value }))}
+            onChange={(e) => {
+              // Only allow digits with at most one decimal point, capped at
+              // MAX_VALOR_DIGITOS digits (the dot doesn't count). Reject letters,
+              // scientific notation, signs, and anything else type="number" would
+              // let slip through via paste or "e" key.
+              const next = e.target.value;
+              const digitCount = next.replace(/\./g, "").length;
+              if (next === "" || (/^\d*\.?\d*$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)) {
+                setDraft((d) => ({ ...d, valor_default: next }));
+              }
+            }}
             className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
           />
         </div>
