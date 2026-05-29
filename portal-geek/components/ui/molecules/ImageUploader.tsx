@@ -64,6 +64,8 @@ export function ImageUploader(props: ImageUploaderProps) {
   } = props;
   const isSingle = props.mode === "single";
   const maxFiles = isSingle ? 1 : ((props as MultiProps).maxFiles ?? 5);
+  const maxMb = maxBytes / (1024 * 1024);
+  const maxSizeLabel = `${Number.isInteger(maxMb) ? maxMb : maxMb.toFixed(1)} MB`;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [slots, setSlots] = useState<SlotState[]>(() => {
@@ -125,7 +127,7 @@ export function ImageUploader(props: ImageUploaderProps) {
       return;
     }
     if (file.size > maxBytes) {
-      onError(`La imagen "${file.name}" excede el tamaño máximo (10 MB).`);
+      onError(`La imagen "${file.name}" excede el tamaño máximo (${maxSizeLabel}).`);
       return;
     }
 
@@ -292,10 +294,10 @@ export function ImageUploader(props: ImageUploaderProps) {
               className={dragging ? "text-[#8b434a]" : "text-gray-400"}
             />
             <span className="text-[12px] font-semibold text-gray-700 mt-2 text-center leading-tight">
-              {isSingle && slots.length > 0 ? "Reemplazar imagen" : "Añadir imagen"}
+              Añadir imagen
             </span>
             <span className="text-[10px] text-gray-400 mt-1 text-center">
-              JPG, PNG, WebP · Max 10MB
+              JPG, PNG, WebP · Max {maxSizeLabel}
               {!isSingle && ` (${activeSlotsCount}/${maxFiles})`}
             </span>
           </div>
