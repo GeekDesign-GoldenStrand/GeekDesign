@@ -15,6 +15,35 @@ import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
 import { FilterIcon } from "@/components/ui/atoms/icons";
 import type { UserRole } from "@/types";
 
+function formatFilterDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-");
+  const d = new Date(Number(year), Number(month) - 1, Number(day));
+  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#f5c6c0] text-[#e42200] text-[12px] font-medium">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Quitar filtro: ${label}`}
+        className="flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-[#ffd5d5] transition-colors"
+      >
+        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+          <path
+            d="M1 1l6 6M7 1L1 7"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+    </span>
+  );
+}
+
 // Frontend type for an order
 type Pedido = {
   id_pedido: number;
@@ -183,6 +212,50 @@ export function PedidosTemplate({
           detalleEstatuses={detalleEstatuses}
           setDetalleEstatuses={setDetalleEstatuses}
         />
+
+        {/* Active filter chips */}
+        {(cliente ||
+          empresa ||
+          fechaEstimadaDesde ||
+          fechaEstimadaHasta ||
+          detalleEstatuses.length > 0) && (
+          <div className="flex flex-wrap gap-2">
+            {cliente && (
+              <FilterChip label={`Cliente: ${cliente}`} onRemove={() => setCliente(null)} />
+            )}
+            {empresa && (
+              <FilterChip label={`Empresa: ${empresa}`} onRemove={() => setEmpresa(null)} />
+            )}
+            {fechaEstimadaDesde && fechaEstimadaHasta && (
+              <FilterChip
+                label={`Entrega: ${formatFilterDate(fechaEstimadaDesde)} – ${formatFilterDate(fechaEstimadaHasta)}`}
+                onRemove={() => {
+                  setFechaEstimadaDesde("");
+                  setFechaEstimadaHasta("");
+                }}
+              />
+            )}
+            {fechaEstimadaDesde && !fechaEstimadaHasta && (
+              <FilterChip
+                label={`Entrega desde: ${formatFilterDate(fechaEstimadaDesde)}`}
+                onRemove={() => setFechaEstimadaDesde("")}
+              />
+            )}
+            {!fechaEstimadaDesde && fechaEstimadaHasta && (
+              <FilterChip
+                label={`Entrega hasta: ${formatFilterDate(fechaEstimadaHasta)}`}
+                onRemove={() => setFechaEstimadaHasta("")}
+              />
+            )}
+            {detalleEstatuses.map((status) => (
+              <FilterChip
+                key={status}
+                label={`Estatus: ${status}`}
+                onRemove={() => setDetalleEstatuses(detalleEstatuses.filter((s) => s !== status))}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Table */}
         <PedidosTable
