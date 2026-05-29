@@ -1,15 +1,21 @@
 import { z } from "zod";
 
+import { noEmoji, textOnly, addressOnly } from "./text-validation";
+
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 // Accepts English and Spanish characters, numbers, spaces, and common address punctuation.
-export const UBICACION_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-'#°/()\s_&@:;"]*$/;
+export const UBICACION_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-'#°/()\s_&@:;\"]*$/;
 
 export const CreateProveedorSchema = z.object({
   nombre_proveedor: z
     .string()
     .min(1)
     .max(30, "Máximo 30 caracteres.")
-    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
+    .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   apodo: z
     .string()
     .max(30, "Máximo 30 caracteres.")
@@ -29,11 +35,10 @@ export const CreateProveedorSchema = z.object({
   ubicacion: z
     .string()
     .max(100, "Máximo 100 caracteres.")
-    .refine(
-      (v) => !v || UBICACION_REGEX.test(v.trim()),
-      "Solo se permiten caracteres en inglés y español."
-    )
-    .optional(),
+    .optional()
+    .refine((v) => (v ? addressOnly(v.trim()) : true), {
+      message: "La ubicación contiene caracteres inválidos",
+    }),
   estatus: z.enum(["Activo", "Inactivo", "Baneado"]).default("Activo"),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
 });
