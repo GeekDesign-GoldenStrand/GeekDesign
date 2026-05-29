@@ -111,7 +111,7 @@ export function SucursalesTemplate({
     <>
       <AdminHeader title="Sucursales" />
 
-      <section className="px-8 pt-6 pb-4 space-y-4 font-ibm-plex">
+      <section className="px-8 pt-6 pb-4 font-ibm-plex flex flex-col gap-4 min-h-[calc(100vh-80px)] md:min-h-[calc(100vh-118px)]">
         {/* Toolbar */}
         <AdminToolbar
           search={search}
@@ -172,7 +172,7 @@ export function SucursalesTemplate({
         )}
 
         {/* Pagination */}
-        <div className="flex justify-end mt-8 mb-6 pr-4">
+        <div className="flex justify-end mt-auto pt-4 pr-4">
           <div className="flex items-center gap-2">
             <button
               disabled={page === 1}
