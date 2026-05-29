@@ -508,15 +508,15 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={1}
-                      max={9999}
+                      max={999}
                       step={1}
                       value={item.cantidad}
                       onChange={(e) => {
                         const parsed = parseInt(e.target.value, 10);
-                        // Clamp to [1, 9999] to match the storefront cap
-                        // (CarritoView + SolicitarItemSchema both use 9999).
+                        // Clamp to [1, 999] to match the storefront cap
+                        // (CarritoView + SolicitarItemSchema both use 999).
                         const safe = Number.isFinite(parsed)
-                          ? Math.max(1, Math.min(9999, parsed))
+                          ? Math.max(1, Math.min(999, parsed))
                           : 1;
                         updateServicio(idx, "cantidad", safe);
                       }}
@@ -527,16 +527,17 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={0}
-                      max={9999999.99}
+                      max={99999.99}
                       step={0.01}
                       value={item.precio_unitario}
                       onChange={(e) => {
                         const parsed = parseFloat(e.target.value);
-                        // Clamp to [0, 9,999,999.99] to match the server cap
-                        // (10M MXN — headroom for legacy line items that
-                        // precio_unitario has never been bounded against).
+                        // Clamp to [0, 99,999.99]. The DB stores precio_unitario,
+                        // subtotal, and monto_total as Decimal(10,2) (max
+                        // 99,999,999.99). With cantidad capped at 999,
+                        // 99,999.99 keeps subtotal safely inside the column.
                         const safe = Number.isFinite(parsed)
-                          ? Math.max(0, Math.min(9999999.99, parsed))
+                          ? Math.max(0, Math.min(99999.99, parsed))
                           : 0;
                         updateServicio(idx, "precio_unitario", safe);
                       }}

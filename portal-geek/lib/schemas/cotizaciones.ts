@@ -51,20 +51,21 @@ export const UpdateCotizacionSchema = z.object({
     .array(
       z.object({
         id_detalle: z.number().int().positive(),
-        // Mirror SolicitarItemSchema's cap (storefront uses .max(9999) on the
+        // Mirror SolicitarItemSchema's cap (storefront uses .max(999) on the
         // same field). Safe to apply on the edit path too because cantidad
         // has always been enforced at creation, so no legacy line item can
         // exceed it.
-        cantidad: z.number().int().positive().max(9999, "La cantidad no puede superar 9999"),
-        // Safety-net cap to catch typo overflows on edit. Set high enough
-        // (10M MXN) to accommodate any historical line item — precio_unitario
-        // has never been bounded at creation, so we can't assume legacy data
-        // fits a tighter range. Matches the money cap used for cost fields
-        // (EditarMaterialForm, InstaladorToggle/ProveedorToggle).
+        cantidad: z.number().int().positive().max(999, "La cantidad no puede superar 999"),
+        // Tight upper bound so cantidad * precio_unitario always fits in the
+        // DB column type. monto_total / precio_unitario / subtotal are all
+        // Decimal(10,2) → max 99,999,999.99. With cantidad capped at 999,
+        // a precio cap of 99,999.99 keeps subtotal at 99,899,990.01 — safely
+        // inside the column. Without this guard a large precio would surface
+        // as a Postgres "numeric field overflow" → 500.
         precio_unitario: z
           .number()
           .nonnegative()
-          .max(9999999.99, "El precio unitario no puede superar 9,999,999.99"),
+          .max(99999.99, "El precio unitario no puede superar 99,999.99"),
       })
     )
     .optional(),
@@ -133,7 +134,7 @@ export const AplicarDescuentoSchema = z.object({
 const SolicitarItemSchema = z.object({
   id_servicio: z.number().int().positive(),
   id_material: z.number().int().positive(),
-  cantidad: z.number().int().positive().max(9999),
+  cantidad: z.number().int().positive().max(999),
   notas: z.string().max(500).optional(),
   // Storage key of the design file the client uploaded before adding to cart.
   // Presence is optional — items without a design file fall back to the

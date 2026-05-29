@@ -246,7 +246,7 @@ export function CarritoView({ relatedServices }: Props) {
                           <input
                             type="number"
                             min={1}
-                            max={9999}
+                            max={999}
                             value={item.cantidad}
                             onChange={(e) => handleCantidad(item.id, Number(e.target.value))}
                             className="w-[36px] text-[18px] text-[#1e1e1e] bg-transparent border-none outline-none text-right"

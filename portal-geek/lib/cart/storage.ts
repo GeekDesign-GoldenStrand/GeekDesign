@@ -82,7 +82,9 @@ export function removeItem(itemId: string): { items: CarritoItem[] } {
 }
 
 export function updateQuantity(itemId: string, cantidad: number): { items: CarritoItem[] } {
-  const safe = Number.isFinite(cantidad) ? Math.max(1, Math.floor(cantidad)) : 1;
+  // Clamp to [1, 999] — matches SolicitarItemSchema (storefront cart) and
+  // the cantidad cap on the admin EditarCotizacion modal.
+  const safe = Number.isFinite(cantidad) ? Math.max(1, Math.min(999, Math.floor(cantidad))) : 1;
   const carrito = getCarrito();
   const updated = {
     items: carrito.items.map((i) => (i.id === itemId ? { ...i, cantidad: safe } : i)),
