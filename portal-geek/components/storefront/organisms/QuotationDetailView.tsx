@@ -6,12 +6,13 @@ import {
   Info,
   WarningCircle,
   Clock,
-  SpinnerGap,
   DownloadSimple,
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
+
+import { Button } from "@/components/ui/atoms/Button";
 
 import { FolioSearch } from "./FolioSearch";
 
@@ -179,7 +180,9 @@ export function QuotationDetailView({ quotation }: Props) {
         : quotation.items.filter((i) => i.estado === "rechazado").length,
   };
 
-  // Banner configuration
+  // Banner configuration. buttonColor was removed — the Button atom now owns
+  // active vs disabled styling via its `disabled` prop. The banner button is
+  // disabled iff the status is Pendiente (see `disabled={...}` below).
   const bannerConfig = {
     Pendiente: {
       bgColor: "bg-blue-50",
@@ -189,7 +192,6 @@ export function QuotationDetailView({ quotation }: Props) {
       desc: "Estamos analizando tu solicitud para verificar si requiere algún cambio técnico o comercial antes de su aprobación final.",
       nextStep: "Espera nuestra validación. Te avisaremos pronto.",
       buttonText: "Revisión en curso",
-      buttonColor: "bg-[#F9A8B3] text-white cursor-not-allowed",
     },
     Validada:
       counts.modificados > 0
@@ -201,7 +203,6 @@ export function QuotationDetailView({ quotation }: Props) {
             desc: "Algunos servicios cambiaron de precio. Revisa los cambios antes de confirmar.",
             nextStep: "Revisa los cambios y confirma para comenzar.",
             buttonText: "Revisar y confirmar cambios",
-            buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
           }
         : {
             bgColor: "bg-green-50",
@@ -211,7 +212,6 @@ export function QuotationDetailView({ quotation }: Props) {
             desc: "Todos los servicios han sido validados y están listos para ser procesados.",
             nextStep: "Confirma tu pedido para iniciar con el proyecto.",
             buttonText: "Aceptar cotización y continuar",
-            buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
           },
     Rechazada: {
       bgColor: "bg-[#FFF1F1]",
@@ -221,7 +221,6 @@ export function QuotationDetailView({ quotation }: Props) {
       desc: "Lo sentimos, algunos servicios no están disponibles por el momento.",
       nextStep: "Solicita una aclaración para buscar una alternativa.",
       buttonText: "Finalizar y seguir comprando",
-      buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
     },
     Cancelada: {
       bgColor: "bg-gray-50",
@@ -231,7 +230,6 @@ export function QuotationDetailView({ quotation }: Props) {
       desc: "Esta cotización ha sido cancelada por el cliente.",
       nextStep: "Puedes solicitar una nueva cotización si lo deseas.",
       buttonText: "Volver al inicio",
-      buttonColor: "bg-gray-500 text-white hover:bg-gray-600",
     },
     Aprobada: {
       bgColor: "bg-green-50",
@@ -241,7 +239,6 @@ export function QuotationDetailView({ quotation }: Props) {
       desc: "¡Felicidades! Tu pedido ya está en proceso de producción.",
       nextStep: "Puedes consultar el estatus en Mis Pedidos.",
       buttonText: "Ver mi pedido",
-      buttonColor: "bg-[#DF2646] text-white hover:bg-[#C41E3A]",
     },
   }[quotation.estatus] || {
     bgColor: "bg-gray-50",
@@ -251,7 +248,6 @@ export function QuotationDetailView({ quotation }: Props) {
     desc: "Consulta los detalles a continuación.",
     nextStep: "No hay acciones pendientes.",
     buttonText: "Sin acción disponible",
-    buttonColor: "bg-gray-200 text-gray-500 cursor-not-allowed",
   };
 
   const creationDate = new Date(quotation.fecha_creacion);
@@ -344,7 +340,10 @@ export function QuotationDetailView({ quotation }: Props) {
           </p>
           <p className="text-[15px] text-[#575757] font-medium mb-6">{bannerConfig.nextStep}</p>
           {quotation.estatus !== "Aprobada" && (
-            <button
+            <Button
+              variant="primary"
+              section="storefront"
+              size="md"
               onClick={
                 quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
                   ? () => router.push("/tienda")
@@ -356,25 +355,22 @@ export function QuotationDetailView({ quotation }: Props) {
                   quotation.estatus !== "Cancelada") ||
                 loading
               }
-              className={`h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center ${bannerConfig.buttonColor}`}
+              loading={loading}
             >
-              {loading ? (
-                <SpinnerGap size={24} className="animate-spin mx-auto" />
-              ) : (
-                bannerConfig.buttonText
-              )}
-            </button>
+              {bannerConfig.buttonText}
+            </Button>
           )}
           {/* ST-19: download approved cotización as PDF. */}
           {quotation.estatus === "Aprobada" && quotation.folio && (
-            <a
-              href={`/api/storefront/cotizaciones/${encodeURIComponent(quotation.folio)}/pdf`}
-              download={`${quotation.folio}.pdf`}
-              className="h-[52px] px-6 rounded-[10px] font-bold text-[15px] transition-all flex items-center justify-center gap-2 bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
-            >
-              <DownloadSimple size={20} weight="bold" />
-              Descargar PDF
-            </a>
+            <Button asChild variant="primary" section="storefront" size="md">
+              <a
+                href={`/api/storefront/cotizaciones/${encodeURIComponent(quotation.folio)}/pdf`}
+                download={`${quotation.folio}.pdf`}
+              >
+                <DownloadSimple size={20} weight="bold" />
+                Descargar PDF
+              </a>
+            </Button>
           )}
         </div>
       </div>
@@ -756,7 +752,11 @@ export function QuotationDetailView({ quotation }: Props) {
 
             <div className="space-y-4">
               {quotation.estatus !== "Aprobada" && (
-                <button
+                <Button
+                  variant="primary"
+                  section="storefront"
+                  size="lg"
+                  className="w-full"
                   onClick={
                     quotation.estatus === "Rechazada" || quotation.estatus === "Cancelada"
                       ? () => router.push("/tienda")
@@ -768,52 +768,46 @@ export function QuotationDetailView({ quotation }: Props) {
                       quotation.estatus !== "Cancelada") ||
                     loading
                   }
-                  className={`w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all ${
-                    isActionable ||
-                    quotation.estatus === "Rechazada" ||
-                    quotation.estatus === "Cancelada"
-                      ? "bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
-                      : "bg-[#F5F5F5] text-[#B9B8B8]"
-                  }`}
+                  loading={loading}
                 >
-                  {loading ? (
-                    <SpinnerGap size={24} className="animate-spin mx-auto" />
-                  ) : (
-                    bannerConfig.buttonText
-                  )}
-                </button>
+                  {bannerConfig.buttonText}
+                </Button>
               )}
 
               {/* ST-19: download approved cotización as PDF. */}
               {quotation.estatus === "Aprobada" && quotation.folio && (
-                <a
-                  href={`/api/storefront/cotizaciones/${encodeURIComponent(quotation.folio)}/pdf`}
-                  download={`${quotation.folio}.pdf`}
-                  className="w-full h-[60px] rounded-[14px] font-bold text-[16px] transition-all flex items-center justify-center gap-2 bg-[#DF2646] text-white hover:bg-[#C41E3A] shadow-md shadow-[#DF2646]/20"
-                >
-                  <DownloadSimple size={20} weight="bold" />
-                  Descargar PDF de mi cotización
-                </a>
+                <Button asChild variant="primary" section="storefront" size="lg" className="w-full">
+                  <a
+                    href={`/api/storefront/cotizaciones/${encodeURIComponent(quotation.folio)}/pdf`}
+                    download={`${quotation.folio}.pdf`}
+                  >
+                    <DownloadSimple size={20} weight="bold" />
+                    Descargar PDF de mi cotización
+                  </a>
+                </Button>
               )}
 
               {isActionable && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
                   onClick={() => setShowCancelModal(true)}
-                  className="w-full h-[60px] bg-white border-2 border-[#DF2646] text-[#DF2646] hover:bg-[#FFF1F1] font-bold rounded-[14px] transition-all flex items-center justify-center gap-2"
                 >
                   <XCircle size={20} weight="bold" />
                   Cancelar cotización
-                </button>
+                </Button>
               )}
 
-              <a
-                href={`https://wa.me/524424468442?text=${encodeURIComponent(`Hola, tengo la cotización con el folio ${quotation.folio || quotation.id_cotizacion}, quisiera solicitar una aclaración.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-[60px] bg-white border-2 border-[#E8E8E8] text-[#575757] hover:border-[#DF2646] hover:text-[#DF2646] font-bold rounded-[14px] transition-all flex items-center justify-center"
-              >
-                Solicitar aclaración
-              </a>
+              <Button asChild variant="secondary" size="lg" className="w-full">
+                <a
+                  href={`https://wa.me/524424468442?text=${encodeURIComponent(`Hola, tengo la cotización con el folio ${quotation.folio || quotation.id_cotizacion}, quisiera solicitar una aclaración.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Solicitar aclaración
+                </a>
+              </Button>
             </div>
           </div>
         </div>
@@ -845,18 +839,17 @@ export function QuotationDetailView({ quotation }: Props) {
             />
 
             <div className="flex gap-4">
-              <button
-                onClick={handleCancel}
-                className="flex-1 bg-[#df2646] text-white h-[56px] rounded-[14px] font-bold text-[16px] hover:bg-[#c41e3a] transition-all"
-              >
+              <Button variant="destructive" size="lg" className="flex-1" onClick={handleCancel}>
                 Confirmar cancelación
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
                 onClick={() => setShowCancelModal(false)}
-                className="flex-1 bg-[#f5f5f5] text-[#575757] h-[56px] rounded-[14px] font-bold text-[16px] hover:bg-[#ebebeb] transition-all"
               >
                 Cerrar
-              </button>
+              </Button>
             </div>
           </div>
         </div>

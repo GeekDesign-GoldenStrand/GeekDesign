@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
 import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
 import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
 import type { MaquinaCardProps } from "@/types";
@@ -159,22 +160,19 @@ export default function AsignarServicios({
           )}
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
-          >
+        {error && (
+          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mb-4">
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 mt-4">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

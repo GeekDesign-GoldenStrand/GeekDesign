@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import type { MaquinaCardProps } from "@/types";
 
 interface SucursalRaw {
