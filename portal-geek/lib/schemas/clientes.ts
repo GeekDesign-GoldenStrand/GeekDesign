@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 import { noEmoji, textOnly } from "./text-validation";
 
 export const CreateClienteSchema = z.object({
@@ -20,7 +22,7 @@ export const CreateClienteSchema = z.object({
       message: "La empresa solo debe contener caracteres en inglés o español y signos comunes",
     }),
   rfc: z.string().length(13).optional(),
-  correo_electronico: z.string().email().max(150),
+  correo_electronico: emailField({ max: 150 }),
   numero_telefono: z
     .string()
     .min(1)

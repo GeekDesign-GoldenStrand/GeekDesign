@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 import { noEmoji, textOnly } from "./text-validation";
 
 export const CreateColaboradorSchema = z.object({
@@ -11,7 +13,7 @@ export const CreateColaboradorSchema = z.object({
     .refine(textOnly, {
       message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
     }),
-  correo_electronico: z.email().max(150),
+  correo_electronico: emailField({ max: 150 }),
   contrasena_hash: z.string().min(8).optional(),
   id_rol: z.number().int().positive(),
   id_sucursal: z.number().int().positive(),

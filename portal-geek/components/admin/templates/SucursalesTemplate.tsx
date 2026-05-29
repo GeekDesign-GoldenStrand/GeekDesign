@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 
-import EditarSucursal from "@/app/(admin)/sucursales/editar-sucursal";
-import RegistrarForm from "@/app/(admin)/sucursales/registrar-form";
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionModal";
 import { SucursalesFilterSidebar } from "@/components/admin/organisms/SucursalesFilterSidebar";
+import { EditarSucursalModal } from "@/components/ui/sucursales/organisms/EditarSucursalModal";
+import { RegistrarSucursalModal } from "@/components/ui/sucursales/organisms/RegistrarSucursalModal";
 import { SucursalCard } from "@/components/ui/sucursales/organisms/SucursalCard";
 
 type RelationColaborador = {
@@ -214,7 +214,7 @@ export function SucursalesTemplate({
       </section>
 
       {/* Registration Modal */}
-      <RegistrarForm
+      <RegistrarSucursalModal
         isOpen={isRegisterOpen}
         onCreated={() => {
           onRefresh();
@@ -223,7 +223,7 @@ export function SucursalesTemplate({
       />
 
       {/* Edit Modal */}
-      <EditarSucursal
+      <EditarSucursalModal
         isOpen={isEditOpen}
         id={selectedSucursal?.id_sucursal ?? 0}
         nombre_sucursal={selectedSucursal?.nombre_sucursal ?? ""}

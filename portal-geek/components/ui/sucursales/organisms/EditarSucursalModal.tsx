@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/atoms";
 import FormInput from "@/components/ui/atoms/FormInput";
 
-interface EditarSucursalProps {
+interface EditarSucursalModalProps {
   id: number;
   nombre_sucursal: string;
   direccion: string;
@@ -51,7 +51,7 @@ function buildSucursalPayload(data: {
   };
 }
 
-export default function EditarSucursal({
+export function EditarSucursalModal({
   id,
   nombre_sucursal,
   direccion,
@@ -61,7 +61,7 @@ export default function EditarSucursal({
   isOpen,
   onEdit,
   onClose,
-}: EditarSucursalProps) {
+}: EditarSucursalModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 

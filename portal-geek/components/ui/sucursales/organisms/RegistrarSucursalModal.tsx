@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/atoms";
 import FormInput from "@/components/ui/atoms/FormInput";
 
-interface RegistrarFormProps {
+interface RegistrarSucursalModalProps {
   isOpen: boolean;
   onCreated: (newSucursal: unknown) => void;
   onClose: () => void;
@@ -31,7 +31,11 @@ function buildSucursalPayload(data: {
   };
 }
 
-export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarFormProps) {
+export function RegistrarSucursalModal({
+  isOpen,
+  onCreated,
+  onClose,
+}: RegistrarSucursalModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -90,7 +94,6 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
       }
 
       const json = await res.json();
-      // On success, notify parent page to reload/add and close the modal.
       onCreated(json.data);
       window.alert("Sucursal registrada correctamente");
       onClose();
