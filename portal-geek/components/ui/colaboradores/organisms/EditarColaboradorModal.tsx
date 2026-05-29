@@ -149,141 +149,138 @@ function EditForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       {editError && (
         <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
           {editError}
         </div>
       )}
 
-      <div>
-        <label className={LABEL}>
-          Nombre <span className="text-[#e42200]">*</span>
-        </label>
-        <input
-          type="text"
-          maxLength={100}
-          placeholder="Nombre completo"
-          value={form.nombre_completo}
-          onChange={(e) =>
-            setField("nombre_completo", e.target.value.replace(/[^a-zA-ZÀ-ÿ\s'\-]/g, ""))
-          }
-          className={`${FIELD} ${getFieldClass("nombre_completo")}`}
-        />
-        {errors.nombre_completo && <p className={ERROR_MSG}>{errors.nombre_completo}</p>}
-      </div>
+      <div className="flex gap-6">
+        {/* Columna izquierda */}
+        <div className="flex-1 flex flex-col gap-4">
+          <div>
+            <label className={LABEL}>Nombre *</label>
+            <input
+              type="text"
+              maxLength={100}
+              placeholder="Nombre completo"
+              value={form.nombre_completo}
+              onChange={(e) =>
+                setField("nombre_completo", e.target.value.replace(/[^a-zA-ZÀ-ÿ\s'\-]/g, ""))
+              }
+              className={`${FIELD} ${getFieldClass("nombre_completo")}`}
+            />
+            {errors.nombre_completo && <p className={ERROR_MSG}>{errors.nombre_completo}</p>}
+          </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={LABEL}>
-            Correo <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="email"
-            maxLength={150}
-            placeholder="correo@ejemplo.com"
-            value={form.correo_electronico}
-            onChange={(e) => setField("correo_electronico", e.target.value)}
-            className={`${FIELD} ${getFieldClass("correo_electronico")}`}
-          />
-          {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
+          <div>
+            <label className={LABEL}>Correo electrónico *</label>
+            <input
+              type="email"
+              maxLength={150}
+              placeholder="correo@gmail.com"
+              value={form.correo_electronico}
+              onChange={(e) => setField("correo_electronico", e.target.value)}
+              className={`${FIELD} ${getFieldClass("correo_electronico")}`}
+            />
+            {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Edad *</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="Edad"
+              value={form.edad}
+              onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
+              className={`${FIELD} ${getFieldClass("edad")}`}
+            />
+            {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Sexo *</label>
+            <Select
+              value={form.sexo}
+              onChange={(v) => setField("sexo", v)}
+              placeholder="Sexo"
+              size="sm"
+              error={errors.sexo || undefined}
+            >
+              <SelectOption value="M">Masculino</SelectOption>
+              <SelectOption value="F">Femenino</SelectOption>
+              <SelectOption value="NA">Prefiero no decir</SelectOption>
+            </Select>
+          </div>
+
+          <div>
+            <label className={LABEL}>Teléfono *</label>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center h-[38px] px-3 border border-[#b9b8b8] rounded-[6px] text-[14px] text-[#575757] bg-[#f5f5f5] shrink-0 select-none">
+                +52
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="XXX XXXX XXX"
+                value={form.telefono}
+                onChange={(e) => setField("telefono", e.target.value.replace(/\D/g, ""))}
+                className={`${FIELD} ${getFieldClass("telefono")}`}
+              />
+            </div>
+            {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+          </div>
         </div>
-        <div>
-          <label className={LABEL}>
-            Teléfono <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="tel"
-            inputMode="numeric"
-            maxLength={10}
-            placeholder="XXX XXXX XXX"
-            value={form.telefono}
-            onChange={(e) => setField("telefono", e.target.value.replace(/\D/g, ""))}
-            className={`${FIELD} ${getFieldClass("telefono")}`}
-          />
-          {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+
+        {/* Columna derecha */}
+        <div className="flex-1 flex flex-col gap-4">
+          <div>
+            <label className={LABEL}>Rol *</label>
+            <Select
+              value={form.id_rol}
+              onChange={(v) => setField("id_rol", v)}
+              placeholder="Seleccionar rol"
+              size="sm"
+              disabled={isSelf}
+              error={errors.id_rol || undefined}
+            >
+              {roles.map((r) => (
+                <SelectOption key={r.id_rol} value={String(r.id_rol)}>
+                  {r.nombre_rol}
+                </SelectOption>
+              ))}
+            </Select>
+            {isSelf && (
+              <p className="text-[12px] text-[#575757] mt-1">
+                No puedes cambiar tu propio rol. Pide a otro usuario con rol Dirección que lo haga.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className={LABEL}>Sucursal *</label>
+            <Select
+              value={form.id_sucursal}
+              onChange={(v) => setField("id_sucursal", v)}
+              placeholder="Seleccionar sucursal"
+              size="sm"
+              error={errors.id_sucursal || undefined}
+            >
+              {sucursales.map((s) => (
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                  {s.nombre_sucursal}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={LABEL}>
-            Edad <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            placeholder="Edad"
-            value={form.edad}
-            onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
-            className={`${FIELD} ${getFieldClass("edad")}`}
-          />
-          {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>
-            Sexo <span className="text-[#e42200]">*</span>
-          </label>
-          <Select
-            value={form.sexo}
-            onChange={(v) => setField("sexo", v)}
-            placeholder="Seleccionar"
-            size="sm"
-            error={errors.sexo || undefined}
-          >
-            <SelectOption value="M">Masculino</SelectOption>
-            <SelectOption value="F">Femenino</SelectOption>
-            <SelectOption value="NA">Prefiero no decir</SelectOption>
-          </Select>
-        </div>
-      </div>
-
-      <div>
-        <label className={LABEL}>
-          Rol <span className="text-[#e42200]">*</span>
-        </label>
-        <Select
-          value={form.id_rol}
-          onChange={(v) => setField("id_rol", v)}
-          placeholder="Seleccionar rol"
-          size="sm"
-          disabled={isSelf}
-          error={errors.id_rol || undefined}
-        >
-          {roles.map((r) => (
-            <SelectOption key={r.id_rol} value={String(r.id_rol)}>
-              {r.nombre_rol}
-            </SelectOption>
-          ))}
-        </Select>
-        {isSelf && (
-          <p className="text-[12px] text-[#575757] mt-1">
-            No puedes cambiar tu propio rol. Pide a otro usuario con rol Dirección que lo haga.
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className={LABEL}>
-          Sucursal <span className="text-[#e42200]">*</span>
-        </label>
-        <Select
-          value={form.id_sucursal}
-          onChange={(v) => setField("id_sucursal", v)}
-          placeholder="Seleccionar sucursal"
-          size="sm"
-          error={errors.id_sucursal || undefined}
-        >
-          {sucursales.map((s) => (
-            <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
-              {s.nombre_sucursal}
-            </SelectOption>
-          ))}
-        </Select>
-      </div>
-
-      <div className="flex justify-end gap-3 mt-2">
+      <div className="flex justify-end gap-3 pt-2 border-t border-[#e8e8e8]">
         <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
         </Button>
@@ -309,7 +306,7 @@ export function EditarColaboradorModal({
   onSubmit,
 }: EditarColaboradorModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="2xl">
       {loadingData && (
         <p className="py-10 text-center text-[14px] text-[#8e908f]">Cargando datos...</p>
       )}

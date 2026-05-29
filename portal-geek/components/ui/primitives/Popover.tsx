@@ -6,6 +6,7 @@ import {
   isValidElement,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -63,9 +64,17 @@ const ALIGN_CLASSES: Record<Align, string> = {
   end: "right-0",
 };
 
+// useLayoutEffect warns during SSR; fall back to useEffect on the server so the
+// flip measurement (client-only, runs on open) stays warning-free.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 export function Popover({ trigger, align = "start", panelClassName, children }: PopoverProps) {
   const [open, setOpen] = useState(false);
+  // Panel opens downward by default; flips up when the trigger is too close to
+  // the bottom of the viewport for the panel to fit below it.
+  const [direction, setDirection] = useState<"down" | "up">("down");
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -83,6 +92,23 @@ export function Popover({ trigger, align = "start", panelClassName, children }: 
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
     };
+  }, [open]);
+
+  // Measure available space once the panel is mounted and flip it above the
+  // trigger if it would overflow the viewport bottom. Runs before paint so the
+  // panel never visibly jumps from down to up.
+  useIsomorphicLayoutEffect(() => {
+    if (!open) {
+      setDirection("down");
+      return;
+    }
+    const container = containerRef.current;
+    const panel = panelRef.current;
+    if (!container || !panel) return;
+    const { top, bottom } = container.getBoundingClientRect();
+    const panelHeight = panel.offsetHeight;
+    const spaceBelow = window.innerHeight - bottom;
+    setDirection(spaceBelow < panelHeight + 12 && top > spaceBelow ? "up" : "down");
   }, [open]);
 
   if (!isValidElement(trigger)) {
@@ -110,8 +136,11 @@ export function Popover({ trigger, align = "start", panelClassName, children }: 
         {wrappedTrigger}
         {open && (
           <div
+            ref={panelRef}
             role="listbox"
-            className={`absolute top-[calc(100%+6px)] z-50 ${ALIGN_CLASSES[align]} min-w-full rounded-[10px] bg-white p-2 shadow-[0_4px_20px_rgba(0,0,0,0.18)] ${panelClassName ?? ""}`}
+            className={`absolute z-50 ${
+              direction === "up" ? "bottom-[calc(100%+6px)]" : "top-[calc(100%+6px)]"
+            } ${ALIGN_CLASSES[align]} min-w-full rounded-[10px] bg-white p-2 shadow-[0_4px_20px_rgba(0,0,0,0.18)] ${panelClassName ?? ""}`}
           >
             {children}
           </div>
