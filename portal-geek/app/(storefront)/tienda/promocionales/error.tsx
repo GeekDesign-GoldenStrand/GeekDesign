@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowClockwise } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+
 export default function PromocionalesError({
   error,
   reset,
@@ -30,13 +32,10 @@ export default function PromocionalesError({
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <button
-            onClick={() => reset()}
-            className="flex items-center gap-2 bg-[#df2646] text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-black transition-colors"
-          >
+          <Button variant="primary" section="storefront" size="md" onClick={() => reset()}>
             <ArrowClockwise size={20} />
             Reintentar
-          </button>
+          </Button>
 
           <Link
             href="/tienda"

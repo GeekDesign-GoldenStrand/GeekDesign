@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import { EditIcon } from "@/components/ui/atoms/icons";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
@@ -75,13 +76,14 @@ export function MaterialGroupCard({
               ) : null}
             </div>
           )}
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={() => onAddSubMaterial(group.id)}
-            className="px-3 py-1.5 text-[12px] font-medium text-white bg-[#e42200] rounded-[6px] hover:bg-[#c71a00] transition-colors whitespace-nowrap"
           >
             + Agregar variante
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => onEdit(group)}

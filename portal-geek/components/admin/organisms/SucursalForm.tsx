@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import { Button } from "@/components/ui/atoms/Button";
 
-import { DangerButton } from "../atoms/DangerButton";
 import { InputField } from "../atoms/InputField";
-import { PrimaryButton } from "../atoms/PrimaryButton";
 import { StatusBadge } from "../atoms/StatusBadge";
 import { ConfirmDialog } from "../molecules/ConfirmDialog";
 
@@ -194,9 +193,13 @@ export function SucursalForm({ mode, initialData, onSubmit, onDelete }: Props) {
               </button>
             )}
 
-            <DangerButton onClick={() => router.push("/sucursales")}>Cancelar</DangerButton>
+            <Button variant="secondary" size="md" onClick={() => router.push("/sucursales")}>
+              Cancelar
+            </Button>
 
-            <PrimaryButton onClick={handleSubmit}>Guardar</PrimaryButton>
+            <Button variant="primary" size="md" onClick={handleSubmit}>
+              Guardar
+            </Button>
           </div>
         </div>
       </div>

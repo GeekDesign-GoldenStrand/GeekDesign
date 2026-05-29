@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Colaboradores" };
 
 export default async function ColaboradoresPage() {
-  await requireSection("colaboradores");
+  const session = await requireSection("colaboradores");
 
-  return <ColaboradoresView />;
+  return <ColaboradoresView currentUserId={session.id} />;
 }

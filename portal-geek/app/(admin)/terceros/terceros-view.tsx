@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { ServiceFilterButton } from "@/components/admin/atoms/ServiceFilterButton";
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import {
@@ -416,10 +417,19 @@ export function TercerosView() {
     <div className="font-['IBM_Plex_Sans_JP',sans-serif] min-h-screen bg-[#f5f5f5]">
       <AdminHeader title="Terceros" />
       <main className="p-4 md:p-8">
+        <div className="w-full overflow-x-auto pb-1 mb-4">
+          <div className="flex items-center gap-3 min-w-max">
+            {TABS.map((tab) => (
+              <ServiceFilterButton
+                key={tab}
+                label={tab}
+                active={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+              />
+            ))}
+          </div>
+        </div>
         <AdminToolbar
-          tabs={TABS}
-          activeTab={activeTab}
-          onTabChange={(tab) => setActiveTab(tab as Tab)}
           search={search}
           onSearchChange={setSearch}
           onAgregar={() => setIsModalOpen(true)}

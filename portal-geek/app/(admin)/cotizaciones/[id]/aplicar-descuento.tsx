@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 // Discount rules + validator come from the schema module so this modal
 // and the Zod-validated PATCH endpoint can't drift. See
@@ -268,21 +269,24 @@ export default function AplicarDescuento({
         )}
 
         <div className="flex justify-end gap-3 mt-4">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={isSubmitting || !isPercentageValid}
-            className="flex items-center gap-2 px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            loading={isSubmitting}
           >
             {isSubmitting ? "Aplicando…" : "Aplicar descuento"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

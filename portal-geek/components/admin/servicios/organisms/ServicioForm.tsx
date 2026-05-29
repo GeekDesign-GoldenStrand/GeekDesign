@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
+import { Input, Textarea } from "@/components/admin/forms/atoms";
 import { ConstantesSection } from "@/components/admin/servicios/molecules/ConstantesSection";
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
@@ -9,6 +9,7 @@ import { MaterialesSection } from "@/components/admin/servicios/molecules/Materi
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
+import { Button } from "@/components/ui/atoms/Button";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import type { UseServicioFormOptions } from "@/lib/hooks/useServicioForm";
@@ -218,13 +219,16 @@ export function ServicioForm(props: ServicioFormProps) {
         <Button
           type="submit"
           variant="primary"
+          size="sm"
           disabled={submitting || submitSuccess || !canSubmit}
+          loading={submitting}
         >
           {submitLabel}
         </Button>
         <Button
           type="button"
           variant="secondary"
+          size="sm"
           onClick={actions.onCancel}
           disabled={submitting || submitSuccess}
         >
