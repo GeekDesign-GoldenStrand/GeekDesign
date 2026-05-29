@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from "react";
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
-import { useClientes } from "@/lib/hooks/useClientes";
 import type { UserRole } from "@/types";
 
 const FINAL_PEDIDO_STATUSES = ["Entregado", "Cancelado"];
@@ -97,13 +96,11 @@ export function FinalizadosView({ role }: Props) {
   const [total, setTotal] = useState(0);
 
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [empresa, setEmpresa] = useState<string | null>(null);
   const [cliente, setCliente] = useState<string | null>(null);
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
-  const clientes = useClientes();
 
   const pageSize = 10;
 
@@ -112,15 +109,7 @@ export function FinalizadosView({ role }: Props) {
   useEffect(() => {
     if (page !== 1) setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    search,
-    serviceIds,
-    empresa,
-    cliente,
-    fechaEstimadaDesde,
-    fechaEstimadaHasta,
-    detalleEstatuses,
-  ]);
+  }, [search, serviceIds, cliente, fechaEstimadaDesde, fechaEstimadaHasta, detalleEstatuses]);
 
   const fetchPedidos = useCallback(async () => {
     try {
@@ -137,7 +126,6 @@ export function FinalizadosView({ role }: Props) {
       // This view is only for completed/canceled orders.
       FINAL_PEDIDO_STATUSES.forEach((status) => params.append("estatus", status));
 
-      if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
@@ -176,16 +164,7 @@ export function FinalizadosView({ role }: Props) {
     } catch {
       console.error("Error loading finalized orders");
     }
-  }, [
-    page,
-    search,
-    serviceIds,
-    empresa,
-    cliente,
-    fechaEstimadaDesde,
-    fechaEstimadaHasta,
-    detalleEstatuses,
-  ]);
+  }, [page, search, serviceIds, cliente, fechaEstimadaDesde, fechaEstimadaHasta, detalleEstatuses]);
 
   useEffect(() => {
     fetchPedidos();
@@ -242,9 +221,6 @@ export function FinalizadosView({ role }: Props) {
       total={total}
       onDelete={() => {}}
       onStatusChange={() => {}}
-      clientes={clientes}
-      empresa={empresa}
-      setEmpresa={setEmpresa}
       cliente={cliente}
       setCliente={setCliente}
       fechaEstimadaDesde={fechaEstimadaDesde}

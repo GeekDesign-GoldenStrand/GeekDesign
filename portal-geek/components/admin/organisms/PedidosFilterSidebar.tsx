@@ -1,8 +1,8 @@
 "use client";
 
-import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
+import { useState } from "react";
 
-type ClienteOption = { id: number; nombre: string };
+import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 
 // Detail-level statuses (per-service status on a pedido detalle). Keep in
 // sync with getAllowedPedidoStatuses in PedidosTable.
@@ -18,12 +18,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
 
-  clientes: ClienteOption[];
-
   cliente: string | null;
   setCliente: (v: string | null) => void;
-  empresa: string | null;
-  setEmpresa: (v: string | null) => void;
 
   fechaEstimadaDesde: string;
   setFechaEstimadaDesde: (value: string) => void;
@@ -40,11 +36,8 @@ type Props = {
 export function PedidosFilterSidebar({
   open,
   onClose,
-  clientes,
   cliente,
   setCliente,
-  empresa,
-  setEmpresa,
   fechaEstimadaDesde,
   setFechaEstimadaDesde,
   fechaEstimadaHasta,
@@ -55,37 +48,52 @@ export function PedidosFilterSidebar({
 }: Props) {
   const showDetalleStatus = selectedServiceId !== null;
 
+  const [draftCliente, setDraftCliente] = useState<string | null>(cliente);
+  const [draftFechaDesde, setDraftFechaDesde] = useState(fechaEstimadaDesde);
+  const [draftFechaHasta, setDraftFechaHasta] = useState(fechaEstimadaHasta);
+  const [draftDetalleEstatuses, setDraftDetalleEstatuses] = useState<string[]>(detalleEstatuses);
+
+  // Resync the draft from the currently applied filters every time the
+  // sidebar transitions from closed to open, so abandoned edits don't persist
+  // across reopens. See https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
+    if (open) {
+      setDraftCliente(cliente);
+      setDraftFechaDesde(fechaEstimadaDesde);
+      setDraftFechaHasta(fechaEstimadaHasta);
+      setDraftDetalleEstatuses(detalleEstatuses);
+    }
+  }
+
   function reset() {
+    setDraftCliente(null);
+    setDraftFechaDesde("");
+    setDraftFechaHasta("");
+    setDraftDetalleEstatuses([]);
     setCliente(null);
-    setEmpresa(null);
     setFechaEstimadaDesde("");
     setFechaEstimadaHasta("");
     setDetalleEstatuses([]);
   }
 
+  function apply() {
+    setCliente(draftCliente);
+    setFechaEstimadaDesde(draftFechaDesde);
+    setFechaEstimadaHasta(draftFechaHasta);
+    setDetalleEstatuses(draftDetalleEstatuses);
+  }
+
   return (
-    <FilterSidebar open={open} onClose={onClose} onReset={reset}>
+    <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
-        <select
-          value={cliente ?? ""}
-          onChange={(e) => setCliente(e.target.value || null)}
-          className={filterSidebarClasses.input}
-        >
-          <option value="">Todos</option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.nombre}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <p className={filterSidebarClasses.sectionLabel}>Empresa</p>
         <input
-          value={empresa ?? ""}
-          onChange={(e) => setEmpresa(e.target.value || null)}
+          type="search"
+          value={draftCliente ?? ""}
+          onChange={(e) => setDraftCliente(e.target.value || null)}
+          placeholder="Buscar cliente"
           className={filterSidebarClasses.input}
         />
       </div>
@@ -98,12 +106,12 @@ export function PedidosFilterSidebar({
               <label key={s.value} className="flex items-center gap-2 text-[13px]">
                 <input
                   type="checkbox"
-                  checked={detalleEstatuses.includes(s.value)}
+                  checked={draftDetalleEstatuses.includes(s.value)}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setDetalleEstatuses([...detalleEstatuses, s.value]);
+                      setDraftDetalleEstatuses([...draftDetalleEstatuses, s.value]);
                     } else {
-                      setDetalleEstatuses(detalleEstatuses.filter((x) => x !== s.value));
+                      setDraftDetalleEstatuses(draftDetalleEstatuses.filter((x) => x !== s.value));
                     }
                   }}
                   className={filterSidebarClasses.checkbox}
@@ -122,9 +130,9 @@ export function PedidosFilterSidebar({
             Desde
             <input
               type="date"
-              value={fechaEstimadaDesde}
-              onChange={(e) => setFechaEstimadaDesde(e.target.value)}
-              max={fechaEstimadaHasta || undefined}
+              value={draftFechaDesde}
+              onChange={(e) => setDraftFechaDesde(e.target.value)}
+              max={draftFechaHasta || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>
@@ -132,9 +140,9 @@ export function PedidosFilterSidebar({
             Hasta
             <input
               type="date"
-              value={fechaEstimadaHasta}
-              onChange={(e) => setFechaEstimadaHasta(e.target.value)}
-              min={fechaEstimadaDesde || undefined}
+              value={draftFechaHasta}
+              onChange={(e) => setDraftFechaHasta(e.target.value)}
+              min={draftFechaDesde || undefined}
               className={`mt-1 ${filterSidebarClasses.input}`}
             />
           </label>

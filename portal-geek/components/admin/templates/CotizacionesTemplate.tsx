@@ -21,8 +21,6 @@ export type Cotizacion = {
   archivos: { id: number; nombre: string }[];
 };
 
-type ClienteOption = { id: number; nombre: string };
-
 // Component props
 type CotizacionesTemplateProps = {
   cotizaciones: Cotizacion[];
@@ -34,12 +32,8 @@ type CotizacionesTemplateProps = {
   setPage: (page: number) => void;
   total: number;
 
-  clientes: ClienteOption[];
-
   filterCliente: string;
   setFilterCliente: (value: string) => void;
-  filterEmpresa: string;
-  setFilterEmpresa: (value: string) => void;
   filterEstatus: string[];
   setFilterEstatus: (value: string[]) => void;
   filterFechaFinDesde: string;
@@ -59,11 +53,8 @@ export function CotizacionesTemplate({
   page,
   setPage,
   total,
-  clientes,
   filterCliente,
   setFilterCliente,
-  filterEmpresa,
-  setFilterEmpresa,
   filterEstatus,
   setFilterEstatus,
   filterFechaFinDesde,
@@ -79,11 +70,9 @@ export function CotizacionesTemplate({
 
   // Mapping between UI labels and API values
   const STATUS_OPTIONS = [
+    { label: "Pendiente", value: "Pendiente" },
     { label: "Validada", value: "Validada" },
     { label: "Aprobada", value: "Aprobada" },
-    { label: "Rechazada", value: "Rechazada" },
-    { label: "Cancelada", value: "Cancelada" },
-    { label: "Pendiente", value: "Pendiente" },
   ];
 
   return (
@@ -128,12 +117,9 @@ export function CotizacionesTemplate({
         <CotizacionesFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
-          clientes={clientes}
           statusOptions={STATUS_OPTIONS}
           filterCliente={filterCliente}
           setFilterCliente={setFilterCliente}
-          filterEmpresa={filterEmpresa}
-          setFilterEmpresa={setFilterEmpresa}
           filterEstatus={filterEstatus}
           setFilterEstatus={setFilterEstatus}
           filterFechaFinDesde={filterFechaFinDesde}

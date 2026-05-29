@@ -20,6 +20,22 @@ interface Props {
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
+const getMinDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getMaxDate = () => {
+  const today = new Date();
+  const year = today.getFullYear() + 2;
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function CheckoutForm({ sucursales }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<CarritoItem[]>([]);
@@ -45,9 +61,11 @@ export function CheckoutForm({ sucursales }: Props) {
   }
   const [idSucursal, setIdSucursal] = useState<number | null>(sucursales[0]?.id_sucursal ?? null);
   const [notas, setNotas] = useState("");
+  const [fechaEstimada, setFechaEstimada] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fechaError, setFechaError] = useState<string | null>(null);
 
   // reAchi301 review: `submitting` is React state, so two fast clicks both
   // capture the stale `false` in their closures before the re-render disables
@@ -63,10 +81,23 @@ export function CheckoutForm({ sucursales }: Props) {
     hydrate();
   }, []);
 
+  function isFechaEstimadaValida(fecha: string) {
+    if (!fecha) return false;
+    const min = getMinDate();
+    const max = getMaxDate();
+    return fecha >= min && fecha <= max;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
+    setFechaError(null);
+
+    if (!isFechaEstimadaValida(fechaEstimada)) {
+      setFechaError("Selecciona una fecha válida de entrega");
+      return;
+    }
 
     if (items.length === 0) {
       setError("El carrito está vacío");
@@ -86,6 +117,16 @@ export function CheckoutForm({ sucursales }: Props) {
       return;
     }
 
+    if (notas.trim()) {
+      const regex = /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/;
+      if (!regex.test(notas)) {
+        setError(
+          "Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis"
+        );
+        return;
+      }
+    }
+
     submittingRef.current = true;
     setSubmitting(true);
     try {
@@ -98,6 +139,7 @@ export function CheckoutForm({ sucursales }: Props) {
         },
         id_sucursal: idSucursal,
         notas: notas.trim() || undefined,
+        fecha_estimada: fechaEstimada || undefined,
         items: items.map((i) => ({
           id_servicio: i.servicioId,
           id_material: i.id_material,
@@ -262,12 +304,42 @@ export function CheckoutForm({ sucursales }: Props) {
         </div>
 
         <div className="flex flex-col gap-[6px]">
-          <label htmlFor="notas" className="text-[14px] font-semibold text-[#1e1e1e]">
-            Notas adicionales (opcional)
+          <label htmlFor="fechaEstimada" className="text-[14px] font-semibold text-[#1e1e1e]">
+            Fecha deseada de entrega <span className="text-[#c14a4a]">*</span>
           </label>
+          <input
+            id="fechaEstimada"
+            type="date"
+            required
+            value={fechaEstimada}
+            onChange={(e) => {
+              setFechaEstimada(e.target.value);
+              if (!isFechaEstimadaValida(e.target.value)) {
+                setFechaError("Selecciona una fecha válida de entrega");
+              } else {
+                setFechaError(null);
+              }
+            }}
+            min={getMinDate()}
+            max={getMaxDate()}
+            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] cursor-pointer"
+          />
+          {fechaError && (
+            <span className="text-[13px] text-[#c14a4a] font-medium">{fechaError}</span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-[6px]">
+          <div className="flex justify-between items-center">
+            <label htmlFor="notas" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Notas adicionales (opcional)
+            </label>
+            <span className="text-[12px] text-[#666]">{notas.length}/500</span>
+          </div>
           <textarea
             id="notas"
             rows={3}
+            maxLength={500}
             value={notas}
             onChange={(e) => setNotas(e.target.value)}
             className="rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] py-[8px] text-[14px] text-[#1e1e1e]"

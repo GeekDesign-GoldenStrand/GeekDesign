@@ -70,7 +70,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         {/* Header - Desktop Only */}
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-          style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr 0.6fr" }}
+          style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr" }}
         >
           <span className="whitespace-nowrap">Fecha de creación</span>
           <span className="whitespace-nowrap">Fecha de entrega</span>
@@ -79,7 +79,6 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Estatus</span>
-          <span className="whitespace-nowrap">Acciones</span>
         </div>
 
         {/* Rows */}
@@ -100,7 +99,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               }}
               aria-label={`Ver detalle de la cotización ${c.folio ?? c.id_cotizacion}`}
               className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
-              style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
+              style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr" }}
             >
               <span className="whitespace-nowrap">
                 {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
@@ -109,42 +108,41 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 {c.fecha_estimada ? formatDate(c.fecha_estimada) : "—"}
               </span>
               <span className="truncate px-2 min-w-0">{c.empresa || "—"}</span>
-              <span className="truncate px-2 min-w-0">{c.cliente}</span>
+              <span className="truncate px-2 min-w-0">{c.nombre_oportunidad ?? "—"}</span>
               <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
               <span className="whitespace-nowrap">
                 ${c.monto_total.toLocaleString("es-MX")} MXN
               </span>
               <div className="flex justify-center">
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
+                  <div
+                    className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
                   >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={14}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
-              </div>
-              <div
-                className="flex justify-center items-center gap-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <DesignFileLink
-                  archivos={c.archivos}
-                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                />
+                    <select
+                      value={c.estatus}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
+                      className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
+                    >
+                      {getAllowedQuotationStatuses(c.estatus).map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                    <CaretDown
+                      size={14}
+                      weight="bold"
+                      className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className={`px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getStatusStyle(c.estatus)}`}
+                  >
+                    {c.estatus}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -173,27 +171,35 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     #{c.folio ?? c.id_cotizacion}
                   </p>
                 </div>
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
+                {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
+                  <div
+                    className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
                   >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={12}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
+                    <select
+                      value={c.estatus}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
+                      className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
+                    >
+                      {getAllowedQuotationStatuses(c.estatus).map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                    <CaretDown
+                      size={12}
+                      weight="bold"
+                      className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${getStatusStyle(c.estatus)}`}
+                  >
+                    {c.estatus}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F5F5F5]">
