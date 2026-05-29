@@ -57,6 +57,9 @@ export function PasswordField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+          // Matches the .max(255) in the auth Zod schemas so the UI cap and
+          // server-side validation agree.
+          maxLength={255}
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId}
           className={`h-[62px] w-full rounded-full border border-[#a79999] bg-white text-[16px] tracking-[0.8px] text-[#333] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60 pr-14 ${

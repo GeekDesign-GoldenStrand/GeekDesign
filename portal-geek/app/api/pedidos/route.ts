@@ -36,12 +36,11 @@ export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
     // Multiple detail-level status values, scoped to the selected service
     const detalleEstatuses = searchParams.getAll("detalleEstatus");
 
-    // Optional filters: company, client, active-only flag, fecha_estimada range
-    const empresa = searchParams.get("empresa");
-    const cliente = searchParams.get("cliente");
+    // Optional filters: active-only flag, fecha_estimada range, combined client/company search
     const onlyActive = searchParams.get("onlyActive") === "true";
     const fechaEstimadaDesde = searchParams.get("fechaEstimadaDesde");
     const fechaEstimadaHasta = searchParams.get("fechaEstimadaHasta");
+    const clienteEmpresa = searchParams.get("clienteEmpresa");
 
     // Query the database with filters and return paginated result
     const result = await listPedidos(
@@ -50,12 +49,13 @@ export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
       serviceIds,
       estatuses,
       onlyActive,
-      empresa,
-      cliente,
+      null,
+      null,
       search,
       fechaEstimadaDesde,
       fechaEstimadaHasta,
-      detalleEstatuses
+      detalleEstatuses,
+      clienteEmpresa
     );
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {

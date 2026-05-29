@@ -5,7 +5,9 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { hasCharRun, repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
+import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
 
 import { Icon } from "../atoms/Icon";
@@ -26,6 +28,7 @@ type ConstantesSectionProps = {
 };
 
 const MAX_NOMBRE_LEN = 30;
+const MAX_VALOR_DIGITOS = 8;
 
 // Stored value = short symbol. Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
@@ -71,6 +74,14 @@ export function ConstantesSection({
 
     if (!draft.etiqueta.trim()) {
       setError("Escribe el nombre de la constante");
+      return;
+    }
+    if (hasCharRun(draft.etiqueta)) {
+      setError("El nombre tiene letras repetidas sin coherencia.");
+      return;
+    }
+    if (repeatedWords(draft.etiqueta)) {
+      setError("El nombre repite la misma palabra varias veces.");
       return;
     }
     const nombre = toSnakeIdentifier(draft.etiqueta).slice(0, MAX_NOMBRE_LEN);
@@ -198,7 +209,9 @@ export function ConstantesSection({
                 type="text"
                 placeholder="Ej. Markup de mostrador"
                 value={draft.etiqueta}
-                onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, etiqueta: sanitizeUserText(e.target.value) }))
+                }
                 className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
                 maxLength={MAX_NOMBRE_LEN}
               />
@@ -215,14 +228,30 @@ export function ConstantesSection({
 
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Valor de la constante
+                Valor de la constante{" "}
+                <span className="text-gray-400 font-normal">
+                  (máx. {MAX_VALOR_DIGITOS} dígitos)
+                </span>
               </label>
               <input
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 placeholder="Ej. 1.4"
                 value={draft.valor}
-                onChange={(e) => setDraft((d) => ({ ...d, valor: e.target.value }))}
+                onChange={(e) => {
+                  // Only allow digits with at most one decimal point, capped at
+                  // MAX_VALOR_DIGITOS digits (the dot doesn't count). Reject letters,
+                  // scientific notation, signs, and anything else type="number" would
+                  // let slip through via paste or "e" key.
+                  const next = e.target.value;
+                  const digitCount = next.replace(/\./g, "").length;
+                  if (
+                    next === "" ||
+                    (/^\d*\.?\d*$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
+                  ) {
+                    setDraft((d) => ({ ...d, valor: next }));
+                  }
+                }}
                 className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
               />
             </div>
@@ -258,11 +287,23 @@ export function ConstantesSection({
                   onChange={(v) => setDraft((d) => ({ ...d, unidad: v }))}
                   size="sm"
                 >
-                  {UNIT_OPTIONS.map((u) => (
-                    <SelectOption key={u.value} value={u.value}>
-                      {u.label}
-                    </SelectOption>
-                  ))}
+                  {(() => {
+                    // Filter UNIT_OPTIONS by the selected tipo so only related
+                    // units appear (e.g. cm/m for Dimensión, $ for Costo). If
+                    // the tipo is unknown, fall back to all units.
+                    const tipoNombreSeleccionado = tiposDisponibles.find(
+                      (t) => t.id_tipo_variable === draft.id_tipo_variable
+                    )?.nombre_tipo;
+                    const allowed = unidadesParaTipo(tipoNombreSeleccionado);
+                    const visibles = allowed
+                      ? UNIT_OPTIONS.filter((u) => allowed.includes(u.value))
+                      : UNIT_OPTIONS;
+                    return visibles.map((u) => (
+                      <SelectOption key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectOption>
+                    ));
+                  })()}
                 </Select>
               </div>
             </div>

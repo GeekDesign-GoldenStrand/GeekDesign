@@ -2,6 +2,7 @@
 
 import { X } from "@phosphor-icons/react";
 import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -31,6 +32,8 @@ interface ModalProps {
    * its own header/body/footer sections inside the card (e.g. sticky footers).
    */
   noPadding?: boolean;
+  /** Non-scrollable banner rendered between the header row and the body. */
+  headerBanner?: React.ReactNode;
   /** Tailwind z-index class for the overlay. Bump for modals stacked over modals. */
   zClassName?: string;
 }
@@ -53,6 +56,7 @@ export function Modal({
   ariaLabel,
   noPadding = false,
   zClassName = "z-50",
+  headerBanner,
 }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -82,9 +86,11 @@ export function Modal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
+  // Portal to body so ancestors with `transform`/`filter`/`perspective`
+  // (e.g. the translated sidebar) don't trap our `fixed` overlay.
+  return createPortal(
     <div
       className={`fixed inset-0 ${zClassName} flex items-center justify-center bg-black/40 backdrop-blur-sm p-4`}
       onMouseDown={(e) => {
@@ -128,8 +134,10 @@ export function Modal({
             </div>
           </div>
         )}
+        {headerBanner && <div>{headerBanner}</div>}
         {noPadding ? children : <div className="overflow-y-auto p-6">{children}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

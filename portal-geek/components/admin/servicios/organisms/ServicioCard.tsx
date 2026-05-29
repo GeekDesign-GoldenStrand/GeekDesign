@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 
-import { Button } from "@/components/ui/atoms/Button";
+import { ActionButton, ActionLink } from "@/components/ui/atoms";
+import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
@@ -17,41 +18,82 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
     year: "numeric",
   });
 
-  const maquinasTexto =
-    servicio.maquinas.length === 0
-      ? "Sin máquinas asignadas"
-      : servicio.maquinas.map((m) => m.maquina.apodo_maquina).join(", ");
+  const maquinas = servicio.maquinas.map((m) => m.maquina.apodo_maquina);
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-6 flex items-center justify-between">
-      <div className="flex-1">
-        <h3 className="text-xl font-bold text-[#1e1e1e] mb-2">{servicio.nombre_servicio}</h3>
-        <div className="space-y-0.5 text-sm text-[#1e1e1e]">
-          <p>
-            <span className="font-medium">Descripción:</span>{" "}
-            {servicio.descripcion_servicio ?? "Sin descripción"}
-          </p>
-          <p>
-            <span className="font-medium">Máquina:</span> {maquinasTexto}
-          </p>
-          <p>
-            <span className="font-medium">Última fecha de modificación:</span> {fechaFormateada}
-          </p>
-        </div>
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
+      {/* Header */}
+      <div>
+        <Link
+          href={`/servicios/${servicio.id_servicio}`}
+          className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] hover:text-[#e42200] transition-colors break-words"
+        >
+          {servicio.nombre_servicio}
+        </Link>
       </div>
 
-      <div className="flex items-center gap-3 ml-4">
-        <Button asChild variant="secondary" size="sm">
-          <Link href={`/servicios/${servicio.id_servicio}`}>Ver detalle</Link>
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
+      {/* Descripción */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
+          Descripción
+        </p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {servicio.descripcion_servicio ?? "Sin descripción"}
+        </p>
+      </div>
+
+      {/* Sucursal */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">Sucursal</p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {servicio.sucursal?.nombre_sucursal ?? "Sin sucursal asignada"}
+        </p>
+      </div>
+
+      {/* Máquinas */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">Máquinas</p>
+        {maquinas.length > 0 ? (
+          <div className="flex flex-wrap gap-2 flex-1">
+            {maquinas.map((maq, idx) => (
+              <p
+                key={idx}
+                className="border border-gray-400 bg-gray-100 text-xs w-fit max-w-full h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e] break-words"
+              >
+                {maq}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e]">
+            Sin máquinas asignadas
+          </p>
+        )}
+      </div>
+
+      {/* Última modificación */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
+          Última modificación
+        </p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {fechaFormateada}
+        </p>
+      </div>
+
+      {/* Footer / Actions */}
+      <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 gap-2 flex-wrap">
+        <ActionLink
+          href={`/servicios/${servicio.id_servicio}/editar`}
+          aria-label="Editar"
+          icon={<EditIcon size={16} />}
+        />
+        <ActionButton
+          tone="danger"
           onClick={() => onEliminar?.(servicio.id_servicio)}
-        >
-          Eliminar
-        </Button>
+          aria-label="Eliminar"
+          icon={<TrashIcon size={16} />}
+        />
       </div>
     </div>
   );

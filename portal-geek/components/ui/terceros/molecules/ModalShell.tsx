@@ -5,15 +5,29 @@ interface ModalShellProps {
   onClose: () => void;
   children: React.ReactNode;
   headerActions?: React.ReactNode;
+  headerBanner?: React.ReactNode;
 }
 
 /**
  * Thin wrapper kept for existing terceros call-sites. New code should use the
  * shared <Modal> atom directly.
  */
-export function ModalShell({ title, onClose, children, headerActions }: ModalShellProps) {
+export function ModalShell({
+  title,
+  onClose,
+  children,
+  headerActions,
+  headerBanner,
+}: ModalShellProps) {
   return (
-    <Modal isOpen onClose={onClose} title={title} headerActions={headerActions} size="lg">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={title}
+      headerActions={headerActions}
+      headerBanner={headerBanner}
+      size="lg"
+    >
       {children}
     </Modal>
   );

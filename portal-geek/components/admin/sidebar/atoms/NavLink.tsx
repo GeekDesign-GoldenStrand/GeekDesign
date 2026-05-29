@@ -7,6 +7,18 @@ type NavLinkProps = {
   href: string;
   label: string;
   icon: React.ReactNode;
+  /**
+   * Optional pre-rendered icon for the hover state. Used for custom SVGs
+   * that can't pick up hover via currentColor on the parent link. Phosphor
+   * entries leave this undefined and get hover via the link's text color.
+   */
+  iconHover?: React.ReactNode;
+  /**
+   * Optional pre-rendered icon for the active state. When provided it's used
+   * verbatim (no `weight` swap). For Phosphor entries leave this undefined
+   * and the regular icon picks up `weight: "fill"` via cloneElement.
+   */
+  iconActive?: React.ReactNode;
   isActive: boolean;
   expanded: boolean;
   onClick?: () => void;

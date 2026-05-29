@@ -28,8 +28,11 @@ export function MaterialGroupCard({
   const [expanded, setExpanded] = useState(false);
   const subCount = group.subMateriales?.length ?? 0;
 
+  // Sizing matches CotizacionesTable + ClientesTable: text-sm, rounded shadow.
+  // Group header keeps its accent border + lighter bg so users can still tell
+  // a group apart from an individual material row at a glance.
   return (
-    <div className="rounded-[7px] shadow-[0_2px_7px_rgba(0,0,0,0.14)] overflow-hidden">
+    <div className="rounded shadow overflow-hidden">
       {/* Group header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-[#f0f0f0] border-l-[3px] border-l-[#e42200]">
         <button
@@ -49,12 +52,12 @@ export function MaterialGroupCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-[15px] font-semibold text-[#1e1e1e] truncate">{group.name}</span>
+          <span className="text-sm font-semibold text-[#1e1e1e] truncate">{group.name}</span>
           <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-[#e42200] text-white text-[11px] font-medium">
             {subCount} variante{subCount !== 1 ? "s" : ""}
           </span>
           {group.description && (
-            <span className="hidden md:block text-[12px] text-[#575757] truncate">
+            <span className="hidden md:block text-sm text-[#575757] truncate">
               {group.description}
             </span>
           )}
@@ -99,7 +102,7 @@ export function MaterialGroupCard({
       {expanded && (
         <div className="bg-[#fafafa]">
           {subCount === 0 ? (
-            <p className="px-8 py-4 text-[13px] text-[#8e908f] italic">
+            <p className="px-8 py-4 text-sm text-[#8e908f] italic">
               Sin variantes aún. Usa &quot;Agregar variante&quot; para crear la primera.
             </p>
           ) : (

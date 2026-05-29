@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDownIcon } from "@/components/ui/atoms/icons";
+import { CaretDown } from "@phosphor-icons/react";
+
 import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 
 export type ClientCategory = "Black" | "Silver" | "Gold" | "Emprendedor" | "Baneado";
@@ -10,15 +11,15 @@ const CATEGORY_OPTIONS: ClientCategory[] = ["Black", "Silver", "Gold", "Emprende
 // Trigger pill colors — still encode the current category at-a-glance for
 // scanning client tables. The OPEN PANEL is the canonical PopoverItem chrome
 // (white, neutral text, red selected highlight) shared by every dropdown.
-const CATEGORY_TRIGGER_STYLES: Record<string, { color: string; bg: string; border: string }> = {
-  Black: { color: "#ffffff", bg: "#000000", border: "#000000" },
-  Silver: { color: "#1e1e1e", bg: "#e0e0e0", border: "#d1d1d1" },
-  Gold: { color: "#1e1e1e", bg: "#f4d966", border: "#e0c54d" },
-  Emprendedor: { color: "#1e1e1e", bg: "#acf466", border: "#96d65a" },
-  Baneado: { color: "#ffffff", bg: "#ff0000", border: "#cc0000" },
+const CATEGORY_TRIGGER_STYLES: Record<string, { color: string; bg: string }> = {
+  Black: { color: "#ffffff", bg: "#000000" },
+  Silver: { color: "#1e1e1e", bg: "#e0e0e0" },
+  Gold: { color: "#1e1e1e", bg: "#f4d966" },
+  Emprendedor: { color: "#1e1e1e", bg: "#acf466" },
+  Baneado: { color: "#ffffff", bg: "#ff0000" },
 };
 
-const DEFAULT_STYLE = { color: "#1e1e1e", bg: "#f0f0f0", border: "#d1d1d1" };
+const DEFAULT_STYLE = { color: "#1e1e1e", bg: "#f0f0f0" };
 
 interface CategoryDropdownProps {
   category: string | null;
@@ -36,15 +37,14 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
       trigger={
         <button
           type="button"
-          className="inline-flex items-center justify-between min-w-[140px] h-[38px] px-4 rounded-[19px] text-[14px] font-bold font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border"
+          className="rounded-full cursor-pointer flex items-center gap-2 pl-4 pr-3 py-1 text-sm font-medium whitespace-nowrap"
           style={{
             color: style.color,
             backgroundColor: style.bg,
-            borderColor: style.border,
           }}
         >
-          <span className="truncate">{category || "Sin categoría"}</span>
-          <ChevronDownIcon size={14} />
+          <span className="whitespace-nowrap">{category || "Sin categoría"}</span>
+          <CaretDown size={14} weight="bold" />
         </button>
       }
     >
