@@ -3,7 +3,7 @@
 import { InfoIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { sanitizeUserText } from "@/lib/utils/safe-text";
+import { repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
@@ -68,6 +68,10 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
 
     if (!draft.etiqueta.trim()) {
       setError("Escribe el nombre de la variable");
+      return;
+    }
+    if (repeatedWords(draft.etiqueta)) {
+      setError("El nombre repite la misma palabra varias veces.");
       return;
     }
     const nombre = toSnakeIdentifier(draft.etiqueta).slice(0, MAX_NOMBRE_LEN);

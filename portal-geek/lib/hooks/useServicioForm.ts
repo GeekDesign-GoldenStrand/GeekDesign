@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useFetch } from "@/lib/hooks/useFetch";
+import { repeatedWords } from "@/lib/utils/safe-text";
 import { stripUiOnlyConstants } from "@/lib/utils/servicio-mappers";
 import { deleteFile } from "@/lib/utils/upload";
 import { initialNuevoServicioState, type NuevoServicioFormState } from "@/types/servicios";
@@ -114,6 +115,18 @@ export function useServicioForm({
       setSubmitError("Error interno: servicioId es requerido en modo edición.");
       return;
     }
+
+    // Pre-flight spam check on the descriptive fields. Run before setSubmitting
+    // so a validation error doesn't trigger the image-cleanup path in the catch.
+    if (repeatedWords(form.nombre_servicio)) {
+      setSubmitError("El nombre del servicio repite la misma palabra varias veces.");
+      return;
+    }
+    if (form.descripcion_servicio.trim() && repeatedWords(form.descripcion_servicio)) {
+      setSubmitError("La descripción repite la misma palabra varias veces.");
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
 
