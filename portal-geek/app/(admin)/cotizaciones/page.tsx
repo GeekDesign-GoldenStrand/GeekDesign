@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { CotizacionesTemplate } from "@/components/admin/templates/CotizacionesTemplate";
-import { useClientes } from "@/lib/hooks/useClientes";
 
 // Frontend type for a quotation entry
 type Cotizacion = {
@@ -48,15 +47,11 @@ export default function CotizacionesPage() {
 
   const pageSize = 13;
 
-  // Filter states (client, company, status, fecha_fin range)
+  // Filter states (client, status, fecha_fin range)
   const [filterCliente, setFilterCliente] = useState("");
-  const [filterEmpresa, setFilterEmpresa] = useState("");
   const [filterEstatus, setFilterEstatus] = useState<string[]>([]);
   const [filterFechaFinDesde, setFilterFechaFinDesde] = useState("");
   const [filterFechaFinHasta, setFilterFechaFinHasta] = useState("");
-
-  // Clients catalog used by the filter sidebar dropdown
-  const clientes = useClientes();
 
   // Reset to page 1 whenever a filter or the search query changes — without
   // this, applying a narrower filter while on page N can land the user on an
@@ -65,14 +60,7 @@ export default function CotizacionesPage() {
   useEffect(() => {
     if (page !== 1) setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    search,
-    filterCliente,
-    filterEmpresa,
-    filterEstatus,
-    filterFechaFinDesde,
-    filterFechaFinHasta,
-  ]);
+  }, [search, filterCliente, filterEstatus, filterFechaFinDesde, filterFechaFinHasta]);
 
   // Fetch quotations from API with filters and pagination
   const fetchCotizaciones = useCallback(async () => {
@@ -83,7 +71,6 @@ export default function CotizacionesPage() {
 
       if (search) params.set("search", search);
       if (filterCliente) params.set("cliente", filterCliente);
-      if (filterEmpresa) params.set("empresa", filterEmpresa);
       filterEstatus.forEach((e) => params.append("estatus", e));
       if (filterFechaFinDesde) params.set("fechaFinDesde", filterFechaFinDesde);
       if (filterFechaFinHasta) params.set("fechaFinHasta", filterFechaFinHasta);
@@ -116,15 +103,7 @@ export default function CotizacionesPage() {
     } catch {
       console.error("Error loading quotations");
     }
-  }, [
-    search,
-    page,
-    filterCliente,
-    filterEmpresa,
-    filterEstatus,
-    filterFechaFinDesde,
-    filterFechaFinHasta,
-  ]);
+  }, [search, page, filterCliente, filterEstatus, filterFechaFinDesde, filterFechaFinHasta]);
 
   // Effect: reload quotations whenever filters or pagination change
   useEffect(() => {
@@ -161,11 +140,8 @@ export default function CotizacionesPage() {
       page={page}
       setPage={setPage}
       total={total}
-      clientes={clientes}
       filterCliente={filterCliente}
       setFilterCliente={setFilterCliente}
-      filterEmpresa={filterEmpresa}
-      setFilterEmpresa={setFilterEmpresa}
       filterEstatus={filterEstatus}
       setFilterEstatus={setFilterEstatus}
       filterFechaFinDesde={filterFechaFinDesde}

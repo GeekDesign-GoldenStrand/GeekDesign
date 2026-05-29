@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 import { noEmoji, textOnly, addressOnly } from "./text-validation";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -30,7 +32,7 @@ export const CreateProveedorSchema = z.object({
     .string()
     .min(1, "El teléfono es requerido.")
     .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
-  correo: z.email("Correo electrónico inválido.").max(150),
+  correo: emailField({ max: 150, message: "Correo electrónico inválido." }),
   descripcion_proveedor: z.string().max(500, "Máximo 500 caracteres.").optional(),
   ubicacion: z
     .string()

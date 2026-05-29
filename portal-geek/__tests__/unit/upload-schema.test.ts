@@ -1,5 +1,7 @@
 import { SolicitarCotizacionSchema } from "@/lib/schemas/cotizaciones";
 
+const today = new Date().toISOString().split("T")[0];
+
 const baseItem = {
   id_servicio: 1,
   id_material: 1,
@@ -18,6 +20,7 @@ describe("SolicitarCotizacionSchema — disenio_key", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [baseItem],
     });
     expect(result.success).toBe(true);
@@ -28,6 +31,7 @@ describe("SolicitarCotizacionSchema — disenio_key", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [{ ...baseItem, disenio_key: key }],
     });
     expect(result.success).toBe(true);
@@ -40,6 +44,7 @@ describe("SolicitarCotizacionSchema — disenio_key", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [{ ...baseItem, disenio_key: "x".repeat(501) }],
     });
     expect(result.success).toBe(false);
@@ -49,6 +54,7 @@ describe("SolicitarCotizacionSchema — disenio_key", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [
         {
           ...baseItem,
@@ -63,6 +69,7 @@ describe("SolicitarCotizacionSchema — disenio_key", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [{ ...baseItem, disenio_key: "disenios/archivo.png" }],
     });
     expect(result.success).toBe(false);
@@ -72,6 +79,7 @@ describe("SolicitarCotizacionSchema — disenio_key", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [
         { ...baseItem, disenio_key: "disenios/2026/05/550e8400-e29b-41d4-a716-446655440001.svg" },
         { ...baseItem, id_servicio: 2 },

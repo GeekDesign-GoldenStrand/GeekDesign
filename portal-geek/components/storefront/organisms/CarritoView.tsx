@@ -71,6 +71,23 @@ export function CarritoView({ relatedServices }: Props) {
   const [mounted, setMounted] = useState(false);
   const [openSpecs, setOpenSpecs] = useState<Set<string>>(new Set());
   const [carouselStart, setCarouselStart] = useState(0);
+  const [activeIndexes, setActiveIndexes] = useState<Record<string, number>>({});
+
+  const handlePrevImage = (itemId: string, maxLen: number) => {
+    setActiveIndexes((prev) => {
+      const current = prev[itemId] ?? 0;
+      const nextIdx = current === 0 ? maxLen - 1 : current - 1;
+      return { ...prev, [itemId]: nextIdx };
+    });
+  };
+
+  const handleNextImage = (itemId: string, maxLen: number) => {
+    setActiveIndexes((prev) => {
+      const current = prev[itemId] ?? 0;
+      const nextIdx = current === maxLen - 1 ? 0 : current + 1;
+      return { ...prev, [itemId]: nextIdx };
+    });
+  };
 
   useEffect(() => {
     const init = () => {
@@ -110,7 +127,7 @@ export function CarritoView({ relatedServices }: Props) {
       <div className="flex flex-col items-center justify-center gap-[24px] py-[80px]">
         <p className="text-[#1e1e1e] text-[20px] font-semibold">Tu carrito está vacío</p>
         <Link
-          href="/tienda/servicios"
+          href="/tienda"
           className="bg-[#8b434a] text-white rounded-[10px] px-[32px] h-[52px] flex items-center font-semibold text-[16px] hover:bg-[#7a3a41] transition-colors"
         >
           Explorar catálogo
@@ -145,37 +162,75 @@ export function CarritoView({ relatedServices }: Props) {
             {items.map((item) => {
               const especificaciones = getEspecificaciones(item);
               const specsOpen = openSpecs.has(item.id);
+              const activeImgIdx = activeIndexes[item.id] ?? 0;
+              const hasImages = !!(item.imagenUrls && item.imagenUrls.length > 0);
+              const activeImageUrl = hasImages ? item.imagenUrls![activeImgIdx] : null;
 
               return (
                 <div key={item.id}>
                   <div className="py-[24px] flex flex-col md:flex-row gap-[16px] md:gap-[24px]">
                     {/* Preview + edit links */}
-                    <div className="flex flex-col gap-[8px] shrink-0 w-full md:w-[303px]">
-                      <div className="flex items-center gap-[8px]">
-                        <button
-                          className="bg-[#ebebeb] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] flex items-center justify-center"
-                          aria-label="Imagen anterior"
-                        >
-                          <ChevronLeft />
-                        </button>
-                        <div className="bg-white rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex-1 md:flex-none md:w-[187px] h-[102px] flex items-center justify-center">
-                          <p className="text-[14px] text-[#999] text-center leading-snug">
-                            Preview del
-                            <br />
-                            producto
-                          </p>
-                        </div>
-                        <button
-                          className="bg-[#fffcfc] rounded-[8px] shadow-[0px_3px_8px_0px_rgba(0,0,0,0.25)] w-[50px] h-[50px] flex items-center justify-center"
-                          aria-label="Imagen siguiente"
-                        >
-                          <ChevronRight />
-                        </button>
+                    <div className="flex flex-col items-center gap-[12px] shrink-0 w-[240px]">
+                      <div className="relative group w-[180px] h-[180px] bg-white rounded-[16px] shadow-[0px_8px_24px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden flex items-center justify-center transition-all duration-300 hover:shadow-[0px_12px_32px_rgba(0,0,0,0.12)]">
+                        {activeImageUrl ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={activeImageUrl}
+                              alt={item.nombreServicio}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            {/* Overlay Left Arrow */}
+                            {item.imagenUrls!.length > 1 && (
+                              <button
+                                onClick={() => handlePrevImage(item.id, item.imagenUrls!.length)}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 w-[32px] h-[32px] bg-white/90 hover:bg-white text-gray-800 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 active:scale-90 hover:scale-105"
+                                aria-label="Imagen anterior"
+                              >
+                                <ChevronLeft />
+                              </button>
+                            )}
+                            {/* Overlay Right Arrow */}
+                            {item.imagenUrls!.length > 1 && (
+                              <button
+                                onClick={() => handleNextImage(item.id, item.imagenUrls!.length)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-[32px] h-[32px] bg-white/90 hover:bg-white text-gray-800 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 active:scale-90 hover:scale-105"
+                                aria-label="Imagen siguiente"
+                              >
+                                <ChevronRight />
+                              </button>
+                            )}
+                            {/* Dots Indicator */}
+                            {item.imagenUrls!.length > 1 && (
+                              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 bg-black/45 px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                {item.imagenUrls!.map((_, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                      idx === activeImgIdx ? "bg-white w-3" : "bg-white/50"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 p-4 text-center">
+                            <span className="text-[11px] font-bold text-[#8b434a] bg-[#ffd9e2] px-2 py-0.5 rounded-full">
+                              Sin imagen
+                            </span>
+                            <p className="text-[13px] text-[#999] leading-snug">
+                              Vista previa
+                              <br />
+                              del servicio
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <Link
                         href={`/tienda/servicios/${item.servicioId}`}
-                        className="text-[18px] font-medium text-[#1e1e1e] underline"
+                        className="text-[14px] font-semibold text-[#8b434a] hover:text-[#7a3a41] hover:underline transition-colors text-center"
                       >
                         Ver servicio
                       </Link>

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 import { UBICACION_REGEX } from "./proveedores";
 import { noEmoji, textOnly } from "./text-validation";
 
@@ -29,7 +31,7 @@ export const CreateInstaladorSchema = z.object({
     .string()
     .min(1, "El teléfono es requerido.")
     .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
-  correo: z.email("Correo electrónico inválido.").max(150),
+  correo: emailField({ max: 150, message: "Correo electrónico inválido." }),
   costo_instalacion: z.number().nonnegative("El costo de instalación no puede ser negativo."),
   notas: z.string().max(500).optional(),
   ubicacion: z
