@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
-import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import {
   PedidosServiceTabs,
   type PedidoServiceOption,
 } from "@/components/admin/molecules/PedidosServiceTabs";
+import { SearchBar } from "@/components/admin/molecules/SearchBar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import PedidoDetailModal from "@/components/admin/organisms/PedidoDetailModal";
+import { PedidosFilterSidebar } from "@/components/admin/organisms/PedidosFilterSidebar";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
+import { FilterIcon } from "@/components/ui/atoms/icons";
 import type { UserRole } from "@/types";
 
 // Frontend type for an order
@@ -19,6 +21,7 @@ type Pedido = {
   fecha_creacion: string;
   fecha_estimada?: string | null;
   monto_total?: number | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -49,20 +52,16 @@ type Props = {
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 
-  onlyActive: boolean;
-  setOnlyActive: (v: boolean) => void;
-
-  serviceIds: number[];
-  setServiceIds: (v: number[]) => void;
-
-  estatuses: string[];
-  setEstatuses: (v: string[]) => void;
-
-  empresa: string | null;
-  setEmpresa: (v: string | null) => void;
-
   cliente: string | null;
   setCliente: (v: string | null) => void;
+
+  fechaEstimadaDesde: string;
+  setFechaEstimadaDesde: (value: string) => void;
+  fechaEstimadaHasta: string;
+  setFechaEstimadaHasta: (value: string) => void;
+
+  detalleEstatuses: string[];
+  setDetalleEstatuses: (v: string[]) => void;
 
   services: PedidoServiceOption[];
   selectedServiceId: number | null;
@@ -87,16 +86,14 @@ export function PedidosTemplate({
   total,
   onDelete,
   onStatusChange,
-  onlyActive,
-  setOnlyActive,
-  serviceIds,
-  setServiceIds,
-  estatuses,
-  setEstatuses,
-  empresa,
-  setEmpresa,
   cliente,
   setCliente,
+  fechaEstimadaDesde,
+  setFechaEstimadaDesde,
+  fechaEstimadaHasta,
+  setFechaEstimadaHasta,
+  detalleEstatuses,
+  setDetalleEstatuses,
   services,
   selectedServiceId,
   onServiceSelect,
@@ -111,41 +108,7 @@ export function PedidosTemplate({
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
-  const filterRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
-
-  /**
-   * UI → API mapping for statuses
-   * Keeps UI readable while preserving backend contract
-   */
-  const STATUS_OPTIONS = [
-    { label: "Cotización", value: "Cotizacion" },
-    { label: "Pagado", value: "Pagado" },
-    { label: "En cola", value: "En_cola" },
-    { label: "Aprobación diseño", value: "Aprobacion_diseno" },
-    { label: "En producción", value: "En_produccion" },
-    { label: "Entregado", value: "Entregado" },
-    { label: "Facturado", value: "Facturado" },
-  ];
-
-  /**
-   * Close filter dropdown when clicking outside
-   */
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setShowFilter(false);
-      }
-    }
-
-    if (showFilter) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showFilter]);
 
   return (
     <>
@@ -163,190 +126,63 @@ export function PedidosTemplate({
           </div>
         )}
 
-        {/* Toolbar and actions */}
-        <div className="relative">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="w-full md:max-w-[430px]">
-              <AdminToolbar search={search} onSearchChange={setSearch} />
+        {/* Toolbar — search + filter on the left, history/back button on the right */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Left group: search + filter */}
+          <div className="flex items-center gap-6">
+            <div className="min-w-0 w-[430px]">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Buscar por folio o nombre de oportunidad"
+              />
             </div>
 
-            <div className="flex justify-end items-center">
-              {historyButtonHref && historyButtonLabel && (
-                <Link
-                  href={historyButtonHref}
-                  className="
-                    h-11
-                    px-6
-                    rounded-md
-                    border
-                    border-[#c6c6c6]
-                    bg-white
-                    text-[#575757]
-                    text-sm
-                    font-semibold
-                    flex
-                    items-center
-                    justify-center
-                    hover:border-[#8e908f]
-                    hover:text-[#1e1e1e]
-                    transition
-                  "
-                >
-                  {historyButtonLabel}
-                </Link>
-              )}
-
-              {backButtonHref && backButtonLabel && (
-                <Link
-                  href={backButtonHref}
-                  className="
-                    h-11
-                    px-6
-                    rounded-md
-                    border
-                    border-[#c6c6c6]
-                    bg-white
-                    text-[#575757]
-                    text-sm
-                    font-semibold
-                    flex
-                    items-center
-                    justify-center
-                    hover:border-[#8e908f]
-                    hover:text-[#1e1e1e]
-                    transition
-                  "
-                >
-                  ← {backButtonLabel}
-                </Link>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowFilter(true)}
+              className="flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap shrink-0"
+            >
+              <FilterIcon />
+              Filtrar
+            </button>
           </div>
 
-          {/* Filter dropdown */}
-          {showFilter && (
-            <div ref={filterRef} className="absolute right-0 mt-2 z-50">
-              <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ffc1c1] text-black">
-                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
+          {/* Right group: nav buttons */}
+          <div className="flex items-center gap-3">
+            {backButtonHref && backButtonLabel && (
+              <Link
+                href={backButtonHref}
+                className="h-[41px] px-6 rounded-md border border-[#c6c6c6] bg-white text-[#575757] text-sm font-semibold flex items-center justify-center whitespace-nowrap shrink-0 hover:border-[#8e908f] hover:text-[#1e1e1e] transition"
+              >
+                ← {backButtonLabel}
+              </Link>
+            )}
 
-                {/* Active filter */}
-                <label className="flex items-center gap-2 mb-4 text-[13px]">
-                  <input
-                    type="checkbox"
-                    checked={onlyActive}
-                    onChange={(e) => setOnlyActive(e.target.checked)}
-                    className="accent-[#ff6b6b]"
-                  />
-                  Mostrar solo activos
-                </label>
-
-                {/* Cliente */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Cliente</p>
-                  <input
-                    value={cliente ?? ""}
-                    onChange={(e) => setCliente(e.target.value || null)}
-                    className="w-full border border-[#ffd6d6] bg-[#fff5f5] rounded-[6px] p-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f7f]"
-                  />
-                </div>
-
-                {/* Empresa */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Empresa</p>
-                  <input
-                    value={empresa ?? ""}
-                    onChange={(e) => setEmpresa(e.target.value || null)}
-                    className="w-full border border-[#ffd6d6] bg-[#fff5f5] rounded-[6px] p-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f7f]"
-                  />
-                </div>
-
-                {/* Estatus */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
-                  <div className="space-y-2">
-                    {STATUS_OPTIONS.map((s) => (
-                      <label key={s.value} className="flex items-center gap-2 text-[13px]">
-                        <input
-                          type="checkbox"
-                          checked={estatuses.includes(s.value)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEstatuses([...estatuses, s.value]);
-                            } else {
-                              setEstatuses(estatuses.filter((x) => x !== s.value));
-                            }
-                          }}
-                          className="accent-[#ff6b6b]"
-                        />
-                        {s.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Servicios */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Servicio</p>
-
-                  {services.length === 0 ? (
-                    <p className="text-[12px] text-[#8e908f]">
-                      No hay servicios disponibles para filtrar.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {services.map((service) => (
-                        <label
-                          key={service.id_servicio}
-                          className="flex items-center gap-2 text-[13px]"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={serviceIds.includes(service.id_servicio)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setServiceIds([...serviceIds, service.id_servicio]);
-                              } else {
-                                setServiceIds(
-                                  serviceIds.filter((id) => id !== service.id_servicio)
-                                );
-                              }
-                            }}
-                            className="accent-[#ff6b6b]"
-                          />
-
-                          {service.nombre_servicio}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="mt-4 flex justify-center gap-3">
-                  <button
-                    onClick={() => {
-                      setOnlyActive(false);
-                      setServiceIds([]);
-                      setEstatuses([]);
-                      setEmpresa(null);
-                      setCliente(null);
-                    }}
-                    className="h-8 px-4 rounded-[6px] bg-[#ffc1c1] text-white text-[13px] font-semibold hover:bg-[#ff9e9e]"
-                  >
-                    Restablecer
-                  </button>
-
-                  <button
-                    onClick={() => setShowFilter(false)}
-                    className="h-8 px-6 rounded-[6px] bg-[#ff9e9e] text-white text-[13px] font-semibold hover:bg-[#ff7f7f]"
-                  >
-                    Aplicar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+            {historyButtonHref && historyButtonLabel && (
+              <Link
+                href={historyButtonHref}
+                className="h-[41px] px-6 rounded-md border border-[#c6c6c6] bg-white text-[#575757] text-sm font-semibold flex items-center justify-center whitespace-nowrap shrink-0 hover:border-[#8e908f] hover:text-[#1e1e1e] transition"
+              >
+                {historyButtonLabel}
+              </Link>
+            )}
+          </div>
         </div>
+
+        <PedidosFilterSidebar
+          open={showFilter}
+          onClose={() => setShowFilter(false)}
+          cliente={cliente}
+          setCliente={setCliente}
+          fechaEstimadaDesde={fechaEstimadaDesde}
+          setFechaEstimadaDesde={setFechaEstimadaDesde}
+          fechaEstimadaHasta={fechaEstimadaHasta}
+          setFechaEstimadaHasta={setFechaEstimadaHasta}
+          selectedServiceId={selectedServiceId}
+          detalleEstatuses={detalleEstatuses}
+          setDetalleEstatuses={setDetalleEstatuses}
+        />
 
         {/* Table */}
         <PedidosTable

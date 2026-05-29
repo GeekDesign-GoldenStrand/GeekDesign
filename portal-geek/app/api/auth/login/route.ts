@@ -5,25 +5,43 @@ import { LoginSchema } from "@/lib/schemas/auth";
 import { loginUser } from "@/lib/services/auth";
 import { ok } from "@/lib/utils/api";
 import { UnauthorizedError, handleError } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { clearRateLimit, peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
+import { getClientIp } from "@/lib/utils/request-ip";
 
-/** 5 attempts per IP in a 15-minute window. */
+/** 5 failed attempts per IP in a 15-minute window. */
 const LOGIN_RATE_LIMIT = { maxAttempts: 5, windowMs: 15 * 60_000 };
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ip = getClientIp(req);
 
-    const { allowed } = checkRateLimit(ip, LOGIN_RATE_LIMIT);
+    // ANTI-ENUMERATION: a rate-limited login must be indistinguishable from bad
+    // credentials — same 401, same message, and NO Retry-After header — so an
+    // attacker cannot tell whether they were throttled or simply guessed wrong.
+    const { allowed } = peekRateLimit(ip, LOGIN_RATE_LIMIT);
     if (!allowed) {
-      // Same generic message as bad credentials — no info leakage.
       throw new UnauthorizedError("Credenciales inválidas");
     }
 
     const body = await req.json();
     const { email, password } = LoginSchema.parse(body);
 
-    const { token, user } = await loginUser(email, password);
+    let result;
+    try {
+      result = await loginUser(email, password);
+    } catch (authErr) {
+      // Only failed credential checks count toward the lockout — a valid login
+      // never erodes the budget, and validation (422) errors are not guesses.
+      if (authErr instanceof UnauthorizedError) {
+        recordAttempt(ip, LOGIN_RATE_LIMIT);
+      }
+      throw authErr;
+    }
+
+    // Successful sign-in resets the counter so a legitimate user is never
+    // penalised for earlier typos (or someone else behind a shared IP).
+    clearRateLimit(ip);
+    const { token, user } = result;
 
     const response = ok({ user });
     response.cookies.set(SESSION_COOKIE, token, {

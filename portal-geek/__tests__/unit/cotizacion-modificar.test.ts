@@ -17,6 +17,9 @@ jest.mock("@/lib/db/client", () => ({
       update: jest.fn(),
       findMany: jest.fn(),
     },
+    pedidos: {
+      update: jest.fn(),
+    },
   },
 }));
 
@@ -25,6 +28,7 @@ const mockFindUnique = prisma.cotizaciones.findUnique as jest.Mock;
 const mockUpdate = prisma.cotizaciones.update as jest.Mock;
 const mockDetallePedidoUpdate = prisma.detallePedido.update as jest.Mock;
 const mockDetallePedidoFindMany = prisma.detallePedido.findMany as jest.Mock;
+const mockPedidoUpdate = prisma.pedidos.update as jest.Mock;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 const COTIZACION_PENDIENTE = {
@@ -74,6 +78,9 @@ describe("updateCotizacion", () => {
           update: mockDetallePedidoUpdate,
           findMany: mockDetallePedidoFindMany,
         },
+        pedidos: {
+          update: mockPedidoUpdate,
+        },
       })
     );
   });
@@ -104,6 +111,28 @@ describe("updateCotizacion", () => {
   });
 
   // ── Field updates ─────────────────────────────────────────────────────────
+  it("propaga nombre_oportunidad al pedido vinculado", async () => {
+    mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
+    mockUpdate.mockResolvedValue({});
+    mockPedidoUpdate.mockResolvedValue({});
+
+    await updateCotizacion(1, { nombre_oportunidad: "Letrero exterior" });
+
+    expect(mockPedidoUpdate).toHaveBeenCalledWith({
+      where: { id_pedido: 10 },
+      data: { nombre_oportunidad: "Letrero exterior" },
+    });
+  });
+
+  it("no toca el pedido cuando nombre_oportunidad no se proporciona", async () => {
+    mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
+    mockUpdate.mockResolvedValue({});
+
+    await updateCotizacion(1, { notas: "Solo notas" });
+
+    expect(mockPedidoUpdate).not.toHaveBeenCalled();
+  });
+
   it("actualiza nombre_oportunidad correctamente", async () => {
     mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
     mockUpdate.mockResolvedValue({});
