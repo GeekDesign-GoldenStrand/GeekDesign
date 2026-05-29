@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Button } from "@/components/ui/atoms/Button";
+import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
@@ -23,35 +23,48 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
       : servicio.maquinas.map((m) => m.maquina.apodo_maquina).join(", ");
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-6 flex items-center justify-between">
-      <div className="flex-1">
-        <h3 className="text-xl font-bold text-[#1e1e1e] mb-2">{servicio.nombre_servicio}</h3>
-        <div className="space-y-0.5 text-sm text-[#1e1e1e]">
-          <p>
-            <span className="font-medium">Descripción:</span>{" "}
-            {servicio.descripcion_servicio ?? "Sin descripción"}
-          </p>
-          <p>
-            <span className="font-medium">Máquina:</span> {maquinasTexto}
-          </p>
-          <p>
-            <span className="font-medium">Última fecha de modificación:</span> {fechaFormateada}
-          </p>
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-6 flex flex-col w-full font-['IBM_Plex_Sans_JP',sans-serif]">
+      {/* Header */}
+      <div>
+        <div className="flex gap-6 justify-between items-start">
+          <Link
+            href={`/servicios/${servicio.id_servicio}`}
+            className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] hover:text-[#e42200] transition-colors break-words flex-1"
+          >
+            {servicio.nombre_servicio}
+          </Link>
+
+          <div className="flex gap-2 flex-none">
+            <Link
+              href={`/servicios/${servicio.id_servicio}/editar`}
+              aria-label="Editar"
+              className="flex-none flex items-center justify-center w-9 h-9 border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
+            >
+              <EditIcon />
+            </Link>
+            <button
+              onClick={() => onEliminar?.(servicio.id_servicio)}
+              aria-label="Eliminar"
+              className="flex items-center justify-center w-9 h-9 border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] cursor-pointer"
+            >
+              <TrashIcon />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 ml-4">
-        <Button asChild variant="secondary" size="sm">
-          <Link href={`/servicios/${servicio.id_servicio}`}>Ver detalle</Link>
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          onClick={() => onEliminar?.(servicio.id_servicio)}
-        >
-          Eliminar
-        </Button>
+      {/* Body / Content */}
+      <div className="space-y-1.5 text-[14px] text-[#1e1e1e] font-normal leading-relaxed">
+        <p>
+          <span className="font-semibold">Descripción:</span>{" "}
+          {servicio.descripcion_servicio ?? "Sin descripción"}
+        </p>
+        <p>
+          <span className="font-semibold">Máquina:</span> {maquinasTexto}
+        </p>
+        <p>
+          <span className="font-semibold">Última fecha de modificación:</span> {fechaFormateada}
+        </p>
       </div>
     </div>
   );

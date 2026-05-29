@@ -3,16 +3,31 @@ import { z } from "zod";
 import { isValidKey } from "@/lib/storage/keys";
 import { emailField } from "@/lib/utils/email";
 
+import { noEmoji, textOnly } from "./text-validation";
+
 export const CreateCotizacionSchema = z.object({
   id_pedido: z.number().int().positive().optional(),
   id_cliente: z.number().int().positive(),
   id_estatus_cotizacion: z.number().int().positive().optional(),
   folio: z.string().max(50).optional(),
   monto_total: z.number().nonnegative(),
-  empresa_cliente: z.string().max(100).optional(),
+  empresa_cliente: z
+    .string()
+    .max(100)
+    .optional()
+    .refine((v) => (v ? noEmoji(v) : true), { message: "La empresa no debe contener emojis" })
+    .refine((v) => (v ? textOnly(v) : true), {
+      message: "La empresa solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   fecha_fin: z.coerce.date().optional(),
   pdf_url: z.string().url().max(500).optional(),
-  notas: z.string().optional(),
+  notas: z
+    .string()
+    .optional()
+    .refine((v) => (v ? noEmoji(v) : true), { message: "Las notas no deben contener emojis" })
+    .refine((v) => (v ? textOnly(v) : true), {
+      message: "Las notas solo deben contener caracteres en inglés o español y signos comunes",
+    }),
 });
 
 export const UpdateCotizacionSchema = z.object({
