@@ -213,14 +213,18 @@ export function FinalizadosView({ role }: Props) {
     setDetalleEstatuses([]);
   }
 
-  async function handleDetalleStatusChange(detalleId: number, status: string) {
-    await fetch(`/api/pedidos/detalles/${detalleId}/estatus`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ estatus: status }),
-    });
+  async function handleDetalleStatusChange(detalleIds: number[], status: string) {
+    await Promise.all(
+      detalleIds.map((id) =>
+        fetch(`/api/pedidos/detalles/${id}/estatus`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ estatus: status }),
+        })
+      )
+    );
 
     fetchPedidos();
   }

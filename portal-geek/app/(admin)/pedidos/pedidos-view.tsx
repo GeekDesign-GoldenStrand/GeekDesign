@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UserRole } from "@/types";
 
 interface PedidoDetalle {
@@ -95,6 +96,7 @@ export function PedidosView({ role }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Filter states (service IDs from tabs, client/company search, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
@@ -229,11 +231,18 @@ export function PedidosView({ role }: Props) {
 
   // Update order status and refresh list
   async function handleStatusChange(id: number, status: string) {
-    await fetch(`/api/pedidos/${id}/estatus`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estatus: status }),
-    });
+    try {
+      const res = await fetch(`/api/pedidos/${id}/estatus`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estatus: status }),
+      });
+      if (res.ok) {
+        setSuccessMessage("Estatus del pedido actualizado exitosamente");
+      }
+    } catch (e) {
+      console.error(e);
+    }
 
     fetchPedidos();
   }
@@ -246,48 +255,64 @@ export function PedidosView({ role }: Props) {
     setDetalleEstatuses([]);
   }
 
-  async function handleDetalleStatusChange(detalleId: number, status: string) {
-    await fetch(`/api/pedidos/detalles/${detalleId}/estatus`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ estatus: status }),
-    });
+  async function handleDetalleStatusChange(detalleIds: number[], status: string) {
+    try {
+      const res = await Promise.all(
+        detalleIds.map((id) =>
+          fetch(`/api/pedidos/detalles/${id}/estatus`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ estatus: status }),
+          })
+        )
+      );
+      if (res.every((r) => r.ok)) {
+        setSuccessMessage("Estatus del servicio actualizado exitosamente");
+      }
+    } catch (e) {
+      console.error(e);
+    }
 
     fetchPedidos();
   }
 
   // Render template with data, search, filters, pagination, and user role
   return (
-    <PedidosTemplate
-      role={role}
-      pedidos={pedidos}
-      search={search}
-      setSearch={setSearch}
-      page={page}
-      setPage={setPage}
-      total={total}
-      onDelete={handleDelete}
-      onStatusChange={handleStatusChange}
-      clienteEmpresa={clienteEmpresa}
-      setClienteEmpresa={setClienteEmpresa}
-      estatuses={estatuses}
-      setEstatuses={setEstatuses}
-      fechaEstimadaDesde={fechaEstimadaDesde}
-      setFechaEstimadaDesde={setFechaEstimadaDesde}
-      fechaEstimadaHasta={fechaEstimadaHasta}
-      setFechaEstimadaHasta={setFechaEstimadaHasta}
-      detalleEstatuses={detalleEstatuses}
-      setDetalleEstatuses={setDetalleEstatuses}
-      services={services}
-      selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
-      onServiceSelect={handleServiceSelect}
-      onDetalleStatusChange={handleDetalleStatusChange}
-      title="Pedidos"
-      historyButtonHref="/pedidos/finalizados"
-      historyButtonLabel="Pedidos Completados / Cancelados"
-      showServiceTabs={true}
-    />
+    <>
+      <PedidosTemplate
+        role={role}
+        pedidos={pedidos}
+        search={search}
+        setSearch={setSearch}
+        page={page}
+        setPage={setPage}
+        total={total}
+        onDelete={handleDelete}
+        onStatusChange={handleStatusChange}
+        clienteEmpresa={clienteEmpresa}
+        setClienteEmpresa={setClienteEmpresa}
+        estatuses={estatuses}
+        setEstatuses={setEstatuses}
+        fechaEstimadaDesde={fechaEstimadaDesde}
+        setFechaEstimadaDesde={setFechaEstimadaDesde}
+        fechaEstimadaHasta={fechaEstimadaHasta}
+        setFechaEstimadaHasta={setFechaEstimadaHasta}
+        detalleEstatuses={detalleEstatuses}
+        setDetalleEstatuses={setDetalleEstatuses}
+        services={services}
+        selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
+        onServiceSelect={handleServiceSelect}
+        onDetalleStatusChange={handleDetalleStatusChange}
+        title="Pedidos"
+        historyButtonHref="/pedidos/finalizados"
+        historyButtonLabel="Pedidos Completados / Cancelados"
+        showServiceTabs={true}
+      />
+      {successMessage && (
+        <SuccessModal message={successMessage} onClose={() => setSuccessMessage(null)} />
+      )}
+    </>
   );
 }
