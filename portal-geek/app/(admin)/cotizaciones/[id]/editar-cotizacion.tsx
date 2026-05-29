@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { LineItem } from "@/types/cotizacion";
 
@@ -232,18 +234,18 @@ export default function EditarCotizacion({
 
           <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
             <span className="font-medium">Cliente</span>
-            <select
-              value={fields.id_cliente}
-              onChange={(e) => setField("id_cliente", Number(e.target.value))}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            <Select
+              value={String(fields.id_cliente)}
+              onChange={(v) => setField("id_cliente", Number(v))}
+              size="sm"
             >
               {clientes.map((c) => (
-                <option key={c.id_cliente} value={c.id_cliente}>
+                <SelectOption key={c.id_cliente} value={String(c.id_cliente)}>
                   {c.nombre_cliente}
                   {c.empresa ? ` — ${c.empresa}` : ""}
-                </option>
+                </SelectOption>
               ))}
-            </select>
+            </Select>
             {clientesError && (
               <span className="text-[11px] text-red-600 mt-0.5">
                 No se pudo cargar la lista completa de clientes ({clientesError}).
@@ -386,21 +388,24 @@ export default function EditarCotizacion({
         )}
 
         <div className="flex justify-end gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            loading={isSubmitting}
           >
             {isSubmitting ? "Guardando…" : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
 
 import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 import { AsignacionCard } from "../molecules/AsignacionCard";
@@ -312,19 +313,19 @@ export function AsignarItemsModal({
             </div>
           )}
           <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-            >
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
               onClick={handleSave}
               disabled={saving || loading}
-              className="px-5 py-2 text-[14px] font-medium text-white bg-[#006aff] hover:bg-[#0056ce] rounded-[7px] transition-all shadow-[0_4px_12px_rgba(0,106,255,0.15)] disabled:opacity-50 disabled:pointer-events-none"
+              loading={saving}
             >
               {saving ? "Guardando..." : "Asignar"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

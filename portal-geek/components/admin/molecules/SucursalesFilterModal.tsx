@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
 
 interface Props {
   isOpen: boolean;
@@ -66,12 +67,12 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button onClick={onClose} className="px-3 py-1 border rounded">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button onClick={handleApply} className="px-3 py-1 bg-[#e63946] text-white rounded">
+          </Button>
+          <Button type="button" variant="primary" size="sm" onClick={handleApply}>
             Aplicar filtros
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
