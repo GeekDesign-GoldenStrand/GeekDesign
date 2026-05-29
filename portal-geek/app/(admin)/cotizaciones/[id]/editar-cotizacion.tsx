@@ -332,14 +332,16 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={0}
-                      max={999999.99}
+                      max={9999999.99}
                       step={0.01}
                       value={item.precio_unitario}
                       onChange={(e) => {
                         const parsed = parseFloat(e.target.value);
-                        // Clamp to [0, 999,999.99] to match the server cap.
+                        // Clamp to [0, 9,999,999.99] to match the server cap
+                        // (10M MXN — headroom for legacy line items that
+                        // precio_unitario has never been bounded against).
                         const safe = Number.isFinite(parsed)
-                          ? Math.max(0, Math.min(999999.99, parsed))
+                          ? Math.max(0, Math.min(9999999.99, parsed))
                           : 0;
                         updateServicio(idx, "precio_unitario", safe);
                       }}
