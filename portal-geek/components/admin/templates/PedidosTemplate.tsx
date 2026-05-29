@@ -9,7 +9,6 @@ import {
 } from "@/components/admin/molecules/PedidosServiceTabs";
 import { SearchBar } from "@/components/admin/molecules/SearchBar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import PedidoDetailModal from "@/components/admin/organisms/PedidoDetailModal";
 import { PedidosFilterSidebar } from "@/components/admin/organisms/PedidosFilterSidebar";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
 import { FilterIcon } from "@/components/ui/atoms/icons";
@@ -52,8 +51,11 @@ type Props = {
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 
-  cliente: string | null;
-  setCliente: (v: string | null) => void;
+  clienteEmpresa: string | null;
+  setClienteEmpresa: (v: string | null) => void;
+
+  estatuses: string[];
+  setEstatuses: (v: string[]) => void;
 
   fechaEstimadaDesde: string;
   setFechaEstimadaDesde: (value: string) => void;
@@ -86,8 +88,10 @@ export function PedidosTemplate({
   total,
   onDelete,
   onStatusChange,
-  cliente,
-  setCliente,
+  clienteEmpresa,
+  setClienteEmpresa,
+  estatuses,
+  setEstatuses,
   fechaEstimadaDesde,
   setFechaEstimadaDesde,
   fechaEstimadaHasta,
@@ -104,11 +108,54 @@ export function PedidosTemplate({
   backButtonHref,
   backButtonLabel,
   showServiceTabs = true,
-  role,
+  role: _role,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
-  const [detailId, setDetailId] = useState<number | null>(null);
   const pageSize = 10;
+
+  const activeFilterChips = [
+    clienteEmpresa
+      ? {
+          key: "clienteEmpresa",
+          label: `Cliente/Empresa: ${clienteEmpresa}`,
+          clear: () => setClienteEmpresa(null),
+        }
+      : null,
+    ...estatuses.map((s) => ({
+      key: `estatus-${s}`,
+      label: s,
+      clear: () => setEstatuses(estatuses.filter((e) => e !== s)),
+    })),
+    fechaEstimadaDesde
+      ? {
+          key: "desde",
+          label: `Desde: ${fechaEstimadaDesde}`,
+          clear: () => setFechaEstimadaDesde(""),
+        }
+      : null,
+    fechaEstimadaHasta
+      ? {
+          key: "hasta",
+          label: `Hasta: ${fechaEstimadaHasta}`,
+          clear: () => setFechaEstimadaHasta(""),
+        }
+      : null,
+    ...detalleEstatuses.map((s) => ({
+      key: `detalle-${s}`,
+      label: `Servicio: ${s}`,
+      clear: () => setDetalleEstatuses(detalleEstatuses.filter((e) => e !== s)),
+    })),
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+  const filterCount = activeFilterChips.length;
+
+  function clearAllFilters() {
+    setClienteEmpresa(null);
+    setEstatuses([]);
+    setFechaEstimadaDesde("");
+    setFechaEstimadaHasta("");
+    setDetalleEstatuses([]);
+  }
 
   return (
     <>
@@ -141,10 +188,15 @@ export function PedidosTemplate({
             <button
               type="button"
               onClick={() => setShowFilter(true)}
-              className="flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap shrink-0"
+              className="relative flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap shrink-0"
             >
               <FilterIcon />
               Filtrar
+              {filterCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e42200] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {filterCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -170,11 +222,42 @@ export function PedidosTemplate({
           </div>
         </div>
 
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.clear}
+                  aria-label={`Quitar filtro ${chip.label}`}
+                  className="leading-none hover:text-[#b31a00]"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
+
         <PedidosFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
-          cliente={cliente}
-          setCliente={setCliente}
+          clienteEmpresa={clienteEmpresa}
+          setClienteEmpresa={setClienteEmpresa}
+          estatuses={estatuses}
+          setEstatuses={setEstatuses}
           fechaEstimadaDesde={fechaEstimadaDesde}
           setFechaEstimadaDesde={setFechaEstimadaDesde}
           fechaEstimadaHasta={fechaEstimadaHasta}
@@ -191,7 +274,6 @@ export function PedidosTemplate({
           onStatusChange={onStatusChange}
           selectedServiceId={selectedServiceId}
           onDetalleStatusChange={onDetalleStatusChange}
-          onShowDetail={setDetailId}
         />
 
         {/* Pagination */}
@@ -235,17 +317,6 @@ export function PedidosTemplate({
           </div>
         </div>
       </section>
-
-      {/* PE-05 — order detail window opened from the info icon */}
-      {detailId !== null && (
-        <PedidoDetailModal
-          key={detailId}
-          pedidoId={detailId}
-          selectedServiceId={selectedServiceId}
-          onClose={() => setDetailId(null)}
-          role={role}
-        />
-      )}
     </>
   );
 }
