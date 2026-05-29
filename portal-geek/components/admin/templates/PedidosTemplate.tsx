@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, WarningCircle, StopCircle } from "@phosphor-icons/react";
+import { CheckCircle, WarningCircle, StopCircle, Info } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -319,11 +319,21 @@ export function PedidosTemplate({
         </div>
 
         {/* Leyenda / Index */}
-        <div className="flex flex-col md:flex-row justify-between gap-8 pt-8 pb-12 border-t border-[#e8e8e8] text-base">
+        <div
+          id="pedidos-index"
+          className="flex flex-col md:flex-row justify-between gap-8 pt-8 pb-12 border-t border-[#e8e8e8] text-base"
+        >
           {/* Semáforo de Servicios */}
           <div className="space-y-4">
             <h4 className="font-bold uppercase tracking-[0.5px] text-[14px] text-[#575757]">
-              Semáforo de Servicios
+              Semáforo de Servicios{" "}
+              <Info
+                size={16}
+                className="inline-block ml-2 cursor-pointer text-[#6f6f6f]"
+                onClick={() =>
+                  document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
+                }
+              />
             </h4>
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-3">

@@ -6,6 +6,7 @@ import {
   StopCircle,
   CurrencyDollar,
   CaretDown,
+  Info,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 
@@ -341,7 +342,15 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
           <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">
-            {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}
+            {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}{" "}
+            <Info
+              size={24}
+              weight="fill"
+              className="inline-block ml-2 cursor-pointer text-black bg-transparent border-2 border-black rounded-full p-0.5"
+              onClick={() =>
+                document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
+              }
+            />
           </span>
           <span className="whitespace-nowrap">Estado factura</span>
         </div>
