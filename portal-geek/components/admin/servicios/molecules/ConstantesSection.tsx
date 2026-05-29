@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { sanitizeUserText } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
+import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
 
 import { Icon } from "../atoms/Icon";
@@ -276,11 +277,23 @@ export function ConstantesSection({
                   onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
                   className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
                 >
-                  {UNIT_OPTIONS.map((u) => (
-                    <option key={u.value} value={u.value}>
-                      {u.label}
-                    </option>
-                  ))}
+                  {(() => {
+                    // Filter UNIT_OPTIONS by the selected tipo so only related
+                    // units appear (e.g. cm/m for Dimensión, $ for Costo). If
+                    // the tipo is unknown, fall back to all units.
+                    const tipoNombreSeleccionado = tiposDisponibles.find(
+                      (t) => t.id_tipo_variable === draft.id_tipo_variable
+                    )?.nombre_tipo;
+                    const allowed = unidadesParaTipo(tipoNombreSeleccionado);
+                    const visibles = allowed
+                      ? UNIT_OPTIONS.filter((u) => allowed.includes(u.value))
+                      : UNIT_OPTIONS;
+                    return visibles.map((u) => (
+                      <option key={u.value} value={u.value}>
+                        {u.label}
+                      </option>
+                    ));
+                  })()}
                 </select>
               </div>
             </div>
