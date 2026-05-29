@@ -1,8 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ServiciosToolbar } from "@/components/admin/servicios/molecules/ServiciosToolBar";
+import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { ConfirmarEliminarServicioModal } from "@/components/admin/servicios/organisms/ConfirmarEliminarServicioModal";
 import { ServicioCard } from "@/components/admin/servicios/organisms/ServicioCard";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
@@ -10,6 +11,7 @@ import type { PaginatedResponse } from "@/types";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 export function ViewServicios() {
+  const router = useRouter();
   const [servicios, setServicios] = useState<ServicioListadoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +22,10 @@ export function ViewServicios() {
   const [refreshKey, setRefreshKey] = useState(0);
   const pageSize = 10;
 
+  // Search state
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [servicioAEliminar, setServicioAEliminar] = useState<{
     id: number;
     nombre: string;
@@ -28,12 +34,32 @@ export function ViewServicios() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
+  // Debounce the search input so we don't refetch on every keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Reset to page 1 whenever the search query changes — otherwise a search
+  // performed on page 3 may show "no results" if the filtered set has only
+  // 1–2 pages.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   useEffect(() => {
     async function fetchServicios() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/servicios?activo=true&page=${page}&pageSize=${pageSize}`);
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: String(pageSize),
+          activo: "true",
+        });
+        if (debouncedSearch.trim().length > 0) params.set("q", debouncedSearch.trim());
+
+        const res = await fetch(`/api/servicios?${params}`);
         if (!res.ok) throw new Error("Error al cargar servicios");
         const json: PaginatedResponse<ServicioListadoItem> = await res.json();
         setServicios(json.data);
@@ -46,9 +72,7 @@ export function ViewServicios() {
     }
 
     fetchServicios();
-  }, [page, refreshKey]);
-
-  const activosCount = total;
+  }, [page, refreshKey, debouncedSearch]);
 
   const handleEliminar = (id: number) => {
     const servicio = servicios.find((s) => s.id_servicio === id);
@@ -86,7 +110,12 @@ export function ViewServicios() {
 
   return (
     <div className="px-8 pt-6 pb-4">
-      <ServiciosToolbar activosCount={activosCount} />
+      <AdminToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar servicio..."
+        onAgregar={() => router.push("/servicios/nuevoServicio")}
+      />
 
       {deleteSuccess && (
         <SuccessModal

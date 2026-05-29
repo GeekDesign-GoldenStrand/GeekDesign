@@ -2,6 +2,7 @@
 
 import { X } from "@phosphor-icons/react";
 import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -82,9 +83,11 @@ export function Modal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
+  // Portal to body so ancestors with `transform`/`filter`/`perspective`
+  // (e.g. the translated sidebar) don't trap our `fixed` overlay.
+  return createPortal(
     <div
       className={`fixed inset-0 ${zClassName} flex items-center justify-center bg-black/40 backdrop-blur-sm p-4`}
       onMouseDown={(e) => {
@@ -130,6 +133,7 @@ export function Modal({
         )}
         {noPadding ? children : <div className="overflow-y-auto p-6">{children}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
