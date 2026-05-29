@@ -1,6 +1,7 @@
 "use client";
 
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 
 type ClienteOption = { id: number; nombre: string };
 
@@ -67,18 +68,18 @@ export function PedidosFilterSidebar({
     <FilterSidebar open={open} onClose={onClose} onReset={reset}>
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
-        <select
+        <Select
           value={cliente ?? ""}
-          onChange={(e) => setCliente(e.target.value || null)}
-          className={filterSidebarClasses.input}
+          onChange={(v) => setCliente(v || null)}
+          placeholder="Todos"
+          size="sm"
         >
-          <option value="">Todos</option>
           {clientes.map((c) => (
-            <option key={c.id} value={c.nombre}>
+            <SelectOption key={c.id} value={c.nombre}>
               {c.nombre}
-            </option>
+            </SelectOption>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>

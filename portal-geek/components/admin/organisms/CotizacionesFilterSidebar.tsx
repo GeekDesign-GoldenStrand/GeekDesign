@@ -1,6 +1,7 @@
 "use client";
 
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 
 type StatusOption = { label: string; value: string };
 type ClienteOption = { id: number; nombre: string };
@@ -52,18 +53,13 @@ export function CotizacionesFilterSidebar({
     <FilterSidebar open={open} onClose={onClose} onReset={reset}>
       <div>
         <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
-        <select
-          value={filterCliente}
-          onChange={(e) => setFilterCliente(e.target.value)}
-          className={filterSidebarClasses.input}
-        >
-          <option value="">Todos</option>
+        <Select value={filterCliente} onChange={setFilterCliente} placeholder="Todos" size="sm">
           {clientes.map((c) => (
-            <option key={c.id} value={c.nombre}>
+            <SelectOption key={c.id} value={c.nombre}>
               {c.nombre}
-            </option>
+            </SelectOption>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
