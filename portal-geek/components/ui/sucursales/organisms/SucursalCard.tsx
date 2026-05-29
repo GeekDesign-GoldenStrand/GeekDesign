@@ -13,9 +13,11 @@ interface SucursalStatusDropdownProps {
   saving?: boolean;
 }
 
+// Keep these in sync with `StatusTag` and `MaquinaStatusDropdown` — every
+// module that renders an Activo/Inactivo pill should land on the same hues.
 const STATUS_CONFIGS: Record<string, { color: string; bg: string }> = {
-  Activo: { color: "#2A940D", bg: "rgba(204, 255, 165, 0.07)" },
-  Inactivo: { color: "#FF0000", bg: "rgba(255, 165, 165, 0.07)" },
+  Activo: { color: "#00c853", bg: "rgba(0,200,83,0.07)" },
+  Inactivo: { color: "#ffb300", bg: "rgba(255,179,0,0.07)" },
 };
 
 const DEFAULT_STATUS_CFG = { color: "#8e908f", bg: "rgba(142,144,143,0.07)" };
