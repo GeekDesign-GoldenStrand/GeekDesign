@@ -4,6 +4,7 @@ import { CaretDown } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 
 import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
+import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 import { formatDate } from "@/lib/utils/date";
 
 import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
@@ -51,6 +52,47 @@ function getAllowedQuotationStatuses(currentStatus: string): string[] {
     default:
       return [currentStatus];
   }
+}
+
+// Inline status pill. Colored trigger (per-status at-a-glance recognition) +
+// canonical PopoverItem panel (uniform with every other dropdown in the app).
+function StatusPill({
+  status,
+  triggerClass,
+  iconSize,
+  onChange,
+}: {
+  status: string;
+  triggerClass: string;
+  iconSize: number;
+  onChange: (next: string) => void;
+}) {
+  const allowed = getAllowedQuotationStatuses(status);
+
+  return (
+    <Popover
+      align="end"
+      panelClassName="min-w-[160px]"
+      trigger={
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          className={`rounded-full cursor-pointer flex items-center gap-2 ${triggerClass} ${getStatusStyle(status)}`}
+        >
+          <span className="whitespace-nowrap">{status}</span>
+          <CaretDown size={iconSize} weight="bold" />
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {allowed.map((opt) => (
+          <PopoverItem key={opt} selected={opt === status} onSelect={() => onChange(opt)}>
+            {opt}
+          </PopoverItem>
+        ))}
+      </div>
+    </Popover>
+  );
 }
 
 export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
@@ -115,27 +157,12 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 ${c.monto_total.toLocaleString("es-MX")} MXN
               </span>
               <div className="flex justify-center">
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
-                  >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={14}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
+                <StatusPill
+                  status={c.estatus}
+                  triggerClass="pl-4 pr-3 py-1 text-sm font-medium"
+                  iconSize={14}
+                  onChange={(next) => onStatusChange(c.id_cotizacion, next)}
+                />
               </div>
               <div
                 className="flex justify-center items-center gap-1"
@@ -173,27 +200,12 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     #{c.folio ?? c.id_cotizacion}
                   </p>
                 </div>
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
-                  >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={12}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
-                  />
-                </div>
+                <StatusPill
+                  status={c.estatus}
+                  triggerClass="pl-3 pr-2 py-1 text-[11px] font-bold"
+                  iconSize={12}
+                  onChange={(next) => onStatusChange(c.id_cotizacion, next)}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F5F5F5]">

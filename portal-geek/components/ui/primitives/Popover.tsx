@@ -119,6 +119,9 @@ export function Popover({ trigger, align = "start", panelClassName, children }: 
 }
 
 // ─── Convenience item (auto-closes on select) ────────────────────────────────
+// Matches SelectOption's appearance exactly — every dropdown panel in the app
+// (form Selects + custom status/category Popovers) renders options with the
+// same chrome: neutral text, hover gray, selected = red text on pink bg + ✓.
 
 interface PopoverItemProps {
   onSelect: () => void;
@@ -126,6 +129,20 @@ interface PopoverItemProps {
   disabled?: boolean;
   className?: string;
   children: ReactNode;
+}
+
+function PopoverItemCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path
+        d="M2.5 7.5 L5.5 10.5 L11.5 3.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export function PopoverItem({
@@ -139,16 +156,22 @@ export function PopoverItem({
   return (
     <button
       type="button"
-      role="menuitem"
-      aria-current={selected || undefined}
-      disabled={disabled}
+      role="option"
+      aria-selected={selected}
+      disabled={disabled || selected}
       onClick={() => {
         onSelect();
         close();
       }}
-      className={`flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 ${selected ? "font-semibold" : ""} ${className ?? ""}`}
+      className={[
+        "flex w-full items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-left text-[14px] transition-colors",
+        "hover:bg-[#f5f5f5] disabled:cursor-default",
+        selected ? "bg-[#fff0f2] font-semibold text-[#df2646]" : "text-[#1e1e1e]",
+        className ?? "",
+      ].join(" ")}
     >
-      {children}
+      <span className="truncate">{children}</span>
+      {selected && <PopoverItemCheck />}
     </button>
   );
 }
