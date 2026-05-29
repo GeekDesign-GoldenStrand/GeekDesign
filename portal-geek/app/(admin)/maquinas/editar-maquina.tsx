@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import MaquinaInput from "@/components/ui/atoms/FormInput";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import { stripEmoji } from "@/lib/utils/format";
 import type { MaquinaCardProps } from "@/types";
 
 interface MaquinaRaw {
@@ -43,18 +45,35 @@ export default function EditarMaquina({
 }: EditarMaquinaProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [machineName, setMachineName] = useState("");
-  const [machineNickname, setMachineNickname] = useState("");
-  const [machineType, setMachineType] = useState("");
+  // Each field is seeded from the row's current value so the inputs read as
+  // editable text (not as placeholders) — matching how Editar cotización
+  // behaves. Equality with the seed is what `validate` / `handleSubmit` use to
+  // detect whether the user actually changed anything.
+  const [machineName, setMachineName] = useState(model);
+  const [machineNickname, setMachineNickname] = useState(nickname);
+  const [machineType, setMachineType] = useState(type);
   const [machineDescription, setMachineDescription] = useState(description);
-  const [descriptionTouched, setDescriptionTouched] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  useEffect(() => {
+  // Reseed every field + clear the error banner each time the modal reopens
+  // (false → true transition only). Using the React-recommended derive-during-
+  // render pattern (https://react.dev/learn/you-might-not-need-an-effect)
+  // instead of a useEffect with model/nickname/etc. in the deps — those props
+  // change after `onEdit` updates the parent's row, and an effect would
+  // immediately overwrite `submitSuccess=true` before the success modal can
+  // mount.
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (prevOpen !== isOpen) {
+    setPrevOpen(isOpen);
     if (isOpen) {
+      setError(null);
+      setMachineName(model);
+      setMachineNickname(nickname);
+      setMachineType(type);
       setMachineDescription(description ?? "");
-      setDescriptionTouched(false);
+      setSubmitSuccess(false);
     }
-  }, [isOpen, description]);
+  }
 
   if (!isOpen) return null;
 
@@ -70,10 +89,13 @@ export default function EditarMaquina({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre_maquina: machineName || undefined,
-          apodo_maquina: machineNickname || undefined,
+          // Send only fields the user actually changed compared to the seed
+          // values. `tipo` keeps sending the current value so the API contract
+          // (which expects a non-null tipo) doesn't break on no-op edits.
+          nombre_maquina: machineName !== model ? machineName : undefined,
+          apodo_maquina: machineNickname !== nickname ? machineNickname : undefined,
           tipo: machineType || type,
-          descripcion: descriptionTouched ? machineDescription || "" : undefined,
+          descripcion: machineDescription !== (description ?? "") ? machineDescription : undefined,
         }),
       });
       if (!res.ok) {
@@ -101,8 +123,8 @@ export default function EditarMaquina({
         onChangeStatus: () => {},
       });
 
-      window.alert("Máquina editada correctamente");
-      onClose();
+      // SuccessModal auto-dismisses after 1.5s and then closes this modal.
+      setSubmitSuccess(true);
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {
@@ -111,16 +133,20 @@ export default function EditarMaquina({
   }
 
   function validate(): boolean {
-    if (
-      machineName.length === 0 &&
-      machineNickname.length === 0 &&
-      machineType.length === 0 &&
-      !descriptionTouched
-    ) {
+    const unchanged =
+      machineName === model &&
+      machineNickname === nickname &&
+      machineType === type &&
+      machineDescription === (description ?? "");
+    if (unchanged) {
       setError("No se modificó ningún campo");
       return false;
     }
     return true;
+  }
+
+  if (submitSuccess) {
+    return <SuccessModal message="Máquina editada correctamente" onClose={onClose} />;
   }
 
   return (
@@ -129,16 +155,16 @@ export default function EditarMaquina({
         <MaquinaInput
           name="machineName"
           label="Modelo"
-          placeholder={model}
-          maxInputLength={100}
-          onChange={(e) => setMachineName(e.target.value)}
+          maxInputLength={30}
+          value={machineName}
+          onChange={(e) => setMachineName(stripEmoji(e.target.value))}
         />
         <MaquinaInput
           name="machineNickname"
           label="Apodo"
-          placeholder={nickname}
-          maxInputLength={100}
-          onChange={(e) => setMachineNickname(e.target.value)}
+          maxInputLength={30}
+          value={machineNickname}
+          onChange={(e) => setMachineNickname(stripEmoji(e.target.value))}
         />
         <div className="flex flex-col text-[13px] text-[#575757] mb-6">
           <label className="font-medium">Tipo</label>
@@ -156,10 +182,7 @@ export default function EditarMaquina({
           placeholderLongText="Área de trabajo o especificaciones de la máquina"
           maxInputLength={200}
           value={machineDescription}
-          onChange={(e) => {
-            setMachineDescription(e.target.value);
-            setDescriptionTouched(true);
-          }}
+          onChange={(e) => setMachineDescription(stripEmoji(e.target.value))}
         />
         {error && (
           <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
