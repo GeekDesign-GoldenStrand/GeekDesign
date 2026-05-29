@@ -264,17 +264,6 @@ export type PedidoDetalleResponse = {
   hasTerceros: boolean;
 };
 
-/** Returns sorted distinct non-null empresa values for clients that have at least one pedido. */
-export async function getEmpresasPedidos(): Promise<string[]> {
-  const rows = await prisma.clientes.findMany({
-    where: { empresa: { not: null }, pedidos: { some: {} } },
-    select: { empresa: true },
-    distinct: ["empresa"],
-    orderBy: { empresa: "asc" },
-  });
-  return rows.map((r) => r.empresa as string);
-}
-
 // PE-05 — Dirección consulta los detalles de un pedido específico.
 // Aggregates the order header, its line items, payments and status history.
 export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
