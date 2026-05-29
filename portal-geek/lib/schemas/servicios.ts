@@ -36,7 +36,6 @@ const VariableSchema = z.object({
     }),
 });
 
-
 const ConstanteSchema = z
   .object({
     nombre_constante: z
