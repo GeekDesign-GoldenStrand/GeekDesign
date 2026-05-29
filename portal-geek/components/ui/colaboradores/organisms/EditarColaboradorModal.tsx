@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 
 import type { ColaboradorApiRow } from "./RegistrarColaboradorForm";
 
@@ -38,8 +40,6 @@ interface EditarColaboradorModalProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
@@ -219,17 +219,17 @@ function EditForm({
           <label className={LABEL}>
             Sexo <span className="text-[#e42200]">*</span>
           </label>
-          <select
+          <Select
             value={form.sexo}
-            onChange={(e) => setField("sexo", e.target.value)}
-            className={`${SELECT_FIELD} ${errors.sexo ? FIELD_ERROR : touched.sexo && form.sexo ? FIELD_SUCCESS : ""}`}
+            onChange={(v) => setField("sexo", v)}
+            placeholder="Seleccionar"
+            size="sm"
+            error={errors.sexo || undefined}
           >
-            <option value="">Seleccionar</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="NA">Prefiero no decir</option>
-          </select>
-          {errors.sexo && <p className={ERROR_MSG}>{errors.sexo}</p>}
+            <SelectOption value="M">Masculino</SelectOption>
+            <SelectOption value="F">Femenino</SelectOption>
+            <SelectOption value="NA">Prefiero no decir</SelectOption>
+          </Select>
         </div>
       </div>
 
@@ -237,55 +237,47 @@ function EditForm({
         <label className={LABEL}>
           Rol <span className="text-[#e42200]">*</span>
         </label>
-        <select
+        <Select
           value={form.id_rol}
-          onChange={(e) => setField("id_rol", e.target.value)}
-          className={`${SELECT_FIELD} ${errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""}`}
+          onChange={(v) => setField("id_rol", v)}
+          placeholder="Seleccionar rol"
+          size="sm"
+          error={errors.id_rol || undefined}
         >
-          <option value="">Seleccionar rol</option>
           {roles.map((r) => (
-            <option key={r.id_rol} value={r.id_rol}>
+            <SelectOption key={r.id_rol} value={String(r.id_rol)}>
               {r.nombre_rol}
-            </option>
+            </SelectOption>
           ))}
-        </select>
-        {errors.id_rol && <p className={ERROR_MSG}>{errors.id_rol}</p>}
+        </Select>
       </div>
 
       <div>
         <label className={LABEL}>
           Sucursal <span className="text-[#e42200]">*</span>
         </label>
-        <select
+        <Select
           value={form.id_sucursal}
-          onChange={(e) => setField("id_sucursal", e.target.value)}
-          className={`${SELECT_FIELD} ${errors.id_sucursal ? FIELD_ERROR : touched.id_sucursal && form.id_sucursal ? FIELD_SUCCESS : ""}`}
+          onChange={(v) => setField("id_sucursal", v)}
+          placeholder="Seleccionar sucursal"
+          size="sm"
+          error={errors.id_sucursal || undefined}
         >
-          <option value="">Seleccionar sucursal</option>
           {sucursales.map((s) => (
-            <option key={s.id_sucursal} value={s.id_sucursal}>
+            <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
               {s.nombre_sucursal}
-            </option>
+            </SelectOption>
           ))}
-        </select>
-        {errors.id_sucursal && <p className={ERROR_MSG}>{errors.id_sucursal}</p>}
+        </Select>
       </div>
 
       <div className="flex justify-end gap-3 mt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={editLoading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={editLoading}>
           {editLoading ? "Guardando..." : "Guardar cambios"}
-        </button>
+        </Button>
       </div>
     </form>
   );
