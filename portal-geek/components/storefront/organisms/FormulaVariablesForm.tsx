@@ -138,6 +138,12 @@ export function FormulaVariablesForm({
     setValues({ ...defaultValues });
     setCantidad(1);
     setNotas("");
+    // Clear the stale price so the "Agregar al carrito" button stays disabled
+    // until the post-reset recalc lands. Without this, the button briefly
+    // flashes enabled (with the old subtotal) → disabled (while recalculating)
+    // → enabled (with the new subtotal).
+    setPrecioUnitario(null);
+    setCalcError(null);
   }
 
   function handleSubmit(e: React.FormEvent) {

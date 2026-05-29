@@ -42,7 +42,7 @@ export function ServicioDetalleClient({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-[40px]">
-      {/* ── Izquierda: galería + upload ── */}
+      {/* ── Izquierda: galería + (upload, solo cuando se cotiza en línea) ── */}
       <div className="flex flex-col gap-[16px]">
         <div className="bg-[#ffd9e2] rounded-[14px] aspect-square overflow-hidden flex items-center justify-center border border-gray-200">
           {selectedImage ? (
@@ -73,11 +73,15 @@ export function ServicioDetalleClient({
           </div>
         )}
 
-        <DesignUploadZone
-          maxFiles={1}
-          maxBytes={10 * 1024 * 1024}
-          onKeysChange={(files) => setDisenioFile(files[0] ?? null)}
-        />
+        {/* Upload only matters for the configurable flow; the personalizada
+            placeholder doesn't consume the file so we omit it there. */}
+        {puedeCotizarEnLinea && (
+          <DesignUploadZone
+            maxFiles={1}
+            maxBytes={10 * 1024 * 1024}
+            onKeysChange={(files) => setDisenioFile(files[0] ?? null)}
+          />
+        )}
       </div>
 
       {/* ── Derecha: info + form ── */}
@@ -113,7 +117,9 @@ export function ServicioDetalleClient({
               una propuesta para tu proyecto.
             </p>
             <Button asChild variant="primary" section="storefront" size="md" className="self-start">
-              <Link href="/tienda/cotizacion">Solicitar cotización personalizada</Link>
+              <Link href="/tienda/cotizacion/personalizada">
+                Solicitar cotización personalizada
+              </Link>
             </Button>
           </div>
         )}

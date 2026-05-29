@@ -44,30 +44,44 @@ export function CheckoutForm({ sucursales }: Props) {
   const [mounted, setMounted] = useState(false);
 
   const [nombre, setNombre] = useState("");
+  const [nombreError, setNombreError] = useState<string | null>(null);
   const [empresa, setEmpresa] = useState("");
   const [correo, setCorreo] = useState("");
   const [correoError, setCorreoError] = useState<string | null>(null);
   // E.164 format (e.g. "+524421234567") from react-phone-number-input.
   // The library returns undefined while the user is typing an incomplete number.
   const [telefono, setTelefono] = useState<string | undefined>(undefined);
+  const [telefonoError, setTelefonoError] = useState<string | null>(null);
 
   const PHONE_MAX_DIGITS = 15;
   function handlePhoneChange(next: string | undefined) {
     if (!next) {
       setTelefono(undefined);
+      if (telefonoError) setTelefonoError(null);
       return;
     }
     const digitCount = next.replace(/\D/g, "").length;
     if (digitCount > PHONE_MAX_DIGITS) return; // reject keystroke, value stays put
     setTelefono(next);
+    if (telefonoError) setTelefonoError(null);
   }
   const [idSucursal, setIdSucursal] = useState<number | null>(sucursales[0]?.id_sucursal ?? null);
+  const [sucursalError, setSucursalError] = useState<string | null>(null);
   const [notas, setNotas] = useState("");
+  const [notasError, setNotasError] = useState<string | null>(null);
   const [fechaEstimada, setFechaEstimada] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fechaError, setFechaError] = useState<string | null>(null);
+
+  // Allowed character set for notas (mirrors the server-side regex). Used by
+  // the onBlur validator + the submit-time guard so the user gets the same
+  // message regardless of when validation fires.
+  const NOTAS_REGEX =
+    /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/;
+  const NOTAS_INVALID_MSG =
+    "Las notas solo pueden contener letras, números y signos de puntuación comunes (sin emojis)";
 
   // reAchi301 review: `submitting` is React state, so two fast clicks both
   // capture the stale `false` in their closures before the re-render disables
@@ -94,39 +108,43 @@ export function CheckoutForm({ sucursales }: Props) {
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
-    setFechaError(null);
 
-    if (!isFechaEstimadaValida(fechaEstimada)) {
-      setFechaError("Selecciona una fecha válida de entrega");
+    // Run every validator and surface errors INLINE per field. Submit only
+    // proceeds when every field is clean — no scrolling to a banner just to
+    // find which input is wrong.
+    const nombreInvalid = nombre.trim().length === 0 ? "El nombre es requerido" : null;
+    const correoInvalid = !isValidEmail(correo) ? EMAIL_ERROR_MESSAGE : null;
+    const telefonoInvalid =
+      !telefono || !isValidPhoneNumber(telefono)
+        ? "Ingresa un número de teléfono válido para el país seleccionado"
+        : null;
+    const sucursalInvalid = idSucursal === null ? "Selecciona una sucursal" : null;
+    const fechaInvalid = !isFechaEstimadaValida(fechaEstimada)
+      ? "Selecciona una fecha válida de entrega"
+      : null;
+    const notasInvalid = notas.trim() && !NOTAS_REGEX.test(notas) ? NOTAS_INVALID_MSG : null;
+
+    setNombreError(nombreInvalid);
+    setCorreoError(correoInvalid);
+    setTelefonoError(telefonoInvalid);
+    setSucursalError(sucursalInvalid);
+    setFechaError(fechaInvalid);
+    setNotasError(notasInvalid);
+
+    if (
+      nombreInvalid ||
+      correoInvalid ||
+      telefonoInvalid ||
+      sucursalInvalid ||
+      fechaInvalid ||
+      notasInvalid
+    ) {
       return;
     }
 
     if (items.length === 0) {
       setError("El carrito está vacío");
       return;
-    }
-    if (idSucursal === null) {
-      setError("Selecciona una sucursal");
-      return;
-    }
-    if (!isValidEmail(correo)) {
-      setCorreoError(EMAIL_ERROR_MESSAGE);
-      setError("Revisa los datos del formulario");
-      return;
-    }
-    if (!telefono || !isValidPhoneNumber(telefono)) {
-      setError("Ingresa un número de teléfono válido para el país seleccionado");
-      return;
-    }
-
-    if (notas.trim()) {
-      const regex = /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s.,;:!?¿¡'"\(\)\-\[\]\{\}/&%$€£¥*+=@_#\\|<>^~`´]*$/;
-      if (!regex.test(notas)) {
-        setError(
-          "Las notas solo pueden contener letras en inglés o español, números y signos de puntuación comunes, y no se permiten emojis"
-        );
-        return;
-      }
     }
 
     submittingRef.current = true;
@@ -211,10 +229,26 @@ export function CheckoutForm({ sucursales }: Props) {
           <input
             id="nombre"
             required
+            maxLength={100}
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e]"
+            onChange={(e) => {
+              setNombre(e.target.value);
+              if (nombreError) setNombreError(null);
+            }}
+            onBlur={() => {
+              setNombreError(nombre.trim().length === 0 ? "El nombre es requerido" : null);
+            }}
+            aria-invalid={nombreError !== null}
+            aria-describedby={nombreError ? "nombre-error" : undefined}
+            className={`h-[44px] rounded-[8px] border bg-white px-[12px] text-[14px] text-[#1e1e1e] ${
+              nombreError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+            }`}
           />
+          {nombreError && (
+            <p id="nombre-error" className="text-[12px] font-medium text-[#c14a4a]">
+              {nombreError}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-[6px]">
@@ -223,6 +257,7 @@ export function CheckoutForm({ sucursales }: Props) {
           </label>
           <input
             id="empresa"
+            maxLength={100}
             value={empresa}
             onChange={(e) => setEmpresa(e.target.value)}
             className="h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e]"
@@ -237,6 +272,7 @@ export function CheckoutForm({ sucursales }: Props) {
             id="correo"
             type="email"
             required
+            maxLength={150}
             autoComplete="email"
             inputMode="email"
             spellCheck={false}
@@ -280,10 +316,31 @@ export function CheckoutForm({ sucursales }: Props) {
             defaultCountry="MX"
             flags={flags}
             value={telefono}
-            numberInputProps={{ maxLength: 16, inputMode: "tel" }}
+            numberInputProps={{
+              maxLength: 16,
+              inputMode: "tel",
+              "aria-invalid": telefonoError !== null,
+              "aria-describedby": telefonoError ? "telefono-error" : undefined,
+              onBlur: () => {
+                if (!telefono) {
+                  setTelefonoError("Ingresa tu número de teléfono");
+                } else if (!isValidPhoneNumber(telefono)) {
+                  setTelefonoError("Número de teléfono inválido para el país seleccionado");
+                } else {
+                  setTelefonoError(null);
+                }
+              },
+            }}
             onChange={handlePhoneChange}
-            className="flex items-center gap-2 h-[44px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[14px] text-[#1e1e1e] [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:border-none [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:[font:inherit] [&_.PhoneInputInput]:[color:inherit] [&_.PhoneInputInput]:p-0 [&_.PhoneInputInput]:h-full [&_.PhoneInputCountry]:mr-0"
+            className={`flex items-center gap-2 h-[44px] rounded-[8px] border bg-white px-[12px] text-[14px] text-[#1e1e1e] [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:border-none [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:[font:inherit] [&_.PhoneInputInput]:[color:inherit] [&_.PhoneInputInput]:p-0 [&_.PhoneInputInput]:h-full [&_.PhoneInputCountry]:mr-0 ${
+              telefonoError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+            }`}
           />
+          {telefonoError && (
+            <p id="telefono-error" className="text-[12px] font-medium text-[#c14a4a]">
+              {telefonoError}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-[6px]">
@@ -294,7 +351,11 @@ export function CheckoutForm({ sucursales }: Props) {
             id="sucursal"
             placeholder="Selecciona una sucursal"
             value={idSucursal === null ? "" : String(idSucursal)}
-            onChange={(v) => setIdSucursal(v ? Number(v) : null)}
+            onChange={(v) => {
+              setIdSucursal(v ? Number(v) : null);
+              if (sucursalError) setSucursalError(null);
+            }}
+            error={sucursalError || undefined}
           >
             {sucursales.map((s) => (
               <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
@@ -342,9 +403,28 @@ export function CheckoutForm({ sucursales }: Props) {
             rows={3}
             maxLength={500}
             value={notas}
-            onChange={(e) => setNotas(e.target.value)}
-            className="rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] py-[8px] text-[14px] text-[#1e1e1e]"
+            onChange={(e) => {
+              setNotas(e.target.value);
+              if (notasError) setNotasError(null);
+            }}
+            onBlur={() => {
+              if (!notas.trim()) {
+                setNotasError(null);
+                return;
+              }
+              setNotasError(NOTAS_REGEX.test(notas) ? null : NOTAS_INVALID_MSG);
+            }}
+            aria-invalid={notasError !== null}
+            aria-describedby={notasError ? "notas-error" : undefined}
+            className={`rounded-[8px] border bg-white px-[12px] py-[8px] text-[14px] text-[#1e1e1e] ${
+              notasError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+            }`}
           />
+          {notasError && (
+            <p id="notas-error" className="text-[12px] font-medium text-[#c14a4a]">
+              {notasError}
+            </p>
+          )}
         </div>
       </section>
 
