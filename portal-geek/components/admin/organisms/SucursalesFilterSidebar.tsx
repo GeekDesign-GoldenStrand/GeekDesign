@@ -67,6 +67,7 @@ export function SucursalesFilterSidebar({
         <input
           value={draftNombre}
           onChange={(e) => setDraftNombre(e.target.value)}
+          maxLength={50}
           className={filterSidebarClasses.input}
         />
       </div>
@@ -76,6 +77,7 @@ export function SucursalesFilterSidebar({
         <input
           value={draftDireccion}
           onChange={(e) => setDraftDireccion(e.target.value)}
+          maxLength={50}
           className={filterSidebarClasses.input}
         />
       </div>

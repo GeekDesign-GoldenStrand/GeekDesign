@@ -13,6 +13,7 @@ export function SearchBar({ value, onChange, placeholder = "Buscar" }: SearchBar
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        maxLength={50}
         className="flex-1 bg-transparent font-ibm-plex text-[14px] font-medium text-[#333] outline-none placeholder:text-[#8e908f] pr-10"
       />
 

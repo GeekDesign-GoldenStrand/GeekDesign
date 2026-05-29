@@ -154,6 +154,7 @@ export default function MultiSelect({
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={selected.length === 0 ? placeholder : ""}
+            maxLength={50}
             className="flex-1 min-w-[120px] outline-none text-sm text-[#1e1e1e] placeholder:text-[#8e908f] bg-transparent"
           />
         )}
