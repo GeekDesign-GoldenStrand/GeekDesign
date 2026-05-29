@@ -35,6 +35,8 @@ export function SidebarNav({ role, expanded }: { role: UserRole; expanded: boole
             href={item.href}
             label={item.label}
             icon={item.icon}
+            iconHover={item.iconHover}
+            iconActive={item.iconActive}
             isActive={isActive}
             expanded={expanded}
             onClick={onMenuClose}

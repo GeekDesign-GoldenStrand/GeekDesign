@@ -2,7 +2,7 @@
 
 import { MapPin } from "@phosphor-icons/react";
 
-import { EditIcon, MailIcon, PhoneIcon, TrashIcon } from "@/components/ui/atoms/icons";
+import { EntityCard } from "@/components/ui/atoms";
 import { RoleTag } from "@/components/ui/atoms/RoleTag";
 import { StatusTag } from "@/components/ui/atoms/StatusTag";
 
@@ -32,9 +32,6 @@ interface UserCardProps {
   savingStatus?: boolean;
 }
 
-const ACTION_BTN =
-  "flex items-center justify-center gap-1.5 border border-dashed border-[#1e1e1e] rounded-[7px] px-3 py-2 text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors";
-
 export function UserCard({
   user,
   roles,
@@ -47,12 +44,10 @@ export function UserCard({
   savingStatus,
 }: UserCardProps) {
   return (
-    <div className="w-full rounded-[7px] bg-white shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 flex flex-col gap-2.5">
-      <h3 className="font-ibm-plex font-semibold text-[24px] text-[#1e1e1e] leading-tight">
-        {user.nombre_completo}
-      </h3>
+    <EntityCard>
+      <EntityCard.Title>{user.nombre_completo}</EntityCard.Title>
 
-      <div className="flex flex-col gap-0.5 font-ibm-plex font-light text-[16px] text-[#424242]">
+      <div className="flex flex-col gap-0.5 font-light text-[16px] text-[#424242]">
         {user.edad != null && <span>Edad: {user.edad}</span>}
         {user.sexo && <span>Sexo: {user.sexo}</span>}
         {onSucursalClick ? (
@@ -84,7 +79,7 @@ export function UserCard({
         )}
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
+      <EntityCard.TagRow>
         <RoleTag
           role={user.rol.nombre_rol}
           roles={roles}
@@ -97,62 +92,18 @@ export function UserCard({
           onStatusChange={onStatusChange ? (s) => onStatusChange(user.id_usuario, s) : undefined}
           saving={savingStatus}
         />
-      </div>
+      </EntityCard.TagRow>
 
-      {user.correo_electronico && (
-        <span className="font-ibm-plex font-medium text-[16px] text-[#1e1e1e] flex items-center gap-2">
-          <MailIcon size={16} aria-hidden />
-          {user.correo_electronico}
-        </span>
-      )}
+      <EntityCard.Contact email={user.correo_electronico} phone={user.telefono} />
 
-      {user.telefono && (
-        <span className="font-ibm-plex font-medium text-[16px] text-[#1e1e1e] flex items-center gap-2">
-          <PhoneIcon size={16} aria-hidden />
-          {/^(55|33|81)/.test(user.telefono)
-            ? user.telefono.replace(/^(\d{2})(\d{4})(\d{4})$/, "$1 $2 $3")
-            : user.telefono.replace(/^(\d{3})(\d{3})(\d{4})$/, "$1 $2 $3")}
-        </span>
-      )}
-
-      <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
-        <a
-          href={user.telefono ? `tel:${user.telefono}` : undefined}
-          aria-disabled={!user.telefono}
-          className={`flex-1 min-w-[80px] ${ACTION_BTN} aria-disabled:opacity-40 aria-disabled:pointer-events-none`}
-        >
-          <PhoneIcon size={16} aria-hidden />
-          Llamar
-        </a>
-        <a
-          href={user.correo_electronico ? `mailto:${user.correo_electronico}` : undefined}
-          aria-disabled={!user.correo_electronico}
-          className={`flex-1 min-w-[80px] ${ACTION_BTN} aria-disabled:opacity-40 aria-disabled:pointer-events-none`}
-        >
-          <MailIcon size={16} aria-hidden />
-          Mail
-        </a>
-        {onEdit && (
-          <button
-            type="button"
-            onClick={() => onEdit(user.id_usuario)}
-            aria-label={`Editar ${user.nombre_completo}`}
-            className="flex-none flex items-center justify-center border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-[#f5f5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors"
-          >
-            <EditIcon size={16} aria-hidden />
-          </button>
-        )}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={() => onDelete(user.id_usuario)}
-            aria-label={`Eliminar ${user.nombre_completo}`}
-            className="flex-none flex items-center justify-center border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors"
-          >
-            <TrashIcon size={16} aria-hidden />
-          </button>
-        )}
-      </div>
-    </div>
+      <EntityCard.Actions
+        email={user.correo_electronico}
+        phone={user.telefono}
+        onEdit={onEdit ? () => onEdit(user.id_usuario) : undefined}
+        onDelete={onDelete ? () => onDelete(user.id_usuario) : undefined}
+        editLabel={`Editar ${user.nombre_completo}`}
+        deleteLabel={`Eliminar ${user.nombre_completo}`}
+      />
+    </EntityCard>
   );
 }

@@ -2,25 +2,31 @@ import { z } from "zod";
 
 import { noEmoji, textOnly } from "./text-validation";
 
+const machineText = (field: string, max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .refine(noEmoji, { message: `${field} no debe contener emojis` })
+    .refine(textOnly, {
+      message: `${field} solo debe contener caracteres en inglés o español y signos comunes`,
+    });
+
+const optionalMachineText = (field: string, max: number) =>
+  z
+    .string()
+    .max(max)
+    .refine(noEmoji, { message: `${field} no debe contener emojis` })
+    .refine(textOnly, {
+      message: `${field} solo debe contener caracteres en inglés o español y signos comunes`,
+    })
+    .optional();
+
 export const CreateMaquinaSchema = z.object({
-  nombre_maquina: z
-    .string()
-    .min(1)
-    .max(100)
-    .refine(noEmoji, { message: "El nombre no debe contener emojis" })
-    .refine(textOnly, {
-      message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
-    }),
-  apodo_maquina: z
-    .string()
-    .min(1)
-    .max(100)
-    .refine(noEmoji, { message: "El apodo no debe contener emojis" })
-    .refine(textOnly, {
-      message: "El apodo solo debe contener caracteres en inglés o español y signos comunes",
-    }),
+  nombre_maquina: machineText("El nombre", 30),
+  apodo_maquina: machineText("El apodo", 30),
   tipo: z.enum(["Láser CO2", "Láser Fibra", "Bordadora"]),
-  descripcion: z.string().max(200).optional(),
+  descripcion: optionalMachineText("La descripción", 200),
   estatus: z.enum(["Activa", "Inactiva", "En mantenimiento"]).default("Activa"),
 });
 

@@ -45,7 +45,7 @@ const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
-const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
+const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 const TODAY = new Date().toISOString().split("T")[0];

@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
 import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
 import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
 interface ServicioRaw {
@@ -127,30 +127,47 @@ export default function AsignarServicios({
   }
 
   return (
-    <ModalShell title={`Asignar servicios — ${nickname} (${model})`} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col text-[13px] text-[#575757] mb-6">
-          <label className="font-medium mb-1">Servicios</label>
-          <MultiSelect
-            options={servicioOptions}
-            value={selectedServicios}
-            onChange={(val) => {
-              setSelectedServicios(val);
-              setServicioError(null);
-            }}
-            placeholder="Seleccionar servicios..."
-          />
-          {servicioError && <p className="text-[12px] text-[#e42200] mt-1">{servicioError}</p>}
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`Asignar servicios — ${nickname} (${model})`}
+      size="lg"
+      noPadding
+    >
+      {/* Body scrolls independently; the action bar below stays anchored so the
+          MultiSelect dropdown (absolute, clipped to the scrollable body) can't
+          cover the Cancelar/Guardar buttons. */}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex flex-col text-[13px] text-[#575757]">
+            <label className="font-medium mb-1">Servicios</label>
+            <MultiSelect
+              options={servicioOptions}
+              value={selectedServicios}
+              onChange={(val) => {
+                setSelectedServicios(val);
+                setServicioError(null);
+              }}
+              placeholder="Seleccionar servicios..."
+            />
+            {servicioError && <p className="text-[12px] text-[#e42200] mt-1">{servicioError}</p>}
+          </div>
+
+          {error && (
+            <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
+              {error}
+            </p>
+          )}
         </div>
 
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mb-4">
-            {error}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3 mt-4">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" size="sm" loading={isLoading}>
@@ -158,6 +175,6 @@ export default function AsignarServicios({
           </Button>
         </div>
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
