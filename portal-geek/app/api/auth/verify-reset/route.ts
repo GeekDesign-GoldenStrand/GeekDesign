@@ -3,8 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
 
-  // Redirect to the collaborator password setting page
-  const redirectUrl = new URL("/establecer-contrasena", request.url);
+  // Behind App Engine's proxy, request.url resolves to the internal
+  // origin (e.g. http://localhost:8081), so prefer the public app URL.
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? request.url;
+  const redirectUrl = new URL("/establecer-contrasena", base);
   const response = NextResponse.redirect(redirectUrl);
 
   if (token) {
