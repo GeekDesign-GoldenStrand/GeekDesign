@@ -83,7 +83,6 @@ export interface SelectProps {
   /** Red border + helper text when set. */
   error?: string;
   disabled?: boolean;
-  name?: string;
   id?: string;
   className?: string;
   "aria-label"?: string;
@@ -146,9 +145,9 @@ export function Select({
         }
       >
         <SelectContext.Provider value={{ value, onSelect: onChange }}>
-          <div role="listbox" className="flex flex-col">
-            {children}
-          </div>
+          {/* Wrapper is presentational — Popover panel already has role="listbox",
+              so nesting another listbox here would be invalid ARIA. */}
+          <div className="flex flex-col">{children}</div>
         </SelectContext.Provider>
       </Popover>
       {error && (

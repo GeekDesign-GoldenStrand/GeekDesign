@@ -90,13 +90,16 @@ export function Popover({ trigger, align = "start", panelClassName, children }: 
   }
 
   const triggerProps = trigger.props;
+  // PopoverItem uses role="option" + aria-selected, so the panel + trigger
+  // semantics are listbox (selectable list) — not menu (action list). Every
+  // current caller is a selectable dropdown.
   const wrappedTrigger = cloneElement(trigger, {
     onClick: (e: MouseEvent) => {
       triggerProps.onClick?.(e);
       setOpen((o) => !o);
     },
     "aria-expanded": open,
-    "aria-haspopup": "menu",
+    "aria-haspopup": "listbox",
   });
 
   const close = () => setOpen(false);
@@ -107,7 +110,7 @@ export function Popover({ trigger, align = "start", panelClassName, children }: 
         {wrappedTrigger}
         {open && (
           <div
-            role="menu"
+            role="listbox"
             className={`absolute top-[calc(100%+6px)] z-50 ${ALIGN_CLASSES[align]} min-w-full rounded-[10px] bg-white p-2 shadow-[0_4px_20px_rgba(0,0,0,0.18)] ${panelClassName ?? ""}`}
           >
             {children}
@@ -158,14 +161,17 @@ export function PopoverItem({
       type="button"
       role="option"
       aria-selected={selected}
-      disabled={disabled || selected}
+      disabled={disabled}
       onClick={() => {
-        onSelect();
+        // Clicking the currently-selected option just closes the popover —
+        // skip the onSelect call to avoid redundant state updates and to let
+        // users dismiss by re-clicking their current choice.
+        if (!selected) onSelect();
         close();
       }}
       className={[
         "flex w-full items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-left text-[14px] transition-colors",
-        "hover:bg-[#f5f5f5] disabled:cursor-default",
+        "hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50",
         selected ? "bg-[#fff0f2] font-semibold text-[#df2646]" : "text-[#1e1e1e]",
         className ?? "",
       ].join(" ")}
