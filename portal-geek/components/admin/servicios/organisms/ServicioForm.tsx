@@ -131,9 +131,11 @@ export function ServicioForm(props: ServicioFormProps) {
       <Textarea
         label="Descripción:"
         value={form.descripcion_servicio}
-        onChange={(e) => actions.updateField("descripcion_servicio", e.target.value)}
+        onChange={(e) =>
+          actions.updateField("descripcion_servicio", sanitizeUserText(e.target.value))
+        }
         placeholder="Describe brevemente el servicio (opcional)"
-        maxLength={500}
+        maxLength={350}
       />
 
       {/* Row 2.5: Imágenes */}
