@@ -36,7 +36,7 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
       trigger={
         <button
           type="button"
-          className="inline-flex items-center justify-between min-w-[140px] h-[38px] px-4 rounded-[19px] text-[14px] font-bold font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border"
+          className="inline-flex items-center justify-between gap-2 min-w-[110px] px-3 py-1 rounded-full text-sm font-medium font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border whitespace-nowrap"
           style={{
             color: style.color,
             backgroundColor: style.bg,
@@ -44,7 +44,7 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
           }}
         >
           <span className="truncate">{category || "Sin categoría"}</span>
-          <ChevronDownIcon size={14} />
+          <ChevronDownIcon size={12} />
         </button>
       }
     >
