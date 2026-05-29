@@ -3,6 +3,8 @@
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { EMAIL_ERROR_MESSAGE, isValidEmail } from "@/lib/utils/email";
+
 /**
  * Organism: FolioSearch
  *
@@ -18,6 +20,7 @@ import { useState } from "react";
 export function FolioSearch() {
   const [folio, setFolio] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -26,6 +29,10 @@ export function FolioSearch() {
     const f = folio.trim();
     const m = email.trim();
     if (!f || !m) return;
+    if (!isValidEmail(m)) {
+      setEmailError(EMAIL_ERROR_MESSAGE);
+      return;
+    }
 
     setSubmitting(true);
     setFeedback(null);
@@ -90,11 +97,33 @@ export function FolioSearch() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
+                  onBlur={() => {
+                    if (email.trim().length === 0) {
+                      setEmailError(null);
+                      return;
+                    }
+                    setEmailError(isValidEmail(email) ? null : EMAIL_ERROR_MESSAGE);
+                  }}
                   placeholder="ejemplo@correo.com"
                   required
-                  className="w-full h-[64px] bg-white border border-[#E8E8E8] rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all"
+                  autoComplete="email"
+                  inputMode="email"
+                  spellCheck={false}
+                  aria-invalid={emailError !== null}
+                  aria-describedby={emailError ? "folio-email-error" : undefined}
+                  className={`w-full h-[64px] bg-white border rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all ${
+                    emailError ? "border-[#c14a4a]" : "border-[#E8E8E8]"
+                  }`}
                 />
+                {emailError && (
+                  <p id="folio-email-error" className="text-[12px] font-medium text-[#c14a4a]">
+                    {emailError}
+                  </p>
+                )}
               </div>
             </div>
 

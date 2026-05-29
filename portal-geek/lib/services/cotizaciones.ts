@@ -878,6 +878,7 @@ export async function createCotizacionFromCart(
         id_estatus: pedidoStatusPendiente.id_estatus,
         id_estado_factura: estadoFacturaCotizacion.id_estado_factura,
         notas: input.notas ?? null,
+        fecha_estimada: input.fecha_estimada ?? null,
       },
     });
 
@@ -898,6 +899,7 @@ export async function createCotizacionFromCart(
         monto_total,
         empresa_cliente: input.cliente.empresa ?? null,
         notas: input.notas ?? null,
+        fecha_fin: input.fecha_estimada ?? null,
       },
     });
 

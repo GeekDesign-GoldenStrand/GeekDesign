@@ -26,10 +26,9 @@ describe("isValidEmail", () => {
   });
 });
 
-describe("emailField", () => {
-  it("rechaza las mismas direcciones que isValidEmail", () => {
+describe("emailField (Zod refine wrapper)", () => {
+  it("rechaza las mismas direcciones que isValidEmail (backend mirror)", () => {
     const schema = emailField();
-
     for (const invalid of [
       "pepe@",
       "pepe@dominio",
@@ -43,14 +42,13 @@ describe("emailField", () => {
 
   it("acepta direcciones válidas", () => {
     const schema = emailField();
-
     expect(schema.safeParse("nombre@dominio.com").success).toBe(true);
     expect(schema.safeParse("nombre+tag@dominio.mx").success).toBe(true);
   });
 
   it("respeta el límite max configurado", () => {
     const schema = emailField({ max: 20 });
-
+    // 25 chars > 20 → falla por max antes de llegar al refine
     expect(schema.safeParse("nombre.muylargo@dominio.com").success).toBe(false);
   });
 });

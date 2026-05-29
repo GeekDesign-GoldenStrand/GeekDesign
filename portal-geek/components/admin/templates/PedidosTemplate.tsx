@@ -39,8 +39,6 @@ type Pedido = {
   archivos: { id: number; nombre: string }[];
 };
 
-type ClienteOption = { id: number; nombre: string };
-
 // Props
 type Props = {
   pedidos: Pedido[];
@@ -53,11 +51,6 @@ type Props = {
 
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
-
-  clientes: ClienteOption[];
-
-  empresa: string | null;
-  setEmpresa: (v: string | null) => void;
 
   cliente: string | null;
   setCliente: (v: string | null) => void;
@@ -93,9 +86,6 @@ export function PedidosTemplate({
   total,
   onDelete,
   onStatusChange,
-  clientes,
-  empresa,
-  setEmpresa,
   cliente,
   setCliente,
   fechaEstimadaDesde,
@@ -183,11 +173,8 @@ export function PedidosTemplate({
         <PedidosFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
-          clientes={clientes}
           cliente={cliente}
           setCliente={setCliente}
-          empresa={empresa}
-          setEmpresa={setEmpresa}
           fechaEstimadaDesde={fechaEstimadaDesde}
           setFechaEstimadaDesde={setFechaEstimadaDesde}
           fechaEstimadaHasta={fechaEstimadaHasta}
