@@ -2,12 +2,42 @@ import { z } from "zod";
 
 import { emailField } from "@/lib/utils/email";
 
+import { noEmoji, textOnly, addressOnly } from "./text-validation";
+
 export const CreateClienteSchema = z.object({
-  nombre_cliente: z.string().min(1).max(100),
-  empresa: z.string().max(100).optional(),
+  nombre_cliente: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+    }),
+  empresa: z
+    .string()
+    .max(100)
+    .optional()
+    .refine((v) => (v ? noEmoji(v) : true), { message: "La empresa no debe contener emojis" })
+    .refine((v) => (v ? textOnly(v) : true), {
+      message: "La empresa solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   rfc: z.string().length(13).optional(),
   correo_electronico: emailField({ max: 150 }),
-  numero_telefono: z.string().min(1).max(20),
+  numero_telefono: z
+    .string()
+    .min(1)
+    .max(20)
+    .refine(noEmoji, { message: "El teléfono no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El teléfono solo debe contener caracteres en inglés o español y signos comunes",
+    }),
+  ubicacion: z
+    .string()
+    .max(200)
+    .optional()
+    .refine((v) => (v ? addressOnly(v) : true), {
+      message: "La ubicación solo debe contener caracteres válidos de dirección",
+    }),
   categoria: z.enum(["Black", "Silver", "Gold", "Emprendedor", "Baneado"]).optional(),
 });
 
