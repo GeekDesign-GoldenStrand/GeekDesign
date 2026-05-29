@@ -106,7 +106,8 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -129,7 +130,8 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
@@ -152,7 +154,8 @@ describe("GET /api/pedidos - PE-03 service filtering", () => {
       null,
       null,
       null,
-      []
+      [],
+      null
     );
   });
 
