@@ -240,16 +240,16 @@ export function ViewDetalleServicio({ servicio }: Props) {
         {/* Footer buttons */}
         <div className="flex gap-3 pt-4 border-t border-gray-200 justify-end">
           <Link
-            href="/servicios"
-            className="h-10 px-6 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white text-sm font-medium text-[#1e1e1e] hover:bg-gray-50 transition-colors"
-          >
-            Salir
-          </Link>
-          <Link
             href={`/servicios/${servicio.id_servicio}/editar`}
             className="h-10 px-6 inline-flex items-center justify-center rounded-full bg-[#e42200] text-white text-sm font-medium hover:bg-[#c41e00] transition-colors"
           >
             Modificar servicio
+          </Link>
+          <Link
+            href="/servicios"
+            className="h-10 px-6 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white text-sm font-medium text-[#1e1e1e] hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
           </Link>
         </div>
       </div>
