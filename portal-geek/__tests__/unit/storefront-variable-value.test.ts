@@ -64,6 +64,7 @@ describe("SolicitarCotizacionSchema — variable valor bounds (cart submit)", ()
     SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: new Date().toISOString().split("T")[0],
       items: [{ ...baseItem, variables: [{ nombre_variable: "ancho", valor }] }],
     });
 

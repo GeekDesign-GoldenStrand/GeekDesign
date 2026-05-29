@@ -4,6 +4,7 @@ import { CaretDown } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 
 import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
+import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 import { formatDate } from "@/lib/utils/date";
 
 import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
@@ -53,6 +54,47 @@ function getAllowedQuotationStatuses(currentStatus: string): string[] {
   }
 }
 
+// Inline status pill. Colored trigger (per-status at-a-glance recognition) +
+// canonical PopoverItem panel (uniform with every other dropdown in the app).
+function StatusPill({
+  status,
+  triggerClass,
+  iconSize,
+  onChange,
+}: {
+  status: string;
+  triggerClass: string;
+  iconSize: number;
+  onChange: (next: string) => void;
+}) {
+  const allowed = getAllowedQuotationStatuses(status);
+
+  return (
+    <Popover
+      align="end"
+      panelClassName="min-w-[160px]"
+      trigger={
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          className={`rounded-full cursor-pointer flex items-center gap-2 ${triggerClass} ${getStatusStyle(status)}`}
+        >
+          <span className="whitespace-nowrap">{status}</span>
+          <CaretDown size={iconSize} weight="bold" />
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {allowed.map((opt) => (
+          <PopoverItem key={opt} selected={opt === status} onSelect={() => onChange(opt)}>
+            {opt}
+          </PopoverItem>
+        ))}
+      </div>
+    </Popover>
+  );
+}
+
 export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
   const router = useRouter();
 
@@ -70,7 +112,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
         {/* Header - Desktop Only */}
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
-          style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr 0.6fr" }}
+          style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr" }}
         >
           <span className="whitespace-nowrap">Fecha de creación</span>
           <span className="whitespace-nowrap">Fecha de entrega</span>
@@ -79,7 +121,6 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">Monto</span>
           <span className="whitespace-nowrap">Estatus</span>
-          <span className="whitespace-nowrap">Acciones</span>
         </div>
 
         {/* Rows */}
@@ -100,7 +141,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               }}
               aria-label={`Ver detalle de la cotización ${c.folio ?? c.id_cotizacion}`}
               className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
-              style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr" }}
+              style={{ gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr 1fr 1fr" }}
             >
               <span className="whitespace-nowrap">
                 {c.fecha_creacion ? formatDate(c.fecha_creacion) : "—"}
@@ -109,42 +150,26 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                 {c.fecha_estimada ? formatDate(c.fecha_estimada) : "—"}
               </span>
               <span className="truncate px-2 min-w-0">{c.empresa || "—"}</span>
-              <span className="truncate px-2 min-w-0">{c.cliente}</span>
+              <span className="truncate px-2 min-w-0">{c.nombre_oportunidad ?? "—"}</span>
               <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
               <span className="whitespace-nowrap">
                 ${c.monto_total.toLocaleString("es-MX")} MXN
               </span>
               <div className="flex justify-center">
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
-                  >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={14}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
+                  <StatusPill
+                    status={c.estatus}
+                    triggerClass="pl-4 pr-3 py-1 text-sm font-medium"
+                    iconSize={14}
+                    onChange={(next) => onStatusChange(c.id_cotizacion, next)}
                   />
-                </div>
-              </div>
-              <div
-                className="flex justify-center items-center gap-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <DesignFileLink
-                  archivos={c.archivos}
-                  className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                />
+                ) : (
+                  <span
+                    className={`px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getStatusStyle(c.estatus)}`}
+                  >
+                    {c.estatus}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -173,27 +198,20 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     #{c.folio ?? c.id_cotizacion}
                   </p>
                 </div>
-                <div
-                  className={`relative flex items-center rounded-full ${getStatusStyle(c.estatus)}`}
-                >
-                  <select
-                    value={c.estatus}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onStatusChange(c.id_cotizacion, e.target.value)}
-                    className="pl-3 pr-7 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
-                  >
-                    {getAllowedQuotationStatuses(c.estatus).map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDown
-                    size={12}
-                    weight="bold"
-                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+                {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
+                  <StatusPill
+                    status={c.estatus}
+                    triggerClass="pl-3 pr-2 py-1 text-[11px] font-bold"
+                    iconSize={12}
+                    onChange={(next) => onStatusChange(c.id_cotizacion, next)}
                   />
-                </div>
+                ) : (
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${getStatusStyle(c.estatus)}`}
+                  >
+                    {c.estatus}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F5F5F5]">

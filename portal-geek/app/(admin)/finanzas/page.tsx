@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import { EnConstruccion } from "@/components/admin/organisms/EnConstruccion";
 import { can, landingPath } from "@/lib/auth/access";
 import type { Role } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
@@ -21,9 +22,7 @@ export default async function FinanzasPage() {
   return (
     <>
       <AdminHeader title="Finanzas" />
-      <div className="px-8 py-8">
-        <p className="text-[#888]">Gastos y pagos. (Próximamente)</p>
-      </div>
+      <EnConstruccion message="Gastos y pagos estarán disponibles pronto." />
     </>
   );
 }

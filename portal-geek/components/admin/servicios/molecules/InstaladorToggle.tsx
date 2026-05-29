@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { Toggle } from "@/components/admin/servicios/atoms/Toggle";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import type { InstaladorOption } from "@/types/servicios";
 
 export type InstaladorSelection = {
@@ -121,12 +123,12 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
 
       {requiereInstalador && (
         <>
-          <select
-            value={value.id ?? ""}
-            onChange={(e) => handleSelectInstalador(Number(e.target.value))}
-            className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
+          <Select
+            value={value.id === null ? "" : String(value.id)}
+            onChange={(v) => handleSelectInstalador(Number(v))}
+            placeholder={ordenados.length === 0 ? "No hay instaladores disponibles" : undefined}
+            size="md"
           >
-            {ordenados.length === 0 && <option value="">No hay instaladores disponibles</option>}
             {ordenados.map((i) => {
               // For the currently-selected installer, show the effective price
               // (override if any), so the dropdown reflects the active value.
@@ -137,13 +139,13 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
                   : parseFloat(i.costo_instalacion);
 
               return (
-                <option key={i.id_instalador} value={i.id_instalador}>
+                <SelectOption key={i.id_instalador} value={String(i.id_instalador)}>
                   {i.nombre_instalador} — {formatCosto(precioMostrado)}
                   {isSelected && tieneOverride ? " (modificado)" : ""}
-                </option>
+                </SelectOption>
               );
             })}
-          </select>
+          </Select>
 
           {instaladorSeleccionado && costoMaestro !== null && (
             <div className="flex flex-col gap-2 pt-2">
@@ -161,30 +163,23 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
                         Precio estándar: {formatCosto(costoMaestro)}
                       </p>
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={handleStartEdit}
-                          className="h-10 px-5 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e]"
                         >
                           Editar precio
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleRestore}
-                          className="h-10 px-5 bg-white border border-[#e42200] text-[#e42200] hover:bg-red-50 rounded-full text-sm font-medium"
-                        >
+                        </Button>
+                        <Button type="button" variant="secondary" size="sm" onClick={handleRestore}>
                           Restaurar precio original
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={handleStartEdit}
-                      className="h-10 px-5 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e]"
-                    >
+                    <Button type="button" variant="secondary" size="sm" onClick={handleStartEdit}>
                       Editar precio para este servicio
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
@@ -205,20 +200,12 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleApplyPrecio}
-                      className="h-10 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium"
-                    >
+                    <Button type="button" variant="primary" size="sm" onClick={handleApplyPrecio}>
                       Aplicar precio
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      className="h-10 px-5 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e]"
-                    >
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={handleCancelEdit}>
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                   <p className="text-sm text-gray-500">
                     Precio estándar: {formatCosto(costoMaestro)}

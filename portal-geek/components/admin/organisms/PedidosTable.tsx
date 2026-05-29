@@ -14,6 +14,7 @@ import {
   ServiceStatusSemaphore,
   type ServiceStatusSummary,
 } from "@/components/admin/molecules/ServiceStatusSemaphore";
+import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 import { formatDate } from "@/lib/utils/date";
 
 // UI → API
@@ -66,6 +67,51 @@ function getAllowedPedidoStatuses(currentStatus: string): string[] {
 
   // Any other state allows free transition between all options.
   return ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
+}
+
+// Inline status pill. Colored trigger (per-status at-a-glance recognition) +
+// canonical PopoverItem panel (uniform with every other dropdown in the app).
+function PedidoStatusPill({
+  status,
+  triggerClass,
+  iconSize,
+  onChange,
+}: {
+  status: string;
+  triggerClass: string;
+  iconSize: number;
+  onChange: (next: string) => void;
+}) {
+  const allowed = getAllowedPedidoStatuses(status);
+
+  return (
+    <Popover
+      align="end"
+      panelClassName="min-w-[180px]"
+      trigger={
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          className={`rounded-full cursor-pointer flex items-center gap-2 ${triggerClass} ${getStatusStyle(status)}`}
+        >
+          <span className="whitespace-nowrap">{status}</span>
+          <CaretDown size={iconSize} weight="bold" />
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {allowed.map((opt) => (
+          <PopoverItem
+            key={opt}
+            selected={opt === status}
+            onSelect={() => onChange(STATUS_MAP_UI_TO_API[opt] ?? opt)}
+          >
+            {opt}
+          </PopoverItem>
+        ))}
+      </div>
+    </Popover>
+  );
 }
 
 function getInvoiceProgress(status?: string | null) {
@@ -241,33 +287,14 @@ export function PedidosTable({
                 {/* Semáforo general o estatus del servicio seleccionado */}
                 <div className="flex justify-center">
                   {selectedServiceId && selectedServiceDetail ? (
-                    <div
-                      className={`relative flex items-center rounded-full ${getStatusStyle(
-                        selectedServiceStatus
-                      )}`}
-                    >
-                      <select
-                        value={selectedServiceStatus}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          const uiValue = e.target.value;
-                          const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-
-                          onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue);
-                        }}
-                        className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
-                      >
-                        {getAllowedPedidoStatuses(selectedServiceStatus).map((status) => (
-                          <option key={status}>{status}</option>
-                        ))}
-                      </select>
-
-                      <CaretDown
-                        size={14}
-                        weight="bold"
-                        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
-                      />
-                    </div>
+                    <PedidoStatusPill
+                      status={selectedServiceStatus}
+                      triggerClass="pl-4 pr-3 py-1 text-sm font-medium"
+                      iconSize={14}
+                      onChange={(apiValue) =>
+                        onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue)
+                      }
+                    />
                   ) : (
                     <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
                   )}
@@ -351,33 +378,14 @@ export function PedidosTable({
                     - Service-filtered view: show editable status for that service detail. */}
                   <div className="flex justify-end">
                     {selectedServiceId && selectedServiceDetail ? (
-                      <div
-                        className={`relative flex items-center rounded-full ${getStatusStyle(
-                          selectedServiceStatus
-                        )}`}
-                      >
-                        <select
-                          value={selectedServiceStatus}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            const uiValue = e.target.value;
-                            const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-
-                            onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue);
-                          }}
-                          className="pl-3 pr-8 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
-                        >
-                          {getAllowedPedidoStatuses(selectedServiceStatus).map((status) => (
-                            <option key={status}>{status}</option>
-                          ))}
-                        </select>
-
-                        <CaretDown
-                          size={12}
-                          weight="bold"
-                          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
-                        />
-                      </div>
+                      <PedidoStatusPill
+                        status={selectedServiceStatus}
+                        triggerClass="pl-3 pr-2 py-1 text-[11px] font-bold"
+                        iconSize={12}
+                        onChange={(apiValue) =>
+                          onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue)
+                        }
+                      />
                     ) : (
                       <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
                     )}

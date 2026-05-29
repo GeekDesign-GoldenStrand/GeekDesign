@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 import { PromoBentoGrid } from "./PromoBentoGrid";
 import { PromoHeroSection } from "./PromoHeroSection";
 import { PromoLogoMarquee } from "./PromoLogoMarquee";
@@ -17,19 +15,6 @@ export function PromocionalesClient() {
 
       {/* 3. Asymmetric Bento Grid */}
       <PromoBentoGrid />
-
-      {/* Footer Accentuator */}
-      <section className="w-full py-32 flex flex-col items-center justify-center border-t border-gray-100">
-        <motion.p
-          whileInView={{ opacity: 1 }}
-          initial={{ opacity: 0 }}
-          transition={{ duration: 4 }}
-          className="text-black text-6xl md:text-[12rem] font-bold tracking-tighter opacity-20 select-none"
-          style={{ fontFamily: "var(--font-alexandria), sans-serif" }}
-        >
-          GEEKDESIGN
-        </motion.p>
-      </section>
     </div>
   );
 }

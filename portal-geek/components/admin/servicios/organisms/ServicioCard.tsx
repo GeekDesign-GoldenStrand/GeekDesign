@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { Button } from "@/components/ui/atoms/Button";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
@@ -40,19 +41,17 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
       </div>
 
       <div className="flex items-center gap-3 ml-4">
-        <Link
-          href={`/servicios/${servicio.id_servicio}`}
-          className="bg-gray-300 text-gray-700 hover:bg-gray-400 h-9 px-5 rounded-full font-medium text-sm transition-all inline-flex items-center"
-        >
-          Ver detalle
-        </Link>
-        <button
+        <Button asChild variant="secondary" size="sm">
+          <Link href={`/servicios/${servicio.id_servicio}`}>Ver detalle</Link>
+        </Button>
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
           onClick={() => onEliminar?.(servicio.id_servicio)}
-          className="bg-[#e42200] text-white hover:bg-[#c41e00] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] h-9 px-5 rounded-full font-medium text-sm transition-all"
         >
           Eliminar
-        </button>
+        </Button>
       </div>
     </div>
   );

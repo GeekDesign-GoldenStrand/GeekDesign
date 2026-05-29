@@ -7,6 +7,7 @@ import type { UploadedFile } from "@/components/storefront/molecules/DesignUploa
 import { DesignUploadZone } from "@/components/storefront/molecules/DesignUploadZone";
 import { FormulaVariablesForm } from "@/components/storefront/organisms/FormulaVariablesForm";
 import type { Material, Variable } from "@/components/storefront/organisms/FormulaVariablesForm";
+import { Button } from "@/components/ui/atoms/Button";
 
 interface Props {
   servicioId: number;
@@ -100,6 +101,7 @@ export function ServicioDetalleClient({
             materiales={materiales}
             variables={variables}
             disenioFile={disenioFile}
+            imagenUrls={imagenUrls}
           />
         ) : (
           <div className="bg-white border border-[#c2c0c0] rounded-[10px] p-[24px] flex flex-col gap-[12px]">
@@ -110,12 +112,9 @@ export function ServicioDetalleClient({
               Este servicio requiere una cotización personalizada. Contáctanos y un asesor preparará
               una propuesta para tu proyecto.
             </p>
-            <Link
-              href="/tienda/cotizacion"
-              className="self-start bg-[#8b434a] text-white font-semibold text-[14px] rounded-[10px] px-[20px] h-[44px] flex items-center justify-center hover:bg-[#7a3a41] transition-colors"
-            >
-              Solicitar cotización personalizada
-            </Link>
+            <Button asChild variant="primary" section="storefront" size="md" className="self-start">
+              <Link href="/tienda/cotizacion">Solicitar cotización personalizada</Link>
+            </Button>
           </div>
         )}
       </div>

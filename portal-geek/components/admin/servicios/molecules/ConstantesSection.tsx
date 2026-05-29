@@ -4,6 +4,8 @@ import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
@@ -253,33 +255,33 @@ export function ConstantesSection({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo</label>
-                <select
-                  value={draft.id_tipo_variable}
-                  onChange={(e) => {
-                    const selectedTypeId = Number(e.target.value);
+                <Select
+                  value={String(draft.id_tipo_variable)}
+                  onChange={(v) => {
+                    const selectedTypeId = Number(v);
                     setDraft((d) => ({
                       ...d,
                       id_tipo_variable: selectedTypeId,
                       unidad: getTipoUnidad(selectedTypeId, tiposDisponibles),
                     }));
                   }}
-                  className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+                  placeholder="Selecciona..."
+                  size="sm"
                 >
-                  <option value={0}>Selecciona...</option>
                   {tiposDisponibles.map((t) => (
-                    <option key={t.id_tipo_variable} value={t.id_tipo_variable}>
+                    <SelectOption key={t.id_tipo_variable} value={String(t.id_tipo_variable)}>
                       {t.nombre_tipo}
-                    </option>
+                    </SelectOption>
                   ))}
-                </select>
+                </Select>
               </div>
 
-              <div>
+                           <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Unidad</label>
-                <select
+                <Select
                   value={draft.unidad ?? "u"}
-                  onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
-                  className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+                  onChange={(v) => setDraft((d) => ({ ...d, unidad: v }))}
+                  size="sm"
                 >
                   {(() => {
                     // Filter UNIT_OPTIONS by the selected tipo so only related
@@ -293,24 +295,20 @@ export function ConstantesSection({
                       ? UNIT_OPTIONS.filter((u) => allowed.includes(u.value))
                       : UNIT_OPTIONS;
                     return visibles.map((u) => (
-                      <option key={u.value} value={u.value}>
+                      <SelectOption key={u.value} value={u.value}>
                         {u.label}
-                      </option>
+                      </SelectOption>
                     ));
                   })()}
-                </select>
+                </Select>
               </div>
             </div>
 
             {error && <p className="text-sm text-[#e42200]">{error}</p>}
 
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="h-10 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium transition-colors"
-            >
+            <Button type="button" variant="primary" size="sm" onClick={handleAdd}>
               + Agregar constante
-            </button>
+            </Button>
           </div>
         </>
       )}
