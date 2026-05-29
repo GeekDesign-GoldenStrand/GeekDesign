@@ -1,25 +1,24 @@
 import { z } from "zod";
 
-import { containsEmoji } from "@/lib/utils/format";
+import { noEmoji, textOnly } from "./text-validation";
 
-// Shared refine used by every free-text field on a Máquina. The maquinas UI
-// already strips emoji on input via `stripEmoji` in lib/utils/format.ts, but
-// a hand-rolled API request could still bypass the UI — this is the matching
-// server-side gate so the contract is enforced in one place. Sharing the
-// `containsEmoji` predicate guarantees the strip and the rejection can't
-// silently drift apart.
-const noEmoji = {
-  check: (v: string) => !containsEmoji(v),
-  message: "No se permiten emojis ni caracteres similares",
-};
-
-// Length caps match the frontend's `maxInputLength={30}` on Modelo / Apodo
-// and `maxInputLength={200}` on Descripción — keeping them aligned means a
-// payload that passes UI validation can't be rejected purely on length, and
-// vice versa.
 export const CreateMaquinaSchema = z.object({
-  nombre_maquina: z.string().min(1).max(30).refine(noEmoji.check, noEmoji.message),
-  apodo_maquina: z.string().min(1).max(30).refine(noEmoji.check, noEmoji.message),
+  nombre_maquina: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+    }),
+  apodo_maquina: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine(noEmoji, { message: "El apodo no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El apodo solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   tipo: z.enum(["Láser CO2", "Láser Fibra", "Bordadora"]),
   descripcion: z.string().max(200).refine(noEmoji.check, noEmoji.message).optional(),
   estatus: z.enum(["Activa", "Inactiva", "En mantenimiento"]).default("Activa"),

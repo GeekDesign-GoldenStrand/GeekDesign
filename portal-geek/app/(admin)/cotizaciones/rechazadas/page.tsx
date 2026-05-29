@@ -99,11 +99,8 @@ export default function CotizacionesRechazadasPage() {
       page={page}
       setPage={setPage}
       total={total}
-      clientes={[]}
       filterCliente=""
       setFilterCliente={() => {}}
-      filterEmpresa=""
-      setFilterEmpresa={() => {}}
       filterEstatus={["Rechazada", "Cancelada"]}
       setFilterEstatus={() => {}}
       filterFechaFinDesde=""

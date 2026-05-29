@@ -3,6 +3,8 @@ import { z } from "zod";
 import { isValidKey } from "@/lib/storage/keys";
 import { RESERVED_IDENTIFIERS } from "@/lib/utils/formula-evaluator";
 
+import { noEmoji, textOnly } from "./text-validation";
+
 const reservedNameMessage = `Identificador reservado. No puede usarse: ${RESERVED_IDENTIFIERS.join(", ")}`;
 const isReservedIdentifier = (n: string) => (RESERVED_IDENTIFIERS as readonly string[]).includes(n);
 
@@ -14,10 +16,24 @@ const VariableSchema = z.object({
     .max(100)
     .regex(/^[a-z_][a-z0-9_]*$/, "Identificador inválido")
     .refine((n) => !isReservedIdentifier(n), { message: reservedNameMessage }),
-  etiqueta: z.string().min(1).max(100),
+  etiqueta: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine(noEmoji, { message: "La etiqueta no debe contener emojis" })
+    .refine(textOnly, {
+      message: "La etiqueta solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   valor_default: z.coerce.number().optional(),
   editable_por_cliente: z.boolean().default(false),
-  unidad: z.string().max(20).optional(),
+  // unidad may include special characters like cm²; only block emojis here
+  unidad: z
+    .string()
+    .max(20)
+    .optional()
+    .refine((v) => (v ? noEmoji(v) : true), {
+      message: "La unidad no debe contener emojis",
+    }),
 });
 
 const ConstanteSchema = z
