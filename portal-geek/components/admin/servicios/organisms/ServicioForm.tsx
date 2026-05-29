@@ -1,16 +1,17 @@
 "use client";
 
-import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
+import { Input, Textarea } from "@/components/admin/forms/atoms";
 import { ConstantesSection } from "@/components/admin/servicios/molecules/ConstantesSection";
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { MaterialesSection } from "@/components/admin/servicios/molecules/MaterialesSection";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
-import { ServiciosImagesInput } from "@/components/admin/servicios/molecules/ServiciosImagesInput";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
+import { Button } from "@/components/ui/atoms/Button";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import type { UseServicioFormOptions } from "@/lib/hooks/useServicioForm";
 import { useServicioForm } from "@/lib/hooks/useServicioForm";
 import type { NuevoServicioFormState } from "@/types/servicios";
@@ -115,7 +116,11 @@ export function ServicioForm(props: ServicioFormProps) {
 
       {/* Row 2.5: Imágenes */}
       <div className="pt-4 border-t border-gray-200">
-        <ServiciosImagesInput
+        <ImageUploader
+          mode="multi"
+          category="servicios"
+          label="Imágenes del servicio:"
+          maxFiles={5}
           initialKeys={form.imagenes}
           onKeysChange={(keys) => actions.updateField("imagenes", keys)}
           onError={(msg) => actions.setSubmitError(msg)}
@@ -214,13 +219,16 @@ export function ServicioForm(props: ServicioFormProps) {
         <Button
           type="submit"
           variant="primary"
+          size="sm"
           disabled={submitting || submitSuccess || !canSubmit}
+          loading={submitting}
         >
           {submitLabel}
         </Button>
         <Button
           type="button"
           variant="secondary"
+          size="sm"
           onClick={actions.onCancel}
           disabled={submitting || submitSuccess}
         >

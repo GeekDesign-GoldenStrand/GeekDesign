@@ -1,81 +1,120 @@
 "use client";
 
-import { CloudArrowUp, Trash, Warning } from "@phosphor-icons/react";
+import {
+  CloudArrowUpIcon as CloudArrowUp,
+  TrashIcon as Trash,
+  WarningIcon as Warning,
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { deleteFile, uploadFile } from "@/lib/utils/upload";
 
+type UploadCategory = "materiales" | "servicios" | "disenios" | "notas";
+
 interface SlotState {
   id: string;
   status: "uploading" | "done" | "error";
-  file?: File;
   key?: string;
   previewUrl: string;
   errorMsg?: string;
 }
 
-interface ServiciosImagesInputProps {
-  initialKeys?: string[];
-  onKeysChange: (keys: string[]) => void;
+interface CommonProps {
+  category: UploadCategory;
   onError: (message: string) => void;
   disabled?: boolean;
+  accept?: string;
+  maxBytes?: number;
+  label?: string;
 }
 
-const ACCEPT = "image/jpeg,image/png,image/webp";
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
-const MAX_FILES = 5;
+interface SingleProps extends CommonProps {
+  mode: "single";
+  initialPreviewUrl?: string;
+  onUploaded: (key: string | null) => void;
+  hasError?: boolean;
+}
 
-export function ServiciosImagesInput({
-  initialKeys = [],
-  onKeysChange,
-  onError,
-  disabled,
-}: ServiciosImagesInputProps) {
+interface MultiProps extends CommonProps {
+  mode: "multi";
+  initialKeys?: string[];
+  onKeysChange: (keys: string[]) => void;
+  maxFiles?: number;
+}
+
+export type ImageUploaderProps = SingleProps | MultiProps;
+
+const DEFAULT_ACCEPT = "image/jpeg,image/png,image/webp";
+const DEFAULT_MAX_BYTES = 10 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function previewUrlFromKey(key: string): string {
+  if (key.startsWith("/") || /^https?:\/\//i.test(key) || key.startsWith("blob:")) return key;
+  return `/api/images/${key}`;
+}
+
+export function ImageUploader(props: ImageUploaderProps) {
+  const {
+    category,
+    onError,
+    disabled,
+    accept = DEFAULT_ACCEPT,
+    maxBytes = DEFAULT_MAX_BYTES,
+    label,
+  } = props;
+  const isSingle = props.mode === "single";
+  const maxFiles = isSingle ? 1 : ((props as MultiProps).maxFiles ?? 5);
+  const maxMb = maxBytes / (1024 * 1024);
+  const maxSizeLabel = `${Number.isInteger(maxMb) ? maxMb : maxMb.toFixed(1)} MB`;
+
   const inputRef = useRef<HTMLInputElement>(null);
-  const [slots, setSlots] = useState<SlotState[]>([]);
+  const [slots, setSlots] = useState<SlotState[]>(() => {
+    if (isSingle) {
+      const url = (props as SingleProps).initialPreviewUrl;
+      return url ? [{ id: "initial", status: "done", previewUrl: url }] : [];
+    }
+    const keys = (props as MultiProps).initialKeys ?? [];
+    return keys.map((k) => ({ id: k, status: "done", key: k, previewUrl: previewUrlFromKey(k) }));
+  });
   const [dragging, setDragging] = useState(false);
 
-  // Sync slots from initialKeys only when the *content* actually changes — not on
-  // every reference change. The parent calls setForm with a spread each update,
-  // which gives form.imagenes a new array reference even when it stays []. Without
-  // this content-based guard, effect #1 reset slots, effect #2 fired onKeysChange,
-  // parent re-spread form, parent re-rendered with a new initialKeys reference,
-  // effect #1 fired again → infinite loop (Maximum update depth exceeded).
-  const initialKeysSig = useMemo(() => initialKeys.join("|"), [initialKeys]);
+  // Sync slots from initialKeys (multi mode) only when content actually changes.
+  // Prevents an infinite loop when parent spreads form state on every render.
+  const initialKeysSig = useMemo(() => {
+    if (isSingle) return "";
+    return ((props as MultiProps).initialKeys ?? []).join("|");
+  }, [isSingle, props]);
   const lastInitialKeysSig = useRef<string>(initialKeysSig);
   useEffect(() => {
+    if (isSingle) return;
     if (initialKeysSig === lastInitialKeysSig.current) return;
     lastInitialKeysSig.current = initialKeysSig;
 
-    if (initialKeys.length === 0) {
+    const keys = (props as MultiProps).initialKeys ?? [];
+    if (keys.length === 0) {
       setSlots([]);
     } else if (slots.length === 0) {
       setSlots(
-        initialKeys.map((key) => ({
-          id: key,
-          status: "done",
-          key,
-          previewUrl: key.startsWith("/") || /^https?:\/\//i.test(key) ? key : `/api/images/${key}`,
-        }))
+        keys.map((k) => ({ id: k, status: "done", key: k, previewUrl: previewUrlFromKey(k) }))
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialKeysSig]);
 
-  // Propagate key changes up when done slots change
+  // Multi mode: propagate done keys whenever they change. Safe because new uploads
+  // append a slot rather than replacing — done keys monotonically grow during upload.
   useEffect(() => {
+    if (isSingle) return;
     const doneKeys = slots.filter((s) => s.status === "done" && s.key).map((s) => s.key!);
-    onKeysChange(doneKeys);
+    (props as MultiProps).onKeysChange(doneKeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slots]);
+  }, [slots, isSingle]);
 
-  // Clean up object URLs on unmount
+  // Revoke blob URLs on unmount.
   useEffect(
     () => () => {
       slots.forEach((s) => {
-        if (s.previewUrl.startsWith("blob:")) {
-          URL.revokeObjectURL(s.previewUrl);
-        }
+        if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl);
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,99 +122,94 @@ export function ServiciosImagesInput({
   );
 
   async function handleUpload(file: File) {
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
       onError("Formato no permitido. Usa JPG, PNG o WebP.");
       return;
     }
-    if (file.size > MAX_BYTES) {
-      onError(`La imagen "${file.name}" excede el tamaño máximo (10 MB).`);
+    if (file.size > maxBytes) {
+      onError(`La imagen "${file.name}" excede el tamaño máximo (${maxSizeLabel}).`);
       return;
     }
 
     const slotId = crypto.randomUUID();
     const previewUrl = URL.createObjectURL(file);
 
-    setSlots((prev) => [
-      ...prev,
-      {
-        id: slotId,
-        status: "uploading",
-        file,
-        previewUrl,
-      },
-    ]);
+    if (isSingle) {
+      // Replace whatever is there — delete the old uploaded object if any.
+      setSlots((prev) => {
+        prev.forEach((s) => {
+          if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl);
+          if (s.status === "done" && s.key) {
+            void deleteFile(s.key).catch(() => {});
+          }
+        });
+        return [{ id: slotId, status: "uploading", previewUrl }];
+      });
+    } else {
+      setSlots((prev) => [...prev, { id: slotId, status: "uploading", previewUrl }]);
+    }
 
     try {
-      const key = await uploadFile(file, "servicios");
+      const key = await uploadFile(file, category);
       setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, status: "done", key } : s)));
+      if (isSingle) (props as SingleProps).onUploaded(key);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al subir la imagen";
       onError(`Fallo al subir "${file.name}": ${msg}`);
       setSlots((prev) =>
         prev.map((s) => (s.id === slotId ? { ...s, status: "error", errorMsg: msg } : s))
       );
+      if (isSingle) (props as SingleProps).onUploaded(null);
     }
+  }
+
+  function enqueueFiles(files: File[]) {
+    if (files.length === 0) return;
+    const activeCount = slots.filter((s) => s.status !== "error").length;
+    const spacesLeft = maxFiles - activeCount;
+    const toUpload = files.slice(0, Math.max(spacesLeft, isSingle ? 1 : 0));
+    if (!isSingle && files.length > spacesLeft) {
+      onError(`Límite máximo de ${maxFiles} imágenes alcanzado.`);
+    }
+    toUpload.forEach((f) => handleUpload(f));
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-
-    const spacesLeft = MAX_FILES - slots.filter((s) => s.status !== "error").length;
-    const toUpload = files.slice(0, spacesLeft);
-
-    if (files.length > spacesLeft) {
-      onError(`Límite máximo de ${MAX_FILES} imágenes alcanzado.`);
-    }
-
-    toUpload.forEach((file) => handleUpload(file));
-
+    enqueueFiles(Array.from(e.target.files ?? []));
     if (inputRef.current) inputRef.current.value = "";
-  }
-
-  async function handleRemove(slotId: string) {
-    const slot = slots.find((s) => s.id === slotId);
-    if (!slot) return;
-
-    // Clean up S3 object if it was uploaded successfully in this session
-    if (slot.status === "done" && slot.key) {
-      // fire-and-forget delete call
-      deleteFile(slot.key).catch(() => {});
-    }
-
-    // Revoke blob URL if exists
-    if (slot.previewUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(slot.previewUrl);
-    }
-
-    setSlots((prev) => prev.filter((s) => s.id !== slotId));
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
+    enqueueFiles(Array.from(e.dataTransfer.files));
+  }
 
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length === 0) return;
-
-    const spacesLeft = MAX_FILES - slots.filter((s) => s.status !== "error").length;
-    const toUpload = files.slice(0, spacesLeft);
-
-    if (files.length > spacesLeft) {
-      onError(`Límite máximo de ${MAX_FILES} imágenes alcanzado.`);
+  async function handleRemove(slotId: string) {
+    const slot = slots.find((s) => s.id === slotId);
+    if (!slot) return;
+    if (slot.status === "done" && slot.key) {
+      deleteFile(slot.key).catch(() => {});
     }
-
-    toUpload.forEach((file) => handleUpload(file));
+    if (slot.previewUrl.startsWith("blob:")) URL.revokeObjectURL(slot.previewUrl);
+    setSlots((prev) => prev.filter((s) => s.id !== slotId));
+    if (isSingle) (props as SingleProps).onUploaded(null);
   }
 
   const activeSlotsCount = slots.filter((s) => s.status !== "error").length;
-  const canAddMore = activeSlotsCount < MAX_FILES;
+  const canAddMore = activeSlotsCount < maxFiles;
+
+  const singleHasError = isSingle && (props as SingleProps).hasError;
+  const dropzoneBorder = singleHasError
+    ? "border-[#e42200] bg-[#fff5f5]"
+    : dragging
+      ? "border-[#8b434a] bg-[#fff8f9]"
+      : "border-gray-300 hover:border-[#8b434a] bg-gray-50";
 
   return (
     <div className="space-y-3">
-      <label className="block text-[14px] font-medium text-[#1e1e1e]">Imágenes del servicio:</label>
+      {label && <label className="block text-[14px] font-medium text-[#1e1e1e]">{label}</label>}
 
-      {/* Grid showing current images */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {slots.map((slot) => (
           <div
@@ -184,17 +218,13 @@ export function ServiciosImagesInput({
               slot.status === "error" ? "border-red-300" : "border-gray-200"
             }`}
           >
-            {/* Image Preview */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={slot.previewUrl}
               alt="Preview"
-              className={`w-full h-full object-cover ${
-                slot.status === "uploading" ? "opacity-50" : ""
-              }`}
+              className={`w-full h-full object-cover ${slot.status === "uploading" ? "opacity-50" : ""}`}
             />
 
-            {/* Uploading Overlay */}
             {slot.status === "uploading" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60">
                 <svg
@@ -222,7 +252,6 @@ export function ServiciosImagesInput({
               </div>
             )}
 
-            {/* Error Overlay */}
             {slot.status === "error" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50/90 p-2 text-center">
                 <Warning size={20} className="text-red-500 mb-1" />
@@ -232,7 +261,6 @@ export function ServiciosImagesInput({
               </div>
             )}
 
-            {/* Delete button (overlay on hover) */}
             {!disabled && slot.status !== "uploading" && (
               <button
                 type="button"
@@ -246,7 +274,6 @@ export function ServiciosImagesInput({
           </div>
         ))}
 
-        {/* Upload Trigger / Dropzone */}
         {!disabled && canAddMore && (
           <div
             role="button"
@@ -259,11 +286,7 @@ export function ServiciosImagesInput({
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
-            className={`aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer p-4 transition-colors select-none ${
-              dragging
-                ? "border-[#8b434a] bg-[#fff8f9]"
-                : "border-gray-300 hover:border-[#8b434a] bg-gray-50"
-            }`}
+            className={`aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer p-4 transition-colors select-none ${dropzoneBorder}`}
           >
             <CloudArrowUp
               size={32}
@@ -274,7 +297,8 @@ export function ServiciosImagesInput({
               Añadir imagen
             </span>
             <span className="text-[10px] text-gray-400 mt-1 text-center">
-              JPG, PNG, WebP · Max 10MB ({activeSlotsCount}/{MAX_FILES})
+              JPG, PNG, WebP · Max {maxSizeLabel}
+              {!isSingle && ` (${activeSlotsCount}/${maxFiles})`}
             </span>
           </div>
         )}
@@ -283,8 +307,8 @@ export function ServiciosImagesInput({
       <input
         ref={inputRef}
         type="file"
-        multiple
-        accept={ACCEPT}
+        multiple={!isSingle}
+        accept={accept}
         onChange={handleFileSelect}
         disabled={disabled}
         className="hidden"

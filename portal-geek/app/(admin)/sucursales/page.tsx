@@ -4,6 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 
 import { SucursalesTemplate } from "@/components/admin/templates/SucursalesTemplate";
 
+type RelationColaborador = {
+  usuario?: {
+    nombre?: string | null;
+  } | null;
+};
+
+type RelationMaquina = {
+  maquina?: {
+    nombre_maquina: string;
+  } | null;
+};
+
 type Sucursal = {
   id_sucursal: number;
   nombre_sucursal: string;
@@ -11,6 +23,8 @@ type Sucursal = {
   horario_apertura?: string | null;
   horario_salida?: string | null;
   estatus: string;
+  colaboradores?: RelationColaborador[];
+  maquinas?: RelationMaquina[];
 };
 
 export default function SucursalesPage() {
@@ -60,9 +74,18 @@ export default function SucursalesPage() {
   }, [fetchSucursales]);
 
   async function handleDelete(id: number) {
-    // The DELETE endpoint performs a soft delete, so refreshing hides the inactive branch from the table.
-    await fetch(`/api/sucursales/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/sucursales/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Error deleting sucursal");
+    fetchSucursales();
+  }
 
+  async function handleStatusChange(id: number, newStatus: string) {
+    const res = await fetch(`/api/sucursales/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estatus: newStatus }),
+    });
+    if (!res.ok) throw new Error("Error updating sucursal status");
     fetchSucursales();
   }
 
@@ -75,6 +98,8 @@ export default function SucursalesPage() {
       setPage={setPage}
       total={total}
       onDelete={handleDelete}
+      onChangeStatus={handleStatusChange}
+      onRefresh={fetchSucursales}
       filterNombre={filterNombre}
       setFilterNombre={setFilterNombre}
       filterDireccion={filterDireccion}

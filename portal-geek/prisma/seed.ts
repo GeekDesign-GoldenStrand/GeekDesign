@@ -298,13 +298,24 @@ async function main() {
   // ── Service + Product + Material + Pricing ─────────────────────────────────
   const servicioCorte = await prisma.servicios.upsert({
     where: { id_servicio: 1 },
-    update: {},
+    update: {
+      imagen_url: JSON.stringify([
+        "/images/laser_cut_wood.png",
+        "/images/laser_cut_acrylic.png",
+        "/images/laser_cut_sign.png",
+      ]),
+    },
     create: {
       id_estatus: estatusServicioActivo.id_estatus_servicio,
       id_sucursal: sucursal.id_sucursal,
       nombre_servicio: "Corte Láser",
       descripcion_servicio: "Corte con láser CO2",
       estatus_servicio: true,
+      imagen_url: JSON.stringify([
+        "/images/laser_cut_wood.png",
+        "/images/laser_cut_acrylic.png",
+        "/images/laser_cut_sign.png",
+      ]),
     },
   });
 
@@ -322,13 +333,24 @@ async function main() {
 
   const servicioBordado = await prisma.servicios.upsert({
     where: { id_servicio: 3 },
-    update: {},
+    update: {
+      imagen_url: JSON.stringify([
+        "/images/embroidery_close.png",
+        "/images/embroidery_hoop.png",
+        "/images/embroidery_finished.png",
+      ]),
+    },
     create: {
       id_estatus: estatusServicioActivo.id_estatus_servicio,
       id_sucursal: sucursal.id_sucursal,
       nombre_servicio: "Bordado",
       descripcion_servicio: "Bordado personalizado en textiles",
       estatus_servicio: true,
+      imagen_url: JSON.stringify([
+        "/images/embroidery_close.png",
+        "/images/embroidery_hoop.png",
+        "/images/embroidery_finished.png",
+      ]),
     },
   });
 

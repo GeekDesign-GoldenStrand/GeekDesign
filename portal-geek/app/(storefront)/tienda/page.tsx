@@ -7,7 +7,7 @@ import { CTABanner } from "@/components/storefront/molecules/CTABanner";
 import { HeroBanner } from "@/components/storefront/organisms/HeroBanner";
 import { ServiceGrid } from "@/components/storefront/organisms/ServiceGrid";
 import { listServicios } from "@/lib/services/servicios";
-import { getServiceImageUrls } from "@/lib/utils/images";
+import { getServiceImageUrlsResolved } from "@/lib/utils/images";
 
 export const metadata: Metadata = { title: "Tienda" };
 
@@ -30,6 +30,15 @@ export default async function StorefrontHome({ searchParams }: Props) {
   const { q } = await searchParams;
   const services = await getCatalogo(q);
 
+  // Resolve image URLs to direct GCS reads at render time. The HTML emitted
+  // by ISR (revalidate = 60s) embeds presigned URLs the browser fetches
+  // straight from storage.googleapis.com — no /api/images proxy hop, no
+  // App Engine cold-start cost per image. See lib/utils/images.ts.
+  const visibleServices = services.slice(0, 6);
+  const resolvedImages = await Promise.all(
+    visibleServices.map((s) => getServiceImageUrlsResolved(s.imagen_url))
+  );
+
   return (
     <>
       <AnnouncementBar />
@@ -44,18 +53,15 @@ export default async function StorefrontHome({ searchParams }: Props) {
               Catálogo de Servicios
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {services.slice(0, 6).map((s) => {
-                const images = getServiceImageUrls(s.imagen_url);
-                return (
-                  <ServiceCatalogCard
-                    key={s.id_servicio}
-                    id={s.id_servicio}
-                    nombre={s.nombre_servicio}
-                    descripcion={s.descripcion_servicio}
-                    imagenUrl={images[0] || null}
-                  />
-                );
-              })}
+              {visibleServices.map((s, i) => (
+                <ServiceCatalogCard
+                  key={s.id_servicio}
+                  id={s.id_servicio}
+                  nombre={s.nombre_servicio}
+                  descripcion={s.descripcion_servicio}
+                  imagenUrl={resolvedImages[i][0] || null}
+                />
+              ))}
             </div>
           </div>
         </section>

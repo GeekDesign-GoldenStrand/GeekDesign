@@ -197,8 +197,14 @@ export async function createSubMaterial(data: CreateSubMaterialInput): Promise<M
 
 export async function updateMaterial(
   id: number,
-  data: UpdateMaterialInput
+  input: UpdateMaterialInput
 ): Promise<MaterialesConSubs> {
+  // A cleared image arrives as "" from the form; persist it as NULL so the
+  // column stays empty rather than holding an invalid empty-string key.
+  const data = {
+    ...input,
+    ...(input.imagen_url === "" ? { imagen_url: null } : {}),
+  };
   try {
     const { updated, oldImagenKey } = await prisma.$transaction(async (tx) => {
       const needsExisting = data.imagen_url !== undefined || data.id_material_padre !== undefined;

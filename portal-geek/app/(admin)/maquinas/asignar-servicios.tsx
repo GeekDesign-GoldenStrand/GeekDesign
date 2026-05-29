@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
 import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
@@ -149,20 +150,12 @@ export default function AsignarServicios({
         )}
 
         <div className="flex justify-end gap-3 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>
