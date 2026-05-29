@@ -1,5 +1,7 @@
 import { SolicitarCotizacionSchema } from "@/lib/schemas/cotizaciones";
 
+const today = new Date().toISOString().split("T")[0];
+
 const baseItem = {
   id_servicio: 1,
   id_material: 1,
@@ -18,6 +20,7 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       items: [baseItem],
     });
     expect(result.success).toBe(true);
@@ -29,6 +32,7 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       notas: validNotas,
       items: [baseItem],
     });
@@ -40,6 +44,7 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       notas: longNotas,
       items: [baseItem],
     });
@@ -50,6 +55,7 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
     const result = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       notas: "Nota con emoji 😊",
       items: [baseItem],
     });
@@ -60,6 +66,7 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
     const resultChinese = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       notas: "这是一个测试",
       items: [baseItem],
     });
@@ -68,6 +75,7 @@ describe("SolicitarCotizacionSchema — notas validation", () => {
     const resultRussian = SolicitarCotizacionSchema.safeParse({
       cliente: baseCliente,
       id_sucursal: 1,
+      fecha_estimada: today,
       notas: "Привет",
       items: [baseItem],
     });
