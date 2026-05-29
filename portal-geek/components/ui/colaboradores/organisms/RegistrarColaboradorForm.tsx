@@ -45,7 +45,7 @@ const SELECT_FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
-const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
+const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -318,14 +318,14 @@ export function RegistrarColaboradorForm({
         <button
           type="button"
           onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#e42200] border border-[#e42200] rounded-[7px] hover:bg-[#ffecec] transition-colors"
+          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[#27ae60] rounded-[7px] hover:bg-[#219150] transition-colors disabled:opacity-60"
+          className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c30000] transition-colors disabled:opacity-60"
         >
           {loading ? "Guardando..." : "Guardar"}
         </button>

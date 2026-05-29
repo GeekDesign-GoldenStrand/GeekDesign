@@ -143,135 +143,142 @@ function EditForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       {editError && (
         <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
           {editError}
         </div>
       )}
 
-      <div>
-        <label className={LABEL}>
-          Nombre <span className="text-[#e42200]">*</span>
-        </label>
-        <input
-          type="text"
-          maxLength={100}
-          placeholder="Nombre completo"
-          value={form.nombre_completo}
-          onChange={(e) =>
-            setField("nombre_completo", e.target.value.replace(/[^a-zA-ZÀ-ÿ\s'\-]/g, ""))
-          }
-          className={`${FIELD} ${getFieldClass("nombre_completo")}`}
-        />
-        {errors.nombre_completo && <p className={ERROR_MSG}>{errors.nombre_completo}</p>}
-      </div>
+      <div className="flex gap-6">
+        {/* Columna izquierda */}
+        <div className="flex-1 flex flex-col gap-4">
+          <div>
+            <label className={LABEL}>Nombre *</label>
+            <input
+              type="text"
+              maxLength={100}
+              placeholder="Nombre completo"
+              value={form.nombre_completo}
+              onChange={(e) =>
+                setField("nombre_completo", e.target.value.replace(/[^a-zA-ZÀ-ÿ\s'\-]/g, ""))
+              }
+              className={`${FIELD} ${getFieldClass("nombre_completo")}`}
+            />
+            {errors.nombre_completo && <p className={ERROR_MSG}>{errors.nombre_completo}</p>}
+          </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={LABEL}>
-            Correo <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="email"
-            maxLength={150}
-            placeholder="correo@ejemplo.com"
-            value={form.correo_electronico}
-            onChange={(e) => setField("correo_electronico", e.target.value)}
-            className={`${FIELD} ${getFieldClass("correo_electronico")}`}
-          />
-          {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
+          <div>
+            <label className={LABEL}>Correo electrónico *</label>
+            <input
+              type="email"
+              maxLength={150}
+              placeholder="correo@gmail.com"
+              value={form.correo_electronico}
+              onChange={(e) => setField("correo_electronico", e.target.value)}
+              className={`${FIELD} ${getFieldClass("correo_electronico")}`}
+            />
+            {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Edad *</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="Edad"
+              value={form.edad}
+              onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
+              className={`${FIELD} ${getFieldClass("edad")}`}
+            />
+            {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Sexo *</label>
+            <select
+              value={form.sexo}
+              onChange={(e) => setField("sexo", e.target.value)}
+              className={`${SELECT_FIELD} ${
+                errors.sexo ? FIELD_ERROR : touched.sexo && form.sexo ? FIELD_SUCCESS : ""
+              }`}
+            >
+              <option value="">Sexo</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+              <option value="NA">Prefiero no decir</option>
+            </select>
+            {errors.sexo && <p className={ERROR_MSG}>{errors.sexo}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Teléfono *</label>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center h-[38px] px-3 border border-[#b9b8b8] rounded-[6px] text-[14px] text-[#575757] bg-[#f5f5f5] shrink-0 select-none">
+                +52
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="XXX XXXX XXX"
+                value={form.telefono}
+                onChange={(e) => setField("telefono", e.target.value.replace(/\D/g, ""))}
+                className={`${FIELD} ${getFieldClass("telefono")}`}
+              />
+            </div>
+            {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+          </div>
         </div>
-        <div>
-          <label className={LABEL}>
-            Teléfono <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="tel"
-            inputMode="numeric"
-            maxLength={10}
-            placeholder="XXX XXXX XXX"
-            value={form.telefono}
-            onChange={(e) => setField("telefono", e.target.value.replace(/\D/g, ""))}
-            className={`${FIELD} ${getFieldClass("telefono")}`}
-          />
-          {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+
+        {/* Columna derecha */}
+        <div className="flex-1 flex flex-col gap-4">
+          <div>
+            <label className={LABEL}>Rol *</label>
+            <select
+              value={form.id_rol}
+              onChange={(e) => setField("id_rol", e.target.value)}
+              className={`${SELECT_FIELD} ${
+                errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""
+              }`}
+            >
+              <option value="">Seleccionar rol</option>
+              {roles.map((r) => (
+                <option key={r.id_rol} value={r.id_rol}>
+                  {r.nombre_rol}
+                </option>
+              ))}
+            </select>
+            {errors.id_rol && <p className={ERROR_MSG}>{errors.id_rol}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>Sucursal *</label>
+            <select
+              value={form.id_sucursal}
+              onChange={(e) => setField("id_sucursal", e.target.value)}
+              className={`${SELECT_FIELD} ${
+                errors.id_sucursal
+                  ? FIELD_ERROR
+                  : touched.id_sucursal && form.id_sucursal
+                    ? FIELD_SUCCESS
+                    : ""
+              }`}
+            >
+              <option value="">Seleccionar sucursal</option>
+              {sucursales.map((s) => (
+                <option key={s.id_sucursal} value={s.id_sucursal}>
+                  {s.nombre_sucursal}
+                </option>
+              ))}
+            </select>
+            {errors.id_sucursal && <p className={ERROR_MSG}>{errors.id_sucursal}</p>}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={LABEL}>
-            Edad <span className="text-[#e42200]">*</span>
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            placeholder="Edad"
-            value={form.edad}
-            onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
-            className={`${FIELD} ${getFieldClass("edad")}`}
-          />
-          {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>
-            Sexo <span className="text-[#e42200]">*</span>
-          </label>
-          <select
-            value={form.sexo}
-            onChange={(e) => setField("sexo", e.target.value)}
-            className={`${SELECT_FIELD} ${errors.sexo ? FIELD_ERROR : touched.sexo && form.sexo ? FIELD_SUCCESS : ""}`}
-          >
-            <option value="">Seleccionar</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="NA">Prefiero no decir</option>
-          </select>
-          {errors.sexo && <p className={ERROR_MSG}>{errors.sexo}</p>}
-        </div>
-      </div>
-
-      <div>
-        <label className={LABEL}>
-          Rol <span className="text-[#e42200]">*</span>
-        </label>
-        <select
-          value={form.id_rol}
-          onChange={(e) => setField("id_rol", e.target.value)}
-          className={`${SELECT_FIELD} ${errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""}`}
-        >
-          <option value="">Seleccionar rol</option>
-          {roles.map((r) => (
-            <option key={r.id_rol} value={r.id_rol}>
-              {r.nombre_rol}
-            </option>
-          ))}
-        </select>
-        {errors.id_rol && <p className={ERROR_MSG}>{errors.id_rol}</p>}
-      </div>
-
-      <div>
-        <label className={LABEL}>
-          Sucursal <span className="text-[#e42200]">*</span>
-        </label>
-        <select
-          value={form.id_sucursal}
-          onChange={(e) => setField("id_sucursal", e.target.value)}
-          className={`${SELECT_FIELD} ${errors.id_sucursal ? FIELD_ERROR : touched.id_sucursal && form.id_sucursal ? FIELD_SUCCESS : ""}`}
-        >
-          <option value="">Seleccionar sucursal</option>
-          {sucursales.map((s) => (
-            <option key={s.id_sucursal} value={s.id_sucursal}>
-              {s.nombre_sucursal}
-            </option>
-          ))}
-        </select>
-        {errors.id_sucursal && <p className={ERROR_MSG}>{errors.id_sucursal}</p>}
-      </div>
-
-      <div className="flex justify-end gap-3 mt-2">
+      <div className="flex justify-end gap-3 pt-2 border-t border-[#e8e8e8]">
         <button
           type="button"
           onClick={onClose}
@@ -282,7 +289,7 @@ function EditForm({
         <button
           type="submit"
           disabled={editLoading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+          className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c30000] transition-colors disabled:opacity-60"
         >
           {editLoading ? "Guardando..." : "Guardar cambios"}
         </button>
@@ -304,7 +311,7 @@ export function EditarColaboradorModal({
   onSubmit,
 }: EditarColaboradorModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="2xl">
       {loadingData && (
         <p className="py-10 text-center text-[14px] text-[#8e908f]">Cargando datos...</p>
       )}
