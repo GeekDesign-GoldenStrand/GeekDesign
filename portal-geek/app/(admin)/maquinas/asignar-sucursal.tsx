@@ -143,29 +143,23 @@ export default function AsignarSucursal({
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="flex flex-col text-[13px] text-[#575757]">
             <label className="font-medium mb-1">Sucursal</label>
-            <select
+            <Select
               value={selectedSucursal}
-              onChange={(e) => {
-                setSelectedSucursal(e.target.value);
+              onChange={(value) => {
+                setSelectedSucursal(value);
                 setSucursalError(null);
               }}
-              className={[
-                "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] transition-colors",
-                sucursalError ? "border-[#df2646]" : "border-[#b9b8b8]",
-              ]
-                .filter(Boolean)
-                .join(" ")}
+              placeholder="Seleccionar sucursal..."
+              size="sm"
+              disabled={isLoading}
+              error={sucursalError ?? undefined}
             >
-              <option value="" disabled>
-                Seleccionar sucursal...
-              </option>
               {sucursalOptions.map((s) => (
-                <option key={s.id_sucursal} value={s.id_sucursal}>
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
                   {s.nombre_sucursal}
-                </option>
+                </SelectOption>
               ))}
-            </select>
-            {sucursalError && <p className="text-[12px] text-[#e42200] mt-1">{sucursalError}</p>}
+            </Select>
           </div>
 
           {error && (
@@ -176,21 +170,18 @@ export default function AsignarSucursal({
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
-          <button
+          <Button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
+            variant="secondary"
+            size="sm"
           >
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

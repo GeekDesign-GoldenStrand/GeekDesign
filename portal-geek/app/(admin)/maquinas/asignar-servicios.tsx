@@ -160,14 +160,14 @@ export default function AsignarServicios({
           )}
         </div>
 
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mb-4">
-            {error}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3 mt-4">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" size="sm" loading={isLoading}>

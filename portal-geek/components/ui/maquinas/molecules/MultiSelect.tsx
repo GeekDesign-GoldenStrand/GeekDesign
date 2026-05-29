@@ -53,6 +53,7 @@ export default function MultiSelect({
 
     setSelected(next);
     onChange?.(next);
+    setSearch("");
     inputRef.current?.focus();
   };
 
@@ -60,6 +61,17 @@ export default function MultiSelect({
     const next = selected.filter((s) => s.value !== value);
     setSelected(next);
     onChange?.(next);
+  };
+
+  const toggleDropdown = () => {
+    setOpen((wasOpen) => {
+      if (wasOpen) {
+        setSearch("");
+        return false;
+      }
+      inputRef.current?.focus();
+      return true;
+    });
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -146,9 +158,15 @@ export default function MultiSelect({
           />
         )}
 
-        <span
+        <button
+          type="button"
           className="ml-auto pl-1 text-gray-400 transition-transform duration-200"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          aria-label={open ? "Cerrar opciones" : "Abrir opciones"}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleDropdown();
+          }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -159,7 +177,7 @@ export default function MultiSelect({
               strokeLinejoin="round"
             />
           </svg>
-        </span>
+        </button>
       </div>
 
       {isMaxReached && <p className="text-xs text-gray-500">Máximo {maxSelected} seleccionados</p>}
@@ -178,7 +196,7 @@ export default function MultiSelect({
                   <li
                     key={option.value}
                     onClick={() => toggle(option)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 cursor-pointer transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-[#f5f5f5] cursor-pointer transition-colors"
                   >
                     <span className="w-4 h-4 rounded border border-gray-300 flex items-center justify-center flex-shrink-0"></span>
                     {option.label}
