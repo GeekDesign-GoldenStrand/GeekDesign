@@ -36,6 +36,7 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            maxLength={50}
             className="w-full border rounded px-2 py-1"
           />
         </div>
@@ -46,6 +47,7 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
             type="text"
             value={direccion}
             onChange={(e) => setDireccion(e.target.value)}
+            maxLength={50}
             className="w-full border rounded px-2 py-1"
           />
         </div>
