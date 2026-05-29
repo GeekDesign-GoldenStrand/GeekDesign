@@ -3,6 +3,7 @@
 import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { useEffect, useRef, useState } from "react";
 
+import { ActionButton } from "@/components/ui/atoms";
 import { EditIcon, TrashIcon, CheckIcon } from "@/components/ui/atoms/icons";
 
 interface SucursalStatusDropdownProps {
@@ -148,31 +149,12 @@ export function SucursalCard({
   }
 
   return (
-    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full font-['IBM_Plex_Sans_JP',sans-serif]">
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
       {/* Header */}
       <div>
-        <div className="flex gap-6 justify-between items-start">
-          <h1 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words flex-1">
-            {nombre_sucursal}
-          </h1>
-
-          <div className="flex gap-2 flex-none">
-            <button
-              onClick={onEdit}
-              aria-label="Editar"
-              className="flex-none flex items-center justify-center w-9 h-9 border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] cursor-pointer"
-            >
-              <EditIcon />
-            </button>
-            <button
-              onClick={onDelete}
-              aria-label="Eliminar"
-              className="flex items-center justify-center w-9 h-9 border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] cursor-pointer"
-            >
-              <TrashIcon />
-            </button>
-          </div>
-        </div>
+        <h1 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
+          {nombre_sucursal}
+        </h1>
         <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mt-1 break-words">
           {direccion}
         </p>
@@ -196,7 +178,7 @@ export function SucursalCard({
             {colaboradores.map((colab, idx) => (
               <p
                 key={idx}
-                className="border border-gray-400 bg-gray-100 text-xs w-fit h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e]"
+                className="border border-gray-400 bg-gray-100 text-xs w-fit max-w-full h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e] break-words"
               >
                 {colab}
               </p>
@@ -217,7 +199,7 @@ export function SucursalCard({
             {maquinas.map((maq, idx) => (
               <p
                 key={idx}
-                className="border border-gray-400 bg-gray-100 text-xs w-fit h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e]"
+                className="border border-gray-400 bg-gray-100 text-xs w-fit max-w-full h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e] break-words"
               >
                 {maq}
               </p>
@@ -230,13 +212,20 @@ export function SucursalCard({
         )}
       </div>
 
-      {/* Footer / Status */}
-      <div className="flex justify-end mt-auto pt-3 border-t border-gray-100">
+      {/* Footer / Status + Actions */}
+      <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 flex-wrap gap-2">
         <SucursalStatusDropdown
           status={estatus}
           options={["Activo", "Inactivo"]}
           onChange={handleStatusChange}
           saving={isChangingStatus}
+        />
+        <ActionButton onClick={onEdit} aria-label="Editar" icon={<EditIcon size={16} />} />
+        <ActionButton
+          tone="danger"
+          onClick={onDelete}
+          aria-label="Eliminar"
+          icon={<TrashIcon size={16} />}
         />
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { ActionButton, ActionLink } from "@/components/ui/atoms";
 import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
 import type { ServicioListadoItem } from "@/types/servicios";
 
@@ -17,54 +18,82 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
     year: "numeric",
   });
 
-  const maquinasTexto =
-    servicio.maquinas.length === 0
-      ? "Sin máquinas asignadas"
-      : servicio.maquinas.map((m) => m.maquina.apodo_maquina).join(", ");
+  const maquinas = servicio.maquinas.map((m) => m.maquina.apodo_maquina);
 
   return (
-    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-6 flex flex-col w-full font-['IBM_Plex_Sans_JP',sans-serif]">
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
       {/* Header */}
       <div>
-        <div className="flex gap-6 justify-between items-start">
-          <Link
-            href={`/servicios/${servicio.id_servicio}`}
-            className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] hover:text-[#e42200] transition-colors break-words flex-1"
-          >
-            {servicio.nombre_servicio}
-          </Link>
-
-          <div className="flex gap-2 flex-none">
-            <Link
-              href={`/servicios/${servicio.id_servicio}/editar`}
-              aria-label="Editar"
-              className="flex-none flex items-center justify-center w-9 h-9 border border-dashed border-[#1e1e1e] rounded-[7px] p-2 text-[#1e1e1e] hover:bg-gray-50 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)]"
-            >
-              <EditIcon />
-            </Link>
-            <button
-              onClick={() => onEliminar?.(servicio.id_servicio)}
-              aria-label="Eliminar"
-              className="flex items-center justify-center w-9 h-9 border border-dashed border-[#e42200] rounded-[7px] p-2 text-[#e42200] hover:bg-[#fff5f5] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] cursor-pointer"
-            >
-              <TrashIcon />
-            </button>
-          </div>
-        </div>
+        <Link
+          href={`/servicios/${servicio.id_servicio}`}
+          className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] hover:text-[#e42200] transition-colors break-words"
+        >
+          {servicio.nombre_servicio}
+        </Link>
       </div>
 
-      {/* Body / Content */}
-      <div className="space-y-1.5 text-[14px] text-[#1e1e1e] font-normal leading-relaxed">
-        <p>
-          <span className="font-semibold">Descripción:</span>{" "}
+      {/* Descripción */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
+          Descripción
+        </p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
           {servicio.descripcion_servicio ?? "Sin descripción"}
         </p>
-        <p>
-          <span className="font-semibold">Máquina:</span> {maquinasTexto}
+      </div>
+
+      {/* Sucursal */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">Sucursal</p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {servicio.sucursal?.nombre_sucursal ?? "Sin sucursal asignada"}
         </p>
-        <p>
-          <span className="font-semibold">Última fecha de modificación:</span> {fechaFormateada}
+      </div>
+
+      {/* Máquinas */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">Máquinas</p>
+        {maquinas.length > 0 ? (
+          <div className="flex flex-wrap gap-2 flex-1">
+            {maquinas.map((maq, idx) => (
+              <p
+                key={idx}
+                className="border border-gray-400 bg-gray-100 text-xs w-fit max-w-full h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e] break-words"
+              >
+                {maq}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e]">
+            Sin máquinas asignadas
+          </p>
+        )}
+      </div>
+
+      {/* Última modificación */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
+          Última modificación
         </p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {fechaFormateada}
+        </p>
+      </div>
+
+      {/* Footer / Actions */}
+      <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 gap-2 flex-wrap">
+        <ActionLink
+          href={`/servicios/${servicio.id_servicio}/editar`}
+          aria-label="Editar"
+          icon={<EditIcon size={16} />}
+        />
+        <ActionButton
+          tone="danger"
+          onClick={() => onEliminar?.(servicio.id_servicio)}
+          aria-label="Eliminar"
+          icon={<TrashIcon size={16} />}
+        />
       </div>
     </div>
   );
