@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import {
   CreateGrupoMaterialSchema,
   CreateMaterialSchema,
@@ -36,7 +36,7 @@ interface RegistrarMaterialFormProps {
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
@@ -318,14 +318,10 @@ export function RegistrarMaterialForm({
                 Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.ancho}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("ancho")}`}
               />
@@ -336,14 +332,10 @@ export function RegistrarMaterialForm({
                 Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.alto}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("alto")}`}
               />
@@ -354,14 +346,10 @@ export function RegistrarMaterialForm({
                 Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.grosor}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("grosor")}`}
               />
@@ -370,11 +358,11 @@ export function RegistrarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Color *</label>
+            <label className={LABEL}>Descripción de color *</label>
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. Rojo, #FF2400"
+              placeholder="Ej. Rojo"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
@@ -385,8 +373,10 @@ export function RegistrarMaterialForm({
       )}
 
       <div>
-        <label className={LABEL}>Imagen {tipo !== "grupo" ? "*" : ""}</label>
-        <MaterialImageInput
+        <label className={LABEL}>Imagen</label>
+        <ImageUploader
+          mode="single"
+          category="materiales"
           onUploaded={(key) => setField("imagen_url", key ?? "")}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
           hasError={Boolean(errors.imagen_url)}
