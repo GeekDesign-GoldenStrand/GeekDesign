@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 export const CreateClienteSchema = z.object({
   nombre_cliente: z.string().min(1).max(100),
   empresa: z.string().max(100).optional(),
   rfc: z.string().length(13).optional(),
-  correo_electronico: z.email().max(150),
+  correo_electronico: emailField({ max: 150 }),
   numero_telefono: z.string().min(1).max(20),
   categoria: z.enum(["Black", "Silver", "Gold", "Emprendedor", "Baneado"]).optional(),
 });

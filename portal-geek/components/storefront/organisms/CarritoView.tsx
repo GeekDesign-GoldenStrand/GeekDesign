@@ -127,7 +127,7 @@ export function CarritoView({ relatedServices }: Props) {
       <div className="flex flex-col items-center justify-center gap-[24px] py-[80px]">
         <p className="text-[#1e1e1e] text-[20px] font-semibold">Tu carrito está vacío</p>
         <Link
-          href="/tienda/servicios"
+          href="/tienda"
           className="bg-[#8b434a] text-white rounded-[10px] px-[32px] h-[52px] flex items-center font-semibold text-[16px] hover:bg-[#7a3a41] transition-colors"
         >
           Explorar catálogo

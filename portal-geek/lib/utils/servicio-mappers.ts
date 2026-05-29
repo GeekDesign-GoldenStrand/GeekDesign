@@ -51,6 +51,16 @@ function buildFormulaChunks(
   return chunks;
 }
 
+// ── Outgoing payload helpers ──────────────────────────────────────────────
+
+// The form keeps a synthetic "global" constant for the implicit IVA chip
+// (lib/utils/formula-evaluator.ts injects `iva` automatically in buildScope).
+// These UI-only placeholders must NOT be sent to the API: the schema rejects
+// reserved identifiers like "iva", and the evaluator throws on origen=global.
+export function stripUiOnlyConstants(constantes: ConstanteDraft[]): ConstanteDraft[] {
+  return constantes.filter((c) => c.origen !== "global");
+}
+
 // ── Main mapper ───────────────────────────────────────────────────────────
 
 export function mapServicioDetalladoToFormState(
