@@ -24,6 +24,7 @@ interface EditarColaboradorModalProps {
   editError: string | null;
   roles: Rol[];
   sucursales: Sucursal[];
+  currentUserId: number;
   onClose: () => void;
   onSubmit: (payload: {
     nombre_completo: string;
@@ -31,7 +32,7 @@ interface EditarColaboradorModalProps {
     edad: number;
     sexo: string;
     telefono: string;
-    id_rol: number;
+    id_rol?: number;
     id_sucursal: number;
   }) => void;
 }
@@ -96,6 +97,7 @@ function EditForm({
   editError,
   roles,
   sucursales,
+  isSelf,
   onClose,
   onSubmit,
 }: {
@@ -104,6 +106,7 @@ function EditForm({
   editError: string | null;
   roles: Rol[];
   sucursales: Sucursal[];
+  isSelf: boolean;
   onClose: () => void;
   onSubmit: EditarColaboradorModalProps["onSubmit"];
 }) {
@@ -131,13 +134,16 @@ function EditForm({
       setTouched(Object.fromEntries(Object.keys(form).map((k) => [k, true])));
       return;
     }
+    // When editing yourself, omit id_rol so the server-side self-demotion
+    // guard does not reject the whole update (it triggers on `id_rol !==
+    // undefined`, even if the value is unchanged).
     onSubmit({
       nombre_completo: form.nombre_completo.trim(),
       correo_electronico: form.correo_electronico.trim(),
       edad: Number(form.edad),
       sexo: form.sexo,
       telefono: form.telefono.trim(),
-      id_rol: Number(form.id_rol),
+      ...(isSelf ? {} : { id_rol: Number(form.id_rol) }),
       id_sucursal: Number(form.id_sucursal),
     });
   }
@@ -240,7 +246,8 @@ function EditForm({
         <select
           value={form.id_rol}
           onChange={(e) => setField("id_rol", e.target.value)}
-          className={`${SELECT_FIELD} ${errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""}`}
+          disabled={isSelf}
+          className={`${SELECT_FIELD} ${errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""} ${isSelf ? "bg-[#f5f5f5] cursor-not-allowed" : ""}`}
         >
           <option value="">Seleccionar rol</option>
           {roles.map((r) => (
@@ -249,6 +256,11 @@ function EditForm({
             </option>
           ))}
         </select>
+        {isSelf && (
+          <p className="text-[12px] text-[#575757] mt-1">
+            No puedes cambiar tu propio rol. Pide a otro usuario con rol Dirección que lo haga.
+          </p>
+        )}
         {errors.id_rol && <p className={ERROR_MSG}>{errors.id_rol}</p>}
       </div>
 
@@ -300,6 +312,7 @@ export function EditarColaboradorModal({
   editError,
   roles,
   sucursales,
+  currentUserId,
   onClose,
   onSubmit,
 }: EditarColaboradorModalProps) {
@@ -321,6 +334,7 @@ export function EditarColaboradorModal({
           editError={editError}
           roles={roles}
           sucursales={sucursales}
+          isSelf={apiRow.id_usuario === currentUserId}
           onClose={onClose}
           onSubmit={onSubmit}
         />

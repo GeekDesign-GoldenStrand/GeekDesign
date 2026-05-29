@@ -354,4 +354,29 @@ describe("AU-04 PUT /api/usuarios/[id] (modificar rol)", () => {
     expect(res.status).toBe(422);
     expect(mockUpdateUsuario).not.toHaveBeenCalled();
   });
+
+  it("AU04-I5: 422 cuando Dirección intenta cambiar su propio rol", async () => {
+    mockGetSession.mockResolvedValue({ id: 7, email: "dir@x.com", role: "Direccion" });
+
+    const res = await app().put("/api/usuarios/7").send({ id_rol: 2 });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/propio rol/i);
+    expect(mockUpdateUsuario).not.toHaveBeenCalled();
+  });
+
+  it("AU04-I5b: 200 cuando Dirección edita su propio usuario sin tocar id_rol", async () => {
+    mockGetSession.mockResolvedValue({ id: 7, email: "dir@x.com", role: "Direccion" });
+    mockUpdateUsuario.mockResolvedValue({
+      id_usuario: 7,
+      nombre_completo: "Nuevo Nombre",
+      id_rol: 1,
+      rol: { id_rol: 1, nombre_rol: "Direccion" },
+    });
+
+    const res = await app().put("/api/usuarios/7").send({ nombre_completo: "Nuevo Nombre" });
+
+    expect(res.status).toBe(200);
+    expect(mockUpdateUsuario).toHaveBeenCalledWith(7, { nombre_completo: "Nuevo Nombre" });
+  });
 });
