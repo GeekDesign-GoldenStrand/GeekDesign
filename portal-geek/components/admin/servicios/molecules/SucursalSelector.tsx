@@ -1,5 +1,6 @@
 "use client";
 
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import type { SucursalOption } from "@/types/servicios";
 
 type SucursalSelectorProps = {
@@ -25,22 +26,19 @@ export function SucursalSelector({
         Sucursal: <span className="text-[#e42200]">*</span>
       </label>
 
-      <select
-        value={selectedId ?? ""}
-        onChange={(e) => {
-          const value = e.target.value;
-          onChange(value === "" ? null : Number(value));
-        }}
+      <Select
+        value={selectedId === null ? "" : String(selectedId)}
+        onChange={(v) => onChange(v === "" ? null : Number(v))}
+        placeholder="Selecciona una sucursal"
+        size="md"
         disabled={disabled || opciones.length === 0}
-        className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
       >
-        <option value="">Selecciona una sucursal</option>
         {opciones.map((s) => (
-          <option key={s.id_sucursal} value={s.id_sucursal}>
+          <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
             {s.nombre_sucursal}
-          </option>
+          </SelectOption>
         ))}
-      </select>
+      </Select>
 
       {opciones.length === 0 && (
         <p className="text-sm text-gray-500">No hay sucursales disponibles.</p>

@@ -3,6 +3,7 @@
 import { CircleNotchIcon, FilePdfIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import { formatDate } from "@/lib/utils/date";
 import type { UserRole } from "@/types";
@@ -212,21 +213,13 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
   }
 
   const ocButton = canGenerateOC ? (
-    <button
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
       onClick={handleGenerarOC}
       disabled={ocLoading || loading}
       title="Generar Orden de Compra Interna"
-      className="
-        inline-flex items-center gap-1.5
-        h-8 px-3
-        rounded-[6px]
-        border border-[#c6c6c6]
-        bg-white
-        text-[#575757] text-[12px] font-semibold
-        hover:border-[#8e908f] hover:text-[#1e1e1e]
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-colors
-      "
     >
       {ocLoading ? (
         <CircleNotchIcon size={14} className="animate-spin" aria-hidden />
@@ -234,7 +227,7 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
         <FilePdfIcon size={14} aria-hidden />
       )}
       {ocLoading ? "Generando…" : "Generar OC"}
-    </button>
+    </Button>
   ) : null;
 
   return (
@@ -464,7 +457,10 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
                               {orden.tipo} · {money(orden.total)}
                             </p>
                           </div>
-                          <button
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
                             onClick={() =>
                               downloadBase64Pdf(
                                 orden.pdf_base64,
@@ -472,20 +468,10 @@ export default function PedidoDetailModal({ pedidoId, onClose, selectedServiceId
                               )
                             }
                             title={`Descargar OC de ${orden.nombre}`}
-                            className="
-                              inline-flex items-center gap-1.5
-                              h-8 px-3
-                              rounded-[6px]
-                              border border-[#c6c6c6]
-                              bg-white
-                              text-[#575757] text-[12px] font-semibold
-                              hover:border-[#8e908f] hover:text-[#1e1e1e]
-                              transition-colors
-                            "
                           >
                             <DownloadSimpleIcon size={14} aria-hidden />
                             Descargar
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>

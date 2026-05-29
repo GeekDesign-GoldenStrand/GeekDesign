@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
@@ -203,15 +205,15 @@ export function EditarInstaladorModal({
             <label className={LABEL}>
               Tipo <span className="text-[#e42200]">*</span>
             </label>
-            <select
+            <Select
               value={form.tipo}
-              onChange={(e) => setField("tipo", e.target.value)}
-              className={`${FIELD} ${getFieldClass("tipo")}`}
+              onChange={(v) => setField("tipo", v)}
+              size="sm"
+              error={allErrors.tipo || undefined}
             >
-              <option value="Instalador">Instalador</option>
-              <option value="Contratista">Contratista</option>
-            </select>
-            {allErrors.tipo && <p className={ERROR_MSG}>{allErrors.tipo}</p>}
+              <SelectOption value="Instalador">Instalador</SelectOption>
+              <SelectOption value="Contratista">Contratista</SelectOption>
+            </Select>
           </div>
         </div>
 
@@ -290,15 +292,11 @@ export function EditarInstaladorModal({
 
           <div>
             <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
+            <Select value={form.estatus} onChange={(v) => setField("estatus", v)} size="sm">
+              <SelectOption value="Activo">Activo</SelectOption>
+              <SelectOption value="Inactivo">Inactivo</SelectOption>
+              <SelectOption value="Baneado">Baneado</SelectOption>
+            </Select>
           </div>
         </div>
 
@@ -354,21 +352,12 @@ export function EditarInstaladorModal({
         </div>
 
         <div className="flex justify-end gap-3 mt-2">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
-          >
+          <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={loading}>
             {loading ? "Guardando..." : "Guardar cambios"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { z } from "zod";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
@@ -417,15 +419,16 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
-              <select
+              <Select
                 value={form.tipo_proveedor_seleccion}
-                onChange={(e) => setField("tipo_proveedor_seleccion", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_proveedor_seleccion")}`}
+                onChange={(v) => setField("tipo_proveedor_seleccion", v)}
+                size="sm"
+                error={errors.tipo_proveedor_seleccion || undefined}
               >
-                <option value="Material">Material</option>
-                <option value="Servicio">Servicio</option>
-                <option value="Ambos">Ambos</option>
-              </select>
+                <SelectOption value="Material">Material</SelectOption>
+                <SelectOption value="Servicio">Servicio</SelectOption>
+                <SelectOption value="Ambos">Ambos</SelectOption>
+              </Select>
             </div>
           </div>
 
@@ -527,14 +530,15 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
-              <select
+              <Select
                 value={form.tipo_instalador}
-                onChange={(e) => setField("tipo_instalador", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_instalador")}`}
+                onChange={(v) => setField("tipo_instalador", v)}
+                size="sm"
+                error={errors.tipo_instalador || undefined}
               >
-                <option value="Instalador">Instalador</option>
-                <option value="Contratista">Contratista</option>
-              </select>
+                <SelectOption value="Instalador">Instalador</SelectOption>
+                <SelectOption value="Contratista">Contratista</SelectOption>
+              </Select>
             </div>
           </div>
 
@@ -624,20 +628,12 @@ export function RegistrarTerceroForm({
       )}
 
       <div className="flex justify-end gap-3 mt-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Guardar"}
-        </button>
+        </Button>
       </div>
     </form>
   );
