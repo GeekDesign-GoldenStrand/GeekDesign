@@ -15,6 +15,7 @@ import { VariablesSection } from "@/components/admin/servicios/molecules/Variabl
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UseServicioFormOptions } from "@/lib/hooks/useServicioForm";
 import { useServicioForm } from "@/lib/hooks/useServicioForm";
+import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { NuevoServicioFormState } from "@/types/servicios";
 
 type ServicioFormProps =
@@ -114,7 +115,7 @@ export function ServicioForm(props: ServicioFormProps) {
           label="Nombre del servicio:"
           required
           value={form.nombre_servicio}
-          onChange={(e) => actions.updateField("nombre_servicio", e.target.value)}
+          onChange={(e) => actions.updateField("nombre_servicio", sanitizeUserText(e.target.value))}
           placeholder="Ej. Corte Láser"
           maxLength={100}
         />

@@ -3,6 +3,7 @@
 import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { sanitizeUserText } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { TipoVariableOption } from "@/types/servicios";
 
@@ -197,7 +198,9 @@ export function ConstantesSection({
                 type="text"
                 placeholder="Ej. Markup de mostrador"
                 value={draft.etiqueta}
-                onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, etiqueta: sanitizeUserText(e.target.value) }))
+                }
                 className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
                 maxLength={MAX_NOMBRE_LEN}
               />
