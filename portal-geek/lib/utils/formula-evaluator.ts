@@ -98,7 +98,7 @@ function buildScope(input: EvaluateFormulaInput): Record<string, number> {
         `La constante "${c.nombre_constante}" usa un identificador reservado`
       );
     }
-    // Copilot review #5: a constante must not shadow a variable (or another constante).
+    //A constante must not shadow a variable (or another constante).
     if (Object.prototype.hasOwnProperty.call(scope, c.nombre_constante)) {
       throw new EvaluatorError(
         `Identificador duplicado: "${c.nombre_constante}" colisiona con una variable o constante previa`

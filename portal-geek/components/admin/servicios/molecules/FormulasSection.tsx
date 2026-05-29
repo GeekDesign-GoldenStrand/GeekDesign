@@ -35,6 +35,12 @@ function tokenAlreadyIn(chunks: FormulaChunk[], value: string) {
 
 const OPERATORS = ["+", "-", "*", "/", "(", ")"];
 
+// Formula text chunks accept only operators, parens, and spaces. Letters and
+// other characters are entered via the variable/constante chip buttons; raw
+// numeric literals must be added as a "manual" constante. Any other input
+// (letters, punctuation, emojis, etc.) is rejected on the way in.
+const FORMULA_TEXT_PATTERN = /^[+\-*/() ]*$/;
+
 // ── Component ─────────────────────────────────────────────────────────────
 
 export function FormulaSection({
@@ -187,12 +193,39 @@ export function FormulaSection({
                   value={chunk.value}
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) => {
-                    activeCursor.current = e.target.selectionStart ?? e.target.value.length;
-                    updateText(chunkIdx, e.target.value);
+                    const next = e.target.value;
+                    // Reject anything that's not an operator, paren, or space.
+                    if (!FORMULA_TEXT_PATTERN.test(next)) return;
+                    activeCursor.current = e.target.selectionStart ?? next.length;
+                    updateText(chunkIdx, next);
                   }}
                   onFocus={() => {
                     activeTextIdx.current = textIdx;
                     activeCursor.current = textInputRefs.current[textIdx]?.selectionStart ?? 0;
+                  }}
+                  onKeyDown={(e) => {
+                    // Cross between text chunks with arrow keys: at the right
+                    // edge of a chunk, ArrowRight jumps to the start of the
+                    // next chunk (skipping the token between them); ArrowLeft
+                    // at the left edge jumps to the end of the previous chunk.
+                    const input = e.currentTarget;
+                    const cur = input.selectionStart ?? 0;
+                    if (e.key === "ArrowRight" && cur === input.value.length) {
+                      const nextInput = textInputRefs.current[textIdx + 1];
+                      if (nextInput) {
+                        e.preventDefault();
+                        nextInput.focus();
+                        nextInput.setSelectionRange(0, 0);
+                      }
+                    } else if (e.key === "ArrowLeft" && cur === 0) {
+                      const prevInput = textInputRefs.current[textIdx - 1];
+                      if (prevInput) {
+                        e.preventDefault();
+                        prevInput.focus();
+                        const len = prevInput.value.length;
+                        prevInput.setSelectionRange(len, len);
+                      }
+                    }
                   }}
                   onKeyUp={(e) => {
                     activeCursor.current =
