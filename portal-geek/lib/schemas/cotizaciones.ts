@@ -51,8 +51,17 @@ export const UpdateCotizacionSchema = z.object({
     .array(
       z.object({
         id_detalle: z.number().int().positive(),
-        cantidad: z.number().int().positive(),
-        precio_unitario: z.number().nonnegative(),
+        // Mirror SolicitarItemSchema's cap (storefront uses .max(9999) on the
+        // same field). Without this, the admin edit flow accepts unbounded
+        // quantities while the customer-facing flow rejects them.
+        cantidad: z.number().int().positive().max(9999, "La cantidad no puede superar 9999"),
+        // Same defense-in-depth on price. Realistic per-item cap for cotización
+        // line items (a single line shouldn't exceed ~1M MXN; orders that big
+        // are split into multiple lines).
+        precio_unitario: z
+          .number()
+          .nonnegative()
+          .max(999999.99, "El precio unitario no puede superar 999,999.99"),
       })
     )
     .optional(),

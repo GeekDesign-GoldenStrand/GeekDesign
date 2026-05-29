@@ -313,11 +313,16 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={1}
+                      max={9999}
                       step={1}
                       value={item.cantidad}
                       onChange={(e) => {
                         const parsed = parseInt(e.target.value, 10);
-                        const safe = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+                        // Clamp to [1, 9999] to match the storefront cap
+                        // (CarritoView + SolicitarItemSchema both use 9999).
+                        const safe = Number.isFinite(parsed)
+                          ? Math.max(1, Math.min(9999, parsed))
+                          : 1;
                         updateServicio(idx, "cantidad", safe);
                       }}
                       className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -327,11 +332,17 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={0}
+                      max={999999.99}
                       step={0.01}
                       value={item.precio_unitario}
-                      onChange={(e) =>
-                        updateServicio(idx, "precio_unitario", parseFloat(e.target.value) || 0)
-                      }
+                      onChange={(e) => {
+                        const parsed = parseFloat(e.target.value);
+                        // Clamp to [0, 999,999.99] to match the server cap.
+                        const safe = Number.isFinite(parsed)
+                          ? Math.max(0, Math.min(999999.99, parsed))
+                          : 0;
+                        updateServicio(idx, "precio_unitario", safe);
+                      }}
                       className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     />
                   </td>
