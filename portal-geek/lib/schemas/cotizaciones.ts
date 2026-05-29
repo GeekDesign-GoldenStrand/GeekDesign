@@ -161,10 +161,7 @@ export const SolicitarCotizacionSchema = z.object({
     .optional(),
   fecha_estimada: z.coerce
     .date()
-    .optional()
-    .nullable()
     .refine((val) => {
-      if (!val) return true;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       // Subtract 24 hours to accommodate timezone differences
@@ -172,7 +169,6 @@ export const SolicitarCotizacionSchema = z.object({
       return val >= limit;
     }, "La fecha estimada no puede ser anterior a la fecha actual")
     .refine((val) => {
-      if (!val) return true;
       const maxDate = new Date();
       maxDate.setFullYear(maxDate.getFullYear() + 2);
       maxDate.setHours(23, 59, 59, 999);
