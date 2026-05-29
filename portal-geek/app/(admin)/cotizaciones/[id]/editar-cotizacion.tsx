@@ -9,6 +9,7 @@ import {
   DISCOUNT_STEP,
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
+import { sanitizeSafeText } from "@/lib/utils/safe-text";
 import type { LineItem } from "@/types/cotizacion";
 
 interface ClienteOption {
@@ -57,6 +58,13 @@ function fieldsAreEqual(a: EditableFields, b: EditableFields): boolean {
   });
 }
 
+const DISCOUNT_REASON_MAX_LENGTH = 255;
+
+const DISCOUNT_OPTIONS = Array.from(
+  { length: (DISCOUNT_MAX - DISCOUNT_MIN) / DISCOUNT_STEP + 1 },
+  (_, index) => DISCOUNT_MIN + index * DISCOUNT_STEP
+);
+
 function discountFieldsAreEqual(
   currentPercentage: number,
   currentMotivo: string,
@@ -78,6 +86,7 @@ interface EditarCotizacionProps {
   motivoDescuento?: string | null;
   onSave: (data: EditableFields) => void;
   onClose: () => void;
+  canManageDiscount?: boolean;
 }
 
 export default function EditarCotizacion({
@@ -89,6 +98,7 @@ export default function EditarCotizacion({
   motivoDescuento,
   onSave,
   onClose,
+  canManageDiscount = false,
 }: EditarCotizacionProps) {
   const [fields, setFields] = useState<EditableFields>({
     ...initial,
@@ -97,15 +107,18 @@ export default function EditarCotizacion({
 
   const initialDiscountPercentage = porcentajeDescuento ?? 0;
   const hasInitialDiscount = initialDiscountPercentage > 0;
+  const canEditDiscount = hasInitialDiscount && canManageDiscount;
 
   const [discountPercentage, setDiscountPercentage] = useState<number>(initialDiscountPercentage);
-  const [discountMotivo, setDiscountMotivo] = useState<string>(motivoDescuento ?? "");
+  const [discountMotivo, setDiscountMotivo] = useState<string>(
+    sanitizeSafeText(motivoDescuento ?? "", DISCOUNT_REASON_MAX_LENGTH)
+  );
   const [discountSnapshot, setDiscountSnapshot] = useState<{
     percentage: number;
     motivo: string;
   }>({
     percentage: initialDiscountPercentage,
-    motivo: motivoDescuento ?? "",
+    motivo: sanitizeSafeText(motivoDescuento ?? "", DISCOUNT_REASON_MAX_LENGTH),
   });
 
   const [clientes, setClientes] = useState<ClienteOption[]>(currentCliente ? [currentCliente] : []);
@@ -121,15 +134,17 @@ export default function EditarCotizacion({
   // Reset fields every time the modal opens
   useEffect(() => {
     if (!isOpen) return;
+
     const fresh = {
       ...initial,
       servicios: initial.servicios.map((p) => ({ ...p })),
     };
-    setFields(fresh);
-    setSnapshot(fresh);
 
     const freshDiscountPercentage = porcentajeDescuento ?? 0;
-    const freshDiscountMotivo = motivoDescuento ?? "";
+    const freshDiscountMotivo = sanitizeSafeText(motivoDescuento ?? "", DISCOUNT_REASON_MAX_LENGTH);
+
+    setFields(fresh);
+    setSnapshot(fresh);
 
     setDiscountPercentage(freshDiscountPercentage);
     setDiscountMotivo(freshDiscountMotivo);
@@ -196,12 +211,15 @@ export default function EditarCotizacion({
   const hasDiscount = discountPct > 0;
   const discountAmount = hasDiscount ? Math.round(newSubtotal * discountPct) / 100 : 0;
   const newTotal = newSubtotal - discountAmount;
-  const discountChanged = !discountFieldsAreEqual(
-    discountPercentage,
-    discountMotivo,
-    discountSnapshot.percentage,
-    discountSnapshot.motivo
-  );
+
+  const discountChanged =
+    canEditDiscount &&
+    !discountFieldsAreEqual(
+      discountPercentage,
+      discountMotivo,
+      discountSnapshot.percentage,
+      discountSnapshot.motivo
+    );
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -230,7 +248,45 @@ export default function EditarCotizacion({
     }
 
     setIsSubmitting(true);
+    let discountWasSaved = false;
+
     try {
+      if (discountChanged) {
+        const trimmedMotivo = sanitizeSafeText(discountMotivo, DISCOUNT_REASON_MAX_LENGTH).trim();
+
+        const res = await fetch(`/api/cotizaciones/${idCotizacion}/descuento`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            porcentaje_descuento: discountPercentage,
+            ...(trimmedMotivo ? { motivo_descuento: trimmedMotivo } : {}),
+          }),
+        });
+
+        let payload: { data?: unknown; error?: string } = {};
+        try {
+          payload = await res.json();
+        } catch {
+          /* non-JSON body */
+        }
+
+        if (!res.ok) {
+          const fallback =
+            res.status === 404
+              ? "Cotización no encontrada"
+              : res.status === 409
+                ? "No se puede modificar el descuento en su estatus actual"
+                : res.status === 403
+                  ? "No tienes permisos para modificar descuentos"
+                  : "No se pudo actualizar el descuento";
+
+          setServerError(payload.error ?? fallback);
+          return;
+        }
+
+        discountWasSaved = true;
+      }
+
       if (quotationChanged) {
         const res = await fetch(`/api/cotizaciones/${idCotizacion}`, {
           method: "PUT",
@@ -262,38 +318,14 @@ export default function EditarCotizacion({
               : res.status === 409
                 ? "No se puede modificar esta cotización en su estatus actual"
                 : "No se pudo guardar los cambios";
-          setServerError(payload.error ?? fallback);
-          return;
-        }
-      }
 
-      if (discountChanged) {
-        const trimmedMotivo = discountMotivo.trim();
-
-        const res = await fetch(`/api/cotizaciones/${idCotizacion}/descuento`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            porcentaje_descuento: discountPercentage,
-            ...(trimmedMotivo ? { motivo_descuento: trimmedMotivo } : {}),
-          }),
-        });
-
-        let payload: { data?: unknown; error?: string } = {};
-        try {
-          payload = await res.json();
-        } catch {
-          /* non-JSON body */
-        }
-
-        if (!res.ok) {
-          const fallback =
-            res.status === 404
-              ? "Cotización no encontrada"
-              : res.status === 409
-                ? "No se puede modificar el descuento en su estatus actual"
-                : "No se pudo actualizar el descuento";
-          setServerError(payload.error ?? fallback);
+          setServerError(
+            discountWasSaved
+              ? `El descuento se guardó, pero no se pudieron guardar los cambios generales. ${
+                  payload.error ?? fallback
+                } Recarga la cotización para ver el estado actualizado.`
+              : (payload.error ?? fallback)
+          );
           return;
         }
       }
@@ -377,7 +409,7 @@ export default function EditarCotizacion({
           </label>
         </div>
 
-        {hasInitialDiscount && (
+        {canEditDiscount && (
           <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
             <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
               Descuento
@@ -386,43 +418,31 @@ export default function EditarCotizacion({
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
                 <span className="font-medium">Porcentaje</span>
-                <input
-                  type="number"
-                  min={DISCOUNT_MIN}
-                  max={DISCOUNT_MAX}
-                  step={DISCOUNT_STEP}
-                  value={Number.isFinite(discountPercentage) ? discountPercentage : ""}
+                <select
+                  value={discountPercentage}
                   onChange={(e) => {
                     setValidationError(null);
-
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      setDiscountPercentage(Number.NaN);
-                      return;
-                    }
-
-                    const parsed = parseInt(raw, 10);
-                    if (Number.isNaN(parsed)) {
-                      setDiscountPercentage(Number.NaN);
-                      return;
-                    }
-
-                    const clamped = Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX);
-                    setDiscountPercentage(clamped);
+                    setDiscountPercentage(Number(e.target.value));
                   }}
                   className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
+                >
+                  {DISCOUNT_OPTIONS.map((value) => (
+                    <option key={value} value={value}>
+                      {value}%
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
                 <span className="font-medium">Motivo</span>
                 <input
                   type="text"
-                  maxLength={255}
+                  maxLength={DISCOUNT_REASON_MAX_LENGTH}
                   value={discountMotivo}
                   onChange={(e) => {
                     setValidationError(null);
-                    setDiscountMotivo(e.target.value);
+                    setDiscountMotivo(sanitizeSafeText(e.target.value, DISCOUNT_REASON_MAX_LENGTH));
                   }}
                   placeholder="Ej. Cliente frecuente"
                   className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"

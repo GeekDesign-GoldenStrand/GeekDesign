@@ -13,7 +13,13 @@ async function getCotizacion(id: string): Promise<Cotizacion> {
   return json.data;
 }
 
-export default function CotizacionDetail({ id }: { id: string }) {
+export default function CotizacionDetail({
+  id,
+  currentUserRole,
+}: {
+  id: string;
+  currentUserRole: string | null;
+}) {
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +58,11 @@ export default function CotizacionDetail({ id }: { id: string }) {
   return (
     <div>
       <AdminHeader title={`Cotización ${cotizacion.nombre_oportunidad || "Sin nombre"}`} />
-      <CotizacionDetailPage cotizacion={cotizacion} onRefetch={refetch} />
+      <CotizacionDetailPage
+        cotizacion={cotizacion}
+        onRefetch={refetch}
+        currentUserRole={currentUserRole}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -89,6 +89,7 @@ function setup(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
       }}
       porcentajeDescuento={10}
       motivoDescuento="Cliente frecuente"
+      canManageDiscount
       onSave={onSave}
       onClose={onClose}
       {...overrides}
@@ -123,12 +124,31 @@ beforeEach(() => {
 });
 
 describe("EditarCotizacion discount editing", () => {
-  it("renders existing discount fields when the quotation has a discount", async () => {
+  it("renders existing discount fields for users who can manage discounts", async () => {
     await setupReady();
 
     expect(screen.getByText("Descuento")).toBeInTheDocument();
-    expect(screen.getByLabelText("Porcentaje")).toHaveValue(10);
+    expect(screen.getByLabelText("Porcentaje")).toHaveValue("10");
     expect(screen.getByLabelText("Motivo")).toHaveValue("Cliente frecuente");
+  });
+
+  it("does not render discount fields when the user cannot manage discounts", async () => {
+    await setupReady({
+      canManageDiscount: false,
+    });
+
+    expect(screen.queryByText("Descuento")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Porcentaje")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Motivo")).not.toBeInTheDocument();
+  });
+
+  it("only exposes valid discount percentage options", async () => {
+    await setupReady();
+
+    const percentageSelect = screen.getByLabelText("Porcentaje");
+    const options = within(percentageSelect).getAllByRole("option");
+
+    expect(options.map((option) => option.getAttribute("value"))).toEqual(["5", "10", "15", "20"]);
   });
 
   it("sends only the discount PATCH request when only the discount changes", async () => {
@@ -164,6 +184,30 @@ describe("EditarCotizacion discount editing", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("sanitizes the discount reason before submitting", async () => {
+    const user = userEvent.setup();
+    await setupReady();
+
+    fireEvent.change(screen.getByLabelText("Motivo"), {
+      target: { value: "Cliente frecuente especial ⋆𐙚₊˚⊹♡ 😊" },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cotizaciones/123/descuento",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            porcentaje_descuento: 10,
+            motivo_descuento: "Cliente frecuente especial",
+          }),
+        })
+      );
+    });
+  });
+
   it("sends both quotation PUT and discount PATCH when both sections change", async () => {
     const user = userEvent.setup();
     await setupReady();
@@ -179,41 +223,83 @@ describe("EditarCotizacion discount editing", () => {
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/cotizaciones/123",
-        expect.objectContaining({
-          method: "PUT",
-        })
-      );
-
-      expect(mockFetch).toHaveBeenCalledWith(
         "/api/cotizaciones/123/descuento",
         expect.objectContaining({
           method: "PATCH",
         })
       );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cotizaciones/123",
+        expect.objectContaining({
+          method: "PUT",
+        })
+      );
     });
   });
 
-  it("shows a validation error and does not submit when discount is empty", async () => {
+  it("does not send quotation PUT when discount PATCH fails", async () => {
     const user = userEvent.setup();
     await setupReady();
 
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: "Sin permisos para modificar descuentos" }),
+    });
+
+    await user.clear(screen.getByLabelText("Notas"));
+    await user.type(screen.getByLabelText("Notas"), "Notas actualizadas");
+
     fireEvent.change(screen.getByLabelText("Porcentaje"), {
-      target: { value: "" },
+      target: { value: "15" },
     });
 
     await user.click(screen.getByRole("button", { name: "Guardar" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Ingresa un número entero");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Sin permisos para modificar descuentos"
+    );
 
-    expect(mockFetch).not.toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       "/api/cotizaciones/123/descuento",
-      expect.anything()
+      expect.objectContaining({
+        method: "PATCH",
+      })
     );
 
     expect(mockFetch).not.toHaveBeenCalledWith(
       "/api/cotizaciones/123",
       expect.objectContaining({ method: "PUT" })
+    );
+  });
+
+  it("shows a partial-save message when discount saves but quotation update fails", async () => {
+    const user = userEvent.setup();
+    await setupReady();
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: {} }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: "No se puede modificar esta cotización" }),
+      });
+
+    await user.clear(screen.getByLabelText("Notas"));
+    await user.type(screen.getByLabelText("Notas"), "Notas actualizadas");
+
+    fireEvent.change(screen.getByLabelText("Porcentaje"), {
+      target: { value: "15" },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "El descuento se guardó, pero no se pudieron guardar los cambios generales"
     );
   });
 

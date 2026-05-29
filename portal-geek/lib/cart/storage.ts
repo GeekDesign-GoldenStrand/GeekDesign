@@ -1,3 +1,5 @@
+import { MAX_QUOTE_ITEM_QUANTITY } from "@/lib/constants/cotizaciones";
+
 const CART_KEY = "geekdesign_carrito";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -66,9 +68,19 @@ export function clearCarrito(): void {
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
+function normalizeQuoteItemQuantity(cantidad: number): number {
+  if (!Number.isFinite(cantidad)) return 1;
+
+  return Math.min(MAX_QUOTE_ITEM_QUANTITY, Math.max(1, Math.floor(cantidad)));
+}
+
 export function addItem(item: Omit<CarritoItem, "id">): { items: CarritoItem[] } {
   const carrito = getCarrito();
-  const newItem: CarritoItem = { ...item, id: crypto.randomUUID() };
+  const newItem: CarritoItem = {
+    ...item,
+    id: crypto.randomUUID(),
+    cantidad: normalizeQuoteItemQuantity(item.cantidad),
+  };
   const updated = { items: [...carrito.items, newItem] };
   saveCarrito(updated);
   return updated;
@@ -82,7 +94,7 @@ export function removeItem(itemId: string): { items: CarritoItem[] } {
 }
 
 export function updateQuantity(itemId: string, cantidad: number): { items: CarritoItem[] } {
-  const safe = Number.isFinite(cantidad) ? Math.max(1, Math.floor(cantidad)) : 1;
+  const safe = normalizeQuoteItemQuantity(cantidad);
   const carrito = getCarrito();
   const updated = {
     items: carrito.items.map((i) => (i.id === itemId ? { ...i, cantidad: safe } : i)),
@@ -101,9 +113,7 @@ export function updateItem(
     precioCalculado: number;
   }
 ): { items: CarritoItem[] } {
-  const safeCantidad = Number.isFinite(patch.cantidad)
-    ? Math.max(1, Math.floor(patch.cantidad))
-    : 1;
+  const safeCantidad = normalizeQuoteItemQuantity(patch.cantidad);
   const safePrecio = Number.isFinite(patch.precioCalculado)
     ? Math.max(0, patch.precioCalculado)
     : 0;

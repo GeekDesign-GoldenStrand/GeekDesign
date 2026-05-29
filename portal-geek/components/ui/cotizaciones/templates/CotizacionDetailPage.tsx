@@ -23,10 +23,15 @@ type ActivePanel = "edit" | "discount" | null;
 
 interface CotizacionDetailPageProps {
   cotizacion: Cotizacion;
-  onRefetch?: () => Promise<void> | void;
+  onRefetch?: () => Promise<void>;
+  currentUserRole?: string | null;
 }
 
-export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetailPageProps) {
+export function CotizacionDetailPage({
+  cotizacion,
+  onRefetch,
+  currentUserRole,
+}: CotizacionDetailPageProps) {
   // ── Panel visibility ──────────────────────
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const togglePanel = (panel: ActivePanel) =>
@@ -122,6 +127,7 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
   // — keeps this in lock-step with the backend if the catalog string ever
   // changes.
   const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
+  const canManageDiscount = currentUserRole === "Direccion";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
@@ -130,9 +136,12 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
         discountApplied={porcentajeDescuento > 0}
         canEdit={isMutable}
-        canAddDiscount={isMutable}
+        canAddDiscount={isMutable && canManageDiscount}
         onEdit={() => togglePanel("edit")}
-        onDiscount={() => togglePanel("discount")}
+        onDiscount={() => {
+          if (!isMutable || !canManageDiscount) return;
+          togglePanel("discount");
+        }}
       />
 
       <AplicarDescuento
@@ -156,6 +165,7 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         }}
         porcentajeDescuento={porcentajeDescuento || null}
         motivoDescuento={cotizacion.motivo_descuento}
+        canManageDiscount={isMutable && canManageDiscount}
         onSave={handleSave}
         onClose={() => setActivePanel(null)}
       />
@@ -170,7 +180,9 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         // Trash icon on the discount ribbon is only wired when the quote
         // can still be mutated — withholding the callback hides the button
         // in CotizacionSummary (it gates on the prop being defined).
-        onDeleteDiscount={isMutable ? () => togglePanel("discount") : undefined}
+        onDeleteDiscount={
+          isMutable && canManageDiscount ? () => togglePanel("discount") : undefined
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
