@@ -10,6 +10,7 @@ import {
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
+import type { UserRole } from "@/types";
 import type { LineItem } from "@/types/cotizacion";
 
 const DISCOUNT_MOTIVO_MAX_LEN = 80;
@@ -79,6 +80,7 @@ interface EditarCotizacionProps {
   currentCliente?: ClienteOption;
   porcentajeDescuento?: number | null;
   motivoDescuento?: string | null;
+  userRole?: UserRole;
   onSave: (data: EditableFields) => void;
   onClose: () => void;
 }
@@ -90,6 +92,7 @@ export default function EditarCotizacion({
   currentCliente,
   porcentajeDescuento,
   motivoDescuento,
+  userRole,
   onSave,
   onClose,
 }: EditarCotizacionProps) {
@@ -100,6 +103,13 @@ export default function EditarCotizacion({
 
   const initialDiscountPercentage = porcentajeDescuento ?? 0;
   const hasInitialDiscount = initialDiscountPercentage > 0;
+  // Mirror the server-side gate on PATCH /api/cotizaciones/[id]/descuento,
+  // which requires Direccion. Without this check, non-Direccion users would
+  // still see the discount inputs on a quotation that already has one and
+  // hit a 403 only on save. The totals breakdown below still shows the
+  // existing discount as read-only.
+  const canEditDiscount = userRole === "Direccion";
+  const showDiscountSection = hasInitialDiscount && canEditDiscount;
 
   const [discountPercentage, setDiscountPercentage] = useState<number>(initialDiscountPercentage);
   const [discountMotivo, setDiscountMotivo] = useState<string>(motivoDescuento ?? "");
@@ -233,6 +243,14 @@ export default function EditarCotizacion({
     }
 
     setIsSubmitting(true);
+    // Tracks whether the PUT already committed, so that if the PATCH
+    // discount call later fails we can tell the user the quotation
+    // changes *did* persist — instead of showing a blanket "no se pudo
+    // guardar" error that implies a full rollback. There is no atomic
+    // endpoint that covers both updates, so the next best thing is to
+    // be explicit about the partial-save state and let the user retry
+    // the discount alone.
+    let quotationSaved = false;
     try {
       if (quotationChanged) {
         const res = await fetch(`/api/cotizaciones/${idCotizacion}`, {
@@ -268,6 +286,7 @@ export default function EditarCotizacion({
           setServerError(payload.error ?? fallback);
           return;
         }
+        quotationSaved = true;
       }
 
       if (discountChanged) {
@@ -296,7 +315,19 @@ export default function EditarCotizacion({
               : res.status === 409
                 ? "No se puede modificar el descuento en su estatus actual"
                 : "No se pudo actualizar el descuento";
-          setServerError(payload.error ?? fallback);
+          const baseError = payload.error ?? fallback;
+          if (quotationSaved) {
+            setServerError(
+              `Los cambios de la cotización sí se guardaron, pero el descuento no se pudo actualizar: ${baseError}. Vuelve a intentar solo el descuento.`
+            );
+            // Reflect the persisted quotation edit in the parent so the
+            // user sees the half that did save, and reset the snapshot
+            // so a retry submit sends only the discount.
+            onSave(fields);
+            setSnapshot(fields);
+          } else {
+            setServerError(baseError);
+          }
           return;
         }
       }
@@ -305,7 +336,16 @@ export default function EditarCotizacion({
       onSave(fields);
       onClose();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "Error de red al guardar los cambios");
+      const baseError = err instanceof Error ? err.message : "Error de red al guardar los cambios";
+      if (quotationSaved) {
+        setServerError(
+          `Los cambios de la cotización sí se guardaron, pero el descuento no se pudo actualizar: ${baseError}. Vuelve a intentar solo el descuento.`
+        );
+        onSave(fields);
+        setSnapshot(fields);
+      } else {
+        setServerError(baseError);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -380,7 +420,7 @@ export default function EditarCotizacion({
           </label>
         </div>
 
-        {hasInitialDiscount && (
+        {showDiscountSection && (
           <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
             <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
               Descuento

@@ -89,6 +89,7 @@ function setup(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
       }}
       porcentajeDescuento={10}
       motivoDescuento="Cliente frecuente"
+      userRole="Direccion"
       onSave={onSave}
       onClose={onClose}
       {...overrides}
@@ -259,5 +260,52 @@ describe("EditarCotizacion discount editing", () => {
     expect(screen.queryByText("Descuento")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Porcentaje")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Motivo")).not.toBeInTheDocument();
+  });
+
+  it("hides the discount editor for non-Direccion roles even when a discount exists", async () => {
+    await setupReady({ userRole: "Colaborador" });
+
+    expect(screen.queryByText("Descuento")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Porcentaje")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Motivo")).not.toBeInTheDocument();
+  });
+
+  it("hides the discount editor when no role is provided (defaults to non-Direccion)", async () => {
+    await setupReady({ userRole: undefined });
+
+    expect(screen.queryByText("Descuento")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Porcentaje")).not.toBeInTheDocument();
+  });
+
+  it("surfaces a partial-save error when the quotation PUT succeeds but the discount PATCH fails", async () => {
+    const user = userEvent.setup();
+    const { onSave, onClose } = await setupReady();
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { id_cotizacion: 123 } }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: "Estatus no permite descuento" }),
+      });
+
+    await user.clear(screen.getByLabelText("Notas"));
+    await user.type(screen.getByLabelText("Notas"), "Notas actualizadas");
+
+    fireEvent.change(screen.getByLabelText("Porcentaje"), {
+      target: { value: "15" },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/cambios de la cotizaci.n s. se guardaron/i);
+    expect(alert).toHaveTextContent("Estatus no permite descuento");
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ notas: "Notas actualizadas" }));
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
