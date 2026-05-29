@@ -98,7 +98,9 @@ export function PedidosView({ role }: Props) {
 
   // Filter states (service IDs from tabs, client, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
+  const [empresa, setEmpresa] = useState<string | null>(null);
   const [cliente, setCliente] = useState<string | null>(null);
+  const [estatuses, setEstatuses] = useState<string[]>([]);
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
@@ -112,7 +114,16 @@ export function PedidosView({ role }: Props) {
   useEffect(() => {
     if (page !== 1) setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, serviceIds, cliente, fechaEstimadaDesde, fechaEstimadaHasta, detalleEstatuses]);
+  }, [
+    search,
+    serviceIds,
+    empresa,
+    cliente,
+    estatuses,
+    fechaEstimadaDesde,
+    fechaEstimadaHasta,
+    detalleEstatuses,
+  ]);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
@@ -121,12 +132,18 @@ export function PedidosView({ role }: Props) {
 
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
-      params.set("onlyActive", "true");
+
+      if (estatuses.length > 0) {
+        estatuses.forEach((e) => params.append("estatus", e));
+      } else {
+        params.set("onlyActive", "true");
+      }
 
       if (search) params.set("search", search);
 
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
 
+      if (empresa) params.set("empresa", empresa);
       if (cliente) params.set("cliente", cliente);
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
@@ -167,7 +184,17 @@ export function PedidosView({ role }: Props) {
     } catch {
       console.error("Error loading orders");
     }
-  }, [page, search, serviceIds, cliente, fechaEstimadaDesde, fechaEstimadaHasta, detalleEstatuses]);
+  }, [
+    page,
+    search,
+    serviceIds,
+    empresa,
+    cliente,
+    estatuses,
+    fechaEstimadaDesde,
+    fechaEstimadaHasta,
+    detalleEstatuses,
+  ]);
 
   // Effect: reload orders whenever filters or pagination change
   useEffect(() => {
@@ -247,8 +274,12 @@ export function PedidosView({ role }: Props) {
       total={total}
       onDelete={handleDelete}
       onStatusChange={handleStatusChange}
+      empresa={empresa}
+      setEmpresa={setEmpresa}
       cliente={cliente}
       setCliente={setCliente}
+      estatuses={estatuses}
+      setEstatuses={setEstatuses}
       fechaEstimadaDesde={fechaEstimadaDesde}
       setFechaEstimadaDesde={setFechaEstimadaDesde}
       fechaEstimadaHasta={fechaEstimadaHasta}

@@ -9,40 +9,10 @@ import {
 } from "@/components/admin/molecules/PedidosServiceTabs";
 import { SearchBar } from "@/components/admin/molecules/SearchBar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import PedidoDetailModal from "@/components/admin/organisms/PedidoDetailModal";
 import { PedidosFilterSidebar } from "@/components/admin/organisms/PedidosFilterSidebar";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
 import { FilterIcon } from "@/components/ui/atoms/icons";
 import type { UserRole } from "@/types";
-
-function formatFilterDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split("-");
-  const d = new Date(Number(year), Number(month) - 1, Number(day));
-  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#f5c6c0] text-[#e42200] text-[12px] font-medium">
-      {label}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Quitar filtro: ${label}`}
-        className="flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-[#ffd5d5] transition-colors"
-      >
-        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-          <path
-            d="M1 1l6 6M7 1L1 7"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
-    </span>
-  );
-}
 
 // Frontend type for an order
 type Pedido = {
@@ -81,8 +51,14 @@ type Props = {
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 
+  empresa: string | null;
+  setEmpresa: (v: string | null) => void;
+
   cliente: string | null;
   setCliente: (v: string | null) => void;
+
+  estatuses: string[];
+  setEstatuses: (v: string[]) => void;
 
   fechaEstimadaDesde: string;
   setFechaEstimadaDesde: (value: string) => void;
@@ -115,8 +91,12 @@ export function PedidosTemplate({
   total,
   onDelete,
   onStatusChange,
+  empresa,
+  setEmpresa,
   cliente,
   setCliente,
+  estatuses,
+  setEstatuses,
   fechaEstimadaDesde,
   setFechaEstimadaDesde,
   fechaEstimadaHasta,
@@ -133,11 +113,54 @@ export function PedidosTemplate({
   backButtonHref,
   backButtonLabel,
   showServiceTabs = true,
-  role,
+  role: _role,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
-  const [detailId, setDetailId] = useState<number | null>(null);
   const pageSize = 10;
+
+  const activeFilterChips = [
+    empresa
+      ? { key: "empresa", label: `Empresa: ${empresa}`, clear: () => setEmpresa(null) }
+      : null,
+    cliente
+      ? { key: "cliente", label: `Cliente: ${cliente}`, clear: () => setCliente(null) }
+      : null,
+    ...estatuses.map((s) => ({
+      key: `estatus-${s}`,
+      label: s,
+      clear: () => setEstatuses(estatuses.filter((e) => e !== s)),
+    })),
+    fechaEstimadaDesde
+      ? {
+          key: "desde",
+          label: `Desde: ${fechaEstimadaDesde}`,
+          clear: () => setFechaEstimadaDesde(""),
+        }
+      : null,
+    fechaEstimadaHasta
+      ? {
+          key: "hasta",
+          label: `Hasta: ${fechaEstimadaHasta}`,
+          clear: () => setFechaEstimadaHasta(""),
+        }
+      : null,
+    ...detalleEstatuses.map((s) => ({
+      key: `detalle-${s}`,
+      label: `Servicio: ${s}`,
+      clear: () => setDetalleEstatuses(detalleEstatuses.filter((e) => e !== s)),
+    })),
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+  const filterCount = activeFilterChips.length;
+
+  function clearAllFilters() {
+    setEmpresa(null);
+    setCliente(null);
+    setEstatuses([]);
+    setFechaEstimadaDesde("");
+    setFechaEstimadaHasta("");
+    setDetalleEstatuses([]);
+  }
 
   return (
     <>
@@ -170,10 +193,15 @@ export function PedidosTemplate({
             <button
               type="button"
               onClick={() => setShowFilter(true)}
-              className="flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap shrink-0"
+              className="relative flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap shrink-0"
             >
               <FilterIcon />
               Filtrar
+              {filterCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e42200] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {filterCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -199,11 +227,44 @@ export function PedidosTemplate({
           </div>
         </div>
 
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.clear}
+                  aria-label={`Quitar filtro ${chip.label}`}
+                  className="leading-none hover:text-[#b31a00]"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
+
         <PedidosFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
+          empresa={empresa}
+          setEmpresa={setEmpresa}
           cliente={cliente}
           setCliente={setCliente}
+          estatuses={estatuses}
+          setEstatuses={setEstatuses}
           fechaEstimadaDesde={fechaEstimadaDesde}
           setFechaEstimadaDesde={setFechaEstimadaDesde}
           fechaEstimadaHasta={fechaEstimadaHasta}
@@ -213,50 +274,6 @@ export function PedidosTemplate({
           setDetalleEstatuses={setDetalleEstatuses}
         />
 
-        {/* Active filter chips */}
-        {(cliente ||
-          empresa ||
-          fechaEstimadaDesde ||
-          fechaEstimadaHasta ||
-          detalleEstatuses.length > 0) && (
-          <div className="flex flex-wrap gap-2">
-            {cliente && (
-              <FilterChip label={`Cliente: ${cliente}`} onRemove={() => setCliente(null)} />
-            )}
-            {empresa && (
-              <FilterChip label={`Empresa: ${empresa}`} onRemove={() => setEmpresa(null)} />
-            )}
-            {fechaEstimadaDesde && fechaEstimadaHasta && (
-              <FilterChip
-                label={`Entrega: ${formatFilterDate(fechaEstimadaDesde)} – ${formatFilterDate(fechaEstimadaHasta)}`}
-                onRemove={() => {
-                  setFechaEstimadaDesde("");
-                  setFechaEstimadaHasta("");
-                }}
-              />
-            )}
-            {fechaEstimadaDesde && !fechaEstimadaHasta && (
-              <FilterChip
-                label={`Entrega desde: ${formatFilterDate(fechaEstimadaDesde)}`}
-                onRemove={() => setFechaEstimadaDesde("")}
-              />
-            )}
-            {!fechaEstimadaDesde && fechaEstimadaHasta && (
-              <FilterChip
-                label={`Entrega hasta: ${formatFilterDate(fechaEstimadaHasta)}`}
-                onRemove={() => setFechaEstimadaHasta("")}
-              />
-            )}
-            {detalleEstatuses.map((status) => (
-              <FilterChip
-                key={status}
-                label={`Estatus: ${status}`}
-                onRemove={() => setDetalleEstatuses(detalleEstatuses.filter((s) => s !== status))}
-              />
-            ))}
-          </div>
-        )}
-
         {/* Table */}
         <PedidosTable
           pedidos={pedidos}
@@ -264,7 +281,6 @@ export function PedidosTemplate({
           onStatusChange={onStatusChange}
           selectedServiceId={selectedServiceId}
           onDetalleStatusChange={onDetalleStatusChange}
-          onShowDetail={setDetailId}
         />
 
         {/* Pagination */}
@@ -308,17 +324,6 @@ export function PedidosTemplate({
           </div>
         </div>
       </section>
-
-      {/* PE-05 — order detail window opened from the info icon */}
-      {detailId !== null && (
-        <PedidoDetailModal
-          key={detailId}
-          pedidoId={detailId}
-          selectedServiceId={selectedServiceId}
-          onClose={() => setDetailId(null)}
-          role={role}
-        />
-      )}
     </>
   );
 }
