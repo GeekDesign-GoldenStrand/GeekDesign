@@ -252,33 +252,58 @@ export type PedidoDetalleResponse = {
     estatus_nuevo: string;
     cambiado_por: string;
   }[];
+  /** True when at least one detail line has a linked proveedor or instalador. */
+  hasTerceros: boolean;
 };
+
+/** Returns sorted distinct non-null empresa values for clients that have at least one pedido. */
+export async function getEmpresasPedidos(): Promise<string[]> {
+  const rows = await prisma.clientes.findMany({
+    where: { empresa: { not: null }, pedidos: { some: {} } },
+    select: { empresa: true },
+    distinct: ["empresa"],
+    orderBy: { empresa: "asc" },
+  });
+  return rows.map((r) => r.empresa as string);
+}
 
 // PE-05 — Dirección consulta los detalles de un pedido específico.
 // Aggregates the order header, its line items, payments and status history.
 export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
-  const pedido = await prisma.pedidos.findUnique({
-    where: { id_pedido: id },
-    include: {
-      cliente: true,
-      estatus: true,
-      estado_factura: true,
-      sucursal: true,
-      detalles: {
-        include: {
-          servicio: { select: { nombre_servicio: true } },
-          material: { select: { nombre_material: true } },
-          archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+  const [pedido, terceroCount] = await Promise.all([
+    prisma.pedidos.findUnique({
+      where: { id_pedido: id },
+      include: {
+        cliente: true,
+        estatus: true,
+        estado_factura: true,
+        sucursal: true,
+        detalles: {
+          include: {
+            servicio: { select: { nombre_servicio: true } },
+            material: { select: { nombre_material: true } },
+            archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+          },
+          orderBy: { id_detalle: "asc" },
         },
-        orderBy: { id_detalle: "asc" },
+        pagos: { orderBy: { fecha: "asc" } },
+        historial: {
+          include: { usuario: { select: { nombre_completo: true } } },
+          orderBy: { fecha_cambio: "asc" },
+        },
       },
-      pagos: { orderBy: { fecha: "asc" } },
-      historial: {
-        include: { usuario: { select: { nombre_completo: true } } },
-        orderBy: { fecha_cambio: "asc" },
+    }),
+    prisma.detallePedido.count({
+      where: {
+        id_pedido: id,
+        OR: [
+          { servicio: { proveedorPrecios: { some: {} } } },
+          { material: { proveedorPrecios: { some: {} } } },
+          { servicio: { instaladorServicios: { some: {} } } },
+        ],
       },
-    },
-  });
+    }),
+  ]);
 
   if (!pedido) {
     throw new NotFoundError("Pedido no encontrado");
@@ -316,6 +341,7 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
       estatus_nuevo: statusById.get(h.id_estado_nuevo) ?? "Desconocido",
       cambiado_por: h.usuario.nombre_completo,
     })),
+    hasTerceros: terceroCount > 0,
   };
 }
 
