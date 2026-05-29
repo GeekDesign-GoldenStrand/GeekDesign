@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { addItem } from "@/lib/cart/storage";
+import { addItem, CANTIDAD_MAX } from "@/lib/cart/storage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -204,9 +204,9 @@ export function FormulaVariablesForm({
   return (
     <div className="flex flex-col gap-[20px]">
       {/* ── Precio estimado callout ── */}
-      <div className="bg-[#ffd9e2] rounded-[14px] p-[24px] flex flex-col gap-[4px]">
+      <div className="bg-[#ffd9e2] rounded-[14px] p-[24px] flex flex-col gap-[4px] min-w-0">
         <p className="text-[14px] text-[#1e1e1e]">Precio estimado</p>
-        <p className="font-bold text-[40px] leading-none text-[#1e1e1e]">
+        <p className="font-bold text-[40px] leading-none text-[#1e1e1e] break-words tabular-nums">
           {subtotal !== null ? formatPeso(subtotal) : "—"}
         </p>
         <p className="text-[12px] text-[#1e1e1e]/70 mt-[4px]">
@@ -250,11 +250,17 @@ export function FormulaVariablesForm({
               id="cantidad"
               type="number"
               min={1}
-              max={9999}
+              max={CANTIDAD_MAX}
               value={cantidad}
               onChange={(e) => {
                 const val = Number(e.target.value);
-                setCantidad(Number.isFinite(val) ? Math.max(1, Math.floor(val)) : 1);
+                if (!Number.isFinite(val)) return;
+                const next = Math.floor(val);
+                // Reject the keystroke when it would exceed the cap instead of
+                // snapping to it — typing "1234" leaves the field at "123"
+                // rather than jumping to 1000.
+                if (next > CANTIDAD_MAX) return;
+                setCantidad(Math.max(1, next));
               }}
               className="h-[40px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
             />
@@ -316,15 +322,17 @@ export function FormulaVariablesForm({
 
         {/* Summary box */}
         <div className="bg-white rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[6px]">
-          <div className="flex justify-between text-[13px] text-[#1e1e1e]">
+          <div className="flex justify-between gap-[12px] text-[13px] text-[#1e1e1e]">
             <span>Precio unitario</span>
-            <span className="font-medium">
+            <span className="font-medium text-right break-words tabular-nums min-w-0">
               {precioUnitario !== null ? formatPeso(precioUnitario) : "—"}
             </span>
           </div>
-          <div className="flex justify-between text-[13px] text-[#1e1e1e]">
+          <div className="flex justify-between gap-[12px] text-[13px] text-[#1e1e1e]">
             <span>Subtotal</span>
-            <span className="font-medium">{subtotal !== null ? formatPeso(subtotal) : "—"}</span>
+            <span className="font-medium text-right break-words tabular-nums min-w-0">
+              {subtotal !== null ? formatPeso(subtotal) : "—"}
+            </span>
           </div>
           <div className="flex justify-between text-[13px] text-[#1e1e1e]">
             <span>Tiempo estimado</span>

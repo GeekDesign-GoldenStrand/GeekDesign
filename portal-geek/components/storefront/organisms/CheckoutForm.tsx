@@ -38,6 +38,41 @@ const getMaxDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// The storefront cotización endpoint validates with Zod and returns the raw
+// issue (e.g. "items.1.notas: Too big: expected string to have <=500
+// characters"). End users shouldn't see the field path or the English copy,
+// so strip the path prefix and translate the common cases to Spanish.
+function translateServerError(raw?: string): string {
+  const fallback = "No se pudo enviar la cotización. Revisa los datos e inténtalo de nuevo.";
+  if (!raw) return fallback;
+
+  // The path lives before the first colon (e.g. "items.1.notas").
+  const path = raw.split(":")[0] ?? "";
+  const isNotas = /notas/i.test(path);
+  // Drop the leading Zod path so only the message remains.
+  const message = raw.replace(/^[a-zA-Z0-9_.]+:\s*/, "");
+
+  const tooBig = message.match(/too big[^0-9]*(\d+)\s*characters?/i);
+  if (tooBig) {
+    const max = tooBig[1];
+    return isNotas
+      ? `Las notas de uno de los productos superan el máximo de ${max} caracteres. Acórtalas e inténtalo de nuevo.`
+      : `Uno de los campos supera el máximo de ${max} caracteres.`;
+  }
+
+  const tooSmall = message.match(/too small[^0-9]*(\d+)\s*characters?/i);
+  if (tooSmall) {
+    return `Uno de los campos no alcanza el mínimo de ${tooSmall[1]} caracteres.`;
+  }
+
+  // Any remaining English/Zod-shaped text shouldn't leak to the user.
+  if (/expected|invalid|required|string|number|too (big|small)/i.test(message)) {
+    return fallback;
+  }
+
+  return message || fallback;
+}
+
 export function CheckoutForm({ sucursales }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<CarritoItem[]>([]);
@@ -184,7 +219,7 @@ export function CheckoutForm({ sucursales }: Props) {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Error al enviar la cotización");
+        setError(translateServerError(json.error));
         submittingRef.current = false;
         setSubmitting(false);
         return;
