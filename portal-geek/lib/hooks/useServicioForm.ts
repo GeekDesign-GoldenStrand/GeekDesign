@@ -193,7 +193,32 @@ export function useServicioForm({
     maquinas.error ||
     materiales.error;
 
-  const canSubmit = form.nombre_servicio.trim().length > 0 && form.id_sucursal !== null;
+  // A servicio is only saveable when every required piece is in place. The list
+  // is exposed so the form can render it as a "missing requirements" hint next
+  // to the disabled submit button instead of leaving the user guessing.
+  const missingRequirements: string[] = [];
+  if (form.nombre_servicio.trim().length === 0) {
+    missingRequirements.push("Nombre del servicio");
+  }
+  if (form.id_sucursal === null) {
+    missingRequirements.push("Sucursal");
+  }
+  if (form.id_maquinas.length === 0) {
+    missingRequirements.push("Al menos una máquina");
+  }
+  if (form.materiales.length === 0) {
+    missingRequirements.push("Al menos un material");
+  }
+  if (form.imagenes.length < 2) {
+    missingRequirements.push(`Al menos 2 imágenes (tienes ${form.imagenes.length})`);
+  }
+  const hasFormulaSubstance = form.formulaChunks.some(
+    (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
+  );
+  if (!hasFormulaSubstance) {
+    missingRequirements.push("Fórmula");
+  }
+  const canSubmit = missingRequirements.length === 0;
 
   const defaultCancel = () => router.push("/servicios");
   const defaultSuccessRedirect = () => router.push("/servicios");
@@ -206,6 +231,7 @@ export function useServicioForm({
     initialLoading,
     fetchError,
     canSubmit,
+    missingRequirements,
     options: {
       sucursales: sucursales.data?.data ?? [],
       instaladores: instaladores.data?.data ?? [],

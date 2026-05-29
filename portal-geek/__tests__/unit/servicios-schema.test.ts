@@ -25,10 +25,10 @@ function makePayload(unidad: string) {
   };
 }
 
-// Regression coverage for the formula-save bug: FormulaVariables.unidad is
-// VarChar(20) on the DB side, so the API schema must reject anything longer
-// to avoid a P2000 from Prisma. Short symbols (the new UNIT_OPTIONS values)
-// must continue to pass.
+// Regression coverage for the formula-save bug: the API schema bounds the
+// unidad length so a P2000 from Prisma (column overflow) can't happen even if
+// the UI dropdown is bypassed. Short symbols (the UNIT_OPTIONS values) must
+// continue to pass.
 describe("CreateServicioSchema — variable unidad length", () => {
   it.each(["cm", "cm²", "m²", "$", "min", "h", "%", "pz", "u"])(
     "accepts short symbol unit: %s",
@@ -38,9 +38,9 @@ describe("CreateServicioSchema — variable unidad length", () => {
     }
   );
 
-  it("rejects unidad longer than 20 characters", () => {
+  it("rejects unidad longer than 30 characters", () => {
     const result = CreateServicioSchema.safeParse(
-      makePayload("cm² - centímetros cuadrados") // 27 chars, breaks VarChar(20)
+      makePayload("centímetros cúbicos por segundo al cuadrado") // 43 chars, over the .max(30) cap
     );
     expect(result.success).toBe(false);
     if (!result.success) {

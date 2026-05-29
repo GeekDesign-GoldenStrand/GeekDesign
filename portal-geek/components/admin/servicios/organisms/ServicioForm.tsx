@@ -60,6 +60,7 @@ export function ServicioForm(props: ServicioFormProps) {
     initialLoading,
     fetchError,
     canSubmit,
+    missingRequirements,
     options,
     actions,
   } = useServicioForm(hookOptions);
@@ -106,6 +107,17 @@ export function ServicioForm(props: ServicioFormProps) {
           className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm"
         >
           {submitError}
+        </div>
+      )}
+
+      {missingRequirements.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
+          <p className="font-medium text-amber-900 mb-1">Para guardar este servicio, completa:</p>
+          <ul className="list-disc list-inside text-amber-800 space-y-0.5">
+            {missingRequirements.map((req) => (
+              <li key={req}>{req}</li>
+            ))}
+          </ul>
         </div>
       )}
 
