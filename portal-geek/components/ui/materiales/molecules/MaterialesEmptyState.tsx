@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/atoms/Button";
+
 interface MaterialesEmptyStateProps {
   // True when a search term or active filter caused the empty result.
   hasSearch: boolean;
@@ -14,12 +16,9 @@ export function MaterialesEmptyState({ hasSearch, onClearFilters }: MaterialesEm
       </p>
 
       {hasSearch && (
-        <button
-          onClick={onClearFilters}
-          className="px-4 py-2 text-[14px] font-medium text-[#006aff] border border-[#006aff] rounded-[6px] hover:bg-[#e8f0ff] transition-colors"
-        >
+        <Button variant="secondary" size="sm" onClick={onClearFilters}>
           Limpiar filtros
-        </button>
+        </Button>
       )}
     </div>
   );

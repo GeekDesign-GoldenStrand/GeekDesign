@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { CreateColaboradorSchema } from "@/lib/schemas/colaboradores";
 
 export interface ColaboradorApiRow {
@@ -41,8 +43,6 @@ interface RegistrarColaboradorFormProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
@@ -234,19 +234,17 @@ export function RegistrarColaboradorForm({
 
           <div>
             <label className={LABEL}>Sexo *</label>
-            <select
+            <Select
               value={form.sexo}
-              onChange={(e) => setField("sexo", e.target.value)}
-              className={`${SELECT_FIELD} ${
-                errors.sexo ? FIELD_ERROR : touched.sexo && form.sexo ? FIELD_SUCCESS : ""
-              }`}
+              onChange={(v) => setField("sexo", v)}
+              placeholder="Sexo"
+              size="sm"
+              error={errors.sexo || undefined}
             >
-              <option value="">Sexo</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
-              <option value="NA">Prefiero no decir</option>
-            </select>
-            {errors.sexo && <p className={ERROR_MSG}>{errors.sexo}</p>}
+              <SelectOption value="M">Masculino</SelectOption>
+              <SelectOption value="F">Femenino</SelectOption>
+              <SelectOption value="NA">Prefiero no decir</SelectOption>
+            </Select>
           </div>
 
           <div>
@@ -272,63 +270,47 @@ export function RegistrarColaboradorForm({
         <div className="flex-1 flex flex-col gap-4">
           <div>
             <label className={LABEL}>Rol *</label>
-            <select
+            <Select
               value={form.id_rol}
-              onChange={(e) => setField("id_rol", e.target.value)}
-              className={`${SELECT_FIELD} ${
-                errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""
-              }`}
+              onChange={(v) => setField("id_rol", v)}
+              placeholder="Seleccionar rol"
+              size="sm"
+              error={errors.id_rol || undefined}
             >
-              <option value="">Seleccionar rol</option>
               {roles.map((r) => (
-                <option key={r.id_rol} value={r.id_rol}>
+                <SelectOption key={r.id_rol} value={String(r.id_rol)}>
                   {r.nombre_rol}
-                </option>
+                </SelectOption>
               ))}
-            </select>
-            {errors.id_rol && <p className={ERROR_MSG}>{errors.id_rol}</p>}
+            </Select>
           </div>
 
           <div>
             <label className={LABEL}>Sucursal *</label>
-            <select
+            <Select
               value={form.id_sucursal}
-              onChange={(e) => setField("id_sucursal", e.target.value)}
-              className={`${SELECT_FIELD} ${
-                errors.id_sucursal
-                  ? FIELD_ERROR
-                  : touched.id_sucursal && form.id_sucursal
-                    ? FIELD_SUCCESS
-                    : ""
-              }`}
+              onChange={(v) => setField("id_sucursal", v)}
+              placeholder="Seleccionar sucursal"
+              size="sm"
+              error={errors.id_sucursal || undefined}
             >
-              <option value="">Seleccionar sucursal</option>
               {sucursales.map((s) => (
-                <option key={s.id_sucursal} value={s.id_sucursal}>
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
                   {s.nombre_sucursal}
-                </option>
+                </SelectOption>
               ))}
-            </select>
-            {errors.id_sucursal && <p className={ERROR_MSG}>{errors.id_sucursal}</p>}
+            </Select>
           </div>
         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-2 border-t border-[#e8e8e8]">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c30000] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Guardar"}
-        </button>
+        </Button>
       </div>
     </form>
   );

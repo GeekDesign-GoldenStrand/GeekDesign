@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import MaquinaInput from "@/components/ui/atoms/FormInput";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { MaquinaCardProps } from "@/types";
 
@@ -140,18 +142,11 @@ export default function EditarMaquina({
         />
         <div className="flex flex-col text-[13px] text-[#575757] mb-6">
           <label className="font-medium">Tipo</label>
-          <select
-            value={machineType}
-            onChange={(e) => setMachineType(e.target.value)}
-            className="w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors"
-          >
-            <option value="" disabled>
-              {type}
-            </option>
-            <option value="Láser CO2">Láser CO2</option>
-            <option value="Láser Fibra">Láser Fibra</option>
-            <option value="Bordadora">Bordadora</option>
-          </select>
+          <Select value={machineType} onChange={setMachineType} placeholder={type} size="sm">
+            <SelectOption value="Láser CO2">Láser CO2</SelectOption>
+            <SelectOption value="Láser Fibra">Láser Fibra</SelectOption>
+            <SelectOption value="Bordadora">Bordadora</SelectOption>
+          </Select>
         </div>
         <MaquinaInput
           name="machineDescription"
@@ -172,20 +167,12 @@ export default function EditarMaquina({
           </p>
         )}
         <div className="flex justify-end gap-3 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

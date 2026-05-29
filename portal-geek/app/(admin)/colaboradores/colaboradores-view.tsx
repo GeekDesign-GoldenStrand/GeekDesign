@@ -67,7 +67,11 @@ function mapApiRow(item: ColaboradorApiRow): ColaboradorRow {
   };
 }
 
-export function ColaboradoresView() {
+interface ColaboradoresViewProps {
+  currentUserId: number;
+}
+
+export function ColaboradoresView({ currentUserId }: ColaboradoresViewProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorRow[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
@@ -208,7 +212,7 @@ export function ColaboradoresView() {
     edad: number;
     sexo: string;
     telefono: string;
-    id_rol: number;
+    id_rol?: number;
     id_sucursal: number;
   }) {
     if (!editingId) return;
@@ -434,6 +438,7 @@ export function ColaboradoresView() {
         editError={editError}
         roles={roles}
         sucursales={sucursales}
+        currentUserId={currentUserId}
         onClose={closeEditModal}
         onSubmit={handleEditSubmit}
       />
