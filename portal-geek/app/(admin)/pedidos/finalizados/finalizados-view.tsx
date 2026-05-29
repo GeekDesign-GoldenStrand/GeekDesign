@@ -96,8 +96,7 @@ export function FinalizadosView({ role }: Props) {
   const [total, setTotal] = useState(0);
 
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [empresa, setEmpresa] = useState<string | null>(null);
-  const [cliente, setCliente] = useState<string | null>(null);
+  const [clienteEmpresa, setClienteEmpresa] = useState<string | null>(null);
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
@@ -113,8 +112,7 @@ export function FinalizadosView({ role }: Props) {
   }, [
     search,
     serviceIds,
-    empresa,
-    cliente,
+    clienteEmpresa,
     fechaEstimadaDesde,
     fechaEstimadaHasta,
     detalleEstatuses,
@@ -135,8 +133,7 @@ export function FinalizadosView({ role }: Props) {
       // This view is only for completed/canceled orders.
       FINAL_PEDIDO_STATUSES.forEach((status) => params.append("estatus", status));
 
-      if (empresa) params.set("empresa", empresa);
-      if (cliente) params.set("cliente", cliente);
+      if (clienteEmpresa) params.set("clienteEmpresa", clienteEmpresa);
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
       // Detail-status filter is only meaningful when a service is selected.
@@ -178,8 +175,7 @@ export function FinalizadosView({ role }: Props) {
     page,
     search,
     serviceIds,
-    empresa,
-    cliente,
+    clienteEmpresa,
     fechaEstimadaDesde,
     fechaEstimadaHasta,
     detalleEstatuses,
@@ -240,10 +236,8 @@ export function FinalizadosView({ role }: Props) {
       total={total}
       onDelete={() => {}}
       onStatusChange={() => {}}
-      empresa={empresa}
-      setEmpresa={setEmpresa}
-      cliente={cliente}
-      setCliente={setCliente}
+      clienteEmpresa={clienteEmpresa}
+      setClienteEmpresa={setClienteEmpresa}
       estatuses={[]}
       setEstatuses={() => {}}
       fechaEstimadaDesde={fechaEstimadaDesde}

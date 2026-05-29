@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 
@@ -8,19 +8,14 @@ const STATUS_OPTIONS = [
   { label: "Pendiente", value: "Pendiente" },
   { label: "En producción", value: "En producción" },
   { label: "Finalizado", value: "Finalizado" },
-  { label: "Entregado", value: "Entregado" },
-  { label: "Cancelado", value: "Cancelado" },
 ];
 
 type Props = {
   open: boolean;
   onClose: () => void;
 
-  empresa: string | null;
-  setEmpresa: (v: string | null) => void;
-
-  cliente: string | null;
-  setCliente: (v: string | null) => void;
+  clienteEmpresa: string | null;
+  setClienteEmpresa: (v: string | null) => void;
 
   estatuses: string[];
   setEstatuses: (v: string[]) => void;
@@ -31,7 +26,7 @@ type Props = {
   setFechaEstimadaHasta: (value: string) => void;
 
   // When a service is selected via PedidosServiceTabs, the sidebar surfaces
-  // a detail-status filter scoped to that service.
+  // estatus filters scoped to that service.
   selectedServiceId: number | null;
   detalleEstatuses: string[];
   setDetalleEstatuses: (v: string[]) => void;
@@ -40,10 +35,8 @@ type Props = {
 export function PedidosFilterSidebar({
   open,
   onClose,
-  empresa,
-  setEmpresa,
-  cliente,
-  setCliente,
+  clienteEmpresa,
+  setClienteEmpresa,
   estatuses,
   setEstatuses,
   fechaEstimadaDesde,
@@ -54,18 +47,9 @@ export function PedidosFilterSidebar({
   detalleEstatuses,
   setDetalleEstatuses,
 }: Props) {
-  const showDetalleStatus = selectedServiceId !== null;
+  const showEstatusFilter = selectedServiceId !== null;
 
-  const [empresaOptions, setEmpresaOptions] = useState<string[]>([]);
-  useEffect(() => {
-    fetch("/api/pedidos/empresas")
-      .then((r) => r.json())
-      .then((json: { data: string[] }) => setEmpresaOptions(json.data ?? []))
-      .catch(() => {});
-  }, []);
-
-  const [draftEmpresa, setDraftEmpresa] = useState<string | null>(empresa);
-  const [draftCliente, setDraftCliente] = useState<string | null>(cliente);
+  const [draftClienteEmpresa, setDraftClienteEmpresa] = useState<string | null>(clienteEmpresa);
   const [draftEstatuses, setDraftEstatuses] = useState<string[]>(estatuses);
   const [draftFechaDesde, setDraftFechaDesde] = useState(fechaEstimadaDesde);
   const [draftFechaHasta, setDraftFechaHasta] = useState(fechaEstimadaHasta);
@@ -75,8 +59,7 @@ export function PedidosFilterSidebar({
   if (prevOpen !== open) {
     setPrevOpen(open);
     if (open) {
-      setDraftEmpresa(empresa);
-      setDraftCliente(cliente);
+      setDraftClienteEmpresa(clienteEmpresa);
       setDraftEstatuses(estatuses);
       setDraftFechaDesde(fechaEstimadaDesde);
       setDraftFechaHasta(fechaEstimadaHasta);
@@ -85,14 +68,12 @@ export function PedidosFilterSidebar({
   }
 
   function reset() {
-    setDraftEmpresa(null);
-    setDraftCliente(null);
+    setDraftClienteEmpresa(null);
     setDraftEstatuses([]);
     setDraftFechaDesde("");
     setDraftFechaHasta("");
     setDraftDetalleEstatuses([]);
-    setEmpresa(null);
-    setCliente(null);
+    setClienteEmpresa(null);
     setEstatuses([]);
     setFechaEstimadaDesde("");
     setFechaEstimadaHasta("");
@@ -100,8 +81,7 @@ export function PedidosFilterSidebar({
   }
 
   function apply() {
-    setEmpresa(draftEmpresa);
-    setCliente(draftCliente);
+    setClienteEmpresa(draftClienteEmpresa);
     setEstatuses(draftEstatuses);
     setFechaEstimadaDesde(draftFechaDesde);
     setFechaEstimadaHasta(draftFechaHasta);
@@ -120,53 +100,38 @@ export function PedidosFilterSidebar({
   return (
     <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
-        <p className={filterSidebarClasses.sectionLabel}>Empresa</p>
-        <select
-          value={draftEmpresa ?? ""}
-          onChange={(e) => setDraftEmpresa(e.target.value || null)}
-          className={filterSidebarClasses.input}
-        >
-          <option value="">Todas</option>
-          {empresaOptions.map((e) => (
-            <option key={e} value={e}>
-              {e}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
+        <p className={filterSidebarClasses.sectionLabel}>Buscar Cliente / Empresa</p>
         <input
           type="search"
-          value={draftCliente ?? ""}
-          onChange={(e) => setDraftCliente(e.target.value || null)}
+          value={draftClienteEmpresa ?? ""}
+          onChange={(e) => setDraftClienteEmpresa(e.target.value || null)}
           placeholder="Buscar cliente"
-          maxLength={50}
           className={filterSidebarClasses.input}
         />
       </div>
 
-      <div>
-        <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del pedido</p>
-        <div className="space-y-2">
-          {STATUS_OPTIONS.map((s) => (
-            <label key={s.value} className="flex items-center gap-2 text-[13px]">
-              <input
-                type="checkbox"
-                checked={draftEstatuses.includes(s.value)}
-                onChange={(e) =>
-                  toggleStatus(s.value, e.target.checked, draftEstatuses, setDraftEstatuses)
-                }
-                className={filterSidebarClasses.checkbox}
-              />
-              {s.label}
-            </label>
-          ))}
+      {showEstatusFilter && (
+        <div>
+          <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del pedido</p>
+          <div className="space-y-2">
+            {STATUS_OPTIONS.map((s) => (
+              <label key={s.value} className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={draftEstatuses.includes(s.value)}
+                  onChange={(e) =>
+                    toggleStatus(s.value, e.target.checked, draftEstatuses, setDraftEstatuses)
+                  }
+                  className={filterSidebarClasses.checkbox}
+                />
+                {s.label}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {showDetalleStatus && (
+      {showEstatusFilter && (
         <div>
           <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del servicio</p>
           <div className="space-y-2">

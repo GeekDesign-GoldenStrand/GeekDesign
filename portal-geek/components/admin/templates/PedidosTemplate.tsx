@@ -51,11 +51,8 @@ type Props = {
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 
-  empresa: string | null;
-  setEmpresa: (v: string | null) => void;
-
-  cliente: string | null;
-  setCliente: (v: string | null) => void;
+  clienteEmpresa: string | null;
+  setClienteEmpresa: (v: string | null) => void;
 
   estatuses: string[];
   setEstatuses: (v: string[]) => void;
@@ -91,10 +88,8 @@ export function PedidosTemplate({
   total,
   onDelete,
   onStatusChange,
-  empresa,
-  setEmpresa,
-  cliente,
-  setCliente,
+  clienteEmpresa,
+  setClienteEmpresa,
   estatuses,
   setEstatuses,
   fechaEstimadaDesde,
@@ -119,11 +114,12 @@ export function PedidosTemplate({
   const pageSize = 10;
 
   const activeFilterChips = [
-    empresa
-      ? { key: "empresa", label: `Empresa: ${empresa}`, clear: () => setEmpresa(null) }
-      : null,
-    cliente
-      ? { key: "cliente", label: `Cliente: ${cliente}`, clear: () => setCliente(null) }
+    clienteEmpresa
+      ? {
+          key: "clienteEmpresa",
+          label: `Cliente/Empresa: ${clienteEmpresa}`,
+          clear: () => setClienteEmpresa(null),
+        }
       : null,
     ...estatuses.map((s) => ({
       key: `estatus-${s}`,
@@ -154,8 +150,7 @@ export function PedidosTemplate({
   const filterCount = activeFilterChips.length;
 
   function clearAllFilters() {
-    setEmpresa(null);
-    setCliente(null);
+    setClienteEmpresa(null);
     setEstatuses([]);
     setFechaEstimadaDesde("");
     setFechaEstimadaHasta("");
@@ -259,10 +254,8 @@ export function PedidosTemplate({
         <PedidosFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
-          empresa={empresa}
-          setEmpresa={setEmpresa}
-          cliente={cliente}
-          setCliente={setCliente}
+          clienteEmpresa={clienteEmpresa}
+          setClienteEmpresa={setClienteEmpresa}
           estatuses={estatuses}
           setEstatuses={setEstatuses}
           fechaEstimadaDesde={fechaEstimadaDesde}

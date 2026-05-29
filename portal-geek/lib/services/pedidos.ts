@@ -97,7 +97,8 @@ export async function listPedidos(
   search?: string | null,
   fechaEstimadaDesde?: string | null,
   fechaEstimadaHasta?: string | null,
-  detalleEstatuses: string[] = []
+  detalleEstatuses: string[] = [],
+  clienteEmpresa?: string | null
 ): Promise<{ items: PedidoListItem[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
@@ -138,7 +139,14 @@ export async function listPedidos(
     where.detalles = { some: detalleWhere };
   }
 
-  if (empresa || cliente) {
+  if (clienteEmpresa) {
+    where.cliente = {
+      OR: [
+        { empresa: { contains: clienteEmpresa, mode: "insensitive" } },
+        { nombre_cliente: { contains: clienteEmpresa, mode: "insensitive" } },
+      ],
+    };
+  } else if (empresa || cliente) {
     where.cliente = {};
 
     if (empresa) {

@@ -96,10 +96,9 @@ export function PedidosView({ role }: Props) {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filter states (service IDs from tabs, client, fecha range)
+  // Filter states (service IDs from tabs, client/company search, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [empresa, setEmpresa] = useState<string | null>(null);
-  const [cliente, setCliente] = useState<string | null>(null);
+  const [clienteEmpresa, setClienteEmpresa] = useState<string | null>(null);
   const [estatuses, setEstatuses] = useState<string[]>([]);
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
@@ -117,8 +116,7 @@ export function PedidosView({ role }: Props) {
   }, [
     search,
     serviceIds,
-    empresa,
-    cliente,
+    clienteEmpresa,
     estatuses,
     fechaEstimadaDesde,
     fechaEstimadaHasta,
@@ -143,8 +141,7 @@ export function PedidosView({ role }: Props) {
 
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
 
-      if (empresa) params.set("empresa", empresa);
-      if (cliente) params.set("cliente", cliente);
+      if (clienteEmpresa) params.set("clienteEmpresa", clienteEmpresa);
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
       // Detail-status filter is only meaningful when a service is selected.
@@ -188,8 +185,7 @@ export function PedidosView({ role }: Props) {
     page,
     search,
     serviceIds,
-    empresa,
-    cliente,
+    clienteEmpresa,
     estatuses,
     fechaEstimadaDesde,
     fechaEstimadaHasta,
@@ -274,10 +270,8 @@ export function PedidosView({ role }: Props) {
       total={total}
       onDelete={handleDelete}
       onStatusChange={handleStatusChange}
-      empresa={empresa}
-      setEmpresa={setEmpresa}
-      cliente={cliente}
-      setCliente={setCliente}
+      clienteEmpresa={clienteEmpresa}
+      setClienteEmpresa={setClienteEmpresa}
       estatuses={estatuses}
       setEstatuses={setEstatuses}
       fechaEstimadaDesde={fechaEstimadaDesde}
