@@ -66,6 +66,10 @@ describe("Servicio de Sucursales (Mock DB)", () => {
         orderBy: {
           id_sucursal: "asc",
         },
+        include: {
+          colaboradores: { include: { usuario: true } },
+          maquinas: { include: { maquina: true } },
+        },
       });
 
       expect(mockCount).toHaveBeenCalledWith({
@@ -111,6 +115,10 @@ describe("Servicio de Sucursales (Mock DB)", () => {
         take: 10,
         orderBy: {
           id_sucursal: "asc",
+        },
+        include: {
+          colaboradores: { include: { usuario: true } },
+          maquinas: { include: { maquina: true } },
         },
       });
 
