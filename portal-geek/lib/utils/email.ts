@@ -18,8 +18,8 @@ export const EMAIL_ERROR_MESSAGE = "Ingresa un correo electrónico válido (ej. 
 // Single source of truth para validación de email en backend (Zod) y frontend.
 // Envuelve isValidEmail en un refine() para que los schemas Zod rechacen las
 // mismas direcciones que rechaza el form del cliente — un cliente no-browser
-// que llame la API directo no puede pasar pepe@dominio aunque z.string().email()
-// lo aceptaría.
+// que llame la API directo no puede pasar pepe@dominio aunque la validación
+// nativa de Zod lo aceptaría.
 export function emailField(opts: { max?: number; message?: string } = {}) {
   const max = opts.max ?? 254;
   const message = opts.message ?? EMAIL_ERROR_MESSAGE;

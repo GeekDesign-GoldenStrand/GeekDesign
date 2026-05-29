@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
-import { MailIcon, PhoneIcon, UsersIcon, XIcon } from "@/components/ui/atoms/icons";
+import { MailIcon, PhoneIcon, UserGearIcon, XIcon } from "@/components/ui/atoms/icons";
 import type { MaterialProveedor } from "@/lib/services/materiales";
 
 interface ProveedoresModalProps {
@@ -103,7 +104,7 @@ export function ProveedoresModal({
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <UsersIcon size={20} className="shrink-0 text-[#575757]" />
+            <UserGearIcon size={20} className="shrink-0 text-[#575757]" />
             <div className="min-w-0">
               <h2
                 id="proveedores-modal-title"
@@ -134,11 +135,17 @@ export function ProveedoresModal({
           )}
 
           {proveedores?.length === 0 && !fetchError && (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <UsersIcon size={32} className="text-[#c6c6c6]" />
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <UserGearIcon size={32} className="text-[#c6c6c6]" />
               <p className="text-[14px] text-[#8e908f]">
                 Este material no tiene proveedores registrados aún.
               </p>
+              <Link
+                href="/terceros"
+                className="inline-flex items-center px-4 py-2 text-[13px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors"
+              >
+                Ir a Terceros
+              </Link>
             </div>
           )}
 

@@ -110,6 +110,18 @@ export async function listSucursales(
       orderBy: {
         id_sucursal: "asc",
       },
+      include: {
+        colaboradores: {
+          include: {
+            usuario: true,
+          },
+        },
+        maquinas: {
+          include: {
+            maquina: true,
+          },
+        },
+      },
     }),
     prisma.sucursales.count({ where }),
   ]);

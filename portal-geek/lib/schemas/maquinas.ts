@@ -1,8 +1,24 @@
 import { z } from "zod";
 
+import { noEmoji, textOnly } from "./text-validation";
+
 export const CreateMaquinaSchema = z.object({
-  nombre_maquina: z.string().min(1).max(100),
-  apodo_maquina: z.string().min(1).max(100),
+  nombre_maquina: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+    }),
+  apodo_maquina: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine(noEmoji, { message: "El apodo no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El apodo solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   tipo: z.enum(["Láser CO2", "Láser Fibra", "Bordadora"]),
   descripcion: z.string().max(200).optional(),
   estatus: z.enum(["Activa", "Inactiva", "En mantenimiento"]).default("Activa"),
