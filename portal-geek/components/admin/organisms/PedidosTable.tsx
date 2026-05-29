@@ -8,6 +8,7 @@ import {
   CurrencyDollar,
   CaretDown,
 } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 
 import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import {
@@ -195,15 +196,10 @@ interface Props {
   onStatusChange: (id: number, status: string) => void;
   selectedServiceId: number | null;
   onDetalleStatusChange: (detalleId: number, status: string) => void;
-  onShowDetail: (id: number) => void;
 }
 
-export function PedidosTable({
-  pedidos,
-  selectedServiceId,
-  onDetalleStatusChange,
-  onShowDetail,
-}: Props) {
+export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange }: Props) {
+  const router = useRouter();
   if (pedidos.length === 0) {
     return (
       <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron pedidos.</div>
@@ -247,13 +243,13 @@ export function PedidosTable({
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => onShowDetail(p.id_pedido)}
+                onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
                 onKeyDown={(e) => {
                   // Ignore keys bubbling from inner controls (status select, links).
                   if (e.target !== e.currentTarget) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    onShowDetail(p.id_pedido);
+                    router.push(`/pedidos/${p.id_pedido}`);
                   }
                 }}
                 aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
@@ -351,13 +347,13 @@ export function PedidosTable({
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => onShowDetail(p.id_pedido)}
+                onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
                 onKeyDown={(e) => {
                   // Ignore keys bubbling from inner controls (status select, links).
                   if (e.target !== e.currentTarget) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    onShowDetail(p.id_pedido);
+                    router.push(`/pedidos/${p.id_pedido}`);
                   }
                 }}
                 aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
