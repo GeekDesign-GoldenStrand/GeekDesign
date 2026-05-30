@@ -15,6 +15,22 @@ jest.mock("@/components/ui/terceros/molecules/ModalShell", () => ({
   ),
 }));
 
+// EditarCotizacion now uses useToast (replaces alert()). Stub the hook so the
+// component renders without needing a <ToastProvider> wrapper in every test.
+jest.mock("@/components/ui/atoms/Toast", () => ({
+  useToast: () => ({
+    toast: {
+      show: jest.fn(),
+      success: jest.fn(),
+      error: jest.fn(),
+      info: jest.fn(),
+      warning: jest.fn(),
+      dismiss: jest.fn(),
+    },
+  }),
+  ToastProvider: ({ children }: { children: ReactNode }) => children,
+}));
+
 jest.mock("@/components/ui/atoms/Button", () => ({
   Button: ({
     children,

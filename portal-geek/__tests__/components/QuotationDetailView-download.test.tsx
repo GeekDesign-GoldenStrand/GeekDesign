@@ -16,6 +16,22 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
 }));
 
+// QuotationDetailView now uses useToast (replaces alert()). Stub the hook so
+// the component renders without needing a <ToastProvider> wrapper.
+jest.mock("@/components/ui/atoms/Toast", () => ({
+  useToast: () => ({
+    toast: {
+      show: jest.fn(),
+      success: jest.fn(),
+      error: jest.fn(),
+      info: jest.fn(),
+      warning: jest.fn(),
+      dismiss: jest.fn(),
+    },
+  }),
+  ToastProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 // framer-motion's animation API on jsdom is noisy; replace `motion.X` with the
 // underlying tag so rendering doesn't try to schedule animations we can't observe.
 jest.mock("framer-motion", () => ({
