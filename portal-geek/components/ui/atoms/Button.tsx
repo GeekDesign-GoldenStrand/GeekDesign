@@ -10,41 +10,42 @@ import {
   type ReactNode,
 } from "react";
 
-// ─── Tokens ──────────────────────────────────────────────────────────────────
-// Single source of truth for button styling across admin + storefront.
-// Adding a new variant or size MUST happen here, not via one-off classNames in
-// callsites. See the design spec in docs/ui-buttons.md (if/when added).
+// Single source of truth for buttons across admin + storefront + auth.
+// Colors come from design tokens defined in app/globals.css (@theme).
 
-type Variant = "primary" | "secondary" | "destructive";
-type Size = "sm" | "md" | "lg";
+type Variant = "primary" | "secondary" | "destructive" | "ghost" | "outline-dashed";
+type Size = "sm" | "md" | "lg" | "xl";
 type Section = "admin" | "storefront";
+type Tone = "default" | "danger";
 
 const SIZE_CLASSES: Record<Size, string> = {
-  sm: "h-10 rounded-[8px] px-4 text-sm font-medium",
-  md: "h-12 rounded-[10px] px-6 text-[15px] font-semibold",
-  // lg uses the storefront's historical 16.742px so existing pixel-perfect
-  // layouts (CarritoView, CheckoutForm) don't shift when migrated.
-  lg: "h-[61px] rounded-[10px] px-8 text-[16.742px] font-bold",
+  sm: "h-10 rounded-md px-4 text-[13px] font-medium",
+  md: "h-12 rounded-lg px-6 text-[15px] font-semibold",
+  lg: "h-[61px] rounded-lg px-8 text-[17px] font-bold",
+  // xl — auth/marketing pill. Replaces the legacy PrimaryButton.
+  xl: "h-[63px] w-full rounded-full px-8 text-[20px] font-semibold tracking-[1px]",
 };
 
-// Primary is the only variant that varies by section — admin is the brand
-// red, storefront is the warm wine.
 const PRIMARY_CLASSES: Record<Section, string> = {
-  admin: "bg-[#df2646] text-white hover:bg-[#c41e3a]",
-  storefront: "bg-[#8b434a] text-white hover:bg-[#7a3a41]",
+  admin: "bg-brand text-brand-on hover:bg-brand-hover active:bg-brand-active",
+  storefront: "bg-wine text-wine-on hover:bg-wine-hover active:bg-wine-active",
 };
 
-const SECONDARY_CLASSES = "bg-white text-[#575757] border border-[#b9b8b8] hover:bg-[#f5f5f5]";
+const SECONDARY_CLASSES = "bg-white text-ink-muted border border-line hover:bg-surface-muted";
 
-// Destructive uses #c41e00 (already in the palette as the form-button hover)
-// — distinct from admin-primary #df2646 (cooler red) so they don't collide
-// when they share a row.
-const DESTRUCTIVE_CLASSES = "bg-[#c41e00] text-white hover:bg-[#a01800]";
+const DESTRUCTIVE_CLASSES = "bg-danger text-white hover:brightness-95 active:brightness-90";
+
+const GHOST_CLASSES = "bg-transparent text-ink hover:bg-surface-muted";
+
+const OUTLINE_DASHED_TONE: Record<Tone, string> = {
+  default: "bg-transparent border border-dashed border-ink text-ink hover:bg-surface-muted",
+  danger: "bg-transparent border border-dashed border-brand text-brand hover:bg-brand-soft",
+};
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#df2646] focus-visible:ring-offset-2";
+  "inline-flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2";
 
-function variantClasses(variant: Variant, section: Section): string {
+function variantClasses(variant: Variant, section: Section, tone: Tone): string {
   switch (variant) {
     case "primary":
       return PRIMARY_CLASSES[section];
@@ -52,6 +53,10 @@ function variantClasses(variant: Variant, section: Section): string {
       return SECONDARY_CLASSES;
     case "destructive":
       return DESTRUCTIVE_CLASSES;
+    case "ghost":
+      return GHOST_CLASSES;
+    case "outline-dashed":
+      return OUTLINE_DASHED_TONE[tone];
   }
 }
 
@@ -59,21 +64,20 @@ function buildClassName(
   variant: Variant,
   size: Size,
   section: Section,
+  tone: Tone,
   loading: boolean,
   extra?: string
 ): string {
   return [
     BASE,
     SIZE_CLASSES[size],
-    variantClasses(variant, section),
+    variantClasses(variant, section, tone),
     loading ? "cursor-wait" : "",
     extra ?? "",
   ]
     .filter(Boolean)
     .join(" ");
 }
-
-// ─── Spinner ─────────────────────────────────────────────────────────────────
 
 function Spinner() {
   return (
@@ -89,17 +93,15 @@ function Spinner() {
   );
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   /** Defaults to "admin". Pass "storefront" for buttons inside app/(storefront)/**. */
   section?: Section;
+  /** Only respected by variant="outline-dashed". */
+  tone?: Tone;
   loading?: boolean;
   /**
-   * Render the styles onto the single child element instead of a <button>.
-   * Use this when a "button" is actually a Link/anchor:
    *   <Button asChild><Link href="/x">Go</Link></Button>
    */
   asChild?: boolean;
@@ -111,6 +113,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       size = "md",
       section = "admin",
+      tone = "default",
       loading = false,
       asChild = false,
       disabled,
@@ -120,7 +123,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const classes = buildClassName(variant, size, section, loading, className);
+    const classes = buildClassName(variant, size, section, tone, loading, className);
 
     if (asChild) {
       const child = Children.only(children) as ReactNode;

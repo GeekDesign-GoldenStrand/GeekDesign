@@ -38,7 +38,7 @@ export function ServiceGrid({ services, searchQuery }: ServiceGridProps) {
             </p>
             <a
               href="/tienda"
-              className="text-[#df2646] text-[16.742px] font-semibold hover:underline transition-all"
+              className="text-wine text-[16.742px] font-semibold hover:underline transition-all"
             >
               Ver todos los servicios
             </a>
@@ -53,7 +53,7 @@ export function ServiceGrid({ services, searchQuery }: ServiceGridProps) {
                   className="shrink-0 cursor-pointer group flex flex-col items-center"
                 >
                   <div className="w-[178px] h-[178px] bg-[#ffd9e2] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] group-hover:shadow-[0px_8px_24px_0px_rgba(0,0,0,0.18)] group-hover:scale-[1.03] transition-all duration-200" />
-                  <p className="mt-[8px] w-[178px] text-[15px] font-medium text-[#1e1e1e] text-center group-hover:text-[#df2646] transition-colors duration-200">
+                  <p className="mt-[8px] w-[178px] text-[15px] font-medium text-ink text-center group-hover:text-wine transition-colors duration-200">
                     {label}
                   </p>
                 </div>

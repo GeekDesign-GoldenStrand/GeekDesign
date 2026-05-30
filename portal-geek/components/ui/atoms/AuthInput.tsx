@@ -33,9 +33,11 @@ export function AuthInput({ label, icon, error, className, ...props }: AuthInput
         {...props}
         className={[
           "h-[62px] w-full rounded-full border border-[#a79999] bg-white",
-          "text-[16px] tracking-[0.8px] text-[#333]",
-          "shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] outline-none",
-          "placeholder:text-[#8e908f] focus:border-[#df2646] disabled:opacity-60",
+          "text-[16px] tracking-[0.8px] text-ink",
+          "shadow-md outline-none transition-colors",
+          "placeholder:text-ink-subtle focus:border-brand",
+          "focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+          "disabled:opacity-60",
           icon ? "pl-[116px]" : "pl-8",
           "pr-8",
           className,
@@ -45,7 +47,7 @@ export function AuthInput({ label, icon, error, className, ...props }: AuthInput
       />
 
       {error && (
-        <p id={errorId} role="alert" className="mt-1 px-4 text-[13px] text-[#df2646]">
+        <p id={errorId} role="alert" className="mt-1 px-4 text-[13px] text-brand">
           {error}
         </p>
       )}

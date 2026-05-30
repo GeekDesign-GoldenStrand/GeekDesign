@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+import { Button } from "@/components/ui/atoms/Button";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
 import { ChangePasswordSchema } from "@/lib/schemas/auth";
 
@@ -116,7 +116,7 @@ export function CambiarContrasenaForm() {
       />
 
       {error && (
-        <p role="alert" className="text-[14px] tracking-[0.5px] text-[#df2646]">
+        <p role="alert" className="text-[14px] tracking-[0.5px] text-brand">
           {error}
         </p>
       )}
@@ -126,14 +126,17 @@ export function CambiarContrasenaForm() {
         </p>
       )}
 
-      <PrimaryButton
+      <Button
         type="submit"
-        variant="red"
-        disabled={isSubmitting || success}
+        variant="primary"
+        size="xl"
+        section="admin"
+        loading={isSubmitting}
+        disabled={success}
         className="mt-2"
       >
         {isSubmitting ? "Guardando…" : "Cambiar contraseña"}
-      </PrimaryButton>
+      </Button>
     </form>
   );
 }

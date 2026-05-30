@@ -199,9 +199,10 @@ export function PopoverItem({
         close();
       }}
       className={[
-        "flex w-full items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-left text-[14px] transition-colors",
-        "hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50",
-        selected ? "bg-[#fff0f2] font-semibold text-[#df2646]" : "text-[#1e1e1e]",
+        "flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-[14px] transition-colors",
+        "hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+        selected ? "bg-brand-soft font-semibold text-brand" : "text-ink",
         className ?? "",
       ].join(" ")}
     >

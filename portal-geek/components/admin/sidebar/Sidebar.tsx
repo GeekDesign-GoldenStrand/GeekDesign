@@ -29,20 +29,21 @@ export function Sidebar({
     <aside
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`fixed left-0 top-0 h-screen bg-white shadow-[0px_4px_10px_rgba(0,0,0,0.08)] flex flex-col items-center py-2 z-50 border-r border-[#F0F0F0] overflow-hidden transition-[width,transform] duration-250 ease-in-out w-52 md:translate-x-0 ${
+      aria-label="Navegación principal"
+      className={`fixed left-0 top-0 h-screen bg-white shadow-md flex flex-col items-center py-2 z-50 border-r border-line-soft overflow-hidden transition-[width,transform] duration-250 ease-in-out w-52 md:translate-x-0 ${
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       } ${expanded ? "md:w-52" : "md:w-25.5"}`}
     >
       <button
         type="button"
         aria-label="Cerrar menú"
-        className="absolute top-4 right-4 md:hidden text-[#575757] hover:text-[#e42200] transition-colors"
+        className="absolute top-4 right-4 md:hidden text-ink-muted hover:text-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-xs"
         onClick={onMobileClose}
       >
         <XIcon size={20} />
       </button>
 
-      <SidebarLogo />
+      <SidebarLogo role={role} />
       <div className="flex-1 w-full overflow-y-auto">
         <SidebarNav role={role} expanded={mobileOpen || expanded} />
       </div>

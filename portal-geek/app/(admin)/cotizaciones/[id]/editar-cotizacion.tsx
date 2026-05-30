@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { useToast } from "@/components/ui/atoms/Toast";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import {
   DISCOUNT_MAX,
@@ -96,6 +97,7 @@ export default function EditarCotizacion({
   onSave,
   onClose,
 }: EditarCotizacionProps) {
+  const { toast } = useToast();
   const [fields, setFields] = useState<EditableFields>({
     ...initial,
     servicios: initial.servicios.map((p) => ({ ...p })),
@@ -332,7 +334,7 @@ export default function EditarCotizacion({
         }
       }
 
-      alert("Cotización actualizada correctamente");
+      toast.success("Cotización actualizada correctamente");
       onSave(fields);
       onClose();
     } catch (err) {

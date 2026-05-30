@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Alexandria, IBM_Plex_Sans_JP } from "next/font/google";
+import { Geist, Geist_Mono, Alexandria, IBM_Plex_Sans } from "next/font/google";
 import "react-phone-number-input/style.css";
 import "./globals.css";
+
+import { ToastProvider } from "@/components/ui/atoms/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +21,7 @@ const alexandria = Alexandria({
   weight: ["300", "400", "600"],
 });
 
-const ibmPlexSansJP = IBM_Plex_Sans_JP({
+const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-ibm-plex",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
@@ -40,11 +42,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${alexandria.variable} ${ibmPlexSansJP.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${alexandria.variable} ${ibmPlexSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

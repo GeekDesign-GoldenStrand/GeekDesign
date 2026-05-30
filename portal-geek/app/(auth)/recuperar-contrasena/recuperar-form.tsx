@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/ui/atoms/AuthInput";
-import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+import { Button } from "@/components/ui/atoms/Button";
 
 export function RecuperarForm() {
   const [email, setEmail] = useState("");
@@ -44,7 +44,7 @@ export function RecuperarForm() {
         </p>
         <Link
           href="/login"
-          className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
+          className="font-light text-[13px] tracking-[0.65px] text-brand hover:underline"
         >
           Volver al inicio de sesión
         </Link>
@@ -68,18 +68,25 @@ export function RecuperarForm() {
       />
 
       {error && (
-        <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
+        <p role="alert" className="text-[14px] text-brand tracking-[0.5px]">
           {error}
         </p>
       )}
 
-      <PrimaryButton type="submit" variant="red" disabled={isSubmitting} className="mt-2">
+      <Button
+        type="submit"
+        variant="primary"
+        size="xl"
+        section="admin"
+        loading={isSubmitting}
+        className="mt-2"
+      >
         {isSubmitting ? "Enviando…" : "Enviar link"}
-      </PrimaryButton>
+      </Button>
 
       <Link
         href="/login"
-        className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
+        className="font-light text-[13px] tracking-[0.65px] text-brand hover:underline"
       >
         Volver al inicio de sesión
       </Link>

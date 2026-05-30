@@ -7,17 +7,7 @@ type NavLinkProps = {
   href: string;
   label: string;
   icon: React.ReactNode;
-  /**
-   * Optional pre-rendered icon for the hover state. Used for custom SVGs
-   * that can't pick up hover via currentColor on the parent link. Phosphor
-   * entries leave this undefined and get hover via the link's text color.
-   */
   iconHover?: React.ReactNode;
-  /**
-   * Optional pre-rendered icon for the active state. When provided it's used
-   * verbatim (no `weight` swap). For Phosphor entries leave this undefined
-   * and the regular icon picks up `weight: "fill"` via cloneElement.
-   */
   iconActive?: React.ReactNode;
   isActive: boolean;
   expanded: boolean;
@@ -30,12 +20,13 @@ export function NavLink({ href, label, icon, isActive, expanded, onClick }: NavL
       href={href}
       title={label}
       onClick={onClick}
-      className={`relative flex items-center justify-start pl-5 md:pl-8 w-full h-20 md:h-12 transition-colors ${
-        isActive ? "text-[#e42200]" : "text-[#575757] hover:text-[#e42200]"
+      aria-current={isActive ? "page" : undefined}
+      className={`relative flex items-center justify-start pl-5 md:pl-8 w-full h-20 md:h-12 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand ${
+        isActive ? "text-brand" : "text-ink-muted hover:text-brand"
       }`}
     >
       {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-3/5 bg-[#e42200] rounded-r-full" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-3/5 bg-brand rounded-r-full" />
       )}
 
       <div

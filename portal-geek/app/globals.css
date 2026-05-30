@@ -1,29 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* =============================================================================
+   Design tokens
+   Brand red settled at #e42200 (most-used in the codebase).
+   Tokens live in @theme so Tailwind v4 generates first-class utility classes:
+     bg-brand / text-brand / border-brand / ring-brand
+     bg-surface-muted / text-ink-muted / border-line-soft
+     rounded-md / shadow-lg, etc.
+   ============================================================================= */
+@theme {
+  /* Brand — admin */
+  --color-brand: #e42200;
+  --color-brand-hover: #c41d00;
+  --color-brand-active: #a31700;
+  --color-brand-soft: #ffecec;
+  --color-brand-softer: #fce4e4;
+  --color-brand-on: #ffffff;
+  /* Logotype red — used by the GEEK DESIGN wordmark to match the logo PNG. */
+  --color-brand-mark: #df2646;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Brand — storefront (wine) */
+  --color-wine: #8b434a;
+  --color-wine-hover: #7a3a41;
+  --color-wine-active: #6b3138;
+  --color-wine-soft: #fff8f9;
+  --color-wine-on: #ffffff;
+
+  /* Surface */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f5f5;
+  --color-surface-sunken: #f0f0f0;
+
+  /* Text / "ink" */
+  --color-ink: #1e1e1e;
+  --color-ink-muted: #575757;
+  --color-ink-subtle: #8e908f;
+  --color-ink-disabled: #b9b8b8;
+  --color-ink-inverse: #ffffff;
+
+  /* Border */
+  --color-line: #b9b8b8;
+  --color-line-soft: #e8e8e8;
+  --color-line-strong: #8e908f;
+
+  /* Status */
+  --color-success: #2a940d;
+  --color-success-soft: #e8f5e1;
+  --color-warning: #ffb300;
+  --color-warning-soft: #fff4d6;
+  --color-danger: #e11d48;
+  --color-danger-soft: #ffecec;
+  --color-info: #006aff;
+  --color-info-soft: #e0ecff;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 24px -8px rgb(0 0 0 / 0.12), 0 4px 8px -4px rgb(0 0 0 / 0.06);
+  --shadow-modal: 0 24px 48px -12px rgb(0 0 0 / 0.18);
+
+  /* Fonts (passed through from next/font in app/layout.tsx) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-alexandria: var(--font-alexandria);
   --font-ibm-plex: var(--font-ibm-plex);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-surface);
+  color: var(--color-ink);
   font-family: var(--font-sans);
 }
 

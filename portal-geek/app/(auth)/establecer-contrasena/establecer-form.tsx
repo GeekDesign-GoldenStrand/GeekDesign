@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+import { Button } from "@/components/ui/atoms/Button";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
 
 export function EstablecerForm() {
@@ -66,18 +66,25 @@ export function EstablecerForm() {
       />
 
       {error && (
-        <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
+        <p role="alert" className="text-[14px] text-brand tracking-[0.5px]">
           {error}
         </p>
       )}
 
-      <PrimaryButton type="submit" variant="wine" disabled={isSubmitting} className="mt-2">
+      <Button
+        type="submit"
+        variant="primary"
+        size="xl"
+        section="storefront"
+        loading={isSubmitting}
+        className="mt-2"
+      >
         {isSubmitting ? "Guardando…" : "Aceptar"}
-      </PrimaryButton>
+      </Button>
 
       <Link
         href="/login"
-        className="font-light text-[13px] tracking-[0.65px] text-[#df2646] hover:underline"
+        className="font-light text-[13px] tracking-[0.65px] text-brand hover:underline"
       >
         Volver al inicio de sesión
       </Link>

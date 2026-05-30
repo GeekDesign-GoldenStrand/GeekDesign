@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
-import type { MultiSelectOption } from "@/components/ui/maquinas/molecules/MultiSelect";
-import MultiSelect from "@/components/ui/maquinas/molecules/MultiSelect";
+import { useToast } from "@/components/ui/atoms/Toast";
+import type { MultiSelectOption } from "@/components/ui/molecules/MultiSelect";
+import MultiSelect from "@/components/ui/molecules/MultiSelect";
 import type { MaquinaCardProps } from "@/types";
 
 interface ServicioRaw {
@@ -42,6 +43,7 @@ export default function AsignarServicios({
   onEdit,
   onClose,
 }: AsignarServiciosProps) {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [servicioOptions, setServicioOptions] = useState<MultiSelectOption[]>([]);
@@ -117,7 +119,7 @@ export default function AsignarServicios({
         onChangeStatus: () => {},
       });
 
-      window.alert("Servicios asignados correctamente");
+      toast.success("Servicios asignados correctamente");
       onClose();
     } catch {
       setError("No se pudo conectar con el servidor");

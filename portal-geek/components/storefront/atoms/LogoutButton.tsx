@@ -35,11 +35,7 @@ export function LogoutButton() {
         aria-label="Cerrar sesión"
         className="shrink-0 cursor-pointer"
       >
-        <SignOut
-          size={30}
-          weight="light"
-          className="text-[#1e1e1e] hover:text-[#df2646] transition-colors"
-        />
+        <SignOut size={30} weight="light" className="text-ink hover:text-wine transition-colors" />
       </button>
 
       <ConfirmDialog

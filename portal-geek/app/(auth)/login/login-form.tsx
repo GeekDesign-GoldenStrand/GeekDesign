@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 
 import { AuthInput } from "@/components/ui/atoms/AuthInput";
-import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
+import { Button } from "@/components/ui/atoms/Button";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
 import { landingPath, normalizeRole } from "@/lib/auth/access";
 
@@ -80,18 +80,25 @@ export function LoginForm() {
       )}
 
       {error && (
-        <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
+        <p role="alert" className="text-[14px] text-brand tracking-[0.5px]">
           {error}
         </p>
       )}
 
-      <PrimaryButton type="submit" variant="red" disabled={isSubmitting} className="mt-4">
+      <Button
+        type="submit"
+        variant="primary"
+        size="xl"
+        section="admin"
+        loading={isSubmitting}
+        className="mt-4"
+      >
         {isSubmitting ? "Ingresando…" : "Iniciar Sesión"}
-      </PrimaryButton>
+      </Button>
 
       <a
         href="/recuperar-contrasena"
-        className="font-light text-[15px] tracking-[0.75px] text-[#df2646] hover:underline"
+        className="font-light text-[15px] tracking-[0.75px] text-brand hover:underline"
       >
         Olvidé mi contraseña
       </a>

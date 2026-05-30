@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { useToast } from "@/components/ui/atoms/Toast";
 import type { MaquinaCardProps } from "@/types";
 
 interface SucursalRaw {
@@ -45,6 +46,7 @@ export default function AsignarSucursal({
   onEdit,
   onClose,
 }: AsignarSucursalProps) {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sucursalOptions, setSucursalOptions] = useState<SucursalRaw[]>([]);
@@ -119,7 +121,7 @@ export default function AsignarSucursal({
         onChangeStatus: () => {},
       });
 
-      window.alert("Sucursal asignada correctamente");
+      toast.success("Sucursal asignada correctamente");
       onClose();
     } catch {
       setError("No se pudo conectar con el servidor");

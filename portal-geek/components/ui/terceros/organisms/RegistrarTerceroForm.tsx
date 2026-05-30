@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { useToast } from "@/components/ui/atoms/Toast";
 import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
@@ -125,6 +126,7 @@ export function RegistrarTerceroForm({
   onClose,
   initialType = "Proveedor",
 }: RegistrarTerceroFormProps) {
+  const { toast } = useToast();
   const [terceroType, setTerceroType] = useState<TerceroType>(initialType);
 
   const [form, setForm] = useState({
@@ -249,7 +251,7 @@ export function RegistrarTerceroForm({
         }
 
         const { data } = await res.json();
-        window.alert("Proveedor registrado correctamente");
+        toast.success("Proveedor registrado correctamente");
 
         onCreated({
           id: data.id_proveedor,
@@ -288,7 +290,7 @@ export function RegistrarTerceroForm({
         }
 
         const { data } = await res.json();
-        window.alert("Instalador registrado correctamente");
+        toast.success("Instalador registrado correctamente");
 
         onCreated({
           id: data.id_instalador,

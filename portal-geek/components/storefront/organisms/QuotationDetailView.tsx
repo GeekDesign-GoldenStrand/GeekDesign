@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
+import { ConfirmDialog } from "@/components/ui/atoms/ConfirmDialog";
+import { useToast } from "@/components/ui/atoms/Toast";
 
 import { FolioSearch } from "./FolioSearch";
 
@@ -89,8 +91,10 @@ const formatPeso = (n: number) =>
 
 export function QuotationDetailView({ quotation }: Props) {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
   // KIKW12 review #1b: no client-side email/cookie reading. The HTTP-only
@@ -98,32 +102,31 @@ export function QuotationDetailView({ quotation }: Props) {
   // automatically sent with these requests; the server verifies it matches
   // this cotización.
 
-  const handleApprove = async () => {
-    if (
-      !confirm(
-        "¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente."
-      )
-    )
-      return;
-
+  const confirmApprove = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/cotizaciones/${quotation.id_cotizacion}/approve`, {
         method: "POST",
       });
       if (res.ok) {
-        alert("¡Cotización aprobada con éxito! Tu pedido está en camino.");
+        toast.success("¡Cotización aprobada con éxito!", {
+          description: "Tu pedido está en camino.",
+        });
         router.push("/tienda");
       } else {
         const error = await res.json();
-        alert(error.error || "Hubo un error al aprobar la cotización.");
+        toast.error(error.error || "Hubo un error al aprobar la cotización.");
       }
     } catch (error) {
       console.error(error);
+      toast.error("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
+      setShowApproveConfirm(false);
     }
   };
+
+  const handleApprove = () => setShowApproveConfirm(true);
 
   const handleCancel = async () => {
     setLoading(true);
@@ -134,14 +137,17 @@ export function QuotationDetailView({ quotation }: Props) {
         body: JSON.stringify({ reason: cancelReason }),
       });
       if (res.ok) {
-        alert("Cotización cancelada. Gracias por tu tiempo.");
+        toast.success("Cotización cancelada", {
+          description: "Gracias por tu tiempo.",
+        });
         router.push("/tienda");
       } else {
         const error = await res.json();
-        alert(error.error || "Hubo un error al cancelar la cotización.");
+        toast.error(error.error || "Hubo un error al cancelar la cotización.");
       }
     } catch (error) {
       console.error(error);
+      toast.error("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
       setShowCancelModal(false);
@@ -214,8 +220,8 @@ export function QuotationDetailView({ quotation }: Props) {
             buttonText: "Aceptar cotización y continuar",
           },
     Rechazada: {
-      bgColor: "bg-[#FFF1F1]",
-      iconColor: "text-[#DF2646]",
+      bgColor: "bg-wine-soft",
+      iconColor: "text-wine",
       icon: <XCircle size={28} weight="bold" />,
       title: "Tu cotización no pudo ser procesada",
       desc: "Lo sentimos, algunos servicios no están disponibles por el momento.",
@@ -322,7 +328,7 @@ export function QuotationDetailView({ quotation }: Props) {
       </div>
 
       {/* Status Banner */}
-      <div className="bg-white rounded-[16px] border border-[#E8E8E8] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col md:flex-row">
+      <div className="bg-white rounded-[16px] border border-line-soft shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col md:flex-row">
         <div className="flex-1 p-6 md:p-10 flex items-center gap-8">
           <div
             className={`w-14 h-14 rounded-full ${bannerConfig.bgColor} flex items-center justify-center shrink-0 ${bannerConfig.iconColor}`}
@@ -334,7 +340,7 @@ export function QuotationDetailView({ quotation }: Props) {
             <p className="text-[17px] text-[#575757] font-medium">{bannerConfig.desc}</p>
           </div>
         </div>
-        <div className="bg-[#f9f9f9] p-6 md:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-[#E8E8E8] md:min-w-[340px]">
+        <div className="bg-[#f9f9f9] p-6 md:p-10 flex flex-col justify-center border-t md:border-t-0 md:border-l border-line-soft md:min-w-[340px]">
           <p className="text-[12px] font-bold text-[#1e1e1e] mb-2 uppercase tracking-[1.2px]">
             Paso siguiente:
           </p>
@@ -377,8 +383,8 @@ export function QuotationDetailView({ quotation }: Props) {
 
       {/* ST-16: Pedido production status (only visible once Aprobada) */}
       {quotation.estatus === "Aprobada" && quotation.pedido && (
-        <div className="bg-white rounded-[16px] border border-[#E8E8E8] shadow-[0_8px_30px_rgba(0,0,0,0.02)] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
-          <div className="w-14 h-14 rounded-full bg-[#FFF1F4] flex items-center justify-center text-[#DF2646] shrink-0">
+        <div className="bg-white rounded-[16px] border border-line-soft shadow-[0_8px_30px_rgba(0,0,0,0.02)] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="w-14 h-14 rounded-full bg-wine-soft flex items-center justify-center text-wine shrink-0">
             <Clock size={28} weight="bold" />
           </div>
           <div className="flex-1">
@@ -387,7 +393,7 @@ export function QuotationDetailView({ quotation }: Props) {
             </p>
             <h3 className="text-[20px] font-bold text-[#1e1e1e]">
               {quotation.folio ?? `#${quotation.pedido.id_pedido}`} —{" "}
-              <span className="text-[#DF2646]">
+              <span className="text-wine">
                 {getEstadoFacturaLabel(quotation.pedido.estado_factura)}
               </span>
             </h3>
@@ -410,10 +416,10 @@ export function QuotationDetailView({ quotation }: Props) {
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold ${
                 p.completed
-                  ? "bg-[#DF2646] text-white"
+                  ? "bg-wine text-white"
                   : p.current
                     ? "bg-white border-2 border-[#F16C20] text-[#F16C20]"
-                    : "bg-white border border-[#E8E8E8] text-[#B9B8B8]"
+                    : "bg-white border border-line-soft text-[#B9B8B8]"
               }`}
             >
               {p.completed ? <CheckCircle size={20} weight="bold" /> : i + 1}
@@ -433,7 +439,7 @@ export function QuotationDetailView({ quotation }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
         {/* Main Column */}
         <div className="lg:col-span-2 space-y-10">
-          <div className="bg-white rounded-[16px] border border-[#E8E8E8] overflow-hidden shadow-sm">
+          <div className="bg-white rounded-[16px] border border-line-soft overflow-hidden shadow-sm">
             <div className="p-6 border-b border-[#F0F0F0]">
               <h3 className="text-[18px] font-bold text-[#1e1e1e]">Servicios incluidos</h3>
             </div>
@@ -496,7 +502,7 @@ export function QuotationDetailView({ quotation }: Props) {
                                 {(item.estado === "rechazado" ||
                                   quotation.estatus === "Rechazada" ||
                                   quotation.estatus === "Cancelada") && (
-                                  <div className="flex items-center gap-1.5 text-[#DF2646] font-bold text-[10px] uppercase tracking-[0.5px]">
+                                  <div className="flex items-center gap-1.5 text-wine font-bold text-[10px] uppercase tracking-[0.5px]">
                                     <XCircle size={14} weight="bold" />
                                     <span>Rechazado</span>
                                   </div>
@@ -588,7 +594,7 @@ export function QuotationDetailView({ quotation }: Props) {
                           {(item.estado === "rechazado" ||
                             quotation.estatus === "Rechazada" ||
                             quotation.estatus === "Cancelada") && (
-                            <div className="flex items-center gap-1.5 text-[#DF2646] font-bold text-[10px] uppercase tracking-[0.5px] bg-[#FFF1F1] px-2 py-1 rounded-full">
+                            <div className="flex items-center gap-1.5 text-wine font-bold text-[10px] uppercase tracking-[0.5px] bg-wine-soft px-2 py-1 rounded-full">
                               <XCircle size={14} weight="bold" />
                               <span>Rechazado</span>
                             </div>
@@ -674,7 +680,7 @@ export function QuotationDetailView({ quotation }: Props) {
             <p className="text-[14px] text-[#004C99] font-medium leading-relaxed">
               Al confirmar esta cotización, aceptas los cambios realizados en los servicios marcados
               como <span className="font-bold underline">modificados</span> y reconoces que los
-              servicios <span className="font-bold underline text-[#DF2646]">rechazados</span> no
+              servicios <span className="font-bold underline text-wine">rechazados</span> no
               formarán parte del pedido final.
             </p>
           </div>
@@ -682,7 +688,7 @@ export function QuotationDetailView({ quotation }: Props) {
 
         {/* Sidebar Summary */}
         <div className="lg:col-span-1 sticky top-8">
-          <div className="bg-white rounded-[24px] border border-[#E8E8E8] p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+          <div className="bg-white rounded-[24px] border border-line-soft p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
             <h3 className="text-[20px] font-bold text-[#1e1e1e] mb-8">Resumen de la cotización</h3>
 
             {quotation.estatus !== "Pendiente" && (
@@ -702,11 +708,11 @@ export function QuotationDetailView({ quotation }: Props) {
                   <span className="font-bold text-[#F16C20]">{counts.modificados}</span>
                 </div>
                 <div className="flex items-center justify-between text-[14px] font-medium">
-                  <div className="flex items-center gap-3 text-[#DF2646]">
+                  <div className="flex items-center gap-3 text-wine">
                     <XCircle size={20} weight="bold" />
                     <span>Servicios rechazados</span>
                   </div>
-                  <span className="font-bold text-[#DF2646]">{counts.rechazados}</span>
+                  <span className="font-bold text-wine">{counts.rechazados}</span>
                 </div>
               </div>
             )}
@@ -737,11 +743,11 @@ export function QuotationDetailView({ quotation }: Props) {
               quotation.estatus === "Rechazada" ||
               quotation.estatus === "Cancelada") && (
               <div
-                className={`${diferencia < 0 ? "bg-[#FFF1F1] border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}
+                className={`${diferencia < 0 ? "bg-wine-soft border-[#FFE8E8]" : "bg-[#FFF9F0] border-[#FFE9CC]"} border rounded-[12px] p-5 flex justify-between items-center mb-8`}
               >
                 <span className="text-[14px] font-bold text-[#1e1e1e]">Diferencia</span>
                 <span
-                  className={`text-[14px] font-bold ${diferencia < 0 ? "text-[#DF2646]" : "text-[#F16C20]"}`}
+                  className={`text-[14px] font-bold ${diferencia < 0 ? "text-wine" : "text-[#F16C20]"}`}
                 >
                   {diferencia > 0 ? "+" : ""}
                   {formatPeso(diferencia)} MXN ({diferencia > 0 ? "+" : ""}
@@ -814,7 +820,7 @@ export function QuotationDetailView({ quotation }: Props) {
       </div>
 
       {/* Persistent Search Section */}
-      <div className="pt-8 border-t border-[#E8E8E8]">
+      <div className="pt-8 border-t border-line-soft">
         <FolioSearch />
       </div>
 
@@ -835,7 +841,7 @@ export function QuotationDetailView({ quotation }: Props) {
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Ej: El presupuesto es superior a lo esperado..."
-              className="w-full h-[140px] border border-[#e8e8e8] rounded-[16px] p-5 mb-8 focus:ring-2 focus:ring-[#df2646] focus:border-transparent outline-none transition-all bg-[#fcfcfc] text-[#1e1e1e]"
+              className="w-full h-[140px] border border-line-soft rounded-2xl p-5 mb-8 focus:ring-2 focus:ring-wine focus:border-transparent outline-none transition-all bg-white text-ink"
             />
 
             <div className="flex gap-4">
@@ -854,6 +860,19 @@ export function QuotationDetailView({ quotation }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showApproveConfirm}
+        title="Confirmar aprobación"
+        description="¿Estás seguro de que deseas aprobar esta cotización? Esto generará tu pedido oficialmente."
+        confirmLabel="Aprobar cotización"
+        loadingLabel="Aprobando…"
+        variant="primary"
+        section="storefront"
+        loading={loading}
+        onConfirm={confirmApprove}
+        onClose={() => setShowApproveConfirm(false)}
+      />
     </motion.div>
   );
 }

@@ -17,7 +17,7 @@ export function ServiceCard({ nombre_servicio, imagenUrl }: ServiceCardProps) {
       </div>
 
       {/* Name below card */}
-      <p className="mt-[8px] w-full text-[12px] md:text-[14px] font-medium text-[#1e1e1e] text-center leading-tight line-clamp-2 group-hover:text-[#df2646] transition-colors duration-200">
+      <p className="mt-[8px] w-full text-[12px] md:text-[14px] font-medium text-ink text-center leading-tight line-clamp-2 group-hover:text-wine transition-colors duration-200">
         {nombre_servicio}
       </p>
     </div>

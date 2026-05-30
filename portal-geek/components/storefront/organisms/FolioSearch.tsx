@@ -62,7 +62,7 @@ export function FolioSearch() {
 
   return (
     <div className="max-w-[1240px] mx-auto py-12 px-4">
-      <div className="bg-white rounded-[24px] border border-[#E8E8E8] shadow-[0_12px_60px_rgba(0,0,0,0.03)] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+      <div className="bg-white rounded-[24px] border border-line-soft shadow-[0_12px_60px_rgba(0,0,0,0.03)] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
         <div className="flex-1 text-center lg:text-left space-y-4">
           <h2 className="text-[36px] md:text-[42px] font-black text-[#1e1e1e] leading-tight">
             Consulta tu cotización
@@ -88,7 +88,7 @@ export function FolioSearch() {
                   placeholder="GD-2026-00203"
                   required
                   maxLength={50}
-                  className="w-full h-[64px] bg-white border border-[#E8E8E8] rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all"
+                  className="w-full h-[64px] bg-white border border-line-soft rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-wine transition-all"
                 />
               </div>
 
@@ -117,8 +117,8 @@ export function FolioSearch() {
                   spellCheck={false}
                   aria-invalid={emailError !== null}
                   aria-describedby={emailError ? "folio-email-error" : undefined}
-                  className={`w-full h-[64px] bg-white border rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all ${
-                    emailError ? "border-[#c14a4a]" : "border-[#E8E8E8]"
+                  className={`w-full h-[64px] bg-white border rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-wine transition-all ${
+                    emailError ? "border-[#c14a4a]" : "border-line-soft"
                   }`}
                 />
                 {emailError && (

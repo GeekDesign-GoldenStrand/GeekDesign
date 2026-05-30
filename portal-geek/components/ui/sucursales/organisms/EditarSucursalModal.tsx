@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
 import FormInput from "@/components/ui/atoms/FormInput";
+import { useToast } from "@/components/ui/atoms/Toast";
 
 interface EditarSucursalModalProps {
   id: number;
@@ -62,6 +63,7 @@ export function EditarSucursalModal({
   onEdit,
   onClose,
 }: EditarSucursalModalProps) {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -128,13 +130,14 @@ export function EditarSucursalModal({
       });
 
       if (!res.ok) {
-        setError("Datos inválidos");
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(json?.error ?? "Datos inválidos");
         return;
       }
 
       const json = await res.json();
       onEdit(json.data);
-      window.alert("Sucursal editada correctamente");
+      toast.success("Sucursal editada correctamente");
       onClose();
     } catch {
       setError("No se pudo conectar con el servidor");

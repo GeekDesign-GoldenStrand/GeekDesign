@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
+import { useToast } from "@/components/ui/atoms/Toast";
 
 import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 import { AsignacionCard } from "../molecules/AsignacionCard";
@@ -44,6 +45,7 @@ export function AsignarItemsModal({
   );
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [prices, setPrices] = useState<Record<number, string>>({});
+  const { toast } = useToast();
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [priceErrors, setPriceErrors] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -182,7 +184,7 @@ export function AsignarItemsModal({
         body: JSON.stringify({ type: itemType, items: itemsPayload }),
       });
       if (res.ok) {
-        window.alert(`${title} correctamente`);
+        toast.success(`${title} correctamente`);
         onSaved();
         onClose();
       } else {

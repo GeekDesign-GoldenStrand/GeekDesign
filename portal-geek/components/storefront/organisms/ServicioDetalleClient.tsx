@@ -63,7 +63,7 @@ export function ServicioDetalleClient({
                 type="button"
                 onClick={() => setSelectedImage(url)}
                 className={`bg-white rounded-[10px] aspect-square overflow-hidden border-2 transition-all hover:scale-105 active:scale-95 ${
-                  selectedImage === url ? "border-[#df2646]" : "border-gray-200"
+                  selectedImage === url ? "border-wine" : "border-line-soft"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -2,23 +2,21 @@
 
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 
+// Dashed-bordered row-action button.
+
 type Tone = "default" | "danger";
 
 const toneClasses: Record<Tone, string> = {
-  default: "border-[#1e1e1e] text-[#1e1e1e] hover:bg-[#f5f5f5]",
-  danger: "border-[#e42200] text-[#e42200] hover:bg-[#fff5f5]",
+  default: "border-ink text-ink hover:bg-surface-muted",
+  danger: "border-brand text-brand hover:bg-brand-soft",
 };
+
+const BASE =
+  "flex items-center justify-center border border-dashed rounded-sm text-[14px] font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2";
 
 function buildClasses(tone: Tone, hasLabel: boolean, extra?: string) {
   const padding = hasLabel ? "gap-1.5 px-3 py-2" : "p-2";
-  return [
-    "flex items-center justify-center border border-dashed rounded-[7px] text-[14px] font-medium shadow-[0_4px_10px_rgba(0,0,0,0.25)] transition-colors",
-    padding,
-    toneClasses[tone],
-    extra,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return [BASE, padding, toneClasses[tone], extra].filter(Boolean).join(" ");
 }
 
 interface CommonProps {

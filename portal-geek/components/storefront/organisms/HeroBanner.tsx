@@ -17,9 +17,9 @@ export function HeroBanner({
 
       {/* Centred card */}
       <div className="relative z-10 flex items-center justify-center h-full px-4">
-        <div className="bg-[#fffcfc] w-full max-w-[857px] rounded-[10px] shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] flex flex-col items-center justify-center gap-4 md:gap-[26px] px-6 md:px-8 py-6 md:py-0 md:h-[321px]">
+        <div className="bg-white w-full max-w-[857px] rounded-lg shadow-lg flex flex-col items-center justify-center gap-4 md:gap-[26px] px-6 md:px-8 py-6 md:py-0 md:h-[321px]">
           <p
-            className="font-bold text-[22px] sm:text-[30px] md:text-[45px] text-[#1e1e1e] text-center leading-tight whitespace-pre-line"
+            className="font-bold text-[22px] sm:text-[30px] md:text-[45px] text-ink text-center leading-tight whitespace-pre-line"
             style={{ fontFamily: "var(--font-inter), sans-serif" }}
           >
             {titulo}

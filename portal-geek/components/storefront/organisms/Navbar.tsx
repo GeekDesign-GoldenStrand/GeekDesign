@@ -22,17 +22,23 @@ export function Navbar({ categories = [] }: NavbarProps) {
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const linkCls = (href: string) =>
-    `flex items-center gap-[6px] transition-opacity ${isActive(href) ? "text-[#df2646]" : "text-[#1e1e1e] hover:opacity-70"}`;
+    `flex items-center gap-[6px] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wine focus-visible:ring-offset-2 rounded-xs ${
+      isActive(href) ? "text-wine" : "text-ink hover:opacity-70"
+    }`;
 
   const textCls = (href: string) =>
     `whitespace-nowrap leading-none mt-1 ${isActive(href) ? "underline underline-offset-2" : ""}`;
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b-[1.5px] border-[#c2c0c0] w-full">
+    <header className="sticky top-0 z-50 bg-white border-b-[1.5px] border-line-soft w-full">
       {/* Row 1 — Logo · Search · Actions */}
       <div className="max-w-[1440px] mx-auto px-4 md:px-[36px] py-4 md:py-6 flex items-center gap-3">
         {/* Logo */}
-        <Link href="/tienda" className="flex items-center gap-[9px] shrink-0">
+        <Link
+          href="/tienda"
+          aria-label="Ir al inicio"
+          className="flex items-center gap-[9px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wine focus-visible:ring-offset-2 rounded-sm"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/storefront/logo.png"
@@ -42,7 +48,7 @@ export function Navbar({ categories = [] }: NavbarProps) {
             className="object-cover w-[36px] h-[36px] md:w-[46px] md:h-[46px]"
           />
           <span
-            className="hidden sm:block text-[#df2646] text-[13px] md:text-[16px] font-semibold tracking-[0.8px] uppercase whitespace-nowrap leading-none mt-1"
+            className="hidden sm:block text-brand-mark text-[13px] md:text-[16px] font-semibold tracking-[0.8px] uppercase whitespace-nowrap leading-none mt-1"
             style={{ fontFamily: "var(--font-alexandria), sans-serif" }}
           >
             Geek Design
@@ -112,10 +118,11 @@ export function Navbar({ categories = [] }: NavbarProps) {
               <Link
                 key={cat.id}
                 href={href}
-                className={`text-[14px] md:text-[15px] font-bold shrink-0 leading-none transition-colors ${
+                aria-current={isActive(href) ? "page" : undefined}
+                className={`text-[14px] md:text-[15px] font-bold shrink-0 leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wine focus-visible:ring-offset-2 rounded-xs ${
                   isActive(href)
-                    ? "text-[#df2646] underline underline-offset-2"
-                    : "text-[#1e1e1e] hover:text-[#df2646]"
+                    ? "text-wine underline underline-offset-2"
+                    : "text-ink hover:text-wine"
                 }`}
               >
                 {cat.name}

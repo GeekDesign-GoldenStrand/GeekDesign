@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 export interface MultiSelectOption {
   value: string | number;
@@ -17,9 +17,10 @@ interface MultiSelectProps {
   disabled?: boolean;
   maxSelected?: number;
   required?: boolean;
+  error?: string;
 }
 
-export default function MultiSelect({
+export function MultiSelect({
   options,
   value,
   onChange,
@@ -27,12 +28,16 @@ export default function MultiSelect({
   label,
   disabled = false,
   maxSelected,
+  required,
+  error,
 }: MultiSelectProps) {
   const [selected, setSelected] = useState<MultiSelectOption[]>(value ?? []);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fieldId = useId();
+  const errorId = `${fieldId}-error`;
 
   const filtered = options.filter(
     (o) =>
@@ -57,8 +62,8 @@ export default function MultiSelect({
     inputRef.current?.focus();
   };
 
-  const removeTag = (value: string | number) => {
-    const next = selected.filter((s) => s.value !== value);
+  const removeTag = (v: string | number) => {
+    const next = selected.filter((s) => s.value !== v);
     setSelected(next);
     onChange?.(next);
   };
@@ -83,6 +88,7 @@ export default function MultiSelect({
       setSearch("");
     }
     if (e.key === "Enter" && filtered.length > 0) {
+      e.preventDefault();
       toggle(filtered[0]);
       setSearch("");
     }
@@ -90,8 +96,6 @@ export default function MultiSelect({
 
   const isMaxReached = maxSelected !== undefined && selected.length >= maxSelected;
 
-  // Close the dropdown when the user clicks outside — without this it stays
-  // open and overlays anything below (notably the modal action buttons).
   useEffect(() => {
     if (!open) return;
     function handle(e: MouseEvent) {
@@ -105,13 +109,21 @@ export default function MultiSelect({
   }, [open]);
 
   return (
-    <div className="flex flex-col gap-1 w-full font-ibm-plex-sans mb-6" ref={containerRef}>
-      {label && <label className="text-[13px] font-medium text-[#575757]">{label}</label>}
+    <div className="flex flex-col gap-1 w-full font-ibm-plex-sans" ref={containerRef}>
+      {label && (
+        <label htmlFor={fieldId} className="text-[13px] font-medium text-ink-muted">
+          {label}
+          {required && <span className="ml-0.5 text-brand">*</span>}
+        </label>
+      )}
 
       <div
         className={[
-          "flex flex-wrap items-center gap-1.5 min-h-[42px] w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#575757] transition-all",
-          disabled ? "opacity-50 cursor-not-allowed bg-gray-50" : "",
+          "flex flex-wrap items-center gap-1.5 min-h-[42px] w-full",
+          "border rounded-sm px-3 py-2 text-[14px] text-ink transition-colors",
+          "focus-within:border-brand focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-1",
+          error ? "border-danger" : "border-line",
+          disabled ? "opacity-50 cursor-not-allowed bg-surface-muted" : "",
         ].join(" ")}
         onClick={() => {
           if (!disabled) {
@@ -123,7 +135,7 @@ export default function MultiSelect({
         {selected.map((s) => (
           <span
             key={s.value}
-            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-sm font-medium border border-red-200"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-sm bg-brand-soft text-brand text-sm font-medium border border-brand-softer"
           >
             {s.label}
             {!disabled && (
@@ -133,7 +145,7 @@ export default function MultiSelect({
                   e.stopPropagation();
                   removeTag(s.value);
                 }}
-                className="text-red-400 hover:text-red-700 transition-colors leading-none"
+                className="text-brand hover:opacity-70 transition-opacity leading-none"
                 aria-label={`Eliminar ${s.label}`}
               >
                 ×
@@ -145,6 +157,7 @@ export default function MultiSelect({
         {!disabled && !isMaxReached && (
           <input
             ref={inputRef}
+            id={fieldId}
             type="text"
             value={search}
             onChange={(e) => {
@@ -155,13 +168,15 @@ export default function MultiSelect({
             onKeyDown={handleKeyDown}
             placeholder={selected.length === 0 ? placeholder : ""}
             maxLength={50}
-            className="flex-1 min-w-[120px] outline-none text-sm text-[#1e1e1e] placeholder:text-[#8e908f] bg-transparent"
+            aria-describedby={error ? errorId : undefined}
+            aria-invalid={error ? true : undefined}
+            className="flex-1 min-w-[120px] outline-none text-sm text-ink placeholder:text-ink-subtle bg-transparent"
           />
         )}
 
         <button
           type="button"
-          className="ml-auto pl-1 text-gray-400 transition-transform duration-200"
+          className="ml-auto pl-1 text-ink-subtle transition-transform duration-200"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
           aria-label={open ? "Cerrar opciones" : "Abrir opciones"}
           onClick={(e) => {
@@ -181,14 +196,25 @@ export default function MultiSelect({
         </button>
       </div>
 
-      {isMaxReached && <p className="text-xs text-gray-500">Máximo {maxSelected} seleccionados</p>}
+      {isMaxReached && (
+        <p className="text-xs text-ink-subtle">Máximo {maxSelected} seleccionados</p>
+      )}
 
-      {/* Dropdown */}
+      {error && (
+        <p id={errorId} role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      )}
+
       {open && !disabled && (
         <div className="relative z-50">
-          <div className="absolute top-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          <div
+            className="absolute top-1 left-0 right-0 bg-white border border-line-soft rounded-lg shadow-lg overflow-hidden"
+            role="listbox"
+            aria-multiselectable
+          >
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-gray-500">
+              <p className="px-4 py-3 text-sm text-ink-subtle">
                 {search ? "Sin resultados" : "No hay más opciones"}
               </p>
             ) : (
@@ -196,10 +222,12 @@ export default function MultiSelect({
                 {filtered.map((option) => (
                   <li
                     key={option.value}
+                    role="option"
+                    aria-selected={false}
                     onClick={() => toggle(option)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-[#f5f5f5] cursor-pointer transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-ink hover:bg-surface-muted cursor-pointer transition-colors"
                   >
-                    <span className="w-4 h-4 rounded border border-gray-300 flex items-center justify-center flex-shrink-0"></span>
+                    <span className="w-4 h-4 rounded-xs border border-line flex items-center justify-center flex-shrink-0" />
                     {option.label}
                   </li>
                 ))}
@@ -211,3 +239,5 @@ export default function MultiSelect({
     </div>
   );
 }
+
+export default MultiSelect;

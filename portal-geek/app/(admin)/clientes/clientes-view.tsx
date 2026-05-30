@@ -5,9 +5,11 @@ import { useEffect, useState, useCallback } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import { useToast } from "@/components/ui/atoms/Toast";
 import { ClientesTable, type ClientCategory } from "@/components/ui/clientes";
 
 export function ClientesView() {
+  const { toast } = useToast();
   // State for data management, loading, errors, and search
   const [clientes, setClientes] = useState<Clientes[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export function ClientesView() {
       );
     } catch (err) {
       console.error(err);
-      alert("Error al actualizar la categoría del cliente.");
+      toast.error("Error al actualizar la categoría del cliente.");
     }
   };
 

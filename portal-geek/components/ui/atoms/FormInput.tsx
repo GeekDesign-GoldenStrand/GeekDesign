@@ -11,6 +11,9 @@ export interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
   maxInputLength: number;
 }
 
+const FIELD_BASE =
+  "w-full border rounded-sm px-3 py-2 text-[14px] text-ink placeholder:text-ink-subtle transition-colors outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1";
+
 export default function FormInput({
   label,
   error,
@@ -22,12 +25,13 @@ export default function FormInput({
   ...props
 }: FormInputProps) {
   const errorId = error ? `${props.name}-error` : undefined;
+  const borderClass = error ? "border-danger" : "border-line";
 
   return (
-    <div className="flex flex-col gap-1 text-[13px] text-[#575757] mb-6">
+    <div className="flex flex-col gap-1 text-[13px] text-ink-muted mb-6">
       <span className="font-medium">
         {label}
-        {required && <span className="text-[#e42200]">*</span>}
+        {required && <span className="ml-0.5 text-brand">*</span>}
       </span>
       {longText ? (
         <textarea
@@ -39,7 +43,7 @@ export default function FormInput({
           placeholder={placeholderLongText}
           value={props.value as string | undefined}
           onChange={props.onChange as unknown as React.ChangeEventHandler<HTMLTextAreaElement>}
-          className="w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors"
+          className={`${FIELD_BASE} ${borderClass}`}
         />
       ) : (
         <input
@@ -47,18 +51,12 @@ export default function FormInput({
           aria-describedby={errorId}
           maxLength={maxInputLength}
           {...props}
-          className={[
-            "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors",
-            error ? "border-[#df2646]" : "border-[#b9b8b8]",
-            className,
-          ]
-            .filter(Boolean)
-            .join(" ")}
+          className={[FIELD_BASE, borderClass, className].filter(Boolean).join(" ")}
         />
       )}
 
       {error && (
-        <p id={errorId} role="alert" className="mt-1 px-1 text-[13px] text-[#df2646]">
+        <p id={errorId} role="alert" className="mt-1 px-1 text-[13px] text-danger">
           {error}
         </p>
       )}
