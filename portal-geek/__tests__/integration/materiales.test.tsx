@@ -38,6 +38,8 @@ jest.mock("@/lib/services/storage", () => ({
     key ? `https://signed.example/${key}` : null
   ),
   deleteObject: jest.fn(async () => undefined),
+  // T6 — magic-byte sniff would otherwise hit getStorage() in test env.
+  assertObjectIsImage: jest.fn(async () => undefined),
 }));
 
 const mockFindMany = prisma.materiales.findMany as jest.Mock;

@@ -39,6 +39,11 @@ jest.mock("@/lib/db/client", () => ({
   },
 }));
 
+// T6 — magic-byte sniff would otherwise hit getStorage() in test env.
+jest.mock("@/lib/services/storage", () => ({
+  assertObjectIsImage: jest.fn(async () => undefined),
+}));
+
 const mockFindMany = prisma.servicios.findMany as jest.Mock;
 const mockCount = prisma.servicios.count as jest.Mock;
 const mockFindFirst = prisma.servicios.findFirst as jest.Mock;

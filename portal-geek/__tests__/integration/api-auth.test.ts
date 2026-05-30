@@ -19,8 +19,11 @@ jest.mock("@/lib/auth/session", () => ({
 }));
 
 const mockPeekRateLimit = jest.fn(() => ({ allowed: true, remaining: 4, retryAfterMs: 0 }));
+const mockCheckRateLimit = jest.fn(() => ({ allowed: true, remaining: 4, retryAfterMs: 0 }));
 jest.mock("@/lib/utils/rate-limit", () => ({
   peekRateLimit: (...args: unknown[]) => mockPeekRateLimit(...(args as [])),
+  // D3/D4 — forgot/reset/establecer use checkRateLimit (count every attempt).
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...(args as [])),
   recordAttempt: jest.fn(),
   clearRateLimit: jest.fn(),
 }));

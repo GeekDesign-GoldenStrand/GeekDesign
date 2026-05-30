@@ -17,6 +17,16 @@ jest.mock("@/lib/services/storage", () => ({
   DEFAULT_TTL_SECONDS: 300,
 }));
 
+// T5 — HMAC delete-token helper. Mock so signing doesn't require AUTH_SECRET
+// in test env, and verification always passes the happy path.
+jest.mock("@/lib/utils/upload-token", () => ({
+  signUploadDeleteToken: jest.fn(() => ({
+    token: "mock-delete-token",
+    expiresInSeconds: 1800,
+  })),
+  verifyUploadDeleteToken: jest.fn(() => true),
+}));
+
 // peekRateLimit gates the request; recordAttempt only fires on success.
 jest.mock("@/lib/utils/rate-limit", () => ({
   peekRateLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 20, retryAfterMs: 0 }),
