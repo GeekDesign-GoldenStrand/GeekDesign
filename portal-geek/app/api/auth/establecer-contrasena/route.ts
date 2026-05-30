@@ -5,6 +5,11 @@ import { z } from "zod";
 import { resetPassword } from "@/lib/services/password-reset";
 import { ok } from "@/lib/utils/api";
 import { handleError, UnauthorizedError } from "@/lib/utils/errors";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { getClientIp } from "@/lib/utils/request-ip";
+
+// D4: same bound as /api/auth/reset-password — gates bcrypt CPU per IP.
+const ESTABLECER_RATE_LIMIT = { maxAttempts: 10, windowMs: 15 * 60_000 };
 
 const EstablecerPasswordSchema = z
   .object({
@@ -23,6 +28,12 @@ const EstablecerPasswordSchema = z
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(`establecer-pwd:${ip}`, ESTABLECER_RATE_LIMIT);
+    if (!allowed) {
+      throw new UnauthorizedError("Demasiados intentos. Intenta de nuevo en unos minutos.");
+    }
+
     const cookieStore = await cookies();
     const token = cookieStore.get("reset_token")?.value;
 

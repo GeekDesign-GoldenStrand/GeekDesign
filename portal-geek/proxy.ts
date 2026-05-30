@@ -44,7 +44,12 @@ export async function proxy(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  if (process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development") {
+  // S10 hardening: SKIP_AUTH is a development-only escape hatch. In production
+  // it must never bypass the gate even if accidentally set — the boot-time
+  // assertion in instrumentation.ts already refuses to start the server in
+  // that case; this is the runtime backstop.
+  if (process.env.NODE_ENV === "development") {
+    if (process.env.SKIP_AUTH === "true") return NextResponse.next();
     return NextResponse.next();
   }
   return proxy(request);

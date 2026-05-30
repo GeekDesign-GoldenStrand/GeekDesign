@@ -22,9 +22,11 @@ export function paginated<T>(items: T[], total: number, page: number, pageSize: 
 export const GET = withSection("cotizaciones", "read", async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
 
-  // Pagination parameters: default page=1, pageSize=13
-  const page = Number(searchParams.get("page") ?? 1);
-  const pageSize = Number(searchParams.get("pageSize") ?? 13);
+  // Pagination parameters: default page=1, pageSize=13. Cap at 100 to prevent
+  // unbounded result-set memory blow-ups (D1: a hostile pageSize=1_000_000
+  // would otherwise materialize the full cotizaciones × detalles graph).
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 13)));
 
   // Optional filters: client, company, multiple status values, and fecha_fin range
   const cliente = searchParams.get("cliente") ?? undefined;
