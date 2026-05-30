@@ -150,7 +150,9 @@ export function ImageUploader(props: ImageUploaderProps) {
     }
 
     try {
-      const key = await uploadFile(file, category);
+      // ImageUploader is auth-only (admin); the deleteToken side of the result
+      // is ignored — DELETE /api/upload is gated by the session cookie.
+      const { key } = await uploadFile(file, category);
       setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, status: "done", key } : s)));
       if (isSingle) (props as SingleProps).onUploaded(key);
     } catch (err) {

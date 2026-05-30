@@ -7,7 +7,7 @@ import type {
   CreateSubMaterialInput,
   UpdateMaterialInput,
 } from "@/lib/schemas/materiales";
-import { deleteObject, resolveImageUrl } from "@/lib/services/storage";
+import { assertObjectIsImage, deleteObject, resolveImageUrl } from "@/lib/services/storage";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
 export type MaterialesConSubs = Materiales & {
@@ -153,6 +153,9 @@ export async function getMaterialProveedores(id: number): Promise<MaterialProvee
 }
 
 export async function createMaterial(data: CreateMaterialInput): Promise<MaterialesConSubs> {
+  // T6: verify the upload bytes match the declared image type before committing
+  // the key to the DB. Throws ValidationError + cleans up the bogus object.
+  await assertObjectIsImage(data.imagen_url);
   const created = await prisma.materiales.create({
     data: { ...data, es_grupo: false },
     include: { subMateriales: true },
@@ -162,6 +165,7 @@ export async function createMaterial(data: CreateMaterialInput): Promise<Materia
 
 export async function createGrupo(data: CreateGrupoMaterialInput): Promise<MaterialesConSubs> {
   const { tipo: _tipo, ...rest } = data;
+  await assertObjectIsImage(rest.imagen_url);
   const created = await prisma.materiales.create({
     data: {
       nombre_material: rest.nombre_material,
@@ -177,6 +181,7 @@ export async function createGrupo(data: CreateGrupoMaterialInput): Promise<Mater
 
 export async function createSubMaterial(data: CreateSubMaterialInput): Promise<MaterialesConSubs> {
   const { tipo: _tipo, ...rest } = data;
+  await assertObjectIsImage(rest.imagen_url);
 
   const created = await prisma.$transaction(async (tx) => {
     const padre = await tx.materiales.findUnique({
@@ -205,6 +210,11 @@ export async function updateMaterial(
     ...input,
     ...(input.imagen_url === "" ? { imagen_url: null } : {}),
   };
+  // T6: verify a newly-supplied image key matches a real raster image before
+  // we commit it. Skipped when the field is being cleared (null) or absent.
+  if (data.imagen_url) {
+    await assertObjectIsImage(data.imagen_url);
+  }
   try {
     const { updated, oldImagenKey } = await prisma.$transaction(async (tx) => {
       const needsExisting = data.imagen_url !== undefined || data.id_material_padre !== undefined;

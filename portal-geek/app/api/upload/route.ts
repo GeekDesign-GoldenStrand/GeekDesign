@@ -66,7 +66,9 @@ export const POST = withAuth(async (req: NextRequest, session: SessionPayload) =
     }
 
     const key = buildKey(body.category, ext);
-    const url = await presignPut(key, contentType);
+    // T4: bind body.size into the signature so GCS rejects PUTs exceeding the
+    // declared length.
+    const url = await presignPut(key, contentType, body.size);
 
     recordAttempt(rateKey, UPLOAD_RATE_LIMIT);
     return ok({ key, url, expiresIn: DEFAULT_TTL_SECONDS });

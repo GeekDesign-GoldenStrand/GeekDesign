@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
+import { assertObjectIsImage } from "@/lib/services/storage";
 import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 import type { ServicioAdminDetalle } from "@/types/servicios";
 
@@ -326,6 +327,13 @@ export async function createServicio(
 ): Promise<ServicioSimple> {
   const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
 
+  // T6: sniff every supplied image key in parallel BEFORE entering the
+  // transaction. A bogus key throws ValidationError + cleans up its object,
+  // so we never persist a Servicio that references non-image bytes.
+  if (imagenes && imagenes.length > 0) {
+    await Promise.all(imagenes.map((k) => assertObjectIsImage(k)));
+  }
+
   return prisma.$transaction(async (tx) => {
     // 1. Resolve the "Activo" EstatusServicio — frontend does not send id_estatus.
     const estatusActivo = await tx.estatusServicio.findFirstOrThrow({
@@ -461,6 +469,17 @@ export async function updateServicio(
   if (!existing) throw new NotFoundError(`Servicio con id ${id} no encontrado`);
 
   const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
+
+  // T6: only sniff keys NEW to this servicio — previously-saved keys have
+  // already been verified at their original write. Compare against the parsed
+  // existing imagen_url so a noop update doesn't trigger redundant Range GETs.
+  if (imagenes && imagenes.length > 0) {
+    const known = new Set(parseImagenUrl(existing.imagen_url));
+    const fresh = imagenes.filter((k) => !known.has(k));
+    if (fresh.length > 0) {
+      await Promise.all(fresh.map((k) => assertObjectIsImage(k)));
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     await validateServicioFKs(tx, data);

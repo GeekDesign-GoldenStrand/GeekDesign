@@ -5,9 +5,16 @@ import { PresignUploadSchema, UPLOAD_LIMITS } from "@/lib/schemas/upload";
 import { DEFAULT_TTL_SECONDS, deleteObject, presignPut } from "@/lib/services/storage";
 import { buildKey, extFromFilename, extFromMime, isValidKey } from "@/lib/storage/keys";
 import { ok } from "@/lib/utils/api";
-import { ConflictError, handleError, RateLimitError, ValidationError } from "@/lib/utils/errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  handleError,
+  RateLimitError,
+  ValidationError,
+} from "@/lib/utils/errors";
 import { peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
 import { getClientIp } from "@/lib/utils/request-ip";
+import { signUploadDeleteToken, verifyUploadDeleteToken } from "@/lib/utils/upload-token";
 
 // Public endpoint — no auth required. Rate-limited by IP to cap anonymous abuse.
 // Only issues presigned PUTs for the "disenios" category.
@@ -58,10 +65,24 @@ export async function POST(req: NextRequest) {
     }
 
     const key = buildKey("disenios", ext);
-    const url = await presignPut(key, contentType);
+    // T4: bind body.size into the signature so GCS rejects PUTs exceeding the
+    // declared length. Without this an anonymous client could presign 10MB and
+    // upload arbitrary bytes — wallet-DoS via storage fill.
+    const url = await presignPut(key, contentType, body.size);
+    // T5: HMAC the key into a short-lived delete token. The DELETE handler
+    // below verifies it, so leaking just the key (e.g. via Sentry logs) no
+    // longer grants delete rights — the attacker would also need the token.
+    const { token: deleteToken, expiresInSeconds: deleteTokenExpiresIn } =
+      signUploadDeleteToken(key);
 
     recordAttempt(rateKey, RATE_LIMIT);
-    return ok({ key, url, expiresIn: DEFAULT_TTL_SECONDS });
+    return ok({
+      key,
+      url,
+      expiresIn: DEFAULT_TTL_SECONDS,
+      deleteToken,
+      deleteTokenExpiresIn,
+    });
   } catch (err) {
     return handleError(err);
   }
@@ -77,9 +98,17 @@ export async function DELETE(req: NextRequest) {
     const { allowed, retryAfterMs } = peekRateLimit(rateKey, RATE_LIMIT);
     if (!allowed) throw RateLimitError.fromMs(retryAfterMs);
 
-    const key = new URL(req.url).searchParams.get("key");
+    const searchParams = new URL(req.url).searchParams;
+    const key = searchParams.get("key");
+    const token = searchParams.get("token");
     if (!key || !isValidKey(key, "disenios")) {
       throw new ValidationError("Clave de almacenamiento inválida.");
+    }
+
+    // T5: require the HMAC delete-token issued by POST. Without it, anyone who
+    // learns the key (e.g. from a leaked log) can wipe legitimate uploads.
+    if (!verifyUploadDeleteToken(key, token)) {
+      throw new ForbiddenError("Token de eliminación inválido o expirado.");
     }
 
     // Refuse to delete a key that was already saved to ArchivosDisenio — those

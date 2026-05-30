@@ -8,10 +8,12 @@ import { deleteDesignFile, uploadDesignFile } from "@/lib/utils/upload";
 const ACCEPTED = ".svg,.png,.jpg,.jpeg,.ai,.eps,.dxf,.pdf";
 const MB = 1024 * 1024;
 
-// Estado interno de cada slot de archivo (todos tienen `file`)
+// Estado interno de cada slot de archivo (todos tienen `file`).
+// `deleteToken` is the HMAC issued by POST /api/upload/disenios; it must be
+// stored alongside the key so removeSlot() can pass it back to DELETE.
 type SlotState =
   | { id: string; status: "uploading"; file: File }
-  | { id: string; status: "done"; file: File; key: string }
+  | { id: string; status: "done"; file: File; key: string; deleteToken: string }
   | { id: string; status: "error"; file: File; message: string };
 
 export interface UploadedFile {
@@ -60,9 +62,16 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
     setSlots((prev) => [...prev, { id: slotId, status: "uploading", file: f }]);
 
     try {
-      const key = await uploadDesignFile(f);
+      const { key, deleteToken } = await uploadDesignFile(f);
+      if (!deleteToken) {
+        // Server should always return it for disenios; treat absence as a
+        // protocol error rather than silently dropping cleanup capability.
+        throw new Error("Respuesta de subida incompleta (sin deleteToken).");
+      }
       setSlots((prev) =>
-        prev.map((s) => (s.id === slotId ? { id: slotId, status: "done", file: f, key } : s))
+        prev.map((s) =>
+          s.id === slotId ? { id: slotId, status: "done", file: f, key, deleteToken } : s
+        )
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al subir el archivo";
@@ -77,7 +86,7 @@ export function DesignUploadZone({ maxFiles = 1, maxBytes = 10 * MB, onKeysChang
     // Si ya subió, borrar el orphan del bucket. Usa el endpoint público de
     // disenios porque el storefront no tiene sesión autenticada.
     if (slot?.status === "done") {
-      deleteDesignFile(slot.key).catch(() => {
+      deleteDesignFile(slot.key, slot.deleteToken).catch(() => {
         // best-effort: si falla el delete el bucket lo limpiará con GC
       });
     }
