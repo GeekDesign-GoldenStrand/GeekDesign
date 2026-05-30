@@ -360,14 +360,11 @@ export async function updateCotizacion(
     }
     if (data.nombre_oportunidad !== undefined)
       updateData.nombre_oportunidad = data.nombre_oportunidad;
-    if (data.id_estatus_cotizacion !== undefined)
-      updateData.estatus = { connect: { id_estatus: data.id_estatus_cotizacion } };
     if (data.empresa_cliente !== undefined) updateData.empresa_cliente = data.empresa_cliente;
     if (data.fecha_fin !== undefined) updateData.fecha_fin = data.fecha_fin;
-    if (data.fecha_validacion !== undefined) updateData.fecha_validacion = data.fecha_validacion;
-    if (data.fecha_aprobacion !== undefined) updateData.fecha_aprobacion = data.fecha_aprobacion;
-    if (data.pdf_url !== undefined) updateData.pdf_url = data.pdf_url;
     if (data.notas !== undefined) updateData.notas = data.notas;
+    // id_estatus_cotizacion / fecha_validacion / fecha_aprobacion / pdf_url
+    // are intentionally not accepted here — see UpdateCotizacionSchema comment.
 
     // Prefer the server-recomputed total over whatever the caller sent.
     const montoTotal = computedMontoTotal ?? data.monto_total;

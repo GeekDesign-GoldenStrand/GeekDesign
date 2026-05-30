@@ -30,15 +30,22 @@ export const CreateCotizacionSchema = z.object({
     }),
 });
 
+// T2+T7: status, milestone timestamps, and pdf_url are server-controlled
+// and deliberately absent from the generic update path:
+//   - id_estatus_cotizacion → PATCH /api/cotizaciones/[id]/estatus
+//     (changeQuotationStatus enforces the transition matrix AND writes
+//     HistorialEstadosCotizacion with the actor; the generic update would
+//     skip both, opening a repudiation gap)
+//   - fecha_validacion / fecha_aprobacion → set server-side when the
+//     corresponding status transition fires
+//   - pdf_url → produced server-side when the cotización PDF is generated;
+//     letting the client set it allows pointing the cliente's tracker
+//     link at any URL (incl. phishing PDFs)
 export const UpdateCotizacionSchema = z.object({
   // Existing fields
-  id_estatus_cotizacion: z.number().int().positive().optional(),
   monto_total: z.number().nonnegative().optional(),
   empresa_cliente: z.string().max(100).optional(),
   fecha_fin: z.coerce.date().optional(),
-  fecha_validacion: z.coerce.date().optional(),
-  fecha_aprobacion: z.coerce.date().optional(),
-  pdf_url: z.string().url().max(500).optional(),
   notas: z.string().optional(),
 
   // Added for EditarCotizacion

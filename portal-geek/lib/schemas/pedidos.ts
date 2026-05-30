@@ -16,13 +16,18 @@ export const CreatePedidoSchema = z.object({
     }),
 });
 
+// T1: status, sucursal-reassignment, and invoicing fields are deliberately
+// absent. Each has its own write path so the audit trail and role gates can't
+// be bypassed by sending them through the generic update endpoint:
+//   - id_estatus           → PATCH /api/pedidos/[id]/estatus (logged in
+//                            HistorialEstadosPedidos with the actor)
+//   - facturado / numero_factura → Finanzas-only invoicing endpoint (TBD)
+//   - id_sucursal          → branch reassignment, no flow exists yet
+// Adding any of these back here would silently re-open the mass-assignment
+// vector at PUT /api/pedidos/[id] for every role with `pedidos:write`.
 export const UpdatePedidoSchema = z.object({
-  id_estatus: z.number().int().positive().optional(),
-  id_sucursal: z.number().int().positive().optional(),
   fecha_estimada: z.coerce.date().optional(),
   fecha_fin: z.coerce.date().optional(),
-  facturado: z.boolean().optional(),
-  numero_factura: z.string().max(100).optional(),
   notas: z
     .string()
     .optional()
