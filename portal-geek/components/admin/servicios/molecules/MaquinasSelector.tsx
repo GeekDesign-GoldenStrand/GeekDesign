@@ -3,6 +3,8 @@
 import { XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import type { MaquinaOption } from "@/types/servicios";
 
 import { Icon } from "../atoms/Icon";
@@ -85,38 +87,37 @@ export function MaquinasSelector({
 
       {/* Add machine button or open dropdown */}
       {!open ? (
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="sm"
           onClick={() => setOpen(true)}
           disabled={buttonDisabled}
-          className="bg-[#e42200] text-white hover:bg-[#c41e00] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] h-10 px-5 rounded-full font-medium text-sm transition-all self-start disabled:opacity-50 disabled:cursor-not-allowed"
+          className="self-start"
         >
           + Agregar Máquina
-        </button>
+        </Button>
       ) : (
         <div className="flex gap-2">
-          <select
-            autoFocus
-            onChange={(e) => {
-              const id = Number(e.target.value);
+          <Select
+            value=""
+            onChange={(v) => {
+              const id = Number(v);
               if (id) handleAdd(id);
             }}
-            className="h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent flex-1"
+            placeholder="Selecciona una máquina..."
+            size="md"
+            className="flex-1"
           >
-            <option value="">Selecciona una máquina...</option>
             {available.map((m) => (
-              <option key={m.id_maquina} value={m.id_maquina}>
+              <SelectOption key={m.id_maquina} value={String(m.id_maquina)}>
                 {m.apodo_maquina} ({m.tipo})
-              </option>
+              </SelectOption>
             ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="bg-white text-[#1e1e1e] hover:bg-gray-100 border border-gray-300 h-10 px-4 rounded-md font-medium text-sm transition-all"
-          >
+          </Select>
+          <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(false)}>
             Cancelar
-          </button>
+          </Button>
         </div>
       )}
 

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -21,23 +23,12 @@ interface EditarMaterialFormProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 const REQUIRED_NUMERIC = ["ancho", "alto", "grosor", "velocidad_avance"] as const;
-
-// Confirmation modals invert the usual color semantics on purpose: the
-// destructive action is the unstyled (white/bordered) button, the cancel is
-// the bold red. This makes "Cancelar" the visually dominant default so users
-// can't blow through irreversible deletions by reflex.
-const CANCEL_BTN =
-  "px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60";
-const CONFIRM_BTN =
-  "px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60";
 
 export function EditarMaterialForm({
   material,
@@ -63,6 +54,7 @@ export function EditarMaterialForm({
   });
 
   const [newImageKey, setNewImageKey] = useState<string | null>(null);
+  const [imageCleared, setImageCleared] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -126,6 +118,7 @@ export function EditarMaterialForm({
         descripcion_material: form.descripcion_material.trim() || undefined,
       };
       if (newImageKey) payload.imagen_url = newImageKey;
+      else if (imageCleared) payload.imagen_url = "";
 
       const nameError = !payload.nombre_material ? "El nombre es requerido." : "";
       if (nameError) {
@@ -155,12 +148,13 @@ export function EditarMaterialForm({
       grosor: parseOptionalNumber(form.grosor),
       velocidad_avance: parseOptionalNumber(form.velocidad_avance),
       color: form.color.trim(),
-      imagen_url: newImageKey ?? "placeholder-for-validation",
+      imagen_url: newImageKey ?? (imageCleared ? "" : "placeholder-for-validation"),
     };
 
-    const schemaToUse = newImageKey
-      ? CreateMaterialSchema
-      : CreateMaterialSchema.omit({ imagen_url: true });
+    const schemaToUse =
+      newImageKey || imageCleared
+        ? CreateMaterialSchema
+        : CreateMaterialSchema.omit({ imagen_url: true });
     const result = schemaToUse.safeParse(payload);
     if (result.success) {
       setErrors({});
@@ -190,7 +184,11 @@ export function EditarMaterialForm({
     } else {
       const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
       void _omit;
-      bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+      bodyPayload = newImageKey
+        ? { ...rest, imagen_url: newImageKey }
+        : imageCleared
+          ? { ...rest, imagen_url: "" }
+          : rest;
     }
 
     setLoading(true);
@@ -290,23 +288,23 @@ export function EditarMaterialForm({
         <>
           <div>
             <label className={LABEL}>Unidad de medida *</label>
-            <select
+            <Select
               value={form.unidad_medida}
-              onChange={(e) => setField("unidad_medida", e.target.value)}
-              className={`${SELECT_FIELD} ${getFieldClass("unidad_medida")}`}
+              onChange={(v) => setField("unidad_medida", v)}
+              placeholder="Seleccionar unidad"
+              size="sm"
+              error={errors.unidad_medida || undefined}
             >
-              <option value="">Seleccionar unidad</option>
               {UNIDADES_MEDIDA.map((unit) => (
-                <option key={unit} value={unit}>
+                <SelectOption key={unit} value={unit}>
                   {unit === "mm" && "Milímetros (mm)"}
                   {unit === "in" && "Pulgadas (in)"}
                   {unit === "cm" && "Centímetros (cm)"}
                   {unit === "mu" && "Micras (mu)"}
                   {unit === "pt" && "Puntos (pt)"}
-                </option>
+                </SelectOption>
               ))}
-            </select>
-            {errors.unidad_medida && <p className={ERROR_MSG}>{errors.unidad_medida}</p>}
+            </Select>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
@@ -315,14 +313,10 @@ export function EditarMaterialForm({
                 Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.ancho}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("ancho")}`}
               />
@@ -333,14 +327,10 @@ export function EditarMaterialForm({
                 Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.alto}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("alto")}`}
               />
@@ -349,14 +339,10 @@ export function EditarMaterialForm({
             <div>
               <label className={LABEL}>Grosor (mm) *</label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.grosor}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("grosor")}`}
               />
@@ -367,14 +353,10 @@ export function EditarMaterialForm({
           <div>
             <label className={LABEL}>Velocidad de avance (mm/s) *</label>
             <input
-              type="number"
-              min={0}
-              step={0.01}
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={form.velocidad_avance}
-              onKeyDown={(e) => {
-                if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-              }}
               onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
               className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
             />
@@ -382,11 +364,11 @@ export function EditarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Color *</label>
+            <label className={LABEL}>Descripción de color *</label>
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. Rojo, #FF2400"
+              placeholder="Ej. Rojo"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
@@ -398,10 +380,13 @@ export function EditarMaterialForm({
 
       <div>
         <label className={LABEL}>Imagen</label>
-        <MaterialImageInput
+        <ImageUploader
+          mode="single"
+          category="materiales"
           initialPreviewUrl={material.imageUrl}
           onUploaded={(key) => {
             setNewImageKey(key);
+            setImageCleared(key === null && Boolean(material.imageUrl));
             setErrors((prev) => ({ ...prev, imagen_url: "" }));
           }}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
@@ -411,31 +396,35 @@ export function EditarMaterialForm({
       </div>
 
       <div className="flex justify-between gap-3 mt-2">
-        <button
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
           onClick={() => setShowDeleteConfirm(true)}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
           disabled={loading || deleting}
         >
           Eliminar
-        </button>
+        </Button>
 
         <div className="flex gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
             disabled={loading || deleting}
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={loading || deleting}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+            loading={loading}
           >
             {loading ? "Actualizando..." : "Guardar cambios"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -469,16 +458,17 @@ export function EditarMaterialForm({
               )}
             </p>
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowDeleteConfirm(false)}
-                className={CANCEL_BTN}
               >
                 Cancelar
-              </button>
-              <button type="button" onClick={handleFirstConfirm} className={CONFIRM_BTN}>
+              </Button>
+              <Button type="button" variant="destructive" size="sm" onClick={handleFirstConfirm}>
                 Sí, eliminar
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -523,25 +513,27 @@ export function EditarMaterialForm({
             )}
 
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowImpactConfirm(false)}
-                className={CANCEL_BTN}
                 disabled={deleting}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
                 onClick={() => {
                   setShowImpactConfirm(false);
                   setShowFinalConfirm(true);
                 }}
                 disabled={deleting || impactoLoading || Boolean(impactoError)}
-                className={CONFIRM_BTN}
               >
                 Eliminar definitivamente
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -558,22 +550,25 @@ export function EditarMaterialForm({
               </strong>
             </p>
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowFinalConfirm(false)}
-                className={CANCEL_BTN}
                 disabled={deleting}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
-                className={CONFIRM_BTN}
+                loading={deleting}
               >
                 {deleting ? "Eliminando..." : "Entendido, eliminar"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -30,13 +30,17 @@ export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
       return num;
     });
 
-    // Multiple status values are allowed
+    // Multiple status values are allowed (pedido-level)
     const estatuses = searchParams.getAll("estatus");
 
-    // Optional filters: company, client, and active-only flag
-    const empresa = searchParams.get("empresa");
-    const cliente = searchParams.get("cliente");
+    // Multiple detail-level status values, scoped to the selected service
+    const detalleEstatuses = searchParams.getAll("detalleEstatus");
+
+    // Optional filters: active-only flag, fecha_estimada range, combined client/company search
     const onlyActive = searchParams.get("onlyActive") === "true";
+    const fechaEstimadaDesde = searchParams.get("fechaEstimadaDesde");
+    const fechaEstimadaHasta = searchParams.get("fechaEstimadaHasta");
+    const clienteEmpresa = searchParams.get("clienteEmpresa");
 
     // Query the database with filters and return paginated result
     const result = await listPedidos(
@@ -45,9 +49,13 @@ export const GET = withSection("pedidos", "read", async (req: NextRequest) => {
       serviceIds,
       estatuses,
       onlyActive,
-      empresa,
-      cliente,
-      search
+      null,
+      null,
+      search,
+      fechaEstimadaDesde,
+      fechaEstimadaHasta,
+      detalleEstatuses,
+      clienteEmpresa
     );
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {

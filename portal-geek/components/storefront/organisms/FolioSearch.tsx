@@ -3,6 +3,9 @@
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { EMAIL_ERROR_MESSAGE, isValidEmail } from "@/lib/utils/email";
+
 /**
  * Organism: FolioSearch
  *
@@ -18,6 +21,7 @@ import { useState } from "react";
 export function FolioSearch() {
   const [folio, setFolio] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -26,17 +30,29 @@ export function FolioSearch() {
     const f = folio.trim();
     const m = email.trim();
     if (!f || !m) return;
+    if (!isValidEmail(m)) {
+      setEmailError(EMAIL_ERROR_MESSAGE);
+      return;
+    }
 
     setSubmitting(true);
     setFeedback(null);
     try {
-      await fetch(`/api/storefront/cotizaciones/${encodeURIComponent(f)}/access-link`, {
+      const res = await fetch(`/api/storefront/cotizaciones/${encodeURIComponent(f)}/access-link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo_electronico: m }),
       });
-      // Generic confirmation regardless of outcome (anti-enumeration).
-      setFeedback("Si los datos son correctos, te enviamos un correo con el enlace de acceso.");
+      // A 429 is rate-limiting (depends only on request volume, never on whether
+      // the folio/email match) — surface it so the user knows to wait instead of
+      // expecting an email that will never arrive. Any other outcome gets the
+      // generic anti-enumeration confirmation.
+      if (res.status === 429) {
+        const json = await res.json().catch(() => null);
+        setFeedback(json?.error ?? "Demasiados intentos. Intenta de nuevo en unos minutos.");
+      } else {
+        setFeedback("Si los datos son correctos, te enviamos un correo con el enlace de acceso.");
+      }
     } catch {
       setFeedback("No pudimos procesar la solicitud. Intenta de nuevo en unos minutos.");
     } finally {
@@ -71,6 +87,7 @@ export function FolioSearch() {
                   onChange={(e) => setFolio(e.target.value)}
                   placeholder="GD-2026-00203"
                   required
+                  maxLength={50}
                   className="w-full h-[64px] bg-white border border-[#E8E8E8] rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all"
                 />
               </div>
@@ -82,22 +99,47 @@ export function FolioSearch() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError(null);
+                  }}
+                  onBlur={() => {
+                    if (email.trim().length === 0) {
+                      setEmailError(null);
+                      return;
+                    }
+                    setEmailError(isValidEmail(email) ? null : EMAIL_ERROR_MESSAGE);
+                  }}
                   placeholder="ejemplo@correo.com"
                   required
-                  className="w-full h-[64px] bg-white border border-[#E8E8E8] rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all"
+                  autoComplete="email"
+                  inputMode="email"
+                  spellCheck={false}
+                  aria-invalid={emailError !== null}
+                  aria-describedby={emailError ? "folio-email-error" : undefined}
+                  className={`w-full h-[64px] bg-white border rounded-[12px] px-6 text-[18px] font-bold text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#DF2646] transition-all ${
+                    emailError ? "border-[#c14a4a]" : "border-[#E8E8E8]"
+                  }`}
                 />
+                {emailError && (
+                  <p id="folio-email-error" className="text-[12px] font-medium text-[#c14a4a]">
+                    {emailError}
+                  </p>
+                )}
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={submitting}
-              className="w-full h-[64px] bg-[#DF2646] text-white rounded-[12px] font-bold text-[16px] flex items-center justify-center gap-3 hover:bg-[#C41E3A] transition-all shadow-lg shadow-[#DF2646]/20 active:scale-95 whitespace-nowrap disabled:opacity-60"
+              variant="primary"
+              section="storefront"
+              size="lg"
+              loading={submitting}
+              className="w-full"
             >
               <MagnifyingGlass size={22} weight="bold" />
               {submitting ? "Enviando..." : "Enviar enlace de acceso"}
-            </button>
+            </Button>
           </form>
           {feedback && (
             <p className="text-[14px] text-[#1e1e1e] font-medium text-center lg:text-left">

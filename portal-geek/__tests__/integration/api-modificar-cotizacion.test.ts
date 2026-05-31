@@ -96,6 +96,9 @@ jest.mock("@/lib/db/client", () => ({
             { id_detalle: 2, subtotal: "500.00" },
           ]),
         },
+        pedidos: {
+          update: jest.fn().mockResolvedValue({}),
+        },
       })
     ),
   },

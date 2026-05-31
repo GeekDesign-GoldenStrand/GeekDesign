@@ -1,5 +1,16 @@
 const CART_KEY = "geekdesign_carrito";
 
+// Upper bound for an item's quantity, shared by the service detail form and
+// the cart editor so both clamp to the same value. Stays well under the
+// server's .max(9999) on SolicitarItemSchema; caps the subtotal magnitude so
+// the price displays can't overflow.
+export const CANTIDAD_MAX = 1000;
+
+function clampCantidad(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(CANTIDAD_MAX, Math.max(1, Math.floor(value)));
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface VariableValor {
@@ -30,6 +41,8 @@ export interface CarritoItem {
   // Original filename as entered by the user (e.g. "logo_cliente.ai").
   // Persisted alongside the key so ArchivosDisenio.nombre_archivo is human-readable.
   disenioNombre?: string;
+  // URLs or keys of service images to show as preview in the cart
+  imagenUrls?: string[];
 }
 
 // ─── Read / Write ─────────────────────────────────────────────────────────────
@@ -80,7 +93,7 @@ export function removeItem(itemId: string): { items: CarritoItem[] } {
 }
 
 export function updateQuantity(itemId: string, cantidad: number): { items: CarritoItem[] } {
-  const safe = Number.isFinite(cantidad) ? Math.max(1, Math.floor(cantidad)) : 1;
+  const safe = clampCantidad(cantidad);
   const carrito = getCarrito();
   const updated = {
     items: carrito.items.map((i) => (i.id === itemId ? { ...i, cantidad: safe } : i)),
@@ -99,9 +112,7 @@ export function updateItem(
     precioCalculado: number;
   }
 ): { items: CarritoItem[] } {
-  const safeCantidad = Number.isFinite(patch.cantidad)
-    ? Math.max(1, Math.floor(patch.cantidad))
-    : 1;
+  const safeCantidad = clampCantidad(patch.cantidad);
   const safePrecio = Number.isFinite(patch.precioCalculado)
     ? Math.max(0, patch.precioCalculado)
     : 0;

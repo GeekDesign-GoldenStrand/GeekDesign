@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import { CotizacionDetailPage } from "@/components/ui/cotizaciones/templates/CotizacionDetailPage";
+import type { UserRole } from "@/types";
 import type { Cotizacion } from "@/types/cotizacion";
 
 async function getCotizacion(id: string): Promise<Cotizacion> {
@@ -13,7 +14,7 @@ async function getCotizacion(id: string): Promise<Cotizacion> {
   return json.data;
 }
 
-export default function CotizacionDetail({ id }: { id: string }) {
+export default function CotizacionDetail({ id, userRole }: { id: string; userRole?: UserRole }) {
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +53,7 @@ export default function CotizacionDetail({ id }: { id: string }) {
   return (
     <div>
       <AdminHeader title={`Cotización ${cotizacion.nombre_oportunidad || "Sin nombre"}`} />
-      <CotizacionDetailPage cotizacion={cotizacion} onRefetch={refetch} />
+      <CotizacionDetailPage cotizacion={cotizacion} userRole={userRole} onRefetch={refetch} />
     </div>
   );
 }

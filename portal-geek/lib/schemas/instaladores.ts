@@ -1,6 +1,9 @@
 import { z } from "zod";
 
+import { emailField } from "@/lib/utils/email";
+
 import { UBICACION_REGEX } from "./proveedores";
+import { noEmoji, textOnly } from "./text-validation";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 
@@ -9,18 +12,26 @@ export const CreateInstaladorSchema = z.object({
     .string()
     .min(1)
     .max(30, "Máximo 30 caracteres.")
-    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes."),
+    .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
+    .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+    .refine(textOnly, {
+      message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   apodo: z
     .string()
     .max(30, "Máximo 30 caracteres.")
     .regex(NOMBRE_REGEX, "Solo letras, números, puntos, guiones y apóstrofes.")
-    .optional(),
+    .optional()
+    .refine((v) => (v ? noEmoji(v) : true), { message: "El apodo no debe contener emojis" })
+    .refine((v) => (v ? textOnly(v) : true), {
+      message: "El apodo solo debe contener caracteres en inglés o español y signos comunes",
+    }),
   tipo: z.enum(["Instalador", "Contratista"]),
   telefono: z
     .string()
     .min(1, "El teléfono es requerido.")
     .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
-  correo: z.email("Correo electrónico inválido.").max(150),
+  correo: emailField({ max: 150, message: "Correo electrónico inválido." }),
   costo_instalacion: z.number().nonnegative("El costo de instalación no puede ser negativo."),
   notas: z.string().max(500).optional(),
   ubicacion: z

@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import {
+  DISCOUNT_MAX,
+  DISCOUNT_MIN,
+  DISCOUNT_STEP,
+  validateDescuentoPercentage,
+} from "@/lib/schemas/cotizaciones";
+import { sanitizeUserText } from "@/lib/utils/safe-text";
+import type { UserRole } from "@/types";
 import type { LineItem } from "@/types/cotizacion";
+
+const DISCOUNT_MOTIVO_MAX_LEN = 80;
 
 interface ClienteOption {
   id_cliente: number;
@@ -49,6 +61,18 @@ function fieldsAreEqual(a: EditableFields, b: EditableFields): boolean {
   });
 }
 
+function discountFieldsAreEqual(
+  currentPercentage: number,
+  currentMotivo: string,
+  initialPercentage?: number | null,
+  initialMotivo?: string | null
+): boolean {
+  return (
+    currentPercentage === (initialPercentage ?? 0) &&
+    currentMotivo.trim() === (initialMotivo ?? "").trim()
+  );
+}
+
 interface EditarCotizacionProps {
   idCotizacion: number;
   isOpen: boolean;
@@ -56,6 +80,7 @@ interface EditarCotizacionProps {
   currentCliente?: ClienteOption;
   porcentajeDescuento?: number | null;
   motivoDescuento?: string | null;
+  userRole?: UserRole;
   onSave: (data: EditableFields) => void;
   onClose: () => void;
 }
@@ -67,6 +92,7 @@ export default function EditarCotizacion({
   currentCliente,
   porcentajeDescuento,
   motivoDescuento,
+  userRole,
   onSave,
   onClose,
 }: EditarCotizacionProps) {
@@ -74,6 +100,27 @@ export default function EditarCotizacion({
     ...initial,
     servicios: initial.servicios.map((p) => ({ ...p })),
   });
+
+  const initialDiscountPercentage = porcentajeDescuento ?? 0;
+  const hasInitialDiscount = initialDiscountPercentage > 0;
+  // Mirror the server-side gate on PATCH /api/cotizaciones/[id]/descuento,
+  // which requires Direccion. Without this check, non-Direccion users would
+  // still see the discount inputs on a quotation that already has one and
+  // hit a 403 only on save. The totals breakdown below still shows the
+  // existing discount as read-only.
+  const canEditDiscount = userRole === "Direccion";
+  const showDiscountSection = hasInitialDiscount && canEditDiscount;
+
+  const [discountPercentage, setDiscountPercentage] = useState<number>(initialDiscountPercentage);
+  const [discountMotivo, setDiscountMotivo] = useState<string>(motivoDescuento ?? "");
+  const [discountSnapshot, setDiscountSnapshot] = useState<{
+    percentage: number;
+    motivo: string;
+  }>({
+    percentage: initialDiscountPercentage,
+    motivo: motivoDescuento ?? "",
+  });
+
   const [clientes, setClientes] = useState<ClienteOption[]>(currentCliente ? [currentCliente] : []);
   const [clientesError, setClientesError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,10 +140,21 @@ export default function EditarCotizacion({
     };
     setFields(fresh);
     setSnapshot(fresh);
+
+    const freshDiscountPercentage = porcentajeDescuento ?? 0;
+    const freshDiscountMotivo = motivoDescuento ?? "";
+
+    setDiscountPercentage(freshDiscountPercentage);
+    setDiscountMotivo(freshDiscountMotivo);
+    setDiscountSnapshot({
+      percentage: freshDiscountPercentage,
+      motivo: freshDiscountMotivo,
+    });
+
     setClientesError(null);
     setServerError(null);
     setValidationError(null);
-  }, [isOpen, initial]);
+  }, [isOpen, initial, porcentajeDescuento, motivoDescuento]);
 
   // Fetch clientes when the modal opens
   useEffect(() => {
@@ -146,10 +204,17 @@ export default function EditarCotizacion({
   };
 
   const newSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
-  const discountPct = porcentajeDescuento ?? 0;
+  const discountPct =
+    hasInitialDiscount && Number.isFinite(discountPercentage) ? discountPercentage : 0;
   const hasDiscount = discountPct > 0;
   const discountAmount = hasDiscount ? Math.round(newSubtotal * discountPct) / 100 : 0;
   const newTotal = newSubtotal - discountAmount;
+  const discountChanged = !discountFieldsAreEqual(
+    discountPercentage,
+    discountMotivo,
+    discountSnapshot.percentage,
+    discountSnapshot.motivo
+  );
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -162,52 +227,125 @@ export default function EditarCotizacion({
       return;
     }
 
-    if (fieldsAreEqual(fields, snapshot)) {
+    const quotationChanged = !fieldsAreEqual(fields, snapshot);
+
+    if (!quotationChanged && !discountChanged) {
       setValidationError("No has realizado ningún cambio.");
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/cotizaciones/${idCotizacion}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_cliente: fields.id_cliente,
-          nombre_oportunidad: fields.nombre_oportunidad || undefined,
-          fecha_fin: fields.fecha_fin || undefined,
-          notas: fields.notas || undefined,
-          servicios: fields.servicios.map((s) => ({
-            id_detalle: s.id_detalle,
-            cantidad: s.cantidad,
-            precio_unitario: s.precio_unitario,
-          })),
-        }),
-      });
+    if (discountChanged) {
+      const discountError = validateDescuentoPercentage(discountPercentage);
+      if (discountError) {
+        setValidationError(discountError);
+        return;
+      }
+    }
 
-      let payload: { data?: unknown; error?: string } = {};
-      try {
-        payload = await res.json();
-      } catch {
-        /* non-JSON body */
+    setIsSubmitting(true);
+    // Tracks whether the PUT already committed, so that if the PATCH
+    // discount call later fails we can tell the user the quotation
+    // changes *did* persist — instead of showing a blanket "no se pudo
+    // guardar" error that implies a full rollback. There is no atomic
+    // endpoint that covers both updates, so the next best thing is to
+    // be explicit about the partial-save state and let the user retry
+    // the discount alone.
+    let quotationSaved = false;
+    try {
+      if (quotationChanged) {
+        const res = await fetch(`/api/cotizaciones/${idCotizacion}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_cliente: fields.id_cliente,
+            nombre_oportunidad: fields.nombre_oportunidad || undefined,
+            fecha_fin: fields.fecha_fin || undefined,
+            notas: fields.notas || undefined,
+            servicios: fields.servicios.map((s) => ({
+              id_detalle: s.id_detalle,
+              cantidad: s.cantidad,
+              precio_unitario: s.precio_unitario,
+            })),
+          }),
+        });
+
+        let payload: { data?: unknown; error?: string } = {};
+        try {
+          payload = await res.json();
+        } catch {
+          /* non-JSON body */
+        }
+
+        if (!res.ok) {
+          const fallback =
+            res.status === 404
+              ? "Cotización no encontrada"
+              : res.status === 409
+                ? "No se puede modificar esta cotización en su estatus actual"
+                : "No se pudo guardar los cambios";
+          setServerError(payload.error ?? fallback);
+          return;
+        }
+        quotationSaved = true;
       }
 
-      if (!res.ok) {
-        const fallback =
-          res.status === 404
-            ? "Cotización no encontrada"
-            : res.status === 409
-              ? "No se puede modificar esta cotización en su estatus actual"
-              : "No se pudo guardar los cambios";
-        setServerError(payload.error ?? fallback);
-        return;
+      if (discountChanged) {
+        const trimmedMotivo = discountMotivo.trim();
+
+        const res = await fetch(`/api/cotizaciones/${idCotizacion}/descuento`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            porcentaje_descuento: discountPercentage,
+            ...(trimmedMotivo ? { motivo_descuento: trimmedMotivo } : {}),
+          }),
+        });
+
+        let payload: { data?: unknown; error?: string } = {};
+        try {
+          payload = await res.json();
+        } catch {
+          /* non-JSON body */
+        }
+
+        if (!res.ok) {
+          const fallback =
+            res.status === 404
+              ? "Cotización no encontrada"
+              : res.status === 409
+                ? "No se puede modificar el descuento en su estatus actual"
+                : "No se pudo actualizar el descuento";
+          const baseError = payload.error ?? fallback;
+          if (quotationSaved) {
+            setServerError(
+              `Los cambios de la cotización sí se guardaron, pero el descuento no se pudo actualizar: ${baseError}. Vuelve a intentar solo el descuento.`
+            );
+            // Reflect the persisted quotation edit in the parent so the
+            // user sees the half that did save, and reset the snapshot
+            // so a retry submit sends only the discount.
+            onSave(fields);
+            setSnapshot(fields);
+          } else {
+            setServerError(baseError);
+          }
+          return;
+        }
       }
 
       alert("Cotización actualizada correctamente");
       onSave(fields);
       onClose();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "Error de red al guardar los cambios");
+      const baseError = err instanceof Error ? err.message : "Error de red al guardar los cambios";
+      if (quotationSaved) {
+        setServerError(
+          `Los cambios de la cotización sí se guardaron, pero el descuento no se pudo actualizar: ${baseError}. Vuelve a intentar solo el descuento.`
+        );
+        onSave(fields);
+        setSnapshot(fields);
+      } else {
+        setServerError(baseError);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -232,18 +370,18 @@ export default function EditarCotizacion({
 
           <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
             <span className="font-medium">Cliente</span>
-            <select
-              value={fields.id_cliente}
-              onChange={(e) => setField("id_cliente", Number(e.target.value))}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            <Select
+              value={String(fields.id_cliente)}
+              onChange={(v) => setField("id_cliente", Number(v))}
+              size="sm"
             >
               {clientes.map((c) => (
-                <option key={c.id_cliente} value={c.id_cliente}>
+                <SelectOption key={c.id_cliente} value={String(c.id_cliente)}>
                   {c.nombre_cliente}
                   {c.empresa ? ` — ${c.empresa}` : ""}
-                </option>
+                </SelectOption>
               ))}
-            </select>
+            </Select>
             {clientesError && (
               <span className="text-[11px] text-red-600 mt-0.5">
                 No se pudo cargar la lista completa de clientes ({clientesError}).
@@ -282,6 +420,65 @@ export default function EditarCotizacion({
           </label>
         </div>
 
+        {showDiscountSection && (
+          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
+            <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
+              Descuento
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
+                <span className="font-medium">Porcentaje</span>
+                <input
+                  type="number"
+                  min={DISCOUNT_MIN}
+                  max={DISCOUNT_MAX}
+                  step={DISCOUNT_STEP}
+                  value={Number.isFinite(discountPercentage) ? discountPercentage : ""}
+                  onChange={(e) => {
+                    setValidationError(null);
+
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setDiscountPercentage(Number.NaN);
+                      return;
+                    }
+
+                    const parsed = parseInt(raw, 10);
+                    if (Number.isNaN(parsed)) {
+                      setDiscountPercentage(Number.NaN);
+                      return;
+                    }
+
+                    // Only clamp the upper bound on change — clamping the lower
+                    // bound mid-keystroke prevents typing valid multi-digit
+                    // values (e.g. "10" briefly passes through "1", which
+                    // would otherwise jump to DISCOUNT_MIN). The min and the
+                    // step rule are enforced on submit via validateDescuentoPercentage.
+                    setDiscountPercentage(Math.min(parsed, DISCOUNT_MAX));
+                  }}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
+                <span className="font-medium">Motivo</span>
+                <input
+                  type="text"
+                  maxLength={DISCOUNT_MOTIVO_MAX_LEN}
+                  value={discountMotivo}
+                  onChange={(e) => {
+                    setValidationError(null);
+                    setDiscountMotivo(sanitizeUserText(e.target.value));
+                  }}
+                  placeholder="Ej. Cliente frecuente"
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* Editable line items */}
         <div className="mb-4">
           <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3">
@@ -311,11 +508,16 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={1}
+                      max={9999}
                       step={1}
                       value={item.cantidad}
                       onChange={(e) => {
                         const parsed = parseInt(e.target.value, 10);
-                        const safe = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+                        // Clamp to [1, 9999] to match the storefront cap
+                        // (CarritoView + SolicitarItemSchema both use 9999).
+                        const safe = Number.isFinite(parsed)
+                          ? Math.max(1, Math.min(9999, parsed))
+                          : 1;
                         updateServicio(idx, "cantidad", safe);
                       }}
                       className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -325,11 +527,19 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={0}
+                      max={9999999.99}
                       step={0.01}
                       value={item.precio_unitario}
-                      onChange={(e) =>
-                        updateServicio(idx, "precio_unitario", parseFloat(e.target.value) || 0)
-                      }
+                      onChange={(e) => {
+                        const parsed = parseFloat(e.target.value);
+                        // Clamp to [0, 9,999,999.99] to match the server cap
+                        // (10M MXN — headroom for legacy line items that
+                        // precio_unitario has never been bounded against).
+                        const safe = Number.isFinite(parsed)
+                          ? Math.max(0, Math.min(9999999.99, parsed))
+                          : 0;
+                        updateServicio(idx, "precio_unitario", safe);
+                      }}
                       className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                     />
                   </td>
@@ -350,9 +560,9 @@ export default function EditarCotizacion({
                   </span>
                 </div>
                 <div className="flex gap-6">
-                  <span title={motivoDescuento ?? undefined}>
+                  <span title={discountMotivo.trim() || undefined}>
                     Descuento {Math.round(discountPct)}%
-                    {motivoDescuento ? ` — ${motivoDescuento}` : ""}
+                    {discountMotivo.trim() ? ` — ${discountMotivo.trim()}` : ""}
                   </span>
                   <span className="min-w-[110px] text-right text-red-600">
                     − {formatAmount(discountAmount)}
@@ -386,21 +596,24 @@ export default function EditarCotizacion({
         )}
 
         <div className="flex justify-end gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            loading={isSubmitting}
           >
             {isSubmitting ? "Guardando…" : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import type { MaquinaCardProps } from "@/types";
 
 interface SucursalRaw {
@@ -127,58 +129,61 @@ export default function AsignarSucursal({
   }
 
   return (
-    <ModalShell title={`Asignar sucursal — ${nickname} (${model})`} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col text-[13px] text-[#575757] mb-6">
-          <label className="font-medium mb-1">Sucursal</label>
-          <select
-            value={selectedSucursal}
-            onChange={(e) => {
-              setSelectedSucursal(e.target.value);
-              setSucursalError(null);
-            }}
-            className={[
-              "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] transition-colors",
-              sucursalError ? "border-[#df2646]" : "border-[#b9b8b8]",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <option value="" disabled>
-              Seleccionar sucursal...
-            </option>
-            {sucursalOptions.map((s) => (
-              <option key={s.id_sucursal} value={s.id_sucursal}>
-                {s.nombre_sucursal}
-              </option>
-            ))}
-          </select>
-          {sucursalError && <p className="text-[12px] text-[#e42200] mt-1">{sucursalError}</p>}
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`Asignar sucursal — ${nickname} (${model})`}
+      size="lg"
+      noPadding
+    >
+      {/* Same shape as asignar-servicios: scrollable body + static footer so
+          the action bar is always visible and isolated from absolute popovers
+          inside the body. */}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex flex-col text-[13px] text-[#575757]">
+            <label className="font-medium mb-1">Sucursal</label>
+            <Select
+              value={selectedSucursal}
+              onChange={(value) => {
+                setSelectedSucursal(value);
+                setSucursalError(null);
+              }}
+              placeholder="Seleccionar sucursal..."
+              size="sm"
+              disabled={isLoading}
+              error={sucursalError ?? undefined}
+            >
+              {sucursalOptions.map((s) => (
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                  {s.nombre_sucursal}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
+
+          {error && (
+            <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mt-4">
+              {error}
+            </p>
+          )}
         </div>
 
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px] mb-4">
-            {error}
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3 mt-4">
-          <button
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-[#e8e8e8] bg-white px-6 py-4">
+          <Button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+            disabled={isLoading}
+            variant="secondary"
+            size="sm"
           >
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
-    </ModalShell>
+    </Modal>
   );
 }

@@ -1,18 +1,22 @@
 "use client";
 
-import { Button, Input, Textarea } from "@/components/admin/forms/atoms";
+import { useEffect, useRef } from "react";
+
+import { Input, Textarea } from "@/components/admin/forms/atoms";
 import { ConstantesSection } from "@/components/admin/servicios/molecules/ConstantesSection";
 import { FormulaSection } from "@/components/admin/servicios/molecules/FormulasSection";
 import { InstaladorToggle } from "@/components/admin/servicios/molecules/InstaladorToggle";
 import { MaquinasSelector } from "@/components/admin/servicios/molecules/MaquinasSelector";
 import { MaterialesSection } from "@/components/admin/servicios/molecules/MaterialesSection";
 import { ProveedorToggle } from "@/components/admin/servicios/molecules/ProveedorToggle";
-import { ServiciosImagesInput } from "@/components/admin/servicios/molecules/ServiciosImagesInput";
 import { SucursalSelector } from "@/components/admin/servicios/molecules/SucursalSelector";
 import { VariablesSection } from "@/components/admin/servicios/molecules/VariablesSection";
+import { Button } from "@/components/ui/atoms/Button";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import type { UseServicioFormOptions } from "@/lib/hooks/useServicioForm";
 import { useServicioForm } from "@/lib/hooks/useServicioForm";
+import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { NuevoServicioFormState } from "@/types/servicios";
 
 type ServicioFormProps =
@@ -57,9 +61,19 @@ export function ServicioForm(props: ServicioFormProps) {
     initialLoading,
     fetchError,
     canSubmit,
+    missingRequirements,
     options,
     actions,
   } = useServicioForm(hookOptions);
+
+  // Scroll the top-of-form error banner into view when it appears, so users
+  // who clicked submit at the bottom of a long form actually see what failed.
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (submitError) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [submitError]);
 
   if (initialLoading) {
     return <div className="text-center py-12 text-gray-500">Cargando datos del formulario...</div>;
@@ -86,13 +100,35 @@ export function ServicioForm(props: ServicioFormProps) {
       onSubmit={actions.handleSubmit}
       className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-8 space-y-6"
     >
+      {submitError && (
+        <div
+          ref={errorRef}
+          role="alert"
+          aria-live="polite"
+          className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm"
+        >
+          {submitError}
+        </div>
+      )}
+
+      {missingRequirements.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
+          <p className="font-medium text-amber-900 mb-1">Para guardar este servicio, completa:</p>
+          <ul className="list-disc list-inside text-amber-800 space-y-0.5">
+            {missingRequirements.map((req) => (
+              <li key={req}>{req}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Row 1: Nombre + Sucursal */}
       <div className="grid grid-cols-2 gap-6">
         <Input
           label="Nombre del servicio:"
           required
           value={form.nombre_servicio}
-          onChange={(e) => actions.updateField("nombre_servicio", e.target.value)}
+          onChange={(e) => actions.updateField("nombre_servicio", sanitizeUserText(e.target.value))}
           placeholder="Ej. Corte Láser"
           maxLength={100}
         />
@@ -108,14 +144,20 @@ export function ServicioForm(props: ServicioFormProps) {
       <Textarea
         label="Descripción:"
         value={form.descripcion_servicio}
-        onChange={(e) => actions.updateField("descripcion_servicio", e.target.value)}
+        onChange={(e) =>
+          actions.updateField("descripcion_servicio", sanitizeUserText(e.target.value))
+        }
         placeholder="Describe brevemente el servicio (opcional)"
-        maxLength={500}
+        maxLength={350}
       />
 
       {/* Row 2.5: Imágenes */}
       <div className="pt-4 border-t border-gray-200">
-        <ServiciosImagesInput
+        <ImageUploader
+          mode="multi"
+          category="servicios"
+          label="Imágenes del servicio:"
+          maxFiles={5}
           initialKeys={form.imagenes}
           onKeysChange={(keys) => actions.updateField("imagenes", keys)}
           onError={(msg) => actions.setSubmitError(msg)}
@@ -193,12 +235,6 @@ export function ServicioForm(props: ServicioFormProps) {
         />
       </div>
 
-      {submitError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
-          {submitError}
-        </div>
-      )}
-
       {submitSuccess && (
         <SuccessModal
           message={
@@ -214,13 +250,16 @@ export function ServicioForm(props: ServicioFormProps) {
         <Button
           type="submit"
           variant="primary"
+          size="sm"
           disabled={submitting || submitSuccess || !canSubmit}
+          loading={submitting}
         >
           {submitLabel}
         </Button>
         <Button
           type="button"
           variant="secondary"
+          size="sm"
           onClick={actions.onCancel}
           disabled={submitting || submitSuccess}
         >

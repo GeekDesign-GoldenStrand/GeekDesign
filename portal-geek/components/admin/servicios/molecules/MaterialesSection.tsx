@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 
 import { Icon } from "@/components/admin/servicios/atoms/Icon";
 import { Toggle } from "@/components/admin/servicios/atoms/Toggle";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import type { MaterialDraft, MaterialOption, ProveedorPrecioOption } from "@/types/servicios";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -169,17 +171,18 @@ function VariantPicker({
             })}
           </ul>
           <div className="px-4 pb-3 pt-1 flex justify-end">
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               disabled={checked.size === 0}
               onClick={() => onConfirm([...checked])}
-              className="px-4 py-2 text-[13px] font-medium text-white bg-[#e42200] rounded-[6px] hover:bg-[#c41e00] disabled:opacity-50 transition-colors"
             >
               Agregar{" "}
               {checked.size > 0
                 ? `${checked.size} variante${checked.size !== 1 ? "s" : ""}`
                 : "variantes"}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -362,24 +365,23 @@ export function MaterialesSection({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setAdding(true)}
+              maxLength={50}
               className="h-11 flex-1 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
             />
             {!adding ? (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="md"
                 onClick={() => setAdding(true)}
-                className="h-11 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+                className="whitespace-nowrap"
               >
                 + Agregar
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
-                onClick={closeSearch}
-                className="h-11 px-4 bg-white border border-gray-300 hover:bg-gray-50 rounded-full text-sm font-medium text-[#1e1e1e] transition-colors"
-              >
+              <Button type="button" variant="secondary" size="md" onClick={closeSearch}>
                 Cancelar
-              </button>
+              </Button>
             )}
           </div>
 
@@ -581,20 +583,22 @@ function MaterialRow({
           </span>
         )}
         {proveedores.length > 1 && (
-          <select
-            value={draft.id_proveedor_precio ?? ""}
-            onChange={(e) =>
-              onUpdateProveedor(draft.id_material, e.target.value ? Number(e.target.value) : null)
+          <Select
+            value={
+              draft.id_proveedor_precio === null || draft.id_proveedor_precio === undefined
+                ? ""
+                : String(draft.id_proveedor_precio)
             }
-            className="h-9 px-2 text-sm rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] w-full"
+            onChange={(v) => onUpdateProveedor(draft.id_material, v ? Number(v) : null)}
+            placeholder="Sin proveedor"
+            size="sm"
           >
-            <option value="">Sin proveedor</option>
             {proveedores.map((p) => (
-              <option key={p.id_proveedor_precio} value={p.id_proveedor_precio}>
+              <SelectOption key={p.id_proveedor_precio} value={String(p.id_proveedor_precio)}>
                 {p.proveedor.nombre_proveedor} — ${Number(p.precio).toFixed(2)}
-              </option>
+              </SelectOption>
             ))}
-          </select>
+          </Select>
         )}
       </div>
 

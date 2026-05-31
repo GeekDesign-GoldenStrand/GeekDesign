@@ -6,6 +6,7 @@ import { FilterIcon, PlusIcon } from "@/components/ui/atoms/icons";
 interface AdminToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
+  searchPlaceholder?: string;
   onAgregar?: () => void;
   onFiltrar?: () => void;
   agregarLabel?: string;
@@ -17,6 +18,7 @@ interface AdminToolbarProps {
 export function AdminToolbar({
   search,
   onSearchChange,
+  searchPlaceholder,
   onAgregar,
   onFiltrar,
   agregarLabel = "Agregar",
@@ -45,7 +47,7 @@ export function AdminToolbar({
         </div>
       )}
 
-      <SearchBar value={search} onChange={onSearchChange} />
+      <SearchBar value={search} onChange={onSearchChange} placeholder={searchPlaceholder} />
 
       {(onAgregar || onFiltrar) && (
         <div className="flex items-center justify-start sm:justify-end gap-3 flex-wrap sm:flex-nowrap">

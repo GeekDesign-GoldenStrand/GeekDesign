@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
 
+import { noEmoji, textOnly } from "./text-validation";
+
 const NOMBRE_BLOCKED = /[\x00-\x1F\x7F<>{}\[\]\\|^~`*]/;
 const COLOR_BLOCKED = /[\x00-\x1F\x7F<>{}\[\]\\|^~`*]/;
 
@@ -10,9 +12,20 @@ const colorValidator = z
   .trim()
   .min(1, "El color es requerido.")
   .max(50, "Máximo 50 caracteres.")
-  .refine((v) => !COLOR_BLOCKED.test(v), "El color contiene caracteres no permitidos.");
+  .refine((v) => !COLOR_BLOCKED.test(v), "El color contiene caracteres no permitidos.")
+  .refine(noEmoji, { message: "El color no debe contener emojis" })
+  .refine(textOnly, {
+    message: "El color solo debe contener caracteres en inglés o español y signos comunes",
+  });
 
-const descripcionOpcionalValidator = z.string().max(500, "Máximo 500 caracteres.").optional();
+const descripcionOpcionalValidator = z
+  .string()
+  .max(500, "Máximo 500 caracteres.")
+  .optional()
+  .refine((v) => (v ? noEmoji(v) : true), { message: "La descripción no debe contener emojis" })
+  .refine((v) => (v ? textOnly(v) : true), {
+    message: "La descripción solo debe contener caracteres en inglés o español y signos comunes",
+  });
 
 export const UNIDADES_MEDIDA = ["mm", "in", "cm", "mu", "pt"] as const;
 
@@ -20,15 +33,20 @@ const imagenKeyValidator = z
   .string()
   .max(500, "Máximo 500 caracteres.")
   .refine(
-    (v) => isValidKey(v, "materiales"),
+    (v) => !v || isValidKey(v, "materiales"),
     "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
-  );
+  )
+  .optional();
 
 const nombreValidator = z
   .string()
   .min(1, "El nombre es requerido.")
   .max(100, "Máximo 100 caracteres.")
-  .refine((v) => !NOMBRE_BLOCKED.test(v), "El nombre contiene caracteres no permitidos.");
+  .refine((v) => !NOMBRE_BLOCKED.test(v), "El nombre contiene caracteres no permitidos.")
+  .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+  .refine(textOnly, {
+    message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+  });
 
 const dimensionValidator = (label: string) =>
   z
@@ -49,7 +67,7 @@ export const CreateMaterialSchema = z.object({
   grosor: dimensionValidator("El grosor"),
   velocidad_avance: dimensionValidator("La velocidad de avance"),
   color: colorValidator,
-  imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Categoría (top-level, agrupa grupos e individuales) ──────────────────────
@@ -75,14 +93,7 @@ export const CreateGrupoMaterialSchema = z.object({
   id_material_padre: z.number().int().positive().nullable().optional(),
   nombre_material: nombreValidator,
   descripcion_material: descripcionOpcionalValidator,
-  imagen_url: z
-    .string()
-    .max(500, "Máximo 500 caracteres.")
-    .refine(
-      (v) => !v || isValidKey(v, "materiales"),
-      "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
-    )
-    .optional(),
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Sub-material (variant, belongs to a group) ────────────────────────────────
@@ -98,7 +109,7 @@ export const CreateSubMaterialSchema = z.object({
   grosor: dimensionValidator("El grosor"),
   velocidad_avance: dimensionValidator("La velocidad de avance"),
   color: colorValidator,
-  imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Update schema ─────────────────────────────────────────────────────────────

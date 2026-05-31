@@ -27,6 +27,7 @@ interface Pedido {
   fecha_estimada?: string | null;
   monto_total?: number | null;
   folio?: string | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -51,6 +52,7 @@ interface PedidoApi {
   id_pedido: number;
   fecha_creacion: string;
   fecha_estimada?: string | null;
+  nombre_oportunidad?: string | null;
 
   cotizaciones?: {
     folio?: string | null;
@@ -94,16 +96,32 @@ export function PedidosView({ role }: Props) {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filter states (active flag, service IDs, statuses, company, client)
-  const [onlyActive, setOnlyActive] = useState(true);
+  // Filter states (service IDs from tabs, client/company search, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
+  const [clienteEmpresa, setClienteEmpresa] = useState<string | null>(null);
   const [estatuses, setEstatuses] = useState<string[]>([]);
-  const [empresa, setEmpresa] = useState<string | null>(null);
-  const [cliente, setCliente] = useState<string | null>(null);
+  const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
+  const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
+  const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
 
   const pageSize = 10;
 
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
+
+  // Reset to page 1 whenever a filter or the search query changes — see the
+  // matching effect in cotizaciones/page.tsx for the rationale.
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    search,
+    serviceIds,
+    clienteEmpresa,
+    estatuses,
+    fechaEstimadaDesde,
+    fechaEstimadaHasta,
+    detalleEstatuses,
+  ]);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
@@ -112,15 +130,24 @@ export function PedidosView({ role }: Props) {
 
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
-      params.set("onlyActive", onlyActive ? "true" : "false");
+
+      if (estatuses.length > 0) {
+        estatuses.forEach((e) => params.append("estatus", e));
+      } else {
+        params.set("onlyActive", "true");
+      }
 
       if (search) params.set("search", search);
 
       serviceIds.forEach((id) => params.append("serviceId", id.toString()));
-      estatuses.forEach((e) => params.append("estatus", e));
 
-      if (empresa) params.set("empresa", empresa);
-      if (cliente) params.set("cliente", cliente);
+      if (clienteEmpresa) params.set("clienteEmpresa", clienteEmpresa);
+      if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
+      if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
+      // Detail-status filter is only meaningful when a service is selected.
+      if (serviceIds.length > 0) {
+        detalleEstatuses.forEach((e) => params.append("detalleEstatus", e));
+      }
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
@@ -131,6 +158,7 @@ export function PedidosView({ role }: Props) {
         fecha_creacion: p.fecha_creacion,
         fecha_estimada: p.fecha_estimada ?? null,
         folio: p.cotizaciones?.[0]?.folio ?? null,
+        nombre_oportunidad: p.nombre_oportunidad ?? null,
         // Take latest quotation amount if it exists
         monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
         cliente: p.cliente,
@@ -153,7 +181,16 @@ export function PedidosView({ role }: Props) {
     } catch {
       console.error("Error loading orders");
     }
-  }, [page, search, onlyActive, serviceIds, estatuses, empresa, cliente]);
+  }, [
+    page,
+    search,
+    serviceIds,
+    clienteEmpresa,
+    estatuses,
+    fechaEstimadaDesde,
+    fechaEstimadaHasta,
+    detalleEstatuses,
+  ]);
 
   // Effect: reload orders whenever filters or pagination change
   useEffect(() => {
@@ -204,6 +241,9 @@ export function PedidosView({ role }: Props) {
   function handleServiceSelect(id: number | null) {
     setPage(1);
     setServiceIds(id === null ? [] : [id]);
+    // Detail status options are service-specific; clear any prior selection
+    // so the next service starts with no inherited filter.
+    setDetalleEstatuses([]);
   }
 
   async function handleDetalleStatusChange(detalleId: number, status: string) {
@@ -230,16 +270,16 @@ export function PedidosView({ role }: Props) {
       total={total}
       onDelete={handleDelete}
       onStatusChange={handleStatusChange}
-      onlyActive={onlyActive}
-      setOnlyActive={setOnlyActive}
-      serviceIds={serviceIds}
-      setServiceIds={setServiceIds}
+      clienteEmpresa={clienteEmpresa}
+      setClienteEmpresa={setClienteEmpresa}
       estatuses={estatuses}
       setEstatuses={setEstatuses}
-      empresa={empresa}
-      setEmpresa={setEmpresa}
-      cliente={cliente}
-      setCliente={setCliente}
+      fechaEstimadaDesde={fechaEstimadaDesde}
+      setFechaEstimadaDesde={setFechaEstimadaDesde}
+      fechaEstimadaHasta={fechaEstimadaHasta}
+      setFechaEstimadaHasta={setFechaEstimadaHasta}
+      detalleEstatuses={detalleEstatuses}
+      setDetalleEstatuses={setDetalleEstatuses}
       services={services}
       selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
       onServiceSelect={handleServiceSelect}

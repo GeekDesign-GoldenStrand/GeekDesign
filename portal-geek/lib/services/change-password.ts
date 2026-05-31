@@ -1,6 +1,6 @@
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
-import { NotFoundError, UnauthorizedError } from "@/lib/utils/errors";
+import { NotFoundError, UnauthorizedError, ValidationError } from "@/lib/utils/errors";
 
 export async function changePassword(
   userId: number,
@@ -17,7 +17,11 @@ export async function changePassword(
     throw new UnauthorizedError("La cuenta no tiene contraseña configurada");
 
   const valid = await verifyPassword(currentPassword, usuario.contrasena_hash);
-  if (!valid) throw new UnauthorizedError("La contraseña actual es incorrecta");
+  // ValidationError (422), not UnauthorizedError (401). The session IS valid;
+  // only the body field is wrong. A 401 here would collide with the client's
+  // session-expiry handler (logout + redirect to /login), making a failed
+  // change indistinguishable from a successful one to the user.
+  if (!valid) throw new ValidationError("La contraseña actual es incorrecta");
 
   const newHash = await hashPassword(newPassword);
   await prisma.usuarios.update({

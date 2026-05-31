@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface MultiSelectOption {
   value: string | number;
@@ -53,6 +53,7 @@ export default function MultiSelect({
 
     setSelected(next);
     onChange?.(next);
+    setSearch("");
     inputRef.current?.focus();
   };
 
@@ -60,6 +61,17 @@ export default function MultiSelect({
     const next = selected.filter((s) => s.value !== value);
     setSelected(next);
     onChange?.(next);
+  };
+
+  const toggleDropdown = () => {
+    setOpen((wasOpen) => {
+      if (wasOpen) {
+        setSearch("");
+        return false;
+      }
+      inputRef.current?.focus();
+      return true;
+    });
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -77,6 +89,20 @@ export default function MultiSelect({
   };
 
   const isMaxReached = maxSelected !== undefined && selected.length >= maxSelected;
+
+  // Close the dropdown when the user clicks outside — without this it stays
+  // open and overlays anything below (notably the modal action buttons).
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
 
   return (
     <div className="flex flex-col gap-1 w-full font-ibm-plex-sans mb-6" ref={containerRef}>
@@ -97,7 +123,7 @@ export default function MultiSelect({
         {selected.map((s) => (
           <span
             key={s.value}
-            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-sm text-[#8e908f]font-medium border border-red-200"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-sm font-medium border border-red-200"
           >
             {s.label}
             {!disabled && (
@@ -128,13 +154,20 @@ export default function MultiSelect({
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={selected.length === 0 ? placeholder : ""}
-            className="flex-1 min-w-[120px] outline-none text-sm text-[#8e908f] placeholder:text-[#8e908f] bg-transparent"
+            maxLength={50}
+            className="flex-1 min-w-[120px] outline-none text-sm text-[#1e1e1e] placeholder:text-[#8e908f] bg-transparent"
           />
         )}
 
-        <span
+        <button
+          type="button"
           className="ml-auto pl-1 text-gray-400 transition-transform duration-200"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          aria-label={open ? "Cerrar opciones" : "Abrir opciones"}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleDropdown();
+          }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -145,17 +178,17 @@ export default function MultiSelect({
               strokeLinejoin="round"
             />
           </svg>
-        </span>
+        </button>
       </div>
 
-      {isMaxReached && <p className="text-xs text-gray-400">Máximo {maxSelected} seleccionados</p>}
+      {isMaxReached && <p className="text-xs text-gray-500">Máximo {maxSelected} seleccionados</p>}
 
       {/* Dropdown */}
       {open && !disabled && (
         <div className="relative z-50">
           <div className="absolute top-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-gray-400">
+              <p className="px-4 py-3 text-sm text-gray-500">
                 {search ? "Sin resultados" : "No hay más opciones"}
               </p>
             ) : (
@@ -164,7 +197,7 @@ export default function MultiSelect({
                   <li
                     key={option.value}
                     onClick={() => toggle(option)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 cursor-pointer transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-[#f5f5f5] cursor-pointer transition-colors"
                   >
                     <span className="w-4 h-4 rounded border border-gray-300 flex items-center justify-center flex-shrink-0"></span>
                     {option.label}

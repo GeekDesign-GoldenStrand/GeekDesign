@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import {
   CreateCategoriaMaterialSchema,
   CreateGrupoMaterialSchema,
@@ -34,10 +36,8 @@ interface RegistrarMaterialFormProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
@@ -257,19 +257,19 @@ export function RegistrarMaterialForm({
       {!initialPadreId && (
         <div>
           <label className={LABEL}>Tipo de material *</label>
-          <select
+          <Select
             value={tipo}
-            onChange={(e) => {
-              setTipo(e.target.value as Tipo);
+            onChange={(v) => {
+              setTipo(v as Tipo);
               setErrors({});
             }}
-            className={SELECT_FIELD}
+            size="sm"
           >
-            <option value="categoria">Categoría</option>
-            <option value="grupo">Grupo</option>
-            <option value="sub">Variante</option>
-            <option value="individual">Material individual</option>
-          </select>
+            <SelectOption value="categoria">Categoría</SelectOption>
+            <SelectOption value="grupo">Grupo</SelectOption>
+            <SelectOption value="sub">Variante</SelectOption>
+            <SelectOption value="individual">Material individual</SelectOption>
+          </Select>
         </div>
       )}
 
@@ -277,18 +277,19 @@ export function RegistrarMaterialForm({
       {(tipo === "grupo" || tipo === "individual") && (
         <div>
           <label className={LABEL}>Categoría (opcional)</label>
-          <select
+          <Select
             value={form.id_material_padre}
-            onChange={(e) => setField("id_material_padre", e.target.value)}
-            className={SELECT_FIELD}
+            onChange={(v) => setField("id_material_padre", v)}
+            placeholder="Sin categoría"
+            size="sm"
           >
-            <option value="">Sin categoría</option>
+            <SelectOption value="">Sin categoría</SelectOption>
             {categorias.map((c) => (
-              <option key={c.id_material} value={c.id_material}>
+              <SelectOption key={c.id_material} value={String(c.id_material)}>
                 {c.nombre_material}
-              </option>
+              </SelectOption>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 
@@ -296,19 +297,19 @@ export function RegistrarMaterialForm({
       {tipo === "sub" && !initialPadreId && (
         <div>
           <label className={LABEL}>Grupo padre *</label>
-          <select
+          <Select
             value={form.id_material_padre}
-            onChange={(e) => setField("id_material_padre", e.target.value)}
-            className={`${SELECT_FIELD} ${errors.id_material_padre ? FIELD_ERROR : ""}`}
+            onChange={(v) => setField("id_material_padre", v)}
+            placeholder="Seleccionar grupo"
+            size="sm"
+            error={errors.id_material_padre || undefined}
           >
-            <option value="">Seleccionar grupo</option>
             {grupos.map((g) => (
-              <option key={g.id_material} value={g.id_material}>
+              <SelectOption key={g.id_material} value={String(g.id_material)}>
                 {g.nombre_material}
-              </option>
+              </SelectOption>
             ))}
-          </select>
-          {errors.id_material_padre && <p className={ERROR_MSG}>{errors.id_material_padre}</p>}
+          </Select>
         </div>
       )}
 
@@ -360,23 +361,23 @@ export function RegistrarMaterialForm({
         <>
           <div>
             <label className={LABEL}>Unidad de medida *</label>
-            <select
+            <Select
               value={form.unidad_medida}
-              onChange={(e) => setField("unidad_medida", e.target.value)}
-              className={`${SELECT_FIELD} ${getFieldClass("unidad_medida")}`}
+              onChange={(v) => setField("unidad_medida", v)}
+              placeholder="Seleccionar unidad"
+              size="sm"
+              error={errors.unidad_medida || undefined}
             >
-              <option value="">Seleccionar unidad</option>
               {UNIDADES_MEDIDA.map((unit) => (
-                <option key={unit} value={unit}>
+                <SelectOption key={unit} value={unit}>
                   {unit === "mm" && "Milímetros (mm)"}
                   {unit === "in" && "Pulgadas (in)"}
                   {unit === "cm" && "Centímetros (cm)"}
                   {unit === "mu" && "Micras (mu)"}
                   {unit === "pt" && "Puntos (pt)"}
-                </option>
+                </SelectOption>
               ))}
-            </select>
-            {errors.unidad_medida && <p className={ERROR_MSG}>{errors.unidad_medida}</p>}
+            </Select>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
@@ -385,14 +386,10 @@ export function RegistrarMaterialForm({
                 Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.ancho}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("ancho")}`}
               />
@@ -403,14 +400,10 @@ export function RegistrarMaterialForm({
                 Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
               </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.alto}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("alto")}`}
               />
@@ -419,14 +412,10 @@ export function RegistrarMaterialForm({
             <div>
               <label className={LABEL}>Grosor (mm) *</label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.grosor}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("grosor")}`}
               />
@@ -437,14 +426,10 @@ export function RegistrarMaterialForm({
           <div>
             <label className={LABEL}>Velocidad de avance (mm/s) *</label>
             <input
-              type="number"
-              min={0}
-              step={0.01}
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={form.velocidad_avance}
-              onKeyDown={(e) => {
-                if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-              }}
               onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
               className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
             />
@@ -452,11 +437,11 @@ export function RegistrarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Color *</label>
+            <label className={LABEL}>Descripción de color *</label>
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. Rojo, #FF2400"
+              placeholder="Ej. Rojo"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
@@ -470,7 +455,9 @@ export function RegistrarMaterialForm({
         <label className={LABEL}>
           Imagen {tipo !== "grupo" && tipo !== "categoria" ? "*" : ""}
         </label>
-        <MaterialImageInput
+        <ImageUploader
+          mode="single"
+          category="materiales"
           onUploaded={(key) => setField("imagen_url", key ?? "")}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
           hasError={Boolean(errors.imagen_url)}
@@ -479,20 +466,12 @@ export function RegistrarMaterialForm({
       </div>
 
       <div className="flex justify-end gap-3 mt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Guardar"}
-        </button>
+        </Button>
       </div>
     </form>
   );
