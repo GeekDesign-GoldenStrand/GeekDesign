@@ -11,32 +11,12 @@ import {
   ProveedoresModal,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
-import type {
-  MaterialCardProps,
-  MaterialSortOrder,
-  MaterialTipoFilter,
-  MaterialesVisibleColumns,
-  UserRole,
-} from "@/types";
+import type { MaterialCardProps, MaterialSortOrder, MaterialTipoFilter, UserRole } from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
 type Tipo = "individual" | "grupo" | "sub";
-
-function buildDefaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
-  return {
-    name: true,
-    description: true,
-    unit: true,
-    width: true,
-    height: true,
-    thickness: true,
-    color: true,
-    image: true,
-    proveedores: canViewProveedores,
-  };
-}
 
 type FetchState = {
   loading: boolean;
@@ -63,7 +43,6 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
       return { ...state, loading: false, error: "No se pudieron cargar los materiales" };
 
     case "add": {
-      // Sub-material: inject into parent group's subMateriales
       if (action.row.tipo === "sub" && action.row.id_material_padre !== null) {
         return {
           ...state,
@@ -78,7 +57,6 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
     }
 
     case "update": {
-      // Sub-material: update within parent group
       if (action.row.tipo === "sub" && action.row.id_material_padre !== null) {
         return {
           ...state,
@@ -102,7 +80,6 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
       if (isTopLevel) {
         return { ...state, rows: state.rows.filter((r) => r.id !== action.id) };
       }
-      // Sub-material: remove from parent's list
       return {
         ...state,
         rows: state.rows.map((r) => ({
@@ -136,9 +113,6 @@ export function MaterialesView({ role }: { role: UserRole }) {
   const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [tipoFilter, setTipoFilter] = useState<MaterialTipoFilter>("all");
-  const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(() =>
-    buildDefaultColumns(canViewProveedores)
-  );
   const [page, setPage] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
@@ -196,7 +170,6 @@ export function MaterialesView({ role }: { role: UserRole }) {
   }
 
   function handleResetFilters() {
-    setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
     setTipoFilter("all");
     setSearch("");
@@ -254,6 +227,39 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setAddModalPadreId(undefined);
   }
 
+  const activeFilterChips = [
+    sortOrder !== "az"
+      ? {
+          key: "sort",
+          label: "Orden: Z a A",
+          clear: () => {
+            setSortOrder("az");
+            setPage(1);
+          },
+        }
+      : null,
+    tipoFilter === "grupos"
+      ? {
+          key: "tipo",
+          label: "Solo grupos",
+          clear: () => {
+            setTipoFilter("all");
+            setPage(1);
+          },
+        }
+      : null,
+    tipoFilter === "individuales"
+      ? {
+          key: "tipo",
+          label: "Sin grupo",
+          clear: () => {
+            setTipoFilter("all");
+            setPage(1);
+          },
+        }
+      : null,
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
+
   return (
     <div className="min-h-screen bg-[#f5f5f5] font-ibm-plex">
       <AdminHeader title="Materiales" />
@@ -263,18 +269,43 @@ export function MaterialesView({ role }: { role: UserRole }) {
             search={search}
             onSearchChange={setSearch}
             isFilterOpen={showFilters}
-            visibleColumns={visibleColumns}
             sortOrder={sortOrder}
             tipoFilter={tipoFilter}
-            defaultVisibleColumns={buildDefaultColumns(canViewProveedores)}
-            setVisibleColumns={setVisibleColumns}
-            setSortOrder={setSortOrder}
-            setTipoFilter={setTipoFilter}
+            onSortChange={handleSortChange}
+            onTipoFilterChange={handleTipoFilterChange}
+            onResetFilters={handleResetFilters}
             onAddClick={handleOpenAddModal}
-            onFilterClick={() => setShowFilters((state) => !state)}
+            onFilterClick={() => setShowFilters((s) => !s)}
             onCloseFilter={() => setShowFilters(false)}
-            canViewProveedores={canViewProveedores}
           />
+
+          {activeFilterChips.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {activeFilterChips.map((chip) => (
+                <span
+                  key={chip.key}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
+                >
+                  {chip.label}
+                  <button
+                    type="button"
+                    onClick={chip.clear}
+                    aria-label={`Quitar filtro ${chip.label}`}
+                    className="leading-none hover:text-[#b31a00]"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
+              >
+                Limpiar todo
+              </button>
+            </div>
+          )}
 
           {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
 
@@ -293,7 +324,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
           {!loading && !error && (
             <MaterialesGrid
               items={rows}
-              visibleColumns={visibleColumns}
+              canViewProveedores={canViewProveedores}
               onEditMaterial={handleEditClick}
               onViewProveedores={handleViewProveedores}
               onAddSubMaterial={handleAddSubMaterial}
