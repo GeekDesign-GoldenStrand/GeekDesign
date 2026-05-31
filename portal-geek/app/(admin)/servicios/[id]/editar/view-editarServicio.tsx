@@ -18,7 +18,7 @@ export function ViewEditarServicio({ servicio }: Props) {
   };
 
   const handleCancel = () => {
-    router.push(`/servicios/${servicio.id_servicio}`);
+    router.push("/servicios");
   };
 
   return (
