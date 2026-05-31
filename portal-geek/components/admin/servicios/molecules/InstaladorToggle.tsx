@@ -189,12 +189,19 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Precio para este servicio:</span>
                     <input
-                      type="number"
-                      min="0"
-                      max="9999999.99"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
+                      maxLength={6}
                       value={precioDraft}
-                      onChange={(e) => setPrecioDraft(e.target.value)}
+                      onChange={(e) => {
+                        // Only digits + optional single decimal point, capped at 6 chars
+                        // (matches the maxLength). Same strict pattern used on Variables/
+                        // Constantes valor inputs.
+                        const next = e.target.value;
+                        if (next === "" || (/^\d*\.?\d*$/.test(next) && next.length <= 6)) {
+                          setPrecioDraft(next);
+                        }
+                      }}
                       autoFocus
                       className="h-8 px-2 w-28 rounded-md border border-gray-300 text-sm text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
                     />
