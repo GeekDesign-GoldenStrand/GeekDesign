@@ -191,16 +191,21 @@ export function InstaladorToggle({ opciones, value, onChange }: InstaladorToggle
                     <input
                       type="text"
                       inputMode="decimal"
-                      maxLength={6}
                       value={precioDraft}
                       onChange={(e) => {
-                        // Only digits + optional single decimal point, capped at 6 chars
-                        // (matches the maxLength). Same strict pattern used on Variables/
-                        // Constantes valor inputs.
+                        // Currency input: digits + optional decimal point + up to 2
+                        // decimal places. Numerical cap at $9,999,999.99 (the original
+                        // upper bound on this field) instead of a char count, so the
+                        // effective max is the same regardless of decimal usage.
                         const next = e.target.value;
-                        if (next === "" || (/^\d*\.?\d*$/.test(next) && next.length <= 6)) {
-                          setPrecioDraft(next);
+                        if (next === "") {
+                          setPrecioDraft("");
+                          return;
                         }
+                        if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+                        const parsed = parseFloat(next);
+                        if (!isNaN(parsed) && parsed > 9999999.99) return;
+                        setPrecioDraft(next);
                       }}
                       autoFocus
                       className="h-8 px-2 w-28 rounded-md border border-gray-300 text-sm text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
