@@ -97,6 +97,7 @@ export function PedidosView({ role }: Props) {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Filter states (service IDs from tabs, client/company search, fecha range)
   const [serviceIds, setServiceIds] = useState<number[]>([]);
@@ -239,9 +240,12 @@ export function PedidosView({ role }: Props) {
       });
       if (res.ok) {
         setSuccessMessage("Estatus del pedido actualizado exitosamente");
+      } else {
+        setErrorMessage("No se pudo actualizar el estatus del pedido");
       }
     } catch (e) {
       console.error(e);
+      setErrorMessage("No se pudo actualizar el estatus del pedido");
     }
 
     fetchPedidos();
@@ -270,9 +274,12 @@ export function PedidosView({ role }: Props) {
       );
       if (res.every((r) => r.ok)) {
         setSuccessMessage("Estatus del servicio actualizado exitosamente");
+      } else {
+        setErrorMessage("No se pudo actualizar el estatus del servicio");
       }
     } catch (e) {
       console.error(e);
+      setErrorMessage("No se pudo actualizar el estatus del servicio");
     }
 
     fetchPedidos();
@@ -312,6 +319,13 @@ export function PedidosView({ role }: Props) {
       />
       {successMessage && (
         <SuccessModal message={successMessage} onClose={() => setSuccessMessage(null)} />
+      )}
+      {errorMessage && (
+        <SuccessModal
+          variant="error"
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
       )}
     </>
   );

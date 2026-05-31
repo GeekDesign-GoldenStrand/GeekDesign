@@ -31,7 +31,12 @@ function makeItem(
     notas: null,
     servicio: { nombre_servicio: "Impresión" },
     material: { nombre_material: "Vinilo" },
-    archivo: { nombre_archivo: "arte.pdf", url_archivo: "/arte.pdf", formato: "pdf" },
+    archivo: {
+      id_archivo: 1,
+      nombre_archivo: "arte.pdf",
+      url_archivo: "/arte.pdf",
+      formato: "pdf",
+    },
     estatus: null,
     variablesCotizacion: [],
     ...overrides,

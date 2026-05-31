@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UserRole } from "@/types";
 
 const FINAL_PEDIDO_STATUSES = ["Entregado", "Cancelado"];
@@ -101,6 +102,8 @@ export function FinalizadosView({ role }: Props) {
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const pageSize = 10;
 
@@ -214,50 +217,70 @@ export function FinalizadosView({ role }: Props) {
   }
 
   async function handleDetalleStatusChange(detalleIds: number[], status: string) {
-    await Promise.all(
-      detalleIds.map((id) =>
-        fetch(`/api/pedidos/detalles/${id}/estatus`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ estatus: status }),
-        })
-      )
-    );
+    try {
+      const responses = await Promise.all(
+        detalleIds.map((id) =>
+          fetch(`/api/pedidos/detalles/${id}/estatus`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ estatus: status }),
+          })
+        )
+      );
+      if (responses.every((r) => r.ok)) {
+        setSuccessMessage("Estatus del servicio actualizado exitosamente");
+      } else {
+        setErrorMessage("No se pudo actualizar el estatus del servicio");
+      }
+    } catch (e) {
+      console.error(e);
+      setErrorMessage("No se pudo actualizar el estatus del servicio");
+    }
 
     fetchPedidos();
   }
 
   return (
-    <PedidosTemplate
-      role={role}
-      pedidos={pedidos}
-      search={search}
-      setSearch={setSearch}
-      page={page}
-      setPage={setPage}
-      total={total}
-      onDelete={() => {}}
-      onStatusChange={() => {}}
-      clienteEmpresa={clienteEmpresa}
-      setClienteEmpresa={setClienteEmpresa}
-      estatuses={[]}
-      setEstatuses={() => {}}
-      fechaEstimadaDesde={fechaEstimadaDesde}
-      setFechaEstimadaDesde={setFechaEstimadaDesde}
-      fechaEstimadaHasta={fechaEstimadaHasta}
-      setFechaEstimadaHasta={setFechaEstimadaHasta}
-      detalleEstatuses={detalleEstatuses}
-      setDetalleEstatuses={setDetalleEstatuses}
-      services={services}
-      selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
-      onServiceSelect={handleServiceSelect}
-      onDetalleStatusChange={handleDetalleStatusChange}
-      title="Pedidos Completados / Cancelados"
-      backButtonHref="/pedidos"
-      backButtonLabel="Volver a Pedidos"
-      showServiceTabs={true}
-    />
+    <>
+      <PedidosTemplate
+        role={role}
+        pedidos={pedidos}
+        search={search}
+        setSearch={setSearch}
+        page={page}
+        setPage={setPage}
+        total={total}
+        onDelete={() => {}}
+        onStatusChange={() => {}}
+        clienteEmpresa={clienteEmpresa}
+        setClienteEmpresa={setClienteEmpresa}
+        estatuses={[]}
+        setEstatuses={() => {}}
+        fechaEstimadaDesde={fechaEstimadaDesde}
+        setFechaEstimadaDesde={setFechaEstimadaDesde}
+        fechaEstimadaHasta={fechaEstimadaHasta}
+        setFechaEstimadaHasta={setFechaEstimadaHasta}
+        detalleEstatuses={detalleEstatuses}
+        setDetalleEstatuses={setDetalleEstatuses}
+        services={services}
+        selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
+        onServiceSelect={handleServiceSelect}
+        onDetalleStatusChange={handleDetalleStatusChange}
+        title="Pedidos Completados / Cancelados"
+        backButtonHref="/pedidos"
+        backButtonLabel="Volver a Pedidos"
+        showServiceTabs={true}
+      />
+      {successMessage && (
+        <SuccessModal message={successMessage} onClose={() => setSuccessMessage(null)} />
+      )}
+      {errorMessage && (
+        <SuccessModal
+          variant="error"
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+      )}
+    </>
   );
 }

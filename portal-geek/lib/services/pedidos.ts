@@ -263,7 +263,9 @@ export type PedidoDetalleResponse = {
     include: {
       servicio: { select: { nombre_servicio: true } };
       material: { select: { nombre_material: true } };
-      archivo: { select: { nombre_archivo: true; url_archivo: true; formato: true } };
+      archivo: {
+        select: { id_archivo: true; nombre_archivo: true; url_archivo: true; formato: true };
+      };
       estatus: true;
       variablesCotizacion: {
         include: {
@@ -298,7 +300,9 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
           include: {
             servicio: { select: { nombre_servicio: true } },
             material: { select: { nombre_material: true } },
-            archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+            archivo: {
+              select: { id_archivo: true, nombre_archivo: true, url_archivo: true, formato: true },
+            },
             estatus: true,
             variablesCotizacion: {
               include: {

@@ -58,7 +58,7 @@ export function FormulaVariablesForm({
 
   const [idMaterial, setIdMaterial] = useState<number | null>(materiales[0]?.id_material ?? null);
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidad, setCantidad] = useState<string>("1");
   const [notas, setNotas] = useState("");
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
@@ -136,7 +136,7 @@ export function FormulaVariablesForm({
   function handleReset() {
     setIdMaterial(materiales[0]?.id_material ?? null);
     setValues({ ...defaultValues });
-    setCantidad(1);
+    setCantidad("1");
     setNotas("");
     // Clear the stale price so the "Agregar al carrito" button stays disabled
     // until the post-reset recalc lands. Without this, the button briefly
@@ -164,6 +164,17 @@ export function FormulaVariablesForm({
       setCalcError("El precio aún no se ha calculado");
       return;
     }
+    // Quantity validation
+    if (cantidad.trim() === "") {
+      setCalcError("Completa todos los campos para ver el precio");
+      return;
+    }
+    const qty = Number(cantidad);
+    if (!Number.isInteger(qty) || qty <= 0) {
+      setCalcError("El valor debe ser mayor que 0");
+      return;
+    }
+
     const material = materiales.find((m) => m.id_material === idMaterial);
     if (!material) return;
 
@@ -182,7 +193,7 @@ export function FormulaVariablesForm({
         })),
         notas: notas.trim() || undefined,
       },
-      cantidad,
+      cantidad: qty,
       precioCalculado: precioUnitario,
       imagenUrls,
       ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
@@ -199,7 +210,7 @@ export function FormulaVariablesForm({
     );
   }
 
-  const subtotal = precioUnitario !== null ? precioUnitario * cantidad : null;
+  const subtotal = precioUnitario !== null ? precioUnitario * Number(cantidad) : null;
 
   return (
     <div className="flex flex-col gap-[20px]">
@@ -252,9 +263,19 @@ export function FormulaVariablesForm({
               min={1}
               max={9999}
               value={cantidad}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                setCantidad(Number.isFinite(val) ? Math.max(1, Math.floor(val)) : 1);
+              onChange={(e) => setCantidad(e.target.value)}
+              onBlur={(e) => {
+                const val = e.target.value.trim();
+                if (val === "") {
+                  setCalcError("Completa todos los campos para ver el precio");
+                } else {
+                  const num = Number(val);
+                  if (!Number.isInteger(num) || num <= 0) {
+                    setCalcError("El valor debe ser mayor que 0");
+                  } else {
+                    setCalcError(null);
+                  }
+                }
               }}
               className="h-[40px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
             />
@@ -326,10 +347,6 @@ export function FormulaVariablesForm({
             <span>Subtotal</span>
             <span className="font-medium">{subtotal !== null ? formatPeso(subtotal) : "—"}</span>
           </div>
-          <div className="flex justify-between text-[13px] text-[#1e1e1e]">
-            <span>Tiempo estimado</span>
-            <span className="font-medium text-[#666]">—</span>
-          </div>
         </div>
 
         {calculating && precioUnitario === null && (
@@ -343,7 +360,11 @@ export function FormulaVariablesForm({
             variant="primary"
             section="storefront"
             size="md"
-            disabled={precioUnitario === null || calculating}
+            disabled={
+              precioUnitario === null ||
+              calculating ||
+              !(Number.isInteger(Number(cantidad)) && Number(cantidad) > 0)
+            }
             className="flex-1"
           >
             Agregar al carrito

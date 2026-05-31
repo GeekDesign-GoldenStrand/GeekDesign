@@ -21,7 +21,7 @@ export interface PedidoLineItem {
   notas: string | null;
   servicio: { nombre_servicio: string };
   material: { nombre_material: string };
-  archivo: { nombre_archivo: string; url_archivo: string; formato: string };
+  archivo: { id_archivo: number; nombre_archivo: string; url_archivo: string; formato: string };
   estatus?: { descripcion: string } | null;
   variablesCotizacion?: PedidoVariableCotizacion[];
 }

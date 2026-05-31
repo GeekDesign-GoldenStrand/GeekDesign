@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import {
   ServiceStatusSemaphore,
   type ServiceStatusSummary,
@@ -339,7 +340,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
           <span className="whitespace-nowrap">Fecha de entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
           <span className="whitespace-nowrap">Nombre de oportunidad</span>
-          <span className="whitespace-nowrap">Monto</span>
+          <span className="whitespace-nowrap">{selectedServiceId ? "Subtotal" : "Monto"}</span>
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">
             {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}{" "}
@@ -424,6 +425,12 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                       <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
                         <span className="text-[#6f6f6f]">Factura:</span>
                         {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DesignFileLink
+                            archivos={p.archivos}
+                            className="ml-1 h-7 w-7 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -488,7 +495,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                             {p.folio ?? "—"}
                           </p>
                           <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                            Monto
+                            Subtotal
                           </p>
                           <p className="text-[13px] font-bold text-[#1e1e1e]">
                             {rowTotal > 0 ? `$${rowTotal.toLocaleString("es-MX")}` : "—"}
@@ -540,6 +547,12 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                             {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
                           </p>
                         </div>
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DesignFileLink
+                          archivos={p.archivos}
+                          className="h-8 w-8 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                        />
                       </div>
                     </div>
                   </div>
@@ -595,6 +608,12 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                     <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
                       <span className="text-[#6f6f6f]">Factura:</span>
                       {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DesignFileLink
+                          archivos={p.archivos}
+                          className="ml-1 h-7 w-7 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -702,6 +721,12 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                           {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
                         </p>
                       </div>
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <DesignFileLink
+                        archivos={p.archivos}
+                        className="h-8 w-8 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                      />
                     </div>
                   </div>
                 </div>

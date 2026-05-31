@@ -25,6 +25,7 @@ interface Props {
 
 export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const [showHistorial, setShowHistorial] = useState(!detalleIds);
   const togglePanel = (panel: ActivePanel) =>
     setActivePanel((prev) => (prev === panel ? null : panel));
 
@@ -132,11 +133,18 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
         <PedidoPagosCard pagos={pedido.pagos} />
       </div>
 
-      {!detalleIds && (
-        <div className="mb-4">
-          <PedidoHistorialCard historial={pedido.historial} />
-        </div>
-      )}
+      <div className="mb-4">
+        {detalleIds && (
+          <button
+            type="button"
+            onClick={() => setShowHistorial((v) => !v)}
+            className="mb-2 text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            {showHistorial ? "Ocultar historial" : "Ver historial del pedido"}
+          </button>
+        )}
+        {showHistorial && <PedidoHistorialCard historial={pedido.historial} />}
+      </div>
     </div>
   );
 }

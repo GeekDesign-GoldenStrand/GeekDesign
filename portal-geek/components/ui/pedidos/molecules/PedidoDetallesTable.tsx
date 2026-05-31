@@ -1,5 +1,6 @@
 import { Table } from "@phosphor-icons/react";
 
+import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { SectionCard } from "@/components/ui/cotizaciones/atoms/SectionCard";
 import type { PedidoLineItem } from "@/types/pedido";
 
@@ -64,7 +65,15 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
               return (
                 <tr key={item.id_detalle} className="border-b border-gray-100 last:border-0">
                   <td className="py-3 px-2">
-                    <p className="font-medium text-gray-900">{item.servicio.nombre_servicio}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900">{item.servicio.nombre_servicio}</p>
+                      <DesignFileLink
+                        archivos={[
+                          { id: item.archivo.id_archivo, nombre: item.archivo.nombre_archivo },
+                        ]}
+                        className="h-6 w-6 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative flex-shrink-0"
+                      />
+                    </div>
                     {item.notas && (
                       <p className="text-[12px] text-gray-400 italic mt-0.5">{item.notas}</p>
                     )}
@@ -85,6 +94,12 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
                             </dd>
                           </div>
                         ))}
+                        {item.color && (
+                          <div className="flex gap-1 text-[12px]">
+                            <dt className="text-gray-400 whitespace-nowrap">Color:</dt>
+                            <dd className="text-gray-700">{item.color}</dd>
+                          </div>
+                        )}
                       </dl>
                     ) : fixedDimParts.length > 0 ? (
                       <dl className="space-y-0.5">
