@@ -13,7 +13,7 @@ export function ViewEditarServicio({ servicio }: Props) {
   const initialData = mapServicioDetalladoToFormState(servicio);
 
   const handleSuccess = () => {
-    router.push(`/servicios/${servicio.id_servicio}`);
+    router.push("/servicios");
     router.refresh();
   };
 
