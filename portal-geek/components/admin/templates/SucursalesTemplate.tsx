@@ -12,7 +12,7 @@ import { SucursalCard } from "@/components/ui/sucursales/organisms/SucursalCard"
 
 type RelationColaborador = {
   usuario?: {
-    nombre?: string | null;
+    nombre_completo?: string | null;
   } | null;
 };
 

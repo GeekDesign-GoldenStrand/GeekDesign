@@ -6,7 +6,7 @@ import { SucursalesTemplate } from "@/components/admin/templates/SucursalesTempl
 
 type RelationColaborador = {
   usuario?: {
-    nombre?: string | null;
+    nombre_completo?: string | null;
   } | null;
 };
 
