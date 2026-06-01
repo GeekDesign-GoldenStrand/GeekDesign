@@ -10,6 +10,7 @@ export type MaquinaVinculada = {
 export type ServicioListadoItem = {
   id_servicio: number;
   nombre_servicio: string;
+  apodo_servicio: string;
   descripcion_servicio: string | null;
   estatus_servicio: boolean;
   fecha_modificacion: string;
@@ -122,6 +123,7 @@ export type MaterialAsignado = {
 export type ServicioAdminDetalle = {
   id_servicio: number;
   nombre_servicio: string;
+  apodo_servicio: string;
   descripcion_servicio: string | null;
   imagenes: string[];
   id_sucursal: number;
@@ -185,6 +187,7 @@ export type FormulaChunk = {
 
 export type NuevoServicioFormState = {
   nombre_servicio: string;
+  apodo_servicio: string;
   descripcion_servicio: string;
   id_sucursal: number | null;
   id_maquinas: number[];
@@ -202,6 +205,7 @@ export type NuevoServicioFormState = {
 
 export const initialNuevoServicioState: NuevoServicioFormState = {
   nombre_servicio: "",
+  apodo_servicio: "",
   descripcion_servicio: "",
   id_sucursal: null,
   id_maquinas: [],

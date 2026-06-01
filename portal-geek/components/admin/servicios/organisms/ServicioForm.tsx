@@ -122,8 +122,8 @@ export function ServicioForm(props: ServicioFormProps) {
         </div>
       )}
 
-      {/* Row 1: Nombre + Sucursal */}
-      <div className="grid grid-cols-2 gap-6">
+      {/* Row 1: Nombre + Apodo + Sucursal */}
+      <div className="grid grid-cols-3 gap-6">
         <Input
           label="Nombre del servicio:"
           required
@@ -132,6 +132,16 @@ export function ServicioForm(props: ServicioFormProps) {
           placeholder="Ej. Corte Láser"
           maxLength={100}
         />
+
+        <Input
+          label="Apodo del servicio:"
+          required
+          value={form.apodo_servicio}
+          onChange={(e) => actions.updateField("apodo_servicio", sanitizeUserText(e.target.value))}
+          placeholder="Ej. Corte CO2"
+          maxLength={100}
+        />
+
         <SucursalSelector
           opciones={options.sucursales}
           selectedId={form.id_sucursal}

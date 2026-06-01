@@ -5,10 +5,11 @@ import { CreateServicioSchema } from "@/lib/schemas/servicios";
 
 // Minimum payload that satisfies CreateServicioSchema's required fields.
 // Each test overrides only the variable under inspection.
-function makePayload(unidad: string) {
+function makePayload(unidad = "cm", overrides: Record<string, unknown> = {}) {
   return {
     id_sucursal: 1,
     nombre_servicio: "Servicio Test",
+    apodo_servicio: "Corte CO2",
     formula: {
       expresion: "ancho * 2",
       variables: [
@@ -22,6 +23,7 @@ function makePayload(unidad: string) {
       ],
       constantes: [],
     },
+    ...overrides,
   };
 }
 
@@ -29,6 +31,43 @@ function makePayload(unidad: string) {
 // unidad length so a P2000 from Prisma (column overflow) can't happen even if
 // the UI dropdown is bypassed. Short symbols (the UNIT_OPTIONS values) must
 // continue to pass.
+describe("CreateServicioSchema — apodo_servicio", () => {
+  it("rechaza servicio sin apodo_servicio", () => {
+    const payload = makePayload();
+    delete (payload as Partial<typeof payload>).apodo_servicio;
+
+    const result = CreateServicioSchema.safeParse(payload);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path[0] === "apodo_servicio")).toBe(true);
+    }
+  });
+
+  it("rechaza apodo_servicio mayor a 100 caracteres", () => {
+    const result = CreateServicioSchema.safeParse(
+      makePayload("cm", {
+        apodo_servicio: "A".repeat(101),
+      })
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path[0] === "apodo_servicio")).toBe(true);
+    }
+  });
+
+  it("acepta apodo_servicio de exactamente 100 caracteres", () => {
+    const result = CreateServicioSchema.safeParse(
+      makePayload("cm", {
+        apodo_servicio: "A".repeat(100),
+      })
+    );
+
+    expect(result.success).toBe(true);
+  });
+});
+
 describe("CreateServicioSchema — variable unidad length", () => {
   it.each(["cm", "cm²", "m²", "$", "min", "h", "%", "pz", "u"])(
     "accepts short symbol unit: %s",

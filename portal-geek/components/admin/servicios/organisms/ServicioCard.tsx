@@ -39,14 +39,17 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
       tabIndex={0}
       onClick={goToEdit}
       onKeyDown={onKeyDown}
-      aria-label={`Editar ${servicio.nombre_servicio}`}
+      aria-label={`Editar ${servicio.apodo_servicio} (${servicio.nombre_servicio})`}
       className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif] cursor-pointer transition-shadow hover:shadow-[0px_0px_24px_0px_rgba(228,34,0,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200] focus-visible:ring-offset-2"
     >
       {/* Header */}
       <div>
         <h3 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
-          {servicio.nombre_servicio}
+          {servicio.apodo_servicio}
         </h3>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#575757] break-words">
+          {servicio.nombre_servicio}
+        </p>
       </div>
 
       {/* Descripción */}

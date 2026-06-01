@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/atoms/Button";
 interface Props {
   servicioId: number;
   nombreServicio: string;
+  apodoServicio: string;
   descripcionServicio?: string | null;
   materialesText: string;
   materiales: Material[];
@@ -23,6 +24,7 @@ interface Props {
 export function ServicioDetalleClient({
   servicioId,
   nombreServicio,
+  apodoServicio,
   descripcionServicio,
   materialesText,
   materiales,
@@ -47,7 +49,7 @@ export function ServicioDetalleClient({
         <div className="bg-[#ffd9e2] rounded-[14px] aspect-square overflow-hidden flex items-center justify-center border border-gray-200">
           {selectedImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={selectedImage} alt={nombreServicio} className="w-full h-full object-cover" />
+            <img src={selectedImage} alt={apodoServicio} className="w-full h-full object-cover" />
           ) : (
             <span className="font-medium text-[16px] text-[#1e1e1e]">
               Imagen principal del producto
@@ -67,7 +69,11 @@ export function ServicioDetalleClient({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={url}
+                  alt={`${apodoServicio} - imagen ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
               </button>
             ))}
           </div>
@@ -87,7 +93,11 @@ export function ServicioDetalleClient({
       {/* ── Derecha: info + form ── */}
       <div className="flex flex-col gap-[20px]">
         <div className="flex flex-col gap-[8px]">
-          <h1 className="font-bold text-[32px] leading-tight text-[#1e1e1e]">{nombreServicio}</h1>
+          <div>
+            <h1 className="font-bold text-[32px] leading-tight text-[#1e1e1e]">{apodoServicio}</h1>
+            <p className="text-[16px] text-[#575757] leading-normal">{nombreServicio}</p>
+          </div>
+
           {descripcionServicio && (
             <p className="text-[14px] text-[#1e1e1e] leading-normal">{descripcionServicio}</p>
           )}

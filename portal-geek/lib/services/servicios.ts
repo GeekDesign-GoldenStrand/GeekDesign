@@ -84,6 +84,7 @@ export async function listServicios(
       WHERE (${soloActivos ?? false}::boolean = false OR "estatus_servicio" = true)
         AND (
           lower(unaccent("nombre_servicio")) LIKE '%' || lower(unaccent(${trimmed})) || '%'
+          OR lower(unaccent("apodo_servicio")) LIKE '%' || lower(unaccent(${trimmed})) || '%'
           OR (
             "descripcion_servicio" IS NOT NULL
             AND lower(unaccent("descripcion_servicio")) LIKE '%' || lower(unaccent(${trimmed})) || '%'
@@ -248,6 +249,7 @@ export function toServicioAdminDetalle(s: ServicioParaAdmin): ServicioAdminDetal
   return {
     id_servicio: s.id_servicio,
     nombre_servicio: s.nombre_servicio,
+    apodo_servicio: s.apodo_servicio,
     descripcion_servicio: s.descripcion_servicio,
     imagenes: parseImagenUrl(s.imagen_url),
     id_sucursal: s.id_sucursal,

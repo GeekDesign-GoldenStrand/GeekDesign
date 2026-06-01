@@ -126,6 +126,14 @@ export function useServicioForm({
       setSubmitError("El nombre del servicio repite la misma palabra varias veces.");
       return;
     }
+    if (hasCharRun(form.apodo_servicio)) {
+      setSubmitError("El apodo del servicio tiene letras repetidas sin coherencia.");
+      return;
+    }
+    if (repeatedWords(form.apodo_servicio)) {
+      setSubmitError("El apodo del servicio repite la misma palabra varias veces.");
+      return;
+    }
     if (form.descripcion_servicio.trim()) {
       if (hasCharRun(form.descripcion_servicio)) {
         setSubmitError("La descripción tiene letras repetidas sin coherencia.");
@@ -161,8 +169,9 @@ export function useServicioForm({
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre_servicio: form.nombre_servicio,
-          descripcion_servicio: form.descripcion_servicio || undefined,
+          nombre_servicio: form.nombre_servicio.trim(),
+          apodo_servicio: form.apodo_servicio.trim(),
+          descripcion_servicio: form.descripcion_servicio.trim() || undefined,
           id_sucursal: form.id_sucursal,
           estatus_servicio: true,
           imagenes: form.imagenes,
@@ -225,6 +234,9 @@ export function useServicioForm({
   const missingRequirements: string[] = [];
   if (form.nombre_servicio.trim().length === 0) {
     missingRequirements.push("Nombre del servicio");
+  }
+  if (form.apodo_servicio.trim().length === 0) {
+    missingRequirements.push("Apodo del servicio");
   }
   if (form.id_sucursal === null) {
     missingRequirements.push("Sucursal");

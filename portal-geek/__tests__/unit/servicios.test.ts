@@ -45,6 +45,7 @@ const SERVICIO = {
   id_instalador: null,
   id_proveedor: null,
   nombre_servicio: "Corte Láser",
+  apodo_servicio: "Corte CO2",
   descripcion_servicio: "Corte con láser CO2",
   estatus_servicio: true,
   costo_instalador_override: null,
@@ -114,6 +115,7 @@ const SERVICIO_PARA_ADMIN_MOCK = {
   id_instalador: null,
   id_proveedor: null,
   nombre_servicio: "Corte Láser",
+  apodo_servicio: "Corte CO2",
   descripcion_servicio: "Corte con láser CO2",
   estatus_servicio: true,
   imagen_url: null,
@@ -593,6 +595,7 @@ describe("createServicio", () => {
     await createServicio(
       {
         nombre_servicio: "Nuevo Servicio",
+        apodo_servicio: "Nuevo",
         id_sucursal: 1,
         estatus_servicio: true,
         imagenes: [
@@ -608,6 +611,7 @@ describe("createServicio", () => {
     expect(mockTx.servicios.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          apodo_servicio: "Nuevo",
           imagen_url: JSON.stringify([
             "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
             "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
@@ -621,6 +625,7 @@ describe("createServicio", () => {
     await createServicio(
       {
         nombre_servicio: "Nuevo Servicio",
+        apodo_servicio: "Nuevo",
         id_sucursal: 1,
         estatus_servicio: true,
         imagenes: [],
@@ -633,10 +638,21 @@ describe("createServicio", () => {
     expect(mockTx.servicios.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          apodo_servicio: "Nuevo",
           imagen_url: null,
         }),
       })
     );
+  });
+
+  it("incluye apodo_servicio en el detalle admin", () => {
+    const result = toServicioAdminDetalle({
+      ...SERVICIO_COMPLETO,
+      apodo_servicio: "Corte CO2",
+      servicioMateriales: [],
+    } as never);
+
+    expect(result.apodo_servicio).toBe("Corte CO2");
   });
 });
 
@@ -649,6 +665,7 @@ describe("toServicioAdminDetalle imagenes parsing", () => {
     return {
       id_servicio: 1,
       nombre_servicio: "Test",
+      apodo_servicio: "Corte CO2",
       descripcion_servicio: null,
       imagen_url,
       id_sucursal: 1,
