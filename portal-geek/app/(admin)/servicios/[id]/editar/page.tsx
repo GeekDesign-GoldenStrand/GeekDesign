@@ -40,7 +40,7 @@ export default async function EditarServicioPage({ params }: Props) {
 
   return (
     <div>
-      <AdminHeader title={`Editar: ${servicio.nombre_servicio}`} />
+      <AdminHeader title={servicio.nombre_servicio} />
       <ViewEditarServicio servicio={servicio} />
     </div>
   );

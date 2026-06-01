@@ -6,12 +6,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/atoms/Button";
 import { EditIcon } from "@/components/ui/atoms/icons";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
-import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
+import type { MaterialCardProps } from "@/types";
 
 interface MaterialGroupCardProps {
   group: MaterialCardProps;
-  visibleColumns: MaterialesVisibleColumns;
   gridTemplateColumns: string;
+  canViewProveedores?: boolean;
   onEdit: (material: MaterialCardProps) => void;
   onViewProveedores: (materialId: number, materialName: string) => void;
   onAddSubMaterial: (groupId: number) => void;
@@ -19,8 +19,8 @@ interface MaterialGroupCardProps {
 
 export function MaterialGroupCard({
   group,
-  visibleColumns,
   gridTemplateColumns,
+  canViewProveedores = false,
   onEdit,
   onViewProveedores,
   onAddSubMaterial,
@@ -28,9 +28,6 @@ export function MaterialGroupCard({
   const [expanded, setExpanded] = useState(false);
   const subCount = group.subMateriales?.length ?? 0;
 
-  // Sizing matches CotizacionesTable: text-sm, rounded shadow.
-  // Group header keeps its accent border + lighter bg so users can still tell
-  // a group apart from an individual material row at a glance.
   return (
     <div className="rounded shadow overflow-hidden">
       {/* Group header */}
@@ -64,19 +61,17 @@ export function MaterialGroupCard({
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          {visibleColumns.image && (
-            <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
-              {group.imageUrl ? (
-                <Image
-                  src={group.imageUrl}
-                  alt={group.name}
-                  fill
-                  sizes="3.75rem"
-                  unoptimized
-                  referrerPolicy="no-referrer"
-                  className="object-cover"
-                />
-              ) : null}
+          {group.imageUrl && (
+            <div className="relative h-15 w-15 rounded-sm overflow-hidden bg-[#d9d9d9] shrink-0">
+              <Image
+                src={group.imageUrl}
+                alt={group.name}
+                fill
+                sizes="3.75rem"
+                unoptimized
+                referrerPolicy="no-referrer"
+                className="object-cover"
+              />
             </div>
           )}
           <Button
@@ -106,12 +101,13 @@ export function MaterialGroupCard({
               Sin variantes aún. Usa &quot;Agregar variante&quot; para crear la primera.
             </p>
           ) : (
-            <div className="space-y-[2px] px-2 py-2">
+            <div className="divide-y divide-[#ebebeb]">
               {group.subMateriales!.map((sub) => (
                 <MaterialCard
                   key={sub.id}
                   {...sub}
-                  visibleColumns={visibleColumns}
+                  variant="sub"
+                  showProveedores={canViewProveedores}
                   gridTemplateColumns={gridTemplateColumns}
                   onEdit={onEdit}
                   onViewProveedores={onViewProveedores}

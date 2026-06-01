@@ -68,6 +68,44 @@ export function CotizacionesTemplate({
 
   const [showFilter, setShowFilter] = useState(false);
 
+  const activeFilterChips = [
+    filterCliente
+      ? {
+          key: "cliente",
+          label: `Cliente/Empresa: ${filterCliente}`,
+          clear: () => setFilterCliente(""),
+        }
+      : null,
+    ...filterEstatus.map((s) => ({
+      key: `estatus-${s}`,
+      label: s,
+      clear: () => setFilterEstatus(filterEstatus.filter((e) => e !== s)),
+    })),
+    filterFechaFinDesde
+      ? {
+          key: "desde",
+          label: `Desde: ${filterFechaFinDesde}`,
+          clear: () => setFilterFechaFinDesde(""),
+        }
+      : null,
+    filterFechaFinHasta
+      ? {
+          key: "hasta",
+          label: `Hasta: ${filterFechaFinHasta}`,
+          clear: () => setFilterFechaFinHasta(""),
+        }
+      : null,
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+  const filterCount = activeFilterChips.length;
+
+  function clearAllFilters() {
+    setFilterCliente("");
+    setFilterEstatus([]);
+    setFilterFechaFinDesde("");
+    setFilterFechaFinHasta("");
+  }
+
   // Mapping between UI labels and API values
   const STATUS_OPTIONS = [
     { label: "Pendiente", value: "Pendiente" },
@@ -88,6 +126,7 @@ export function CotizacionesTemplate({
               onSearchChange={setSearch}
               searchPlaceholder="Buscar por folio o nombre de oportunidad"
               onFiltrar={() => setShowFilter(true)}
+              filterCount={filterCount}
             />
           </div>
 
@@ -113,6 +152,35 @@ export function CotizacionesTemplate({
             </Link>
           )}
         </div>
+
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.clear}
+                  aria-label={`Quitar filtro ${chip.label}`}
+                  className="leading-none hover:text-[#b31a00]"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
 
         <CotizacionesFilterSidebar
           open={showFilter}

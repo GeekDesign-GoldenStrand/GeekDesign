@@ -1,42 +1,35 @@
 import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/atoms/icons";
 import { MaterialesFilterPanel } from "@/components/ui/materiales/molecules/MaterialesFilterPanel";
-import type { MaterialSortOrder, MaterialTipoFilter, MaterialesVisibleColumns } from "@/types";
+import type { MaterialSortOrder, MaterialTipoFilter } from "@/types";
 
 interface MaterialesToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
   isFilterOpen: boolean;
-  visibleColumns: MaterialesVisibleColumns;
   sortOrder: MaterialSortOrder;
   tipoFilter: MaterialTipoFilter;
-  defaultVisibleColumns: MaterialesVisibleColumns;
-  setVisibleColumns: (v: MaterialesVisibleColumns) => void;
-  setSortOrder: (order: MaterialSortOrder) => void;
-  setTipoFilter: (value: MaterialTipoFilter) => void;
+  onSortChange: (order: MaterialSortOrder) => void;
+  onTipoFilterChange: (value: MaterialTipoFilter) => void;
+  onResetFilters: () => void;
   onAddClick?: () => void;
   onFilterClick?: () => void;
   onCloseFilter: () => void;
-  canViewProveedores?: boolean;
 }
 
 export function MaterialesToolbar({
   search,
   onSearchChange,
   isFilterOpen,
-  visibleColumns,
   sortOrder,
   tipoFilter,
-  defaultVisibleColumns,
-  setVisibleColumns,
-  setSortOrder,
-  setTipoFilter,
+  onSortChange,
+  onTipoFilterChange,
+  onResetFilters,
   onAddClick,
   onFilterClick,
   onCloseFilter,
-  canViewProveedores = true,
 }: MaterialesToolbarProps) {
   return (
-    // The toolbar acts as the anchor container for the floating filter panel.
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6 relative flex-wrap">
       <div className="flex items-center gap-2 border border-[#b9b8b8] rounded-[4px] px-3 h-[41px] bg-white w-full md:w-[439px]">
         <input
@@ -73,15 +66,12 @@ export function MaterialesToolbar({
 
       <MaterialesFilterPanel
         open={isFilterOpen}
-        visibleColumns={visibleColumns}
         sortOrder={sortOrder}
         tipoFilter={tipoFilter}
-        defaultVisibleColumns={defaultVisibleColumns}
-        setVisibleColumns={setVisibleColumns}
-        setSortOrder={setSortOrder}
-        setTipoFilter={setTipoFilter}
+        onSortChange={onSortChange}
+        onTipoFilterChange={onTipoFilterChange}
+        onReset={onResetFilters}
         onClose={onCloseFilter}
-        canViewProveedores={canViewProveedores}
       />
     </div>
   );

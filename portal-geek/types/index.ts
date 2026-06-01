@@ -90,15 +90,3 @@ export interface MaterialCardProps {
 export type MaterialSortOrder = "az" | "za";
 
 export type MaterialTipoFilter = "all" | "grupos" | "individuales";
-
-export interface MaterialesVisibleColumns {
-  name: boolean;
-  description: boolean;
-  unit: boolean;
-  width: boolean;
-  height: boolean;
-  thickness: boolean;
-  color: boolean;
-  image: boolean;
-  proveedores: boolean;
-}

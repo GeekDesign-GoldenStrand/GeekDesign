@@ -2,13 +2,21 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
 import MaquinaInput from "@/components/ui/atoms/FormInput";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import MultiSelect, {
+  type MultiSelectOption,
+} from "@/components/ui/maquinas/molecules/MultiSelect";
 import { stripEmoji } from "@/lib/utils/format";
 import type { MaquinaCardProps } from "@/types";
+
+interface SucursalOption {
+  id_sucursal: number;
+  nombre_sucursal: string;
+}
 
 interface MaquinaRaw {
   id_maquina: number;
@@ -35,14 +43,17 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
   const [machineNickname, setMachineNickname] = useState("");
   const [machineType, setMachineType] = useState("");
   const [machineDescription, setMachineDescription] = useState("");
+  const [selectedSucursal, setSelectedSucursal] = useState("");
+  const [selectedServicios, setSelectedServicios] = useState<MultiSelectOption[]>([]);
+
+  const [sucursalOptions, setSucursalOptions] = useState<SucursalOption[]>([]);
+  const [servicioOptions, setServicioOptions] = useState<MultiSelectOption[]>([]);
+
   const [machineNameError, setMachineNameError] = useState<string | null>(null);
   const [machineNicknameError, setMachineNicknameError] = useState<string | null>(null);
   const [machineTypeError, setMachineTypeError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Reset every field + error each time the modal reopens — without this,
-  // closing the modal mid-flow leaves stale validation messages and partial
-  // input that surface again on the next open.
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
@@ -50,10 +61,33 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
     setMachineNickname("");
     setMachineType("");
     setMachineDescription("");
+    setSelectedSucursal("");
+    setSelectedServicios([]);
     setMachineNameError(null);
     setMachineNicknameError(null);
     setMachineTypeError(null);
     setSubmitSuccess(false);
+
+    const ac = new AbortController();
+
+    Promise.all([
+      fetch("/api/sucursales", { signal: ac.signal }).then((r) => r.json()),
+      fetch("/api/servicios?activo=true&pageSize=100", { signal: ac.signal }).then((r) => r.json()),
+    ])
+      .then(([sucursalesPayload, serviciosPayload]) => {
+        if (ac.signal.aborted) return;
+        setSucursalOptions(sucursalesPayload.data ?? []);
+        setServicioOptions(
+          ((serviciosPayload.data ?? []) as { id_servicio: number; nombre_servicio: string }[]).map(
+            (s) => ({ value: s.id_servicio, label: s.nombre_servicio })
+          )
+        );
+      })
+      .catch(() => {
+        if (ac.signal.aborted) return;
+      });
+
+    return () => ac.abort();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -72,7 +106,7 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           nombre_maquina: machineName,
           apodo_maquina: machineNickname,
           tipo: machineType,
-          descripcion: machineDescription,
+          descripcion: machineDescription || undefined,
         }),
       });
       if (!res.ok) {
@@ -81,14 +115,33 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
       }
 
       const json = await res.json();
-      const data: MaquinaRaw = json.data;
+      let data: MaquinaRaw = json.data;
+      const newId: number = data.id_maquina;
+
+      if (selectedSucursal) {
+        const sucRes = await fetch(`/api/maquinas/${newId}/sucursales`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sucursal: Number(selectedSucursal) }),
+        });
+        if (sucRes.ok) data = (await sucRes.json()).data;
+      }
+
+      if (selectedServicios.length > 0) {
+        const svcRes = await fetch(`/api/maquinas/${newId}/servicios`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ servicios: selectedServicios.map((s) => Number(s.value)) }),
+        });
+        if (svcRes.ok) data = (await svcRes.json()).data;
+      }
 
       onCreated({
         id: data.id_maquina,
         model: data.nombre_maquina,
         nickname: data.apodo_maquina,
         type: data.tipo,
-        store: data.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") ?? "Sin asignar",
+        store: data.sucursales.map((s) => s.sucursal.nombre_sucursal).join(", ") || "Sin asignar",
         description: data.descripcion ?? "",
         services: (data.servicios ?? []).map((s) => s.servicio.nombre_servicio),
         creation_date: data.fecha_registro,
@@ -100,7 +153,6 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
         onChangeStatus: () => {},
       });
 
-      // SuccessModal auto-dismisses after 1.5s and then closes this modal.
       setSubmitSuccess(true);
     } catch {
       setError("No se pudo conectar con el servidor");
@@ -111,15 +163,15 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
 
   function validate(): boolean {
     let valid = true;
-    if (machineName.length === 0) {
+    if (!machineName.trim()) {
       setMachineNameError("El modelo es requerido");
       valid = false;
     }
-    if (machineNickname.length === 0) {
+    if (!machineNickname.trim()) {
       setMachineNicknameError("El apodo es requerido");
       valid = false;
     }
-    if (machineType.length === 0) {
+    if (!machineType) {
       setMachineTypeError("El tipo es requerido");
       valid = false;
     }
@@ -131,8 +183,14 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
   }
 
   return (
-    <ModalShell title="Registrar máquina" onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+    <Modal isOpen onClose={onClose} title="Registrar máquina" size="2xl">
+      <form onSubmit={handleSubmit} noValidate>
+        {error && (
+          <div className="rounded-md bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2 mb-4">
+            {error}
+          </div>
+        )}
+
         <MaquinaInput
           name="machineName"
           label="Modelo"
@@ -141,7 +199,10 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           required
           maxInputLength={30}
           value={machineName}
-          onChange={(e) => setMachineName(stripEmoji(e.target.value))}
+          onChange={(e) => {
+            setMachineName(stripEmoji(e.target.value));
+            setMachineNameError(null);
+          }}
         />
         <MaquinaInput
           name="machineNickname"
@@ -151,15 +212,22 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           required
           maxInputLength={30}
           value={machineNickname}
-          onChange={(e) => setMachineNickname(stripEmoji(e.target.value))}
+          onChange={(e) => {
+            setMachineNickname(stripEmoji(e.target.value));
+            setMachineNicknameError(null);
+          }}
         />
+
         <div className="flex flex-col text-[13px] text-[#575757] mb-6">
           <label className="font-medium">
             Tipo <span className="text-[#e42200]">*</span>
           </label>
           <Select
             value={machineType}
-            onChange={setMachineType}
+            onChange={(v) => {
+              setMachineType(v);
+              setMachineTypeError(null);
+            }}
             placeholder="Seleccionar tipo..."
             size="sm"
             error={machineTypeError ?? undefined}
@@ -169,23 +237,52 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
             <SelectOption value="Bordadora">Bordadora</SelectOption>
           </Select>
         </div>
+
         <MaquinaInput
           name="machineDescription"
           label="Descripción"
           placeholder="Área de trabajo o especificaciones de la máquina"
-          longText={true}
+          longText
           placeholderLongText="Área de trabajo o especificaciones de la máquina"
           maxInputLength={200}
           value={machineDescription}
           onChange={(e) => setMachineDescription(stripEmoji(e.target.value))}
         />
-        {error && (
-          <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
-            {error}
-          </p>
-        )}
+
+        <div className="flex flex-col text-[13px] text-[#575757] mb-6">
+          <label className="font-medium">Sucursal</label>
+          <Select
+            value={selectedSucursal}
+            onChange={setSelectedSucursal}
+            placeholder="Seleccionar sucursal..."
+            size="sm"
+          >
+            {sucursalOptions.map((s) => (
+              <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                {s.nombre_sucursal}
+              </SelectOption>
+            ))}
+          </Select>
+        </div>
+
+        <div className="flex flex-col text-[13px] text-[#575757] mb-6">
+          <label className="font-medium">Servicios</label>
+          <MultiSelect
+            options={servicioOptions}
+            value={selectedServicios}
+            onChange={setSelectedServicios}
+            placeholder="Seleccionar servicios..."
+          />
+        </div>
+
         <div className="flex justify-end gap-3 mt-4">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" size="sm" loading={isLoading}>
@@ -193,6 +290,6 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           </Button>
         </div>
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
