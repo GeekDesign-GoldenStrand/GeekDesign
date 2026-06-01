@@ -15,7 +15,7 @@ interface ClientesGridProps {
   page?: number;
   pageSize?: number;
   onPageChange?: (page: number) => void;
-  onUpdateCategory?: (id: number, category: ClientCategory) => void;
+  onUpdateCategory?: (id: number, category: ClientCategory | null) => void;
 }
 
 // Card-based replacement for the old ClientesTable. Matches the

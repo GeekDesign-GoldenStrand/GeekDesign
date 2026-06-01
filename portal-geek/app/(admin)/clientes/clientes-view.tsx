@@ -54,8 +54,9 @@ export function ClientesView() {
     fetchClientes();
   }, [fetchClientes]);
 
-  // Update client category
-  const handleUpdateCategory = async (id: number, category: ClientCategory) => {
+  // Update client category. `category` may be `null` when the admin picks
+  // "Sin categoría" — the server schema accepts null and clears the column.
+  const handleUpdateCategory = async (id: number, category: ClientCategory | null) => {
     try {
       const res = await fetch(`/api/clientes/${id}`, {
         method: "PUT",

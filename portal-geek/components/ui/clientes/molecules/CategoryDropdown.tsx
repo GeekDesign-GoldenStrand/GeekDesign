@@ -20,17 +20,26 @@ const TRIGGER_STYLES: Record<ClientCategory, string> = {
   Baneado: "bg-[rgba(255,23,68,0.07)] border-[#ff1744] text-[#ff1744]",
 };
 
-// Used when the column is empty or holds a value outside the known set.
-const FALLBACK_STYLE = "bg-[rgba(142,144,143,0.10)] border-[#b9b8b8] text-[#8e908f]";
+// "Sin categoría" trigger — used when the column is empty or holds a value
+// outside the known set. Visually distinct from Silver (which is also gray-on-
+// gray) by using a dashed border + italic label, mirroring the codebase's
+// existing empty-state convention (e.g. UserCard's "Sin sucursal" button).
+const FALLBACK_STYLE =
+  "bg-[#fafafa] border-dashed border-[#b9b8b8] text-[#8e908f] italic font-normal";
 
 interface CategoryDropdownProps {
   category: string | null;
-  onChange?: (category: ClientCategory) => void;
+  // `null` is sent when the admin picks "Sin categoría" — the parent forwards
+  // it to PUT /api/clientes/:id and the server clears the column.
+  onChange?: (category: ClientCategory | null) => void;
 }
 
 export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) {
   const isKnown = category != null && (CATEGORY_OPTIONS as readonly string[]).includes(category);
   const triggerStyle = isKnown ? TRIGGER_STYLES[category as ClientCategory] : FALLBACK_STYLE;
+  // Treat both `null` and unrecognized strings as the "no category" state for
+  // the dropdown's selected highlighting.
+  const isEmpty = !isKnown;
 
   return (
     <Popover
@@ -58,6 +67,18 @@ export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) 
             {opt}
           </PopoverItem>
         ))}
+        {/* "Sin categoría" — clears the column on the server. Italicized to
+            echo the trigger's empty-state styling so the option is visually
+            grouped with the fallback pill rather than the brand tiers above. */}
+        <PopoverItem
+          selected={isEmpty}
+          onSelect={() => {
+            if (!isEmpty) onChange?.(null);
+          }}
+          className="italic"
+        >
+          Sin categoría
+        </PopoverItem>
       </div>
     </Popover>
   );

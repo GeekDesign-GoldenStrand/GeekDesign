@@ -851,7 +851,10 @@ export async function createCotizacionFromCart(
         correo_electronico: correo,
         numero_telefono: input.cliente.numero_telefono,
         empresa: input.cliente.empresa ?? null,
-        categoria: "Emprendedor",
+        // Leave `categoria` unset (→ null / "Sin categoría") for storefront
+        // signups. Admins assign a tier (Black / Silver / Gold / Emprendedor /
+        // Baneado) from the Clientes page once they've reviewed the customer;
+        // we don't want every first-time submitter pre-classified as a tier.
       },
     });
 

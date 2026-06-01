@@ -8,7 +8,9 @@ import { CategoryDropdown, type ClientCategory } from "../molecules/CategoryDrop
 
 interface ClienteCardProps {
   cliente: Clientes;
-  onUpdateCategory?: (id: number, category: ClientCategory) => void;
+  // `null` is passed when the admin picks "Sin categoría" — the parent
+  // forwards it to PUT /api/clientes/:id which clears the column.
+  onUpdateCategory?: (id: number, category: ClientCategory | null) => void;
 }
 
 // Mirrors UserCard / TerceroCard layout so the three admin entity grids
