@@ -8,6 +8,26 @@ function money(value: string) {
   return `$${Number(value).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
 }
 
+const STATUS_COLORS: Record<string, string> = {
+  Pendiente: "bg-[#F7B9FF]/70 text-[#D83CFF]",
+  "En producción": "bg-blue-100 text-blue-700",
+  Finalizado: "bg-[#CCFFA5]/60 text-[#26AF00]",
+  Entregado: "bg-[#B9EAFF] text-[#0D7794]",
+  Cancelado: "bg-[#B1B1B1] text-black",
+};
+
+function ServiceStatusChip({ estatus }: { estatus: string | null | undefined }) {
+  const label = estatus ?? "Pendiente";
+  const colorClass = STATUS_COLORS[label] ?? "bg-gray-100 text-gray-600";
+  return (
+    <span
+      className={`inline-flex items-center rounded-md font-medium text-[11px] px-2 py-0.5 ${colorClass}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 interface Props {
   detalle: PedidoLineItem[];
   detalleIds?: number[] | null;
@@ -31,16 +51,22 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
         <table className="w-full text-[14px] border-collapse">
           <thead>
             <tr>
-              {["Servicio", "Material", "Cant.", "Especificaciones", "P. Unitario", "Subtotal"].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="text-[12px] font-semibold text-gray-600 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
-                  >
-                    {h}
-                  </th>
-                )
-              )}
+              {[
+                "Servicio",
+                "Material",
+                "Cant.",
+                "Especificaciones",
+                "Estatus",
+                "P. Unitario",
+                "Subtotal",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-[11px] font-medium text-gray-400 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -112,6 +138,9 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
                     ) : (
                       "—"
                     )}
+                  </td>
+                  <td className="py-3 px-2">
+                    <ServiceStatusChip estatus={item.estatus?.descripcion} />
                   </td>
                   <td className="py-3 px-2 text-gray-700">{money(item.precio_unitario)}</td>
                   <td className="py-3 px-2 text-right font-medium text-gray-900">
