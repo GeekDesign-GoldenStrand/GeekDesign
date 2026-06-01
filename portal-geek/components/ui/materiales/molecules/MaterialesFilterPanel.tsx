@@ -24,6 +24,21 @@ export function MaterialesFilterPanel({
   onReset,
   onClose,
 }: MaterialesFilterPanelProps) {
+  const [draftSort, setDraftSort] = useState<MaterialSortOrder>(sortOrder);
+  const [draftTipo, setDraftTipo] = useState<MaterialTipoFilter>(tipoFilter);
+
+  function apply() {
+    onSortChange(draftSort);
+    onTipoFilterChange(draftTipo);
+    onClose();
+  }
+
+  function reset() {
+    setDraftSort("az");
+    setDraftTipo("all");
+    onReset();
+  }
+
   return (
     <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>

@@ -215,6 +215,16 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setShowAddModal(true);
   }
 
+  function handleSortChange(order: MaterialSortOrder) {
+    setSortOrder(order);
+    setPage(1);
+  }
+
+  function handleTipoFilterChange(value: MaterialTipoFilter) {
+    setTipoFilter(value);
+    setPage(1);
+  }
+
   function handleOpenAddModal() {
     setAddModalTipo("individual");
     setAddModalPadreId(undefined);
