@@ -151,7 +151,7 @@ export function SucursalCard({
   }
 
   return (
-    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0">
       {/* Header */}
       <div>
         <h1 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
