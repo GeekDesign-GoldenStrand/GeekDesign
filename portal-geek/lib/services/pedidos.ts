@@ -24,6 +24,11 @@ type PedidoWithRelations = Prisma.PedidosGetPayload<{
         material: true;
         archivo: true;
         estatus: true;
+        variablesCotizacion: {
+          include: {
+            variable: true;
+          };
+        };
       };
     };
   };
@@ -215,6 +220,14 @@ export async function listPedidos(
             material: true,
             archivo: true,
             estatus: true,
+            variablesCotizacion: {
+              include: {
+                variable: true,
+              },
+            },
+          },
+          orderBy: {
+            id_detalle: "asc",
           },
         },
       },
@@ -250,7 +263,15 @@ export type PedidoDetalleResponse = {
     include: {
       servicio: { select: { nombre_servicio: true } };
       material: { select: { nombre_material: true } };
-      archivo: { select: { nombre_archivo: true; url_archivo: true; formato: true } };
+      archivo: {
+        select: { id_archivo: true; nombre_archivo: true; url_archivo: true; formato: true };
+      };
+      estatus: true;
+      variablesCotizacion: {
+        include: {
+          variable: true;
+        };
+      };
     };
   }>[];
   pagos: Prisma.PagosGetPayload<true>[];
@@ -279,7 +300,15 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
           include: {
             servicio: { select: { nombre_servicio: true } },
             material: { select: { nombre_material: true } },
-            archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+            archivo: {
+              select: { id_archivo: true, nombre_archivo: true, url_archivo: true, formato: true },
+            },
+            estatus: true,
+            variablesCotizacion: {
+              include: {
+                variable: true,
+              },
+            },
           },
           orderBy: { id_detalle: "asc" },
         },
