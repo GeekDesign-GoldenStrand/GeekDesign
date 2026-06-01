@@ -29,7 +29,7 @@ interface CotizacionSummaryProps {
 }
 
 const CARD_CLASS =
-  "bg-white rounded-[7px] border border-gray-100 shadow-[4px_4px_7px_0_rgba(0,0,0,0.1)] flex flex-col min-h-[158px] overflow-hidden";
+  "bg-white rounded-[7px] border border-gray-100 shadow-[4px_4px_7px_0_rgba(0,0,0,0.1)] flex flex-col min-h-[158px] min-w-0 overflow-hidden";
 
 export function CotizacionSummary({
   montoTotal,
@@ -71,9 +71,9 @@ export function CotizacionSummary({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
         {/* ── Monto total ──────────────────────── */}
         <div className={CARD_CLASS}>
-          <div className="flex-1 px-6 pt-4">
+          <div className="flex-1 px-6 pt-4 min-w-0">
             <p className="text-[20px] text-gray-500 leading-none">Monto total</p>
-            <p className="mt-3 text-[30px] font-medium text-black leading-tight">
+            <p className="mt-3 text-[30px] font-medium text-black leading-tight break-words">
               {fmt(montoTotal)}
             </p>
           </div>
@@ -112,26 +112,31 @@ export function CotizacionSummary({
 
         {/* ── Fecha de entrega ─────────────────── */}
         <div className={CARD_CLASS}>
-          <div className="flex-1 px-6 pt-4">
+          <div className="flex-1 px-6 pt-4 min-w-0">
             <p className="text-[20px] text-gray-500 leading-none">Fecha de entrega</p>
-            <p className="mt-3 text-[30px] font-medium text-black leading-tight">
+            <p className="mt-3 text-[30px] font-medium text-black leading-tight break-words">
               {formatDate(fechaEntrega)}
             </p>
           </div>
-          <p className="px-6 pb-4 text-[15px] text-gray-500">
+          <p className="px-6 pb-4 text-[15px] text-gray-500 break-words">
             Creada el {formatDate(fechaCreacion)}
           </p>
         </div>
 
         {/* ── Servicios ────────────────────────── */}
         <div className={CARD_CLASS}>
-          <div className="flex-1 px-6 pt-4">
+          <div className="flex-1 px-6 pt-4 min-w-0">
             <p className="text-[20px] text-gray-500 leading-none">Servicios</p>
             <p className="mt-3 text-[30px] font-medium text-black leading-tight">
               {servicios.length}
             </p>
           </div>
-          <p className="px-6 pb-4 text-[15px] text-gray-500" title={serviciosResumen}>
+          {/* `line-clamp-2` caps a long comma-joined service list to two lines
+              with an ellipsis; full text stays available via the title tooltip. */}
+          <p
+            className="px-6 pb-4 text-[15px] text-gray-500 break-words line-clamp-2"
+            title={serviciosResumen}
+          >
             {serviciosResumen}
           </p>
         </div>

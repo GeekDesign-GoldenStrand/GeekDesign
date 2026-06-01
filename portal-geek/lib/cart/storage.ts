@@ -1,9 +1,9 @@
 const CART_KEY = "geekdesign_carrito";
 
 // Upper bound for an item's quantity, shared by the service detail form and
-// the cart editor so both clamp to the same value. Stays well under the
-// server's .max(9999) on SolicitarItemSchema; caps the subtotal magnitude so
-// the price displays can't overflow.
+// the cart editor so both clamp to the same value. Matches the server's
+// .max(1000) on SolicitarItemSchema; caps the subtotal magnitude so the
+// price displays can't overflow.
 export const CANTIDAD_MAX = 1000;
 
 function clampCantidad(value: number): number {

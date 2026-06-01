@@ -29,8 +29,8 @@ export function CotizacionHeader({
   onDiscount,
 }: CotizacionHeaderProps) {
   return (
-    <div className="mb-6">
-      <div className="flex justify-between items-center gap-4 flex-wrap mb-3">
+    <div className="flex justify-between items-start gap-4 flex-wrap mb-6">
+      <div className="flex flex-col gap-3 min-w-0">
         <Link
           href={backHref}
           className="inline-flex items-center gap-2 h-9 px-3 w-fit text-[13px] shadow-sm rounded-[7px] border border-red-300 bg-red-50 font-medium text-red-500 hover:bg-red-100 hover:text-red-600 transition-colors"
@@ -39,7 +39,21 @@ export function CotizacionHeader({
           Regresar
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <p className="text-[11px] text-gray-300 uppercase tracking-widest mb-1">Cotización</p>
+          <h1 className="text-[22px] font-medium text-gray-900 leading-tight break-words">
+            {folio ?? "Sin folio"}
+          </h1>
+          {nombreOportunidad && (
+            <p className="text-[13px] text-gray-500 mt-1.5 leading-tight break-words">
+              {nombreOportunidad}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-wrap gap-2">
           {!discountApplied && canAddDiscount && (
             <button
               type="button"
