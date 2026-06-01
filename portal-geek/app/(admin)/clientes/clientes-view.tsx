@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { ClientesTable, type ClientCategory } from "@/components/ui/clientes";
+import { ClientesGrid, type ClientCategory } from "@/components/ui/clientes";
 
 export function ClientesView() {
   // State for data management, loading, errors, and search
@@ -87,7 +87,7 @@ export function ClientesView() {
             {error}
           </div>
         ) : (
-          <ClientesTable
+          <ClientesGrid
             items={clientes}
             loading={loading}
             total={total}

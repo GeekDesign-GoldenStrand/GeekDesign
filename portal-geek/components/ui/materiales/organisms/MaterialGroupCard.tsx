@@ -28,7 +28,7 @@ export function MaterialGroupCard({
   const [expanded, setExpanded] = useState(false);
   const subCount = group.subMateriales?.length ?? 0;
 
-  // Sizing matches CotizacionesTable + ClientesTable: text-sm, rounded shadow.
+  // Sizing matches CotizacionesTable: text-sm, rounded shadow.
   // Group header keeps its accent border + lighter bg so users can still tell
   // a group apart from an individual material row at a glance.
   return (
