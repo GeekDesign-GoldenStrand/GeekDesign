@@ -15,8 +15,16 @@ interface Sucursal {
   nombre_sucursal: string;
 }
 
+export interface InitialContact {
+  nombre: string;
+  empresa: string;
+  correo: string;
+  telefono: string;
+}
+
 interface Props {
   sucursales: Sucursal[];
+  initialContact?: InitialContact | null;
 }
 
 const formatPeso = (n: number) =>
@@ -73,19 +81,22 @@ function translateServerError(raw?: string): string {
   return message || fallback;
 }
 
-export function CheckoutForm({ sucursales }: Props) {
+export function CheckoutForm({ sucursales, initialContact }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<CarritoItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  const [nombre, setNombre] = useState("");
+  const [nombre, setNombre] = useState(initialContact?.nombre ?? "");
   const [nombreError, setNombreError] = useState<string | null>(null);
-  const [empresa, setEmpresa] = useState("");
-  const [correo, setCorreo] = useState("");
+  const [empresa, setEmpresa] = useState(initialContact?.empresa ?? "");
+  const [correo, setCorreo] = useState(initialContact?.correo ?? "");
   const [correoError, setCorreoError] = useState<string | null>(null);
   // E.164 format (e.g. "+524421234567") from react-phone-number-input.
   // The library returns undefined while the user is typing an incomplete number.
-  const [telefono, setTelefono] = useState<string | undefined>(undefined);
+  // A recognized client's stored phone is already E.164, so we seed it directly.
+  const [telefono, setTelefono] = useState<string | undefined>(
+    initialContact?.telefono || undefined
+  );
   const [telefonoError, setTelefonoError] = useState<string | null>(null);
 
   const PHONE_MAX_DIGITS = 15;
@@ -105,6 +116,24 @@ export function CheckoutForm({ sucursales }: Props) {
   const [notas, setNotas] = useState("");
   const [notasError, setNotasError] = useState<string | null>(null);
   const [fechaEstimada, setFechaEstimada] = useState("");
+
+  // Whether the form is showing prefilled data from a recognized client. Hidden
+  // once they clear it (e.g. on a shared computer or "not me").
+  const [recognized, setRecognized] = useState(Boolean(initialContact));
+
+  async function handleForgetMe() {
+    setRecognized(false);
+    setNombre("");
+    setEmpresa("");
+    setCorreo("");
+    setTelefono(undefined);
+    try {
+      await fetch("/api/storefront/cliente-recognido", { method: "DELETE" });
+    } catch {
+      // Best-effort: clearing the inputs already removed the visible PII; the
+      // cookie will expire on its own if this network call fails.
+    }
+  }
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +285,21 @@ export function CheckoutForm({ sucursales }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-[24px]">
       <section className="bg-white rounded-[10px] border border-[#c2c0c0] p-[24px] flex flex-col gap-[16px]">
         <h2 className="font-bold text-[20px] text-[#1e1e1e]">Tus datos</h2>
+
+        {recognized && (
+          <div className="flex items-center justify-between gap-[12px] rounded-[8px] bg-[#fff8f9] border border-[#e6d2d4] px-[14px] py-[10px]">
+            <p className="text-[14px] text-[#1e1e1e]">
+              Cotizando como <span className="font-semibold">{nombre || correo}</span>.
+            </p>
+            <button
+              type="button"
+              onClick={handleForgetMe}
+              className="text-[14px] font-semibold text-[#8b434a] underline hover:text-[#7a3a41]"
+            >
+              ¿No eres tú?
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[6px]">
           <label htmlFor="nombre" className="text-[14px] font-semibold text-[#1e1e1e]">
