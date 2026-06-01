@@ -142,7 +142,7 @@ function getInvoiceProgressColor(status?: string | null) {
 }
 
 function renderInvoiceStatusIcon(status?: string | null) {
-  const label = status || "Sin facturar";
+  const label = status || "No se requiere factura";
   if (!status) {
     return (
       <span title={label}>
@@ -523,7 +523,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                         <div className="flex items-center gap-1 text-[11px]">
                           <span className="text-[#6f6f6f]">Estatus:</span>
                           <span className="font-bold text-[#1e1e1e]">
-                            {p.estado_factura?.descripcion || "Sin facturar"}
+                            {p.estado_factura?.descripcion || "No se requiere factura"}
                           </span>
                           {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
                         </div>
@@ -697,7 +697,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                       <div className="flex items-center gap-1 text-[11px]">
                         <span className="text-[#6f6f6f]">Estatus:</span>
                         <span className="font-bold text-[#1e1e1e]">
-                          {p.estado_factura?.descripcion || "Sin facturar"}
+                          {p.estado_factura?.descripcion || "No se requiere factura"}
                         </span>
                         {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
                       </div>

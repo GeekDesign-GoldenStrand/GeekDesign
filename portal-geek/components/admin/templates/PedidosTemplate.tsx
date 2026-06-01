@@ -385,7 +385,7 @@ export function PedidosTemplate({
               </div>
               <div className="flex items-center gap-3">
                 <StopCircle size={24} className="text-gray-400" weight="fill" />
-                <span className="text-[#1e1e1e] font-medium">Sin facturar</span>
+                <span className="text-[#1e1e1e] font-medium">No se requiere factura</span>
               </div>
             </div>
           </div>
