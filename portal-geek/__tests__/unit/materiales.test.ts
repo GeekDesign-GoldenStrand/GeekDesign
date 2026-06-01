@@ -218,6 +218,59 @@ describe("listMateriales", () => {
       })
     );
   });
+
+  it("tipo=grupos lista todos los grupos del árbol sin fijar id_material_padre", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockCount.mockResolvedValue(0);
+
+    await listMateriales(1, 20, undefined, "asc", "grupos");
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { es_grupo: true, es_categoria: false } })
+    );
+  });
+
+  it("tipo=individuales excluye variantes (padre grupo) y no fija id_material_padre", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockCount.mockResolvedValue(0);
+
+    await listMateriales(1, 20, undefined, "asc", "individuales");
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          es_grupo: false,
+          es_categoria: false,
+          OR: [{ id_material_padre: null }, { padre: { es_categoria: true } }],
+        },
+      })
+    );
+  });
+
+  it("tipo=individuales con búsqueda combina exclusión de variantes y búsqueda vía AND", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockCount.mockResolvedValue(0);
+
+    await listMateriales(1, 20, "mdf", "asc", "individuales");
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            {
+              es_grupo: false,
+              es_categoria: false,
+              OR: [{ id_material_padre: null }, { padre: { es_categoria: true } }],
+            },
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                expect.objectContaining({
+                  nombre_material: { contains: "mdf", mode: "insensitive" },
+                }),
+              ]),
+            }),
+          ],
+        },
+      })
+    );
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

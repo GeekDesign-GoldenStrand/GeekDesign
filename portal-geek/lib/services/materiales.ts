@@ -1,4 +1,4 @@
-import type { Materiales } from "@prisma/client";
+import type { Materiales, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type {
@@ -98,17 +98,36 @@ export async function listMateriales(
       }
     : undefined;
 
-  const tipoFilter =
+  const tipoFilter: Prisma.MaterialesWhereInput | undefined =
     tipo === "categorias"
       ? { es_categoria: true }
       : tipo === "grupos"
         ? { es_grupo: true, es_categoria: false }
         : tipo === "individuales"
-          ? { es_grupo: false, es_categoria: false }
+          ? {
+              es_grupo: false,
+              es_categoria: false,
+              // Exclude variantes (their padre is a grupo): an individual sits at
+              // the root or under a categoría.
+              OR: [{ id_material_padre: null }, { padre: { es_categoria: true } }],
+            }
           : undefined;
 
-  // Roots = either categorías (padre=null) or grupos/individuales sin categoría asignada.
-  const where = { id_material_padre: null, ...tipoFilter, ...searchFilter };
+  // A `tipo` filter targets a role across the WHOLE tree, so it must not pin
+  // id_material_padre — the migration reparented legacy root grupos/individuales
+  // under the "Sin categoría" categoría, and users can assign others to real
+  // categorías. Without a tipo we still show only tree roots.
+  const base: Prisma.MaterialesWhereInput = {
+    ...(tipo ? {} : { id_material_padre: null }),
+    ...tipoFilter,
+  };
+
+  // `individuales` carries its own OR (to exclude variantes); AND it with the
+  // search OR so neither clobbers the other. Every other case can flat-merge.
+  const where: Prisma.MaterialesWhereInput =
+    searchFilter && tipoFilter && "OR" in tipoFilter
+      ? { AND: [base, searchFilter] }
+      : { ...base, ...searchFilter };
 
   // Eager-load 2 levels: categoría → (grupo|individual) → variante.
   const [items, total] = await prisma.$transaction([
@@ -373,8 +392,14 @@ export async function getMaterialImpacto(id: number): Promise<MaterialImpacto> {
     where: { id_material: id },
     select: {
       id_material: true,
-      es_grupo: true,
-      subMateriales: { select: { id_material: true } },
+      // Load 2 levels of descendants so a categoría's impact spans
+      // grupos → variantes, matching deleteMaterial's cascade.
+      subMateriales: {
+        select: {
+          id_material: true,
+          subMateriales: { select: { id_material: true } },
+        },
+      },
     },
   });
 
@@ -382,9 +407,15 @@ export async function getMaterialImpacto(id: number): Promise<MaterialImpacto> {
     throw new NotFoundError(`Material ${id} no encontrado`);
   }
 
-  const ids = target.es_grupo
-    ? [target.id_material, ...target.subMateriales.map((s) => s.id_material)]
-    : [target.id_material];
+  // Flatten target + up to 2 levels (categoría → grupo → variante). For a grupo
+  // this is just its variantes; for a leaf, nothing extra.
+  const ids = [target.id_material];
+  for (const child of target.subMateriales) {
+    ids.push(child.id_material);
+    for (const grand of child.subMateriales ?? []) {
+      ids.push(grand.id_material);
+    }
+  }
 
   const [servicioMateriales, opciones, proveedorPreciosDirectos] = await Promise.all([
     prisma.servicioMaterial.findMany({

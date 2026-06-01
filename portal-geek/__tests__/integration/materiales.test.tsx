@@ -737,6 +737,27 @@ describe("GET /api/materiales/[id]/impacto", () => {
     );
   });
 
+  it("para categorías agrega los ids de los grupos y sus variantes (2 niveles)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    // Categoría (1) → grupo (2) → variantes (4, 5); grupo (3) sin variantes.
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      subMateriales: [
+        { id_material: 2, subMateriales: [{ id_material: 4 }, { id_material: 5 }] },
+        { id_material: 3, subMateriales: [] },
+      ],
+    });
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
+
+    await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+
+    expect(prisma.proveedorPrecios.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_material: { in: [1, 2, 4, 5, 3] } } })
+    );
+  });
+
   it("retorna 404 cuando el material no existe", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue(null);
