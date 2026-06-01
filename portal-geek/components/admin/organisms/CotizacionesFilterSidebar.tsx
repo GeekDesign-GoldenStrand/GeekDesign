@@ -75,12 +75,12 @@ export function CotizacionesFilterSidebar({
   return (
     <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
-        <p className={filterSidebarClasses.sectionLabel}>Cliente</p>
+        <p className={filterSidebarClasses.sectionLabel}>Cliente / Empresa</p>
         <input
           type="search"
           value={draftCliente}
           onChange={(e) => setDraftCliente(e.target.value)}
-          placeholder="Buscar cliente"
+          placeholder="Buscar cliente o empresa"
           maxLength={50}
           className={filterSidebarClasses.input}
         />

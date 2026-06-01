@@ -157,10 +157,6 @@ export async function listCotizaciones(
     };
   }
 
-  if (filters?.cliente) {
-    where.cliente = { nombre_cliente: { contains: filters.cliente, mode: "insensitive" } };
-  }
-
   if (filters?.estatus && filters.estatus.length > 0) {
     where.estatus = { descripcion: { in: filters.estatus } };
   }
@@ -177,24 +173,29 @@ export async function listCotizaciones(
     where.fecha_fin = range;
   }
 
-  const orConditions: Prisma.CotizacionesWhereInput[] = [];
+  const andConditions: Prisma.CotizacionesWhereInput[] = [];
 
-  if (filters?.empresa) {
-    orConditions.push(
-      { empresa_cliente: { contains: filters.empresa, mode: "insensitive" } },
-      { cliente: { empresa: { contains: filters.empresa, mode: "insensitive" } } }
-    );
+  if (filters?.cliente) {
+    andConditions.push({
+      OR: [
+        { cliente: { nombre_cliente: { contains: filters.cliente, mode: "insensitive" } } },
+        { empresa_cliente: { contains: filters.cliente, mode: "insensitive" } },
+        { cliente: { empresa: { contains: filters.cliente, mode: "insensitive" } } },
+      ],
+    });
   }
 
   if (filters?.search) {
-    orConditions.push(
-      { folio: { contains: filters.search, mode: "insensitive" } },
-      { nombre_oportunidad: { contains: filters.search, mode: "insensitive" } }
-    );
+    andConditions.push({
+      OR: [
+        { folio: { contains: filters.search, mode: "insensitive" } },
+        { nombre_oportunidad: { contains: filters.search, mode: "insensitive" } },
+      ],
+    });
   }
 
-  if (orConditions.length > 0) {
-    where.OR = orConditions;
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
   }
 
   const [items, total] = await Promise.all([

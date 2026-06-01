@@ -7,8 +7,6 @@ import ConfirmDeletionModal from "@/components/admin/organisms/ConfirmDeletionMo
 import { MaquinaCard } from "@/components/ui/maquinas/organisms/MaquinaCard";
 import type { MaquinaCardProps } from "@/types";
 
-import AsignarServicios from "./asignar-servicios";
-import AsignarSucursal from "./asignar-sucursal";
 import EditarMaquina from "./editar-maquina";
 import RegistrarForm from "./registrar-form";
 
@@ -71,8 +69,6 @@ export default function MaquinasGrid() {
 
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isAsignarSucursalOpen, setIsAsignarSucursalOpen] = useState(false);
-  const [isAsignarServiciosOpen, setIsAsignarServiciosOpen] = useState(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -140,6 +136,11 @@ export default function MaquinasGrid() {
     }
   }
 
+  function openEditModal(id: number) {
+    setSelectedId(id);
+    setIsEditOpen(true);
+  }
+
   const selectedMaquina = maquinas.find((m) => m.id === selectedId);
 
   return (
@@ -162,18 +163,9 @@ export default function MaquinasGrid() {
               setSelectedId(m.id);
               setIsDeleteOpen(true);
             }}
-            onEdit={() => {
-              setSelectedId(m.id);
-              setIsEditOpen(true);
-            }}
-            onAssignStore={() => {
-              setSelectedId(m.id);
-              setIsAsignarSucursalOpen(true);
-            }}
-            onAssignServices={() => {
-              setSelectedId(m.id);
-              setIsAsignarServiciosOpen(true);
-            }}
+            onEdit={() => openEditModal(m.id)}
+            onAssignStore={() => openEditModal(m.id)}
+            onAssignServices={() => openEditModal(m.id)}
             onChangeStatus={(newStatus: string) => handleStatusChange(m.id, newStatus)}
           />
         ))}
@@ -196,32 +188,10 @@ export default function MaquinasGrid() {
       />
 
       <EditarMaquina
-        id={selectedMaquina?.id ?? 0}
-        model={`${selectedMaquina?.model}`}
-        nickname={`${selectedMaquina?.nickname}`}
-        type={`${selectedMaquina?.type}`}
-        description={`${selectedMaquina?.description}`}
+        id={selectedId ?? 0}
         isOpen={isEditOpen}
         onEdit={handleEdited}
         onClose={() => setIsEditOpen(false)}
-      />
-
-      <AsignarSucursal
-        id={selectedMaquina?.id ?? 0}
-        model={selectedMaquina?.model ?? ""}
-        nickname={selectedMaquina?.nickname ?? ""}
-        isOpen={isAsignarSucursalOpen}
-        onEdit={handleEdited}
-        onClose={() => setIsAsignarSucursalOpen(false)}
-      />
-
-      <AsignarServicios
-        id={selectedMaquina?.id ?? 0}
-        model={selectedMaquina?.model ?? ""}
-        nickname={selectedMaquina?.nickname ?? ""}
-        isOpen={isAsignarServiciosOpen}
-        onEdit={handleEdited}
-        onClose={() => setIsAsignarServiciosOpen(false)}
       />
     </div>
   );

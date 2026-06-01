@@ -39,8 +39,15 @@ export async function listMaquinas(
 }
 
 export async function getMaquina(id: number): Promise<Maquinas> {
-  void id;
-  throw new Error("Not implemented");
+  const maquina = await prisma.maquinas.findUnique({
+    where: { id_maquina: id },
+    include: {
+      sucursales: { include: { sucursal: true } },
+      servicios: { include: { servicio: true } },
+    },
+  });
+  if (!maquina) throw new NotFoundError(`Máquina ${id} no encontrada`);
+  return maquina;
 }
 
 export async function createMaquina(data: CreateMaquinaInput): Promise<Maquinas> {
