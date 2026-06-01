@@ -57,7 +57,7 @@ export function MaterialesGrid({
   return (
     <section className="space-y-3">
       {/* Column headers — hidden on mobile and when there are no rows.
-          Sizing matches CotizacionesTable + ClientesTable: px-4 py-2,
+          Sizing matches CotizacionesTable: px-4 py-2,
           text-sm, bg-[#c6c6c6], rounded. */}
       {hasItems && (
         <div
