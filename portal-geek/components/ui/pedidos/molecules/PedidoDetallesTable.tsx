@@ -28,14 +28,14 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
         </p>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px] border-collapse">
+        <table className="w-full text-[14px] border-collapse">
           <thead>
             <tr>
               {["Servicio", "Material", "Cant.", "Especificaciones", "P. Unitario", "Subtotal"].map(
                 (h) => (
                   <th
                     key={h}
-                    className="text-[11px] font-medium text-gray-400 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
+                    className="text-[12px] font-semibold text-gray-600 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
                   >
                     {h}
                   </th>
@@ -78,7 +78,7 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
                       <p className="text-[12px] text-gray-400 italic mt-0.5">{item.notas}</p>
                     )}
                   </td>
-                  <td className="py-3 px-2 text-gray-500">{item.material.nombre_material}</td>
+                  <td className="py-3 px-2 text-gray-700">{item.material.nombre_material}</td>
                   <td className="py-3 px-2 text-gray-700">{item.cantidad}</td>
                   <td className="py-3 px-2 text-gray-500 align-top">
                     {vars.length > 0 ? (
@@ -124,8 +124,8 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
         </table>
       </div>
       <div className="mt-4 flex justify-end">
-        <div className="text-[14px] flex gap-6">
-          <span className="text-gray-500">Total</span>
+        <div className="text-[15px] flex gap-6">
+          <span className="text-gray-700">Total</span>
           <span className="font-semibold text-gray-900 min-w-[110px] text-right">
             {`$${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
           </span>

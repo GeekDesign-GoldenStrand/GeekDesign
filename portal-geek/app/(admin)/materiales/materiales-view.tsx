@@ -195,29 +195,11 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setRetryAttempt((n) => n + 1);
   }
 
-  function handleToggleColumn(key: keyof MaterialesVisibleColumns) {
-    setVisibleColumns((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      if (!Object.values(next).some(Boolean)) return prev;
-      return next;
-    });
-  }
-
   function handleResetFilters() {
     setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
     setTipoFilter("all");
     setSearch("");
-  }
-
-  function handleSortChange(order: MaterialSortOrder) {
-    setSortOrder(order);
-    setPage(1);
-  }
-
-  function handleTipoFilterChange(value: MaterialTipoFilter) {
-    setTipoFilter(value);
-    setPage(1);
   }
 
   function handleCreated(row: MaterialCardProps) {
@@ -284,10 +266,10 @@ export function MaterialesView({ role }: { role: UserRole }) {
             visibleColumns={visibleColumns}
             sortOrder={sortOrder}
             tipoFilter={tipoFilter}
-            onToggleColumn={handleToggleColumn}
-            onSortChange={handleSortChange}
-            onTipoFilterChange={handleTipoFilterChange}
-            onResetFilters={handleResetFilters}
+            defaultVisibleColumns={buildDefaultColumns(canViewProveedores)}
+            setVisibleColumns={setVisibleColumns}
+            setSortOrder={setSortOrder}
+            setTipoFilter={setTipoFilter}
             onAddClick={handleOpenAddModal}
             onFilterClick={() => setShowFilters((state) => !state)}
             onCloseFilter={() => setShowFilters(false)}

@@ -32,14 +32,14 @@ export function PedidoOCResultCard({ ordenes }: Props) {
     <SectionCard title="Órdenes generadas" icon={<FilePdf size={15} />} className="mb-4">
       <ul className="space-y-2">
         {ordenes.map((o, i) => (
-          <li key={i} className="flex items-center justify-between text-[13px]">
+          <li key={i} className="flex items-center justify-between text-[14px]">
             <span className="text-gray-700">
-              {o.nombre} <span className="text-gray-400">({o.tipo})</span>
+              {o.nombre} <span className="text-gray-600">({o.tipo})</span>
             </span>
             <button
               type="button"
               onClick={() => downloadBase64Pdf(o.pdf_base64, `OC-${o.nombre}.pdf`)}
-              className="text-[#e42200] underline text-[12px] hover:text-[#b31a00]"
+              className="text-[#e42200] underline text-[13px] hover:text-[#b31a00]"
             >
               Descargar PDF
             </button>

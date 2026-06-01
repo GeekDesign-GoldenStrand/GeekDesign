@@ -35,6 +35,8 @@ export function MaquinaCard({
         <EntityCard.Subtitle>{model}</EntityCard.Subtitle>
       </div>
 
+      <MaquinaCreationDate creationDate={creation_date} />
+
       {store ? (
         <div>
           <div className="flex items-center gap-1">
@@ -79,22 +81,19 @@ export function MaquinaCard({
 
       <MaquinaSection heading="Descripción" text={description || "Sin descripción"} />
 
-      <div className="flex items-center justify-between mt-auto pt-2 flex-wrap gap-2">
-        <MaquinaCreationDate creationDate={creation_date} />
-        <div className="flex items-center gap-2">
-          <MaquinaStatusDropdown
-            status={status}
-            options={MACHINE_STATUS_OPTIONS}
-            onChange={onChangeStatus ?? (() => {})}
-          />
-          <ActionButton onClick={onEdit} aria-label="Editar" icon={<EditIcon size={16} />} />
-          <ActionButton
-            tone="danger"
-            onClick={onDelete}
-            aria-label="Eliminar"
-            icon={<TrashIcon size={16} />}
-          />
-        </div>
+      <div className="flex items-center justify-end mt-auto pt-2 flex-wrap gap-2">
+        <MaquinaStatusDropdown
+          status={status}
+          options={MACHINE_STATUS_OPTIONS}
+          onChange={onChangeStatus ?? (() => {})}
+        />
+        <ActionButton onClick={onEdit} aria-label="Editar" icon={<EditIcon size={16} />} />
+        <ActionButton
+          tone="danger"
+          onClick={onDelete}
+          aria-label="Eliminar"
+          icon={<TrashIcon size={16} />}
+        />
       </div>
     </EntityCard>
   );

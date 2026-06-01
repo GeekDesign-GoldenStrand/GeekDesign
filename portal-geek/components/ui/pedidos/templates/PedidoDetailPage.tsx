@@ -38,8 +38,6 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
     (role === "Direccion" || role === "Administrador" || role === "Colaborador") &&
     pedido.hasTerceros;
 
-  const title = pedido.pedido.nombre_oportunidad ?? `#${pedido.pedido.id_pedido}`;
-
   const handleSave = useCallback(async () => {
     await onRefetch();
     setActivePanel(null);
@@ -95,7 +93,8 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
       <PedidoHeader
-        title={title}
+        folio={pedido.pedido.cotizaciones?.[0]?.folio ?? null}
+        nombreOportunidad={pedido.pedido.nombre_oportunidad}
         onEdit={() => togglePanel("edit")}
         canGenerateOC={canGenerateOC}
         ocLoading={ocLoading}

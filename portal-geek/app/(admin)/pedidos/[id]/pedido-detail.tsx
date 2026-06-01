@@ -58,9 +58,7 @@ export default function PedidoDetail({
   if (error) return <p className="px-8 pt-6 text-sm text-[#e42200]">{error}</p>;
   if (!pedido) return null;
 
-  const title = pedido.pedido.nombre_oportunidad
-    ? `Pedido — ${pedido.pedido.nombre_oportunidad}`
-    : `Pedido #${pedido.pedido.id_pedido}`;
+  const title = `Pedido — ${pedido.pedido.nombre_oportunidad ?? "Sin nombre"}`;
 
   return (
     <div>
