@@ -508,15 +508,15 @@ export default function EditarCotizacion({
                     <input
                       type="number"
                       min={1}
-                      max={999}
+                      max={1000}
                       step={1}
                       value={item.cantidad}
                       onChange={(e) => {
                         const parsed = parseInt(e.target.value, 10);
-                        // Clamp to [1, 999] to match the storefront cap
-                        // (CarritoView + SolicitarItemSchema both use 999).
+                        // Clamp to [1, 1000] to match the storefront cap
+                        // (CarritoView + SolicitarItemSchema both use 1000).
                         const safe = Number.isFinite(parsed)
-                          ? Math.max(1, Math.min(999, parsed))
+                          ? Math.max(1, Math.min(1000, parsed))
                           : 1;
                         updateServicio(idx, "cantidad", safe);
                       }}
@@ -534,7 +534,7 @@ export default function EditarCotizacion({
                         const parsed = parseFloat(e.target.value);
                         // Clamp to [0, 99,999.99]. The DB stores precio_unitario,
                         // subtotal, and monto_total as Decimal(10,2) (max
-                        // 99,999,999.99). With cantidad capped at 999,
+                        // 99,999,999.99). With cantidad capped at 1000,
                         // 99,999.99 keeps subtotal safely inside the column.
                         const safe = Number.isFinite(parsed)
                           ? Math.max(0, Math.min(99999.99, parsed))
