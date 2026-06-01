@@ -1,0 +1,1 @@
+export const MAX_QUOTE_ITEM_QUANTITY = 999;
