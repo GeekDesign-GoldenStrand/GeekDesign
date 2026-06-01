@@ -20,10 +20,13 @@ interface Props {
   pedido: Pedido;
   role: UserRole;
   onRefetch: () => Promise<void>;
+  detalleIds?: number[] | null;
 }
 
-export function PedidoDetailPage({ pedido, role, onRefetch }: Props) {
+export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  // Collapse history by default when filtering to a service — keep focus on the filtered line items
+  const [showHistorial, setShowHistorial] = useState(!detalleIds);
   const togglePanel = (panel: ActivePanel) =>
     setActivePanel((prev) => (prev === panel ? null : panel));
 
@@ -124,7 +127,7 @@ export function PedidoDetailPage({ pedido, role, onRefetch }: Props) {
       </div>
 
       <div className="mb-4">
-        <PedidoDetallesTable detalle={pedido.detalle} />
+        <PedidoDetallesTable detalle={pedido.detalle} detalleIds={detalleIds} />
       </div>
 
       <div className="mb-4">
@@ -132,7 +135,16 @@ export function PedidoDetailPage({ pedido, role, onRefetch }: Props) {
       </div>
 
       <div className="mb-4">
-        <PedidoHistorialCard historial={pedido.historial} />
+        {detalleIds && (
+          <button
+            type="button"
+            onClick={() => setShowHistorial((v) => !v)}
+            className="mb-2 text-sm text-gray-500 underline hover:text-gray-700"
+          >
+            {showHistorial ? "Ocultar historial" : "Ver historial del pedido"}
+          </button>
+        )}
+        {showHistorial && <PedidoHistorialCard historial={pedido.historial} />}
       </div>
     </div>
   );
