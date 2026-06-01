@@ -38,6 +38,11 @@ type Pedido = {
   archivos: { id: number; nombre: string }[];
 };
 
+type PedidoStatusFilterOption = {
+  label: string;
+  value: string;
+};
+
 // Props
 type Props = {
   pedidos: Pedido[];
@@ -77,6 +82,7 @@ type Props = {
   backButtonLabel?: string;
   showServiceTabs?: boolean;
   role?: UserRole;
+  pedidoStatusOptions?: PedidoStatusFilterOption[];
 };
 
 export function PedidosTemplate({
@@ -109,53 +115,10 @@ export function PedidosTemplate({
   backButtonLabel,
   showServiceTabs = true,
   role: _role,
+  pedidoStatusOptions,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
   const pageSize = 10;
-
-  const activeFilterChips = [
-    clienteEmpresa
-      ? {
-          key: "clienteEmpresa",
-          label: `Cliente/Empresa: ${clienteEmpresa}`,
-          clear: () => setClienteEmpresa(null),
-        }
-      : null,
-    ...estatuses.map((s) => ({
-      key: `estatus-${s}`,
-      label: s,
-      clear: () => setEstatuses(estatuses.filter((e) => e !== s)),
-    })),
-    fechaEstimadaDesde
-      ? {
-          key: "desde",
-          label: `Desde: ${fechaEstimadaDesde}`,
-          clear: () => setFechaEstimadaDesde(""),
-        }
-      : null,
-    fechaEstimadaHasta
-      ? {
-          key: "hasta",
-          label: `Hasta: ${fechaEstimadaHasta}`,
-          clear: () => setFechaEstimadaHasta(""),
-        }
-      : null,
-    ...detalleEstatuses.map((s) => ({
-      key: `detalle-${s}`,
-      label: `Servicio: ${s}`,
-      clear: () => setDetalleEstatuses(detalleEstatuses.filter((e) => e !== s)),
-    })),
-  ].filter((c): c is NonNullable<typeof c> => c !== null);
-
-  const filterCount = activeFilterChips.length;
-
-  function clearAllFilters() {
-    setClienteEmpresa(null);
-    setEstatuses([]);
-    setFechaEstimadaDesde("");
-    setFechaEstimadaHasta("");
-    setDetalleEstatuses([]);
-  }
 
   return (
     <>
@@ -192,11 +155,6 @@ export function PedidosTemplate({
             >
               <FilterIcon />
               Filtrar
-              {filterCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e42200] text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                  {filterCount}
-                </span>
-              )}
             </button>
           </div>
 
@@ -222,35 +180,6 @@ export function PedidosTemplate({
           </div>
         </div>
 
-        {/* Active filter chips */}
-        {activeFilterChips.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {activeFilterChips.map((chip) => (
-              <span
-                key={chip.key}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
-              >
-                {chip.label}
-                <button
-                  type="button"
-                  onClick={chip.clear}
-                  aria-label={`Quitar filtro ${chip.label}`}
-                  className="leading-none hover:text-[#b31a00]"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
-            >
-              Limpiar todo
-            </button>
-          </div>
-        )}
-
         <PedidosFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
@@ -258,6 +187,7 @@ export function PedidosTemplate({
           setClienteEmpresa={setClienteEmpresa}
           estatuses={estatuses}
           setEstatuses={setEstatuses}
+          pedidoStatusOptions={pedidoStatusOptions}
           fechaEstimadaDesde={fechaEstimadaDesde}
           setFechaEstimadaDesde={setFechaEstimadaDesde}
           fechaEstimadaHasta={fechaEstimadaHasta}

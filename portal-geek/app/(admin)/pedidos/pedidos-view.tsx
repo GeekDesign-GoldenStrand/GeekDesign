@@ -145,9 +145,7 @@ export function PedidosView({ role }: Props) {
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
       // Detail-status filter is only meaningful when a service is selected.
-      if (serviceIds.length > 0) {
-        detalleEstatuses.forEach((e) => params.append("detalleEstatus", e));
-      }
+      detalleEstatuses.forEach((e) => params.append("detalleEstatus", e));
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();

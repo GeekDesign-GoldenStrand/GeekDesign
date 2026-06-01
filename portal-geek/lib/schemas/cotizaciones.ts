@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { MAX_QUOTE_ITEM_QUANTITY } from "@/lib/constants/cotizaciones";
 import { isValidKey } from "@/lib/storage/keys";
 import { emailField } from "@/lib/utils/email";
 
@@ -51,20 +52,8 @@ export const UpdateCotizacionSchema = z.object({
     .array(
       z.object({
         id_detalle: z.number().int().positive(),
-        // Mirror SolicitarItemSchema's cap (storefront uses .max(9999) on the
-        // same field). Safe to apply on the edit path too because cantidad
-        // has always been enforced at creation, so no legacy line item can
-        // exceed it.
-        cantidad: z.number().int().positive().max(9999, "La cantidad no puede superar 9999"),
-        // Safety-net cap to catch typo overflows on edit. Set high enough
-        // (10M MXN) to accommodate any historical line item — precio_unitario
-        // has never been bounded at creation, so we can't assume legacy data
-        // fits a tighter range. Matches the money cap used for cost fields
-        // (EditarMaterialForm, InstaladorToggle/ProveedorToggle).
-        precio_unitario: z
-          .number()
-          .nonnegative()
-          .max(9999999.99, "El precio unitario no puede superar 9,999,999.99"),
+        cantidad: z.number().int().positive(),
+        precio_unitario: z.number().nonnegative(),
       })
     )
     .optional(),
@@ -133,7 +122,11 @@ export const AplicarDescuentoSchema = z.object({
 const SolicitarItemSchema = z.object({
   id_servicio: z.number().int().positive(),
   id_material: z.number().int().positive(),
-  cantidad: z.number().int().positive().max(9999),
+  cantidad: z
+    .number()
+    .int("La cantidad debe ser un número entero")
+    .positive("La cantidad debe ser mayor que 0")
+    .max(MAX_QUOTE_ITEM_QUANTITY, `La cantidad máxima por producto es ${MAX_QUOTE_ITEM_QUANTITY}`),
   notas: z.string().max(500).optional(),
   // Storage key of the design file the client uploaded before adding to cart.
   // Presence is optional — items without a design file fall back to the

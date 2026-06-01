@@ -4,7 +4,12 @@ import { useState } from "react";
 
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 
-const STATUS_OPTIONS = [
+type PedidoStatusFilterOption = {
+  label: string;
+  value: string;
+};
+
+const STATUS_OPTIONS: PedidoStatusFilterOption[] = [
   { label: "Pendiente", value: "Pendiente" },
   { label: "En producción", value: "En producción" },
   { label: "Finalizado", value: "Finalizado" },
@@ -19,6 +24,7 @@ type Props = {
 
   estatuses: string[];
   setEstatuses: (v: string[]) => void;
+  pedidoStatusOptions?: PedidoStatusFilterOption[];
 
   fechaEstimadaDesde: string;
   setFechaEstimadaDesde: (value: string) => void;
@@ -39,6 +45,7 @@ export function PedidosFilterSidebar({
   setClienteEmpresa,
   estatuses,
   setEstatuses,
+  pedidoStatusOptions,
   fechaEstimadaDesde,
   setFechaEstimadaDesde,
   fechaEstimadaHasta,
@@ -47,7 +54,9 @@ export function PedidosFilterSidebar({
   detalleEstatuses,
   setDetalleEstatuses,
 }: Props) {
-  const showEstatusFilter = selectedServiceId !== null;
+  const showPedidoStatusFilter = pedidoStatusOptions !== undefined;
+  const showDetalleStatusFilter = selectedServiceId !== null;
+  const visiblePedidoStatusOptions = pedidoStatusOptions ?? STATUS_OPTIONS;
 
   const [draftClienteEmpresa, setDraftClienteEmpresa] = useState<string | null>(clienteEmpresa);
   const [draftEstatuses, setDraftEstatuses] = useState<string[]>(estatuses);
@@ -73,6 +82,7 @@ export function PedidosFilterSidebar({
     setDraftFechaDesde("");
     setDraftFechaHasta("");
     setDraftDetalleEstatuses([]);
+
     setClienteEmpresa(null);
     setEstatuses([]);
     setFechaEstimadaDesde("");
@@ -110,39 +120,39 @@ export function PedidosFilterSidebar({
         />
       </div>
 
-      {showEstatusFilter && (
+      {showPedidoStatusFilter && (
         <div>
           <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del pedido</p>
           <div className="space-y-2">
-            {STATUS_OPTIONS.map((s) => (
-              <label key={s.value} className="flex items-center gap-2 text-[13px]">
+            {visiblePedidoStatusOptions.map((status) => (
+              <label key={status.value} className="flex items-center gap-2 text-[13px]">
                 <input
                   type="checkbox"
-                  checked={draftEstatuses.includes(s.value)}
+                  checked={draftEstatuses.includes(status.value)}
                   onChange={(e) =>
-                    toggleStatus(s.value, e.target.checked, draftEstatuses, setDraftEstatuses)
+                    toggleStatus(status.value, e.target.checked, draftEstatuses, setDraftEstatuses)
                   }
                   className={filterSidebarClasses.checkbox}
                 />
-                {s.label}
+                {status.label}
               </label>
             ))}
           </div>
         </div>
       )}
 
-      {showEstatusFilter && (
+      {showDetalleStatusFilter && (
         <div>
           <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del servicio</p>
           <div className="space-y-2">
-            {STATUS_OPTIONS.map((s) => (
-              <label key={s.value} className="flex items-center gap-2 text-[13px]">
+            {STATUS_OPTIONS.map((status) => (
+              <label key={status.value} className="flex items-center gap-2 text-[13px]">
                 <input
                   type="checkbox"
-                  checked={draftDetalleEstatuses.includes(s.value)}
+                  checked={draftDetalleEstatuses.includes(status.value)}
                   onChange={(e) =>
                     toggleStatus(
-                      s.value,
+                      status.value,
                       e.target.checked,
                       draftDetalleEstatuses,
                       setDraftDetalleEstatuses
@@ -150,7 +160,7 @@ export function PedidosFilterSidebar({
                   }
                   className={filterSidebarClasses.checkbox}
                 />
-                {s.label}
+                {status.label}
               </label>
             ))}
           </div>

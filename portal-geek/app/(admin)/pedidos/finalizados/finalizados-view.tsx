@@ -7,7 +7,14 @@ import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceS
 import { PedidosTemplate } from "@/components/admin/templates/PedidosTemplate";
 import type { UserRole } from "@/types";
 
-const FINAL_PEDIDO_STATUSES = ["Entregado", "Cancelado"];
+const FINAL_PEDIDO_STATUSES = ["Entregado", "Cancelado"] as const;
+
+const FINAL_PEDIDO_STATUS_OPTIONS = FINAL_PEDIDO_STATUSES.map((status) => ({
+  label: status,
+  value: status,
+}));
+
+const DEFAULT_FINAL_PEDIDO_STATUSES = [...FINAL_PEDIDO_STATUSES];
 
 interface PedidoDetalle {
   id_detalle: number;
@@ -97,6 +104,7 @@ export function FinalizadosView({ role }: Props) {
 
   const [serviceIds, setServiceIds] = useState<number[]>([]);
   const [clienteEmpresa, setClienteEmpresa] = useState<string | null>(null);
+  const [estatuses, setEstatuses] = useState<string[]>(DEFAULT_FINAL_PEDIDO_STATUSES);
   const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
   const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
   const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
@@ -104,8 +112,7 @@ export function FinalizadosView({ role }: Props) {
 
   const pageSize = 10;
 
-  // Reset to page 1 whenever a filter or the search query changes — see the
-  // matching effect in cotizaciones/page.tsx for the rationale.
+  // Reset to page 1 whenever a filter or the search query changes.
   useEffect(() => {
     if (page !== 1) setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,6 +120,7 @@ export function FinalizadosView({ role }: Props) {
     search,
     serviceIds,
     clienteEmpresa,
+    estatuses,
     fechaEstimadaDesde,
     fechaEstimadaHasta,
     detalleEstatuses,
@@ -128,18 +136,24 @@ export function FinalizadosView({ role }: Props) {
 
       if (search) params.set("search", search);
 
-      serviceIds.forEach((id) => params.append("serviceId", id.toString()));
+      serviceIds.forEach((id) => {
+        params.append("serviceId", id.toString());
+      });
 
-      // This view is only for completed/canceled orders.
-      FINAL_PEDIDO_STATUSES.forEach((status) => params.append("estatus", status));
+      const selectedPedidoStatuses =
+        estatuses.length > 0 ? estatuses : DEFAULT_FINAL_PEDIDO_STATUSES;
+
+      selectedPedidoStatuses.forEach((status) => {
+        params.append("estatus", status);
+      });
 
       if (clienteEmpresa) params.set("clienteEmpresa", clienteEmpresa);
       if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
       if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
-      // Detail-status filter is only meaningful when a service is selected.
-      if (serviceIds.length > 0) {
-        detalleEstatuses.forEach((e) => params.append("detalleEstatus", e));
-      }
+
+      detalleEstatuses.forEach((status) => {
+        params.append("detalleEstatus", status);
+      });
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
@@ -176,6 +190,7 @@ export function FinalizadosView({ role }: Props) {
     search,
     serviceIds,
     clienteEmpresa,
+    estatuses,
     fechaEstimadaDesde,
     fechaEstimadaHasta,
     detalleEstatuses,
@@ -208,8 +223,6 @@ export function FinalizadosView({ role }: Props) {
   function handleServiceSelect(id: number | null) {
     setPage(1);
     setServiceIds(id === null ? [] : [id]);
-    // Detail status options are service-specific; clear any prior selection
-    // so the next service starts with no inherited filter.
     setDetalleEstatuses([]);
   }
 
@@ -238,8 +251,9 @@ export function FinalizadosView({ role }: Props) {
       onStatusChange={() => {}}
       clienteEmpresa={clienteEmpresa}
       setClienteEmpresa={setClienteEmpresa}
-      estatuses={[]}
-      setEstatuses={() => {}}
+      estatuses={estatuses}
+      setEstatuses={setEstatuses}
+      pedidoStatusOptions={FINAL_PEDIDO_STATUS_OPTIONS}
       fechaEstimadaDesde={fechaEstimadaDesde}
       setFechaEstimadaDesde={setFechaEstimadaDesde}
       fechaEstimadaHasta={fechaEstimadaHasta}
