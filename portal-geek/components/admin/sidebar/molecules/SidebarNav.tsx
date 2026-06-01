@@ -8,9 +8,11 @@ import type { UserRole } from "@/types";
 
 import { NavLink } from "../atoms/NavLink";
 import { navItems } from "../navItems";
+import { useSidebar } from "../SidebarContext";
 
-export function SidebarNav({ role }: { role: UserRole }) {
+export function SidebarNav({ role, expanded }: { role: UserRole; expanded: boolean }) {
   const pathname = usePathname();
+  const { onMenuClose } = useSidebar();
 
   // Visibility follows the policy: an item shows when the role may read its
   // section. Section-less items (Dashboard) are visible to any authenticated
@@ -33,7 +35,11 @@ export function SidebarNav({ role }: { role: UserRole }) {
             href={item.href}
             label={item.label}
             icon={item.icon}
+            iconHover={item.iconHover}
+            iconActive={item.iconActive}
             isActive={isActive}
+            expanded={expanded}
+            onClick={onMenuClose}
           />
         );
       })}

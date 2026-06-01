@@ -67,7 +67,11 @@ function mapApiRow(item: ColaboradorApiRow): ColaboradorRow {
   };
 }
 
-export function ColaboradoresView() {
+interface ColaboradoresViewProps {
+  currentUserId: number;
+}
+
+export function ColaboradoresView({ currentUserId }: ColaboradoresViewProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorRow[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
@@ -208,7 +212,7 @@ export function ColaboradoresView() {
     edad: number;
     sexo: string;
     telefono: string;
-    id_rol: number;
+    id_rol?: number;
     id_sucursal: number;
   }) {
     if (!editingId) return;
@@ -327,25 +331,22 @@ export function ColaboradoresView() {
       <AdminHeader title="Colaboradores" />
 
       <div className="px-4 sm:px-8 pt-6 pb-4">
-        <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            onAgregar={() => setModalOpen(true)}
-            onFiltrar={() => setFilterOpen((v) => !v)}
-          />
-          {filterOpen && (
-            <FiltrarColaboradoresPanel
-              roles={roles}
-              filterEstatus={filterEstatus}
-              filterRoles={filterRoles}
-              onEstatusChange={setFilterEstatus}
-              onRolToggle={handleRolToggle}
-              onReset={handleLimpiarFiltros}
-              onClose={() => setFilterOpen(false)}
-            />
-          )}
-        </div>
+        <AdminToolbar
+          search={search}
+          onSearchChange={setSearch}
+          onAgregar={() => setModalOpen(true)}
+          onFiltrar={() => setFilterOpen(true)}
+        />
+        <FiltrarColaboradoresPanel
+          open={filterOpen}
+          roles={roles}
+          filterEstatus={filterEstatus}
+          filterRoles={filterRoles}
+          onEstatusChange={setFilterEstatus}
+          onRolToggle={handleRolToggle}
+          onReset={handleLimpiarFiltros}
+          onClose={() => setFilterOpen(false)}
+        />
         {statusError && (
           <p role="alert" className="mt-3 text-[14px] text-[#df2646]">
             {statusError}
@@ -437,6 +438,7 @@ export function ColaboradoresView() {
         editError={editError}
         roles={roles}
         sucursales={sucursales}
+        currentUserId={currentUserId}
         onClose={closeEditModal}
         onSubmit={handleEditSubmit}
       />

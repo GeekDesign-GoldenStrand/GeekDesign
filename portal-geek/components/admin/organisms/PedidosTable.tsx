@@ -2,19 +2,20 @@
 
 import {
   PencilSimple,
-  Info,
   CheckCircle,
   WarningCircle,
   StopCircle,
   CurrencyDollar,
   CaretDown,
 } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 
 import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import {
   ServiceStatusSemaphore,
   type ServiceStatusSummary,
 } from "@/components/admin/molecules/ServiceStatusSemaphore";
+import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 import { formatDate } from "@/lib/utils/date";
 
 // UI → API
@@ -67,6 +68,51 @@ function getAllowedPedidoStatuses(currentStatus: string): string[] {
 
   // Any other state allows free transition between all options.
   return ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
+}
+
+// Inline status pill. Colored trigger (per-status at-a-glance recognition) +
+// canonical PopoverItem panel (uniform with every other dropdown in the app).
+function PedidoStatusPill({
+  status,
+  triggerClass,
+  iconSize,
+  onChange,
+}: {
+  status: string;
+  triggerClass: string;
+  iconSize: number;
+  onChange: (next: string) => void;
+}) {
+  const allowed = getAllowedPedidoStatuses(status);
+
+  return (
+    <Popover
+      align="end"
+      panelClassName="min-w-[180px]"
+      trigger={
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          className={`rounded-full cursor-pointer flex items-center gap-2 ${triggerClass} ${getStatusStyle(status)}`}
+        >
+          <span className="whitespace-nowrap">{status}</span>
+          <CaretDown size={iconSize} weight="bold" />
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {allowed.map((opt) => (
+          <PopoverItem
+            key={opt}
+            selected={opt === status}
+            onSelect={() => onChange(STATUS_MAP_UI_TO_API[opt] ?? opt)}
+          >
+            {opt}
+          </PopoverItem>
+        ))}
+      </div>
+    </Popover>
+  );
 }
 
 function getInvoiceProgress(status?: string | null) {
@@ -124,6 +170,7 @@ interface Pedido {
   fecha_estimada?: string | null;
   folio?: string | null;
   monto_total?: number | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -149,15 +196,10 @@ interface Props {
   onStatusChange: (id: number, status: string) => void;
   selectedServiceId: number | null;
   onDetalleStatusChange: (detalleId: number, status: string) => void;
-  onShowDetail: (id: number) => void;
 }
 
-export function PedidosTable({
-  pedidos,
-  selectedServiceId,
-  onDetalleStatusChange,
-  onShowDetail,
-}: Props) {
+export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange }: Props) {
+  const router = useRouter();
   if (pedidos.length === 0) {
     return (
       <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron pedidos.</div>
@@ -197,9 +239,21 @@ export function PedidosTable({
 
           return (
             <div key={p.id_pedido}>
-              {/* Desktop Row */}
+              {/* Desktop Row — entire row opens the pedido detail */}
               <div
-                className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center"
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
+                onKeyDown={(e) => {
+                  // Ignore keys bubbling from inner controls (status select, links).
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/pedidos/${p.id_pedido}`);
+                  }
+                }}
+                aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
                 style={{
                   gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
                 }}
@@ -213,10 +267,10 @@ export function PedidosTable({
                 </span>
 
                 {/* Empresa */}
-                <span className="truncate px-2">{p.cliente?.empresa ?? "—"}</span>
+                <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
 
                 {/* Nombre de oportunidad */}
-                <span className="truncate px-2">{p.cliente?.nombre_cliente}</span>
+                <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
 
                 {/* Monto */}
                 <span className="whitespace-nowrap">
@@ -229,32 +283,14 @@ export function PedidosTable({
                 {/* Semáforo general o estatus del servicio seleccionado */}
                 <div className="flex justify-center">
                   {selectedServiceId && selectedServiceDetail ? (
-                    <div
-                      className={`relative flex items-center rounded-full ${getStatusStyle(
-                        selectedServiceStatus
-                      )}`}
-                    >
-                      <select
-                        value={selectedServiceStatus}
-                        onChange={(e) => {
-                          const uiValue = e.target.value;
-                          const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-
-                          onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue);
-                        }}
-                        className="pl-4 pr-8 py-1 rounded-full text-sm font-medium outline-none cursor-pointer appearance-none bg-transparent whitespace-nowrap"
-                      >
-                        {getAllowedPedidoStatuses(selectedServiceStatus).map((status) => (
-                          <option key={status}>{status}</option>
-                        ))}
-                      </select>
-
-                      <CaretDown
-                        size={14}
-                        weight="bold"
-                        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
-                      />
-                    </div>
+                    <PedidoStatusPill
+                      status={selectedServiceStatus}
+                      triggerClass="pl-4 pr-3 py-1 text-sm font-medium"
+                      iconSize={14}
+                      onChange={(apiValue) =>
+                        onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue)
+                      }
+                    />
                   ) : (
                     <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
                   )}
@@ -284,24 +320,23 @@ export function PedidosTable({
 
                 {/* Acciones */}
                 <div className="flex justify-center items-center gap-1">
-                  <DesignFileLink
-                    archivos={p.archivos}
-                    className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => onShowDetail(p.id_pedido)}
-                    className="text-black hover:text-[#e42200] p-2"
-                    title="Ver detalle del pedido"
-                    aria-label={`Ver detalle del pedido ${p.id_pedido}`}
+                  {/* Fixed slot so the optional design-file clip doesn't shift the edit icon */}
+                  <span
+                    className="flex w-[34px] shrink-0 justify-center"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Info size={18} />
-                  </button>
+                    <DesignFileLink
+                      archivos={p.archivos}
+                      className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
+                    />
+                  </span>
 
                   <a
                     href={`/pedidos/${p.id_pedido}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="text-black hover:text-[#e42200] p-2"
+                    title="Editar pedido"
+                    aria-label={`Editar pedido ${p.folio ?? p.id_pedido}`}
                   >
                     <PencilSimple size={18} />
                   </a>
@@ -309,7 +344,21 @@ export function PedidosTable({
               </div>
 
               {/* Mobile Card */}
-              <div className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
+                onKeyDown={(e) => {
+                  // Ignore keys bubbling from inner controls (status select, links).
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/pedidos/${p.id_pedido}`);
+                  }
+                }}
+                aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4 cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+              >
                 {/* Header: pedido id + service status control/semaphore */}
                 <div className="flex justify-between items-start gap-4">
                   <div>
@@ -325,32 +374,14 @@ export function PedidosTable({
                     - Service-filtered view: show editable status for that service detail. */}
                   <div className="flex justify-end">
                     {selectedServiceId && selectedServiceDetail ? (
-                      <div
-                        className={`relative flex items-center rounded-full ${getStatusStyle(
-                          selectedServiceStatus
-                        )}`}
-                      >
-                        <select
-                          value={selectedServiceStatus}
-                          onChange={(e) => {
-                            const uiValue = e.target.value;
-                            const apiValue = STATUS_MAP_UI_TO_API[uiValue] ?? uiValue;
-
-                            onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue);
-                          }}
-                          className="pl-3 pr-8 py-1 rounded-full text-[11px] font-bold outline-none appearance-none bg-transparent"
-                        >
-                          {getAllowedPedidoStatuses(selectedServiceStatus).map((status) => (
-                            <option key={status}>{status}</option>
-                          ))}
-                        </select>
-
-                        <CaretDown
-                          size={12}
-                          weight="bold"
-                          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
-                        />
-                      </div>
+                      <PedidoStatusPill
+                        status={selectedServiceStatus}
+                        triggerClass="pl-3 pr-2 py-1 text-[11px] font-bold"
+                        iconSize={12}
+                        onChange={(apiValue) =>
+                          onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue)
+                        }
+                      />
                     ) : (
                       <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
                     )}
@@ -372,6 +403,14 @@ export function PedidosTable({
 
                       <p className="text-[11px] text-[#8e908f]">
                         {p.cliente?.empresa || "Sin empresa"}
+                      </p>
+
+                      <p className="mt-2 text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                        Oportunidad
+                      </p>
+
+                      <p className="text-[12px] font-medium text-[#1e1e1e]">
+                        {p.nombre_oportunidad ?? "—"}
                       </p>
                     </div>
 
@@ -449,26 +488,17 @@ export function PedidosTable({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <DesignFileLink
                       archivos={p.archivos}
                       className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
                     />
 
-                    <button
-                      type="button"
-                      onClick={() => onShowDetail(p.id_pedido)}
-                      className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
-                      title="Ver detalle del pedido"
-                      aria-label={`Ver detalle del pedido ${p.id_pedido}`}
-                    >
-                      <Info size={18} />
-                    </button>
-
                     <a
                       href={`/pedidos/${p.id_pedido}`}
                       className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
                       title="Editar pedido"
+                      aria-label={`Editar pedido ${p.folio ?? p.id_pedido}`}
                     >
                       <PencilSimple size={18} />
                     </a>

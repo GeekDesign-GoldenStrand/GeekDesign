@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { UploadedFile } from "@/components/storefront/molecules/DesignUploadZone";
-import { addItem } from "@/lib/cart/storage";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { addItem, CANTIDAD_MAX } from "@/lib/cart/storage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,10 +30,15 @@ interface Props {
   materiales: Material[];
   variables: Variable[];
   disenioFile?: UploadedFile | null;
+  imagenUrls?: string[];
 }
 
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+
+function stripZodPathPrefix(msg: string): string {
+  return msg.replace(/^[a-zA-Z0-9_.]+: /, "");
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -41,6 +48,7 @@ export function FormulaVariablesForm({
   materiales,
   variables,
   disenioFile,
+  imagenUrls,
 }: Props) {
   const editables = useMemo(() => variables.filter((v) => v.editable_por_cliente), [variables]);
   const defaultValues = useMemo(
@@ -88,7 +96,7 @@ export function FormulaVariablesForm({
         const json = await res.json();
         if (reqId !== lastRequestId.current) return;
         if (!res.ok) {
-          setCalcError(json.error ?? "Error al calcular el precio");
+          setCalcError(stripZodPathPrefix(json.error ?? "Error al calcular el precio"));
           setPrecioUnitario(null);
           return;
         }
@@ -100,15 +108,28 @@ export function FormulaVariablesForm({
       } finally {
         if (reqId === lastRequestId.current) setCalculating(false);
       }
-    }, 150);
+    }, 400);
     return () => clearTimeout(timer);
   }, [idMaterial, values, servicioId, editables]);
+
+  // Mirror server schema: variable values are strictly positive with a
+  // safety-net upper bound (catches typo overflows like 999999999).
+  const VAR_MIN = 0; // exclusive — final check is `> 0` on submit
+  const VAR_MAX = 100000;
 
   function handleVarChange(nombre: string, raw: string) {
     // reAchi301 review: an empty input must NOT collapse to 0 — a 0 silently
     // poisons the formula (divide-by-zero, or a 0× that zeroes the price with
     // no error). Store NaN as the "empty" sentinel; calc + submit guard on it.
-    const num = raw.trim() === "" ? NaN : Number(raw);
+    if (raw.trim() === "") {
+      setValues((prev) => ({ ...prev, [nombre]: NaN }));
+      return;
+    }
+    const num = Number(raw);
+    // Reject negatives at the keystroke layer so the field can't visually hold
+    // a `-5`. The corresponding server schema rejects anything <= 0.
+    if (!Number.isFinite(num) || num < VAR_MIN) return;
+    if (num > VAR_MAX) return;
     setValues((prev) => ({ ...prev, [nombre]: num }));
   }
 
@@ -117,6 +138,12 @@ export function FormulaVariablesForm({
     setValues({ ...defaultValues });
     setCantidad(1);
     setNotas("");
+    // Clear the stale price so the "Agregar al carrito" button stays disabled
+    // until the post-reset recalc lands. Without this, the button briefly
+    // flashes enabled (with the old subtotal) → disabled (while recalculating)
+    // → enabled (with the new subtotal).
+    setPrecioUnitario(null);
+    setCalcError(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -127,6 +154,10 @@ export function FormulaVariablesForm({
     }
     if (editables.some((v) => !Number.isFinite(values[v.nombre_variable]))) {
       setCalcError("Completa todos los campos antes de agregar al carrito");
+      return;
+    }
+    if (editables.some((v) => values[v.nombre_variable] <= 0)) {
+      setCalcError("Los valores deben ser mayores que 0");
       return;
     }
     if (precioUnitario === null) {
@@ -153,6 +184,7 @@ export function FormulaVariablesForm({
       },
       cantidad,
       precioCalculado: precioUnitario,
+      imagenUrls,
       ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
     });
     window.dispatchEvent(new CustomEvent("carrito:updated"));
@@ -172,9 +204,9 @@ export function FormulaVariablesForm({
   return (
     <div className="flex flex-col gap-[20px]">
       {/* ── Precio estimado callout ── */}
-      <div className="bg-[#ffd9e2] rounded-[14px] p-[24px] flex flex-col gap-[4px]">
+      <div className="bg-[#ffd9e2] rounded-[14px] p-[24px] flex flex-col gap-[4px] min-w-0">
         <p className="text-[14px] text-[#1e1e1e]">Precio estimado</p>
-        <p className="font-bold text-[40px] leading-none text-[#1e1e1e]">
+        <p className="font-bold text-[40px] leading-none text-[#1e1e1e] break-words tabular-nums">
           {subtotal !== null ? formatPeso(subtotal) : "—"}
         </p>
         <p className="text-[12px] text-[#1e1e1e]/70 mt-[4px]">
@@ -195,18 +227,18 @@ export function FormulaVariablesForm({
             <label htmlFor="material" className="text-[13px] font-medium text-[#1e1e1e]">
               Material
             </label>
-            <select
+            <Select
               id="material"
-              value={idMaterial ?? ""}
-              onChange={(e) => setIdMaterial(Number(e.target.value))}
-              className="h-[40px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
+              size="sm"
+              value={idMaterial === null ? "" : String(idMaterial)}
+              onChange={(v) => setIdMaterial(v ? Number(v) : null)}
             >
               {materiales.map((m) => (
-                <option key={m.id_material} value={m.id_material}>
+                <SelectOption key={m.id_material} value={String(m.id_material)}>
                   {m.nombre_material}
-                </option>
+                </SelectOption>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Cantidad */}
@@ -218,11 +250,17 @@ export function FormulaVariablesForm({
               id="cantidad"
               type="number"
               min={1}
-              max={9999}
+              max={CANTIDAD_MAX}
               value={cantidad}
               onChange={(e) => {
                 const val = Number(e.target.value);
-                setCantidad(Number.isFinite(val) ? Math.max(1, Math.floor(val)) : 1);
+                if (!Number.isFinite(val)) return;
+                const next = Math.floor(val);
+                // Reject the keystroke when it would exceed the cap instead of
+                // snapping to it — typing "1234" leaves the field at "123"
+                // rather than jumping to 1000.
+                if (next > CANTIDAD_MAX) return;
+                setCantidad(Math.max(1, next));
               }}
               className="h-[40px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
             />
@@ -243,10 +281,17 @@ export function FormulaVariablesForm({
                   type="number"
                   inputMode="decimal"
                   step="any"
+                  min={VAR_MIN}
+                  max={VAR_MAX}
                   value={
                     Number.isFinite(values[v.nombre_variable]) ? values[v.nombre_variable] : ""
                   }
                   onChange={(e) => handleVarChange(v.nombre_variable, e.target.value)}
+                  onKeyDown={(e) => {
+                    // Block the minus key outright so the input visually can't
+                    // hold a negative; handleVarChange also rejects programmatically.
+                    if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault();
+                  }}
                   className="h-[40px] w-full rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] pr-[44px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
                 />
                 {v.unidad && (
@@ -277,15 +322,17 @@ export function FormulaVariablesForm({
 
         {/* Summary box */}
         <div className="bg-white rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[6px]">
-          <div className="flex justify-between text-[13px] text-[#1e1e1e]">
+          <div className="flex justify-between gap-[12px] text-[13px] text-[#1e1e1e]">
             <span>Precio unitario</span>
-            <span className="font-medium">
+            <span className="font-medium text-right break-words tabular-nums min-w-0">
               {precioUnitario !== null ? formatPeso(precioUnitario) : "—"}
             </span>
           </div>
-          <div className="flex justify-between text-[13px] text-[#1e1e1e]">
+          <div className="flex justify-between gap-[12px] text-[13px] text-[#1e1e1e]">
             <span>Subtotal</span>
-            <span className="font-medium">{subtotal !== null ? formatPeso(subtotal) : "—"}</span>
+            <span className="font-medium text-right break-words tabular-nums min-w-0">
+              {subtotal !== null ? formatPeso(subtotal) : "—"}
+            </span>
           </div>
           <div className="flex justify-between text-[13px] text-[#1e1e1e]">
             <span>Tiempo estimado</span>
@@ -299,20 +346,25 @@ export function FormulaVariablesForm({
         {calcError && <p className="text-[13px] font-medium text-[#c14a4a]">{calcError}</p>}
 
         <div className="flex gap-[12px]">
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            section="storefront"
+            size="md"
             disabled={precioUnitario === null || calculating}
-            className="flex-1 bg-[#8b434a] rounded-[10px] h-[48px] text-white font-semibold text-[15px] hover:bg-[#7a3a41] active:scale-[0.99] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1"
           >
             Agregar al carrito
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="md"
             onClick={handleReset}
-            className="flex-1 bg-white border border-[#8b434a] rounded-[10px] h-[48px] text-[#8b434a] font-semibold text-[15px] hover:bg-[#fff0f3] active:scale-[0.99] transition-all duration-150"
+            className="flex-1"
           >
             Restablecer
-          </button>
+          </Button>
         </div>
       </form>
     </div>

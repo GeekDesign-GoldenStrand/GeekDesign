@@ -2,7 +2,30 @@ import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
 
+import { noEmoji, textOnly } from "./text-validation";
+
 const NOMBRE_BLOCKED = /[\x00-\x1F\x7F<>{}\[\]\\|^~`*]/;
+const COLOR_BLOCKED = /[\x00-\x1F\x7F<>{}\[\]\\|^~`*]/;
+
+const colorValidator = z
+  .string()
+  .trim()
+  .min(1, "El color es requerido.")
+  .max(50, "Máximo 50 caracteres.")
+  .refine((v) => !COLOR_BLOCKED.test(v), "El color contiene caracteres no permitidos.")
+  .refine(noEmoji, { message: "El color no debe contener emojis" })
+  .refine(textOnly, {
+    message: "El color solo debe contener caracteres en inglés o español y signos comunes",
+  });
+
+const descripcionOpcionalValidator = z
+  .string()
+  .max(500, "Máximo 500 caracteres.")
+  .optional()
+  .refine((v) => (v ? noEmoji(v) : true), { message: "La descripción no debe contener emojis" })
+  .refine((v) => (v ? textOnly(v) : true), {
+    message: "La descripción solo debe contener caracteres en inglés o español y signos comunes",
+  });
 
 export const UNIDADES_MEDIDA = ["mm", "in", "cm", "mu", "pt"] as const;
 
@@ -10,15 +33,20 @@ const imagenKeyValidator = z
   .string()
   .max(500, "Máximo 500 caracteres.")
   .refine(
-    (v) => isValidKey(v, "materiales"),
+    (v) => !v || isValidKey(v, "materiales"),
     "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
-  );
+  )
+  .optional();
 
 const nombreValidator = z
   .string()
   .min(1, "El nombre es requerido.")
   .max(100, "Máximo 100 caracteres.")
-  .refine((v) => !NOMBRE_BLOCKED.test(v), "El nombre contiene caracteres no permitidos.");
+  .refine((v) => !NOMBRE_BLOCKED.test(v), "El nombre contiene caracteres no permitidos.")
+  .refine(noEmoji, { message: "El nombre no debe contener emojis" })
+  .refine(textOnly, {
+    message: "El nombre solo debe contener caracteres en inglés o español y signos comunes",
+  });
 
 const dimensionValidator = (label: string) =>
   z
@@ -31,16 +59,13 @@ const dimensionValidator = (label: string) =>
 
 export const CreateMaterialSchema = z.object({
   nombre_material: nombreValidator,
-  descripcion_material: z
-    .string()
-    .min(1, "La descripción es requerida.")
-    .max(500, "Máximo 500 caracteres."),
+  descripcion_material: descripcionOpcionalValidator,
   unidad_medida: z.enum(UNIDADES_MEDIDA, { message: "La unidad de medida es requerida." }),
   ancho: dimensionValidator("El ancho"),
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
-  imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
+  color: colorValidator,
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Group (top-level, no dimensions) ─────────────────────────────────────────
@@ -48,15 +73,8 @@ export const CreateMaterialSchema = z.object({
 export const CreateGrupoMaterialSchema = z.object({
   tipo: z.literal("grupo"),
   nombre_material: nombreValidator,
-  descripcion_material: z.string().max(500, "Máximo 500 caracteres.").optional(),
-  imagen_url: z
-    .string()
-    .max(500, "Máximo 500 caracteres.")
-    .refine(
-      (v) => !v || isValidKey(v, "materiales"),
-      "Debe ser una clave de almacenamiento válida (sube la imagen primero)."
-    )
-    .optional(),
+  descripcion_material: descripcionOpcionalValidator,
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Sub-material (variant, belongs to a group) ────────────────────────────────
@@ -65,16 +83,13 @@ export const CreateSubMaterialSchema = z.object({
   tipo: z.literal("sub"),
   id_material_padre: z.number().int().positive("Debes seleccionar un grupo."),
   nombre_material: nombreValidator,
-  descripcion_material: z
-    .string()
-    .min(1, "La descripción es requerida.")
-    .max(500, "Máximo 500 caracteres."),
+  descripcion_material: descripcionOpcionalValidator,
   unidad_medida: z.enum(UNIDADES_MEDIDA, { message: "La unidad de medida es requerida." }),
   ancho: dimensionValidator("El ancho"),
   alto: dimensionValidator("El alto"),
   grosor: dimensionValidator("El grosor"),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "El color debe ser un HEX válido (ej. #3B82F6)."),
-  imagen_url: imagenKeyValidator.refine((v) => v.length >= 1, "La imagen es requerida."),
+  color: colorValidator,
+  imagen_url: imagenKeyValidator,
 });
 
 // ── Update schema ─────────────────────────────────────────────────────────────

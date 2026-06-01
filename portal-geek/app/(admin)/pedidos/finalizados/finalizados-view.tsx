@@ -28,6 +28,7 @@ interface Pedido {
   fecha_estimada?: string | null;
   monto_total?: number | null;
   folio?: string | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -51,6 +52,7 @@ interface PedidoApi {
   id_pedido: number;
   fecha_creacion: string;
   fecha_estimada?: string | null;
+  nombre_oportunidad?: string | null;
 
   cotizaciones?: {
     folio?: string | null;
@@ -94,12 +96,27 @@ export function FinalizadosView({ role }: Props) {
   const [total, setTotal] = useState(0);
 
   const [serviceIds, setServiceIds] = useState<number[]>([]);
-  const [estatuses, setEstatuses] = useState<string[]>(FINAL_PEDIDO_STATUSES);
-  const [empresa, setEmpresa] = useState<string | null>(null);
-  const [cliente, setCliente] = useState<string | null>(null);
+  const [clienteEmpresa, setClienteEmpresa] = useState<string | null>(null);
+  const [fechaEstimadaDesde, setFechaEstimadaDesde] = useState("");
+  const [fechaEstimadaHasta, setFechaEstimadaHasta] = useState("");
+  const [detalleEstatuses, setDetalleEstatuses] = useState<string[]>([]);
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
 
   const pageSize = 10;
+
+  // Reset to page 1 whenever a filter or the search query changes — see the
+  // matching effect in cotizaciones/page.tsx for the rationale.
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    search,
+    serviceIds,
+    clienteEmpresa,
+    fechaEstimadaDesde,
+    fechaEstimadaHasta,
+    detalleEstatuses,
+  ]);
 
   const fetchPedidos = useCallback(async () => {
     try {
@@ -116,8 +133,13 @@ export function FinalizadosView({ role }: Props) {
       // This view is only for completed/canceled orders.
       FINAL_PEDIDO_STATUSES.forEach((status) => params.append("estatus", status));
 
-      if (empresa) params.set("empresa", empresa);
-      if (cliente) params.set("cliente", cliente);
+      if (clienteEmpresa) params.set("clienteEmpresa", clienteEmpresa);
+      if (fechaEstimadaDesde) params.set("fechaEstimadaDesde", fechaEstimadaDesde);
+      if (fechaEstimadaHasta) params.set("fechaEstimadaHasta", fechaEstimadaHasta);
+      // Detail-status filter is only meaningful when a service is selected.
+      if (serviceIds.length > 0) {
+        detalleEstatuses.forEach((e) => params.append("detalleEstatus", e));
+      }
 
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
@@ -127,6 +149,7 @@ export function FinalizadosView({ role }: Props) {
         fecha_creacion: p.fecha_creacion,
         fecha_estimada: p.fecha_estimada ?? null,
         folio: p.cotizaciones?.[0]?.folio ?? null,
+        nombre_oportunidad: p.nombre_oportunidad ?? null,
         monto_total: p.cotizaciones?.[0] ? Number(p.cotizaciones[0].monto_total) : null,
         cliente: p.cliente,
         estatus: p.estatus,
@@ -148,7 +171,15 @@ export function FinalizadosView({ role }: Props) {
     } catch {
       console.error("Error loading finalized orders");
     }
-  }, [page, search, serviceIds, empresa, cliente]);
+  }, [
+    page,
+    search,
+    serviceIds,
+    clienteEmpresa,
+    fechaEstimadaDesde,
+    fechaEstimadaHasta,
+    detalleEstatuses,
+  ]);
 
   useEffect(() => {
     fetchPedidos();
@@ -177,6 +208,9 @@ export function FinalizadosView({ role }: Props) {
   function handleServiceSelect(id: number | null) {
     setPage(1);
     setServiceIds(id === null ? [] : [id]);
+    // Detail status options are service-specific; clear any prior selection
+    // so the next service starts with no inherited filter.
+    setDetalleEstatuses([]);
   }
 
   async function handleDetalleStatusChange(detalleId: number, status: string) {
@@ -202,16 +236,16 @@ export function FinalizadosView({ role }: Props) {
       total={total}
       onDelete={() => {}}
       onStatusChange={() => {}}
-      onlyActive={false}
-      setOnlyActive={() => {}}
-      serviceIds={serviceIds}
-      setServiceIds={setServiceIds}
-      estatuses={estatuses}
-      setEstatuses={setEstatuses}
-      empresa={empresa}
-      setEmpresa={setEmpresa}
-      cliente={cliente}
-      setCliente={setCliente}
+      clienteEmpresa={clienteEmpresa}
+      setClienteEmpresa={setClienteEmpresa}
+      estatuses={[]}
+      setEstatuses={() => {}}
+      fechaEstimadaDesde={fechaEstimadaDesde}
+      setFechaEstimadaDesde={setFechaEstimadaDesde}
+      fechaEstimadaHasta={fechaEstimadaHasta}
+      setFechaEstimadaHasta={setFechaEstimadaHasta}
+      detalleEstatuses={detalleEstatuses}
+      setDetalleEstatuses={setDetalleEstatuses}
       services={services}
       selectedServiceId={serviceIds.length === 1 ? serviceIds[0] : null}
       onServiceSelect={handleServiceSelect}

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
 import MaquinaInput from "@/components/ui/atoms/FormInput";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
+import { stripEmoji } from "@/lib/utils/format";
 import type { MaquinaCardProps } from "@/types";
 
 interface MaquinaRaw {
@@ -34,6 +38,23 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
   const [machineNameError, setMachineNameError] = useState<string | null>(null);
   const [machineNicknameError, setMachineNicknameError] = useState<string | null>(null);
   const [machineTypeError, setMachineTypeError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Reset every field + error each time the modal reopens — without this,
+  // closing the modal mid-flow leaves stale validation messages and partial
+  // input that surface again on the next open.
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    setMachineName("");
+    setMachineNickname("");
+    setMachineType("");
+    setMachineDescription("");
+    setMachineNameError(null);
+    setMachineNicknameError(null);
+    setMachineTypeError(null);
+    setSubmitSuccess(false);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -79,8 +100,8 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
         onChangeStatus: () => {},
       });
 
-      window.alert("Máquina registrada correctamente");
-      onClose();
+      // SuccessModal auto-dismisses after 1.5s and then closes this modal.
+      setSubmitSuccess(true);
     } catch {
       setError("No se pudo conectar con el servidor");
     } finally {
@@ -105,6 +126,10 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
     return valid;
   }
 
+  if (submitSuccess) {
+    return <SuccessModal message="Máquina registrada correctamente" onClose={onClose} />;
+  }
+
   return (
     <ModalShell title="Registrar máquina" onClose={onClose}>
       <form onSubmit={handleSubmit}>
@@ -114,8 +139,9 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           error={machineNameError}
           placeholder="Ej. CO2 100 Watts"
           required
-          maxInputLength={100}
-          onChange={(e) => setMachineName(e.target.value)}
+          maxInputLength={30}
+          value={machineName}
+          onChange={(e) => setMachineName(stripEmoji(e.target.value))}
         />
         <MaquinaInput
           name="machineNickname"
@@ -123,33 +149,25 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           error={machineNicknameError}
           placeholder="Ej. Cardenal"
           required
-          maxInputLength={100}
-          onChange={(e) => setMachineNickname(e.target.value)}
+          maxInputLength={30}
+          value={machineNickname}
+          onChange={(e) => setMachineNickname(stripEmoji(e.target.value))}
         />
         <div className="flex flex-col text-[13px] text-[#575757] mb-6">
           <label className="font-medium">
             Tipo <span className="text-[#e42200]">*</span>
           </label>
-          <select
+          <Select
             value={machineType}
-            onChange={(e) => setMachineType(e.target.value)}
-            className={[
-              "w-full border rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors",
-              machineTypeError ? "border-[#df2646]" : "border-[#b9b8b8]",
-            ]
-              .filter(Boolean)
-              .join(" ")}
+            onChange={setMachineType}
+            placeholder="Seleccionar tipo..."
+            size="sm"
+            error={machineTypeError ?? undefined}
           >
-            <option value="" disabled>
-              Seleccionar tipo...
-            </option>
-            <option value="Láser CO2">Láser CO2</option>
-            <option value="Láser Fibra">Láser Fibra</option>
-            <option value="Bordadora">Bordadora</option>
-          </select>
-          {machineTypeError && (
-            <p className="text-[12px] text-[#e42200] mt-1">{machineTypeError}</p>
-          )}
+            <SelectOption value="Láser CO2">Láser CO2</SelectOption>
+            <SelectOption value="Láser Fibra">Láser Fibra</SelectOption>
+            <SelectOption value="Bordadora">Bordadora</SelectOption>
+          </Select>
         </div>
         <MaquinaInput
           name="machineDescription"
@@ -158,7 +176,8 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           longText={true}
           placeholderLongText="Área de trabajo o especificaciones de la máquina"
           maxInputLength={200}
-          onChange={(e) => setMachineDescription(e.target.value)}
+          value={machineDescription}
+          onChange={(e) => setMachineDescription(stripEmoji(e.target.value))}
         />
         {error && (
           <p role="alert" className="text-[14px] text-[#df2646] tracking-[0.5px]">
@@ -166,20 +185,12 @@ export default function RegistrarForm({ isOpen, onCreated, onClose }: RegistrarF
           </p>
         )}
         <div className="flex justify-end gap-3 mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={isLoading}>
             {isLoading ? "Guardando..." : "Guardar"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

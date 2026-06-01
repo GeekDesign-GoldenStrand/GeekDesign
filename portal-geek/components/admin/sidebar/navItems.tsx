@@ -2,7 +2,6 @@ import {
   Buildings,
   CubeTransparent,
   CurrencyDollar,
-  Microscope,
   Handshake,
   Briefcase,
   Package,
@@ -12,6 +11,7 @@ import {
   PresentationChart,
 } from "@phosphor-icons/react/dist/ssr";
 
+import { MaquinaIcon } from "@/components/admin/sidebar/atoms/MaquinaIcon";
 import type { Section } from "@/lib/auth/access";
 
 export type NavItem =
@@ -20,6 +20,15 @@ export type NavItem =
       href: string;
       label: string;
       icon: React.ReactNode;
+      // Optional active-state icon. Used for non-Phosphor icons (custom SVG
+      // assets) that can't pick up the active state via `weight: "fill"`.
+      // Phosphor entries leave this undefined and rely on NavLink's
+      // cloneElement weight swap.
+      iconActive?: React.ReactNode;
+      // Optional hover-state icon. Same rationale as iconActive — Phosphor
+      // entries get hover via currentColor on the parent link; custom SVGs
+      // need a dedicated asset.
+      iconHover?: React.ReactNode;
       // The policy section this item links to. Visibility is derived from
       // can(role, section, "read") — see SidebarNav. Omit for items visible to
       // any authenticated user.
@@ -74,7 +83,10 @@ export const navItems: NavItem[] = [
   {
     href: "/maquinas",
     label: "Máquinas",
-    icon: <Microscope size={ICON_SIZE} />,
+    // Inline SVG component (not Phosphor) whose path uses `fill="currentColor"`,
+    // so it picks up the NavLink's text color for idle / hover / active states
+    // just like the Phosphor entries — no separate -hover / -fill assets needed.
+    icon: <MaquinaIcon size={ICON_SIZE} />,
     section: "maquinas",
   },
   { type: "divider" },

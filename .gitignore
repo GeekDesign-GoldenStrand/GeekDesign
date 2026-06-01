@@ -1,0 +1,4 @@
+# Claude Code — local-only, never commit
+.claude/
+CLAUDE.md
+.claude.json

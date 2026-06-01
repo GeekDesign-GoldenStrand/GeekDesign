@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -21,10 +23,8 @@ interface EditarMaterialFormProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
@@ -50,12 +50,43 @@ export function EditarMaterialForm({
   });
 
   const [newImageKey, setNewImageKey] = useState<string | null>(null);
+  const [imageCleared, setImageCleared] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImpactConfirm, setShowImpactConfirm] = useState(false);
+  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [impacto, setImpacto] = useState<{
+    servicios: number;
+    proveedores: number;
+    instaladores: number;
+  } | null>(null);
+  const [impactoLoading, setImpactoLoading] = useState(false);
+  const [impactoError, setImpactoError] = useState<string | null>(null);
+
+  async function handleFirstConfirm() {
+    setImpactoError(null);
+    setImpacto(null);
+    setImpactoLoading(true);
+    setShowDeleteConfirm(false);
+    setShowImpactConfirm(true);
+    try {
+      const res = await fetch(`/api/materiales/${material.id}/impacto`);
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setImpactoError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setImpacto(payload?.data ?? { servicios: 0, proveedores: 0, instaladores: 0 });
+    } catch {
+      setImpactoError("Error de red al calcular el impacto.");
+    } finally {
+      setImpactoLoading(false);
+    }
+  }
 
   function setField(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -83,6 +114,7 @@ export function EditarMaterialForm({
         descripcion_material: form.descripcion_material.trim() || undefined,
       };
       if (newImageKey) payload.imagen_url = newImageKey;
+      else if (imageCleared) payload.imagen_url = "";
 
       const nameError = !payload.nombre_material ? "El nombre es requerido." : "";
       if (nameError) {
@@ -105,18 +137,19 @@ export function EditarMaterialForm({
 
     const payload = {
       nombre_material: form.nombre_material.trim(),
-      descripcion_material: form.descripcion_material.trim(),
+      descripcion_material: form.descripcion_material.trim() || undefined,
       unidad_medida: form.unidad_medida.trim(),
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
       color: form.color.trim(),
-      imagen_url: newImageKey ?? "placeholder-for-validation",
+      imagen_url: newImageKey ?? (imageCleared ? "" : "placeholder-for-validation"),
     };
 
-    const schemaToUse = newImageKey
-      ? CreateMaterialSchema
-      : CreateMaterialSchema.omit({ imagen_url: true });
+    const schemaToUse =
+      newImageKey || imageCleared
+        ? CreateMaterialSchema
+        : CreateMaterialSchema.omit({ imagen_url: true });
     const result = schemaToUse.safeParse(payload);
     if (result.success) {
       setErrors({});
@@ -146,7 +179,11 @@ export function EditarMaterialForm({
     } else {
       const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
       void _omit;
-      bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+      bodyPayload = newImageKey
+        ? { ...rest, imagen_url: newImageKey }
+        : imageCleared
+          ? { ...rest, imagen_url: "" }
+          : rest;
     }
 
     setLoading(true);
@@ -182,6 +219,8 @@ export function EditarMaterialForm({
       if (!res.ok) {
         const responsePayload = await res.json().catch(() => ({}));
         setServerError(responsePayload?.error ?? `Error ${res.status}`);
+        setShowImpactConfirm(false);
+        setShowFinalConfirm(false);
         setDeleting(false);
         return;
       }
@@ -190,6 +229,8 @@ export function EditarMaterialForm({
       onClose();
     } catch {
       setServerError("Error de red. Intenta de nuevo.");
+      setShowImpactConfirm(false);
+      setShowFinalConfirm(false);
       setDeleting(false);
     }
   }
@@ -199,14 +240,6 @@ export function EditarMaterialForm({
       {serverError && (
         <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
           {serverError}
-        </div>
-      )}
-
-      {isGrupo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#fff3e0] border border-[#ffb74d] rounded-[6px]">
-          <span className="text-[13px] text-[#e65100]">
-            Grupo de materiales — edita el nombre, descripción e imagen del grupo.
-          </span>
         </div>
       )}
 
@@ -224,7 +257,7 @@ export function EditarMaterialForm({
       </div>
 
       <div>
-        <label className={LABEL}>Descripción {isGrupo ? "" : "*"}</label>
+        <label className={LABEL}>Descripción</label>
         <textarea
           rows={3}
           maxLength={500}
@@ -240,69 +273,63 @@ export function EditarMaterialForm({
         <>
           <div>
             <label className={LABEL}>Unidad de medida *</label>
-            <select
+            <Select
               value={form.unidad_medida}
-              onChange={(e) => setField("unidad_medida", e.target.value)}
-              className={`${SELECT_FIELD} ${getFieldClass("unidad_medida")}`}
+              onChange={(v) => setField("unidad_medida", v)}
+              placeholder="Seleccionar unidad"
+              size="sm"
+              error={errors.unidad_medida || undefined}
             >
-              <option value="">Seleccionar unidad</option>
               {UNIDADES_MEDIDA.map((unit) => (
-                <option key={unit} value={unit}>
+                <SelectOption key={unit} value={unit}>
                   {unit === "mm" && "Milímetros (mm)"}
                   {unit === "in" && "Pulgadas (in)"}
                   {unit === "cm" && "Centímetros (cm)"}
                   {unit === "mu" && "Micras (mu)"}
                   {unit === "pt" && "Puntos (pt)"}
-                </option>
+                </SelectOption>
               ))}
-            </select>
-            {errors.unidad_medida && <p className={ERROR_MSG}>{errors.unidad_medida}</p>}
+            </Select>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={LABEL}>Ancho *</label>
+              <label className={LABEL}>
+                Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.ancho}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("ancho")}`}
               />
               {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
             </div>
             <div>
-              <label className={LABEL}>Alto *</label>
+              <label className={LABEL}>
+                Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.alto}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("alto")}`}
               />
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>Grosor *</label>
+              <label className={LABEL}>
+                Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
               <input
-                type="number"
-                min={0}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.grosor}
-                onKeyDown={(e) => {
-                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-                }}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
                 className={`${FIELD} ${getFieldClass("grosor")}`}
               />
@@ -311,11 +338,11 @@ export function EditarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Color *</label>
+            <label className={LABEL}>Descripción de color *</label>
             <input
               type="text"
               maxLength={50}
-              placeholder="Ej. #d18c59 o Negro"
+              placeholder="Ej. Rojo"
               value={form.color}
               onChange={(e) => setField("color", e.target.value)}
               className={`${FIELD} ${getFieldClass("color")}`}
@@ -327,10 +354,13 @@ export function EditarMaterialForm({
 
       <div>
         <label className={LABEL}>Imagen</label>
-        <MaterialImageInput
+        <ImageUploader
+          mode="single"
+          category="materiales"
           initialPreviewUrl={material.imageUrl}
           onUploaded={(key) => {
             setNewImageKey(key);
+            setImageCleared(key === null && Boolean(material.imageUrl));
             setErrors((prev) => ({ ...prev, imagen_url: "" }));
           }}
           onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
@@ -340,31 +370,35 @@ export function EditarMaterialForm({
       </div>
 
       <div className="flex justify-between gap-3 mt-2">
-        <button
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
           onClick={() => setShowDeleteConfirm(true)}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
           disabled={loading || deleting}
         >
           Eliminar
-        </button>
+        </Button>
 
         <div className="flex gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
             disabled={loading || deleting}
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={loading || deleting}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+            loading={loading}
           >
             {loading ? "Actualizando..." : "Guardar cambios"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -375,27 +409,129 @@ export function EditarMaterialForm({
               {isGrupo ? "¿Eliminar grupo?" : "¿Eliminar material?"}
             </h3>
             <p className="text-[14px] text-[#575757] mb-6">
-              {isGrupo
-                ? `Esta acción no se puede deshacer. El grupo "${material.name}" será eliminado permanentemente. Si tiene sub-materiales activos, la eliminación será bloqueada.`
-                : `Esta acción no se puede deshacer. El material "${material.name}" será eliminado permanentemente. Si está asociado a opciones de producto, la eliminación será bloqueada.`}
+              {isGrupo ? (
+                <>
+                  ¿Estás seguro que quieres eliminar el grupo &quot;{material.name}&quot;?{" "}
+                  <strong className="text-[#1e1e1e]">
+                    Esto también eliminará todos sus sub-materiales.
+                  </strong>
+                </>
+              ) : (
+                `¿Estás seguro que quieres eliminar el material "${material.name}"?`
+              )}
             </p>
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+              >
+                Cancelar
+              </Button>
+              <Button type="button" variant="destructive" size="sm" onClick={handleFirstConfirm}>
+                Sí, eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showImpactConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Acción irreversible</h3>
+
+            {impactoLoading && (
+              <p className="text-[14px] text-[#575757] mb-6">Calculando impacto...</p>
+            )}
+
+            {impactoError && (
+              <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2 mb-4">
+                {impactoError}
+              </div>
+            )}
+
+            {!impactoLoading && !impactoError && impacto && (
+              <>
+                <p className="text-[14px] text-[#575757] mb-3">
+                  <strong className="text-[#e42200]">Esta acción no se puede deshacer.</strong>{" "}
+                  Afectará a:
+                </p>
+                <ul className="text-[14px] text-[#1e1e1e] mb-6 list-disc pl-5 space-y-1">
+                  <li>
+                    <strong className="text-[#e42200]">{impacto.servicios}</strong>{" "}
+                    <strong>{impacto.servicios === 1 ? "servicio" : "servicios"}</strong>
+                  </li>
+                  <li>
+                    <strong className="text-[#e42200]">{impacto.proveedores}</strong>{" "}
+                    <strong>{impacto.proveedores === 1 ? "proveedor" : "proveedores"}</strong>
+                  </li>
+                  <li>
+                    <strong className="text-[#e42200]">{impacto.instaladores}</strong>{" "}
+                    <strong>{impacto.instaladores === 1 ? "instalador" : "instaladores"}</strong>
+                  </li>
+                </ul>
+              </>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowImpactConfirm(false)}
                 disabled={deleting}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setShowImpactConfirm(false);
+                  setShowFinalConfirm(true);
+                }}
+                disabled={deleting || impactoLoading || Boolean(impactoError)}
+              >
+                Eliminar definitivamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinalConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Última confirmación</h3>
+            <p className="text-[14px] text-[#575757] mb-6">
+              <strong className="text-[#1e1e1e]">
+                Revisa tus proveedores, instaladores y servicios. Asegúrate de que tengan al menos
+                un material registrado.
+              </strong>
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowFinalConfirm(false)}
+                disabled={deleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
+                loading={deleting}
               >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
-              </button>
+                {deleting ? "Eliminando..." : "Entendido, eliminar"}
+              </Button>
             </div>
           </div>
         </div>

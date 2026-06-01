@@ -94,7 +94,11 @@ export async function listPedidos(
   onlyActive?: boolean,
   empresa?: string | null,
   cliente?: string | null,
-  search?: string | null
+  search?: string | null,
+  fechaEstimadaDesde?: string | null,
+  fechaEstimadaHasta?: string | null,
+  detalleEstatuses: string[] = [],
+  clienteEmpresa?: string | null
 ): Promise<{ items: PedidoListItem[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
@@ -111,11 +115,38 @@ export async function listPedidos(
     where.id_estatus = { in: statusIds };
   }
 
-  if (serviceIds.length > 0) {
-    where.detalles = { some: { id_servicio: { in: serviceIds } } };
+  // Combine service + detail-status filters into a single `detalles.some`
+  // so we match pedidos whose detail for the selected service has the chosen
+  // statuses (rather than ANDing two disjoint `some` predicates over different
+  // details).
+  if (serviceIds.length > 0 || detalleEstatuses.length > 0) {
+    const detalleWhere: Prisma.DetallePedidoWhereInput = {};
+    if (serviceIds.length > 0) {
+      detalleWhere.id_servicio = { in: serviceIds };
+    }
+    if (detalleEstatuses.length > 0) {
+      const statusIds = await getPedidoStatusIds(detalleEstatuses);
+      // DetallePedido.id_estatus is nullable, and detalles created via
+      // cotizacion → pedido start as NULL. The table UI renders those as
+      // "Pendiente" (PedidosTable.tsx — detalle?.estatus?.descripcion ??
+      // "Pendiente"), so the filter has to match the same fallback to stay
+      // consistent with what the user sees.
+      const includesPendiente = detalleEstatuses.includes(PEDIDO_STATUS.PENDIENTE);
+      detalleWhere.OR = includesPendiente
+        ? [{ id_estatus: { in: statusIds } }, { id_estatus: null }]
+        : [{ id_estatus: { in: statusIds } }];
+    }
+    where.detalles = { some: detalleWhere };
   }
 
-  if (empresa || cliente) {
+  if (clienteEmpresa) {
+    where.cliente = {
+      OR: [
+        { empresa: { contains: clienteEmpresa, mode: "insensitive" } },
+        { nombre_cliente: { contains: clienteEmpresa, mode: "insensitive" } },
+      ],
+    };
+  } else if (empresa || cliente) {
     where.cliente = {};
 
     if (empresa) {
@@ -133,32 +164,21 @@ export async function listPedidos(
     }
   }
 
+  if (fechaEstimadaDesde || fechaEstimadaHasta) {
+    const range: Prisma.DateTimeFilter = {};
+    if (fechaEstimadaDesde) range.gte = new Date(fechaEstimadaDesde);
+    if (fechaEstimadaHasta) {
+      const hasta = new Date(fechaEstimadaHasta);
+      hasta.setHours(23, 59, 59, 999);
+      range.lte = hasta;
+    }
+    where.fecha_estimada = range;
+  }
+
   if (search) {
     where.OR = [
-      {
-        cliente: {
-          nombre_cliente: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      },
-      {
-        cliente: {
-          empresa: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      },
-      {
-        estatus: {
-          descripcion: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      },
+      { nombre_oportunidad: { contains: search, mode: "insensitive" } },
+      { cotizaciones: { some: { folio: { contains: search, mode: "insensitive" } } } },
     ];
   }
 
@@ -240,33 +260,47 @@ export type PedidoDetalleResponse = {
     estatus_nuevo: string;
     cambiado_por: string;
   }[];
+  /** True when at least one detail line has a linked proveedor or instalador. */
+  hasTerceros: boolean;
 };
 
 // PE-05 — Dirección consulta los detalles de un pedido específico.
 // Aggregates the order header, its line items, payments and status history.
 export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
-  const pedido = await prisma.pedidos.findUnique({
-    where: { id_pedido: id },
-    include: {
-      cliente: true,
-      estatus: true,
-      estado_factura: true,
-      sucursal: true,
-      detalles: {
-        include: {
-          servicio: { select: { nombre_servicio: true } },
-          material: { select: { nombre_material: true } },
-          archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+  const [pedido, terceroCount] = await Promise.all([
+    prisma.pedidos.findUnique({
+      where: { id_pedido: id },
+      include: {
+        cliente: true,
+        estatus: true,
+        estado_factura: true,
+        sucursal: true,
+        detalles: {
+          include: {
+            servicio: { select: { nombre_servicio: true } },
+            material: { select: { nombre_material: true } },
+            archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+          },
+          orderBy: { id_detalle: "asc" },
         },
-        orderBy: { id_detalle: "asc" },
+        pagos: { orderBy: { fecha: "asc" } },
+        historial: {
+          include: { usuario: { select: { nombre_completo: true } } },
+          orderBy: { fecha_cambio: "asc" },
+        },
       },
-      pagos: { orderBy: { fecha: "asc" } },
-      historial: {
-        include: { usuario: { select: { nombre_completo: true } } },
-        orderBy: { fecha_cambio: "asc" },
+    }),
+    prisma.detallePedido.count({
+      where: {
+        id_pedido: id,
+        OR: [
+          { servicio: { proveedorPrecios: { some: {} } } },
+          { material: { proveedorPrecios: { some: {} } } },
+          { servicio: { instaladorServicios: { some: {} } } },
+        ],
       },
-    },
-  });
+    }),
+  ]);
 
   if (!pedido) {
     throw new NotFoundError("Pedido no encontrado");
@@ -304,6 +338,7 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
       estatus_nuevo: statusById.get(h.id_estado_nuevo) ?? "Desconocido",
       cambiado_por: h.usuario.nombre_completo,
     })),
+    hasTerceros: terceroCount > 0,
   };
 }
 
