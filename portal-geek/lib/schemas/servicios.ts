@@ -101,9 +101,11 @@ export const CreateServicioSchema = z.object({
 
   // NEW: per-service price overrides (null = use master price from Instaladores/Proveedores)
   // These allow setting a custom price for this service that overrides the default cost
-  // from the linked installer or provider.
-  costo_instalador_override: z.number().nonnegative().nullable().optional(),
-  costo_proveedor_override: z.number().nonnegative().nullable().optional(),
+  // from the linked installer or provider. Upper bound mirrors the UI input cap in
+  // InstaladorToggle / ProveedorToggle so a curl/Postman bypass can't store a price
+  // outside the realistic MXN range.
+  costo_instalador_override: z.number().nonnegative().max(9999999.99).nullable().optional(),
+  costo_proveedor_override: z.number().nonnegative().max(9999999.99).nullable().optional(),
 
   formula: FormulaSchema.optional(),
   materiales: z.array(MaterialServicioSchema).optional().default([]),

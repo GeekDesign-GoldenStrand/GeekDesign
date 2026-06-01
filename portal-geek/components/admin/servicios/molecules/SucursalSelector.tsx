@@ -21,7 +21,7 @@ export function SucursalSelector({
   disabled = false,
 }: SucursalSelectorProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <label className="text-base font-bold text-[#1e1e1e]">
         Sucursal: <span className="text-[#e42200]">*</span>
       </label>

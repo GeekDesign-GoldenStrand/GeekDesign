@@ -116,19 +116,19 @@ export function ConfirmDialog({
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="rounded-[7px] border border-[#b9b8b8] px-5 py-2 text-[14px] font-medium text-[#575757] transition-colors hover:bg-[#f5f5f5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b9b8b8] disabled:opacity-60"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
             onClick={handleConfirm}
             disabled={loading}
             className={`rounded-[7px] px-5 py-2 text-[14px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60 ${v.confirm}`}
           >
             {loading ? (loadingLabel ?? v.defaultLoading) : (confirmLabel ?? v.defaultLabel)}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-[7px] border border-[#b9b8b8] px-5 py-2 text-[14px] font-medium text-[#575757] transition-colors hover:bg-[#f5f5f5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b9b8b8] disabled:opacity-60"
+          >
+            {cancelLabel}
           </button>
         </div>
       </div>
