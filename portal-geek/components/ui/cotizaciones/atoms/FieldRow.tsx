@@ -9,11 +9,11 @@ interface FieldRowProps {
 export function FieldRow({ label, value, last }: FieldRowProps) {
   return (
     <div
-      className={`flex justify-between items-baseline py-[7px] text-sm ${
+      className={`flex justify-between items-baseline py-[7px] text-[15px] ${
         last ? "" : "border-b border-gray-100"
       }`}
     >
-      <span className="text-gray-400">{label}</span>
+      <span className="text-gray-700">{label}</span>
       <span className="font-medium text-gray-900 text-right">{value}</span>
     </div>
   );

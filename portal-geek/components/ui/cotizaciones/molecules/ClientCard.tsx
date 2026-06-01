@@ -37,7 +37,7 @@ export function ClientCard({ cliente, empresaCotizacion }: ClientCardProps) {
         value={
           <a
             href={`mailto:${cliente.correo_electronico}`}
-            className="font-normal text-gray-500 text-[13px] hover:text-gray-900"
+            className="font-normal text-gray-700 hover:text-gray-900"
           >
             {cliente.correo_electronico}
           </a>
@@ -48,7 +48,7 @@ export function ClientCard({ cliente, empresaCotizacion }: ClientCardProps) {
         value={
           <a
             href={cliente.numero_telefono ? `tel:${cliente.numero_telefono}` : undefined}
-            className="font-normal text-gray-500 hover:text-gray-900"
+            className="font-normal text-gray-700 hover:text-gray-900"
           >
             {phoneNumber || cliente.numero_telefono}
           </a>

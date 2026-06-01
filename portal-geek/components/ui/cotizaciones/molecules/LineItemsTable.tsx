@@ -17,9 +17,9 @@ function VariablesList({ variables }: { variables: FormulaVariable[] }) {
       {variables.map((v) => (
         <span
           key={v.id_variable}
-          className="inline-flex items-center gap-1 text-[11px] bg-gray-50 border border-gray-100 text-gray-500 rounded-md px-2 py-0.5"
+          className="inline-flex items-center gap-1 text-[12px] bg-gray-50 border border-gray-100 text-gray-700 rounded-md px-2 py-0.5"
         >
-          <span className="text-gray-400">{v.etiqueta}:</span>
+          <span className="text-gray-600">{v.etiqueta}:</span>
           <span className="font-medium text-gray-700">
             {v.valor}
             {v.unidad ? ` ${v.unidad}` : ""}
@@ -45,20 +45,20 @@ function TotalsBlock({ subtotal, discountAmount, discountLabel, iva }: TotalsPro
   const total = subtotal - discount + ivaAmount;
   return (
     <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-end gap-1.5">
-      <div className="flex gap-8 text-sm text-gray-400">
+      <div className="flex gap-8 text-[15px] text-gray-700">
         <span>Subtotal</span>
         <span className="min-w-[100px] text-right text-gray-800">{formatAmount(subtotal)}</span>
       </div>
 
       {discount > 0 && (
-        <div className="flex gap-8 text-sm text-gray-400">
+        <div className="flex gap-8 text-[15px] text-gray-700">
           <span>{discountLabel ?? "Descuento"}</span>
           <span className="min-w-[100px] text-right text-red-600">{formatAmount(discount)}</span>
         </div>
       )}
 
       {ivaAmount > 0 && (
-        <div className="flex gap-8 text-sm text-gray-400">
+        <div className="flex gap-8 text-[15px] text-gray-700">
           <span>IVA (16%)</span>
           <span className="min-w-[100px] text-right text-gray-800">{formatAmount(ivaAmount)}</span>
         </div>
@@ -86,13 +86,13 @@ export function LineItemsTable({ servicios, discountAmount, discountLabel }: Lin
   return (
     <SectionCard title="Servicio(s)" icon={<ClipboardText size={15} />}>
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px] border-collapse">
+        <table className="w-full text-[14px] border-collapse">
           <thead>
             <tr>
               {["Servicio / Material", "Diseño", "Cant.", "P. Unitario", "Subtotal"].map((h) => (
                 <th
                   key={h}
-                  className="text-[11px] font-medium text-gray-400 uppercase tracking-wider pb-2.5 text-left border-b border-gray-100 px-2 last:text-right"
+                  className="text-[12px] font-semibold text-gray-600 uppercase tracking-wider pb-2.5 text-left border-b border-gray-100 px-2 last:text-right"
                 >
                   {h}
                 </th>
@@ -104,9 +104,9 @@ export function LineItemsTable({ servicios, discountAmount, discountLabel }: Lin
               <tr key={item.id_detalle} className="border-b border-gray-100 last:border-0">
                 <td className="py-3 px-2 align-top">
                   <p className="font-medium text-gray-900">{item.nombre_servicio}</p>
-                  <p className="text-[12px] text-gray-400">{item.nombre_material}</p>
+                  <p className="text-[13px] text-gray-600">{item.nombre_material}</p>
                   {item.notas && (
-                    <p className="text-[11px] text-gray-400 mt-1 italic">{item.notas}</p>
+                    <p className="text-[12px] text-gray-600 mt-1 italic">{item.notas}</p>
                   )}
                   <VariablesList variables={item.variables} />
                 </td>

@@ -18,7 +18,7 @@ export function HistoryCard({ historial }: HistoryCardProps) {
         return (
           <div
             key={entry.id_historial}
-            className={`flex gap-3 py-2.5 text-[13px] ${
+            className={`flex gap-3 py-2.5 text-[14px] ${
               i < historial.length - 1 ? "border-b border-gray-100" : ""
             }`}
           >
@@ -39,9 +39,9 @@ export function HistoryCard({ historial }: HistoryCardProps) {
                   </>
                 )}
               </p>
-              <p className="text-gray-400 mt-0.5 flex items-center gap-1.5">
+              <p className="text-gray-600 mt-0.5 flex items-center gap-1.5">
                 <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${USERS[entry.actor_tipo]}`}
+                  className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${USERS[entry.actor_tipo]}`}
                 >
                   {entry.actor_tipo}
                 </span>

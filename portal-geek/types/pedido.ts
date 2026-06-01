@@ -48,6 +48,7 @@ export interface PedidoInfo {
   estatus: { descripcion: string };
   estado_factura: { descripcion: string } | null;
   sucursal: { nombre_sucursal: string | null } | null;
+  cotizaciones?: { folio: string | null }[];
   cliente: {
     nombre_cliente: string;
     empresa: string | null;

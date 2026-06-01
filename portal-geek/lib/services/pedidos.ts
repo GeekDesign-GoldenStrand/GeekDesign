@@ -244,6 +244,7 @@ export type PedidoDetalleResponse = {
       estatus: true;
       estado_factura: true;
       sucursal: true;
+      cotizaciones: { select: { folio: true } };
     };
   }>;
   detalle: Prisma.DetallePedidoGetPayload<{
@@ -275,6 +276,11 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
         estatus: true,
         estado_factura: true,
         sucursal: true,
+        cotizaciones: {
+          select: { folio: true },
+          orderBy: { fecha_creacion: "desc" },
+          take: 1,
+        },
         detalles: {
           include: {
             servicio: { select: { nombre_servicio: true } },

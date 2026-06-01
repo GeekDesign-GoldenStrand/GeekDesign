@@ -35,23 +35,23 @@ export function PedidoGeneralCard({ pedido }: Props) {
       <FieldRow
         label="Fecha creación"
         value={
-          <span className="font-normal text-gray-500">{formatDate(pedido.fecha_creacion)}</span>
+          <span className="font-normal text-gray-700">{formatDate(pedido.fecha_creacion)}</span>
         }
       />
       <FieldRow
         label="Fecha estimada"
         value={
-          <span className="font-normal text-gray-500">{formatDate(pedido.fecha_estimada)}</span>
+          <span className="font-normal text-gray-700">{formatDate(pedido.fecha_estimada)}</span>
         }
       />
       <FieldRow
         label="Fecha entrega"
-        value={<span className="font-normal text-gray-500">{formatDate(pedido.fecha_fin)}</span>}
+        value={<span className="font-normal text-gray-700">{formatDate(pedido.fecha_fin)}</span>}
       />
       <FieldRow
         label="Sucursal"
         value={
-          <span className="font-normal text-gray-500">
+          <span className="font-normal text-gray-700">
             {pedido.sucursal?.nombre_sucursal ?? "—"}
           </span>
         }
@@ -61,7 +61,7 @@ export function PedidoGeneralCard({ pedido }: Props) {
           <FieldRow
             label="Estado factura"
             value={
-              <span className="font-normal text-gray-500">
+              <span className="font-normal text-gray-700">
                 {pedido.estado_factura?.descripcion ?? "—"}
               </span>
             }
@@ -69,13 +69,13 @@ export function PedidoGeneralCard({ pedido }: Props) {
           <FieldRow
             label="Facturado"
             value={
-              <span className="font-normal text-gray-500">{pedido.facturado ? "Sí" : "No"}</span>
+              <span className="font-normal text-gray-700">{pedido.facturado ? "Sí" : "No"}</span>
             }
           />
           {pedido.numero_factura && (
             <FieldRow
               label="# Factura"
-              value={<span className="font-normal text-gray-500">{pedido.numero_factura}</span>}
+              value={<span className="font-normal text-gray-700">{pedido.numero_factura}</span>}
             />
           )}
         </>
@@ -84,7 +84,7 @@ export function PedidoGeneralCard({ pedido }: Props) {
         <FieldRow
           label="Oportunidad"
           value={
-            <span className="font-normal text-gray-500 text-right max-w-[200px]">
+            <span className="font-normal text-gray-700 text-right max-w-[200px]">
               {pedido.nombre_oportunidad}
             </span>
           }
@@ -95,7 +95,7 @@ export function PedidoGeneralCard({ pedido }: Props) {
           label="Notas"
           last
           value={
-            <span className="font-normal text-gray-500 text-right max-w-[200px] whitespace-pre-wrap">
+            <span className="font-normal text-gray-700 text-right max-w-[200px] whitespace-pre-wrap">
               {pedido.notas}
             </span>
           }
