@@ -1,4 +1,5 @@
 import { requireSection } from "@/lib/auth/page-guard";
+import { parseDetalleIds } from "@/lib/utils/pedido-detalle-ids";
 import type { UserRole } from "@/types";
 
 import DetailPage from "./pedido-detail";
@@ -14,18 +15,7 @@ export default async function PedidoPage({
   const { detalleIds } = await searchParams;
   const session = await requireSection("pedidos");
 
-  const detalleIdList = detalleIds
-    ? detalleIds
-        .split(",")
-        .map(Number)
-        .filter((n) => !isNaN(n) && n > 0)
-    : null;
-
   return (
-    <DetailPage
-      id={id}
-      role={session.role as UserRole}
-      detalleIds={detalleIdList?.length ? detalleIdList : null}
-    />
+    <DetailPage id={id} role={session.role as UserRole} detalleIds={parseDetalleIds(detalleIds)} />
   );
 }

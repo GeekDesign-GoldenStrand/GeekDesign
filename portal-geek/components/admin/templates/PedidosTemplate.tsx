@@ -327,13 +327,16 @@ export function PedidosTemplate({
           <div className="space-y-4">
             <h4 className="font-bold uppercase tracking-[0.5px] text-[14px] text-[#575757]">
               Semáforo de Servicios{" "}
-              <Info
-                size={16}
-                className="inline-block ml-2 cursor-pointer text-[#6f6f6f]"
+              <button
+                type="button"
+                aria-label="Ver leyenda del semáforo"
+                className="inline-flex ml-2 cursor-pointer bg-transparent border-0 p-0 leading-none align-middle"
                 onClick={() =>
                   document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
                 }
-              />
+              >
+                <Info size={16} className="text-[#6f6f6f]" />
+              </button>
             </h4>
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-3">

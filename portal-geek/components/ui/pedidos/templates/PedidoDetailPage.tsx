@@ -25,6 +25,7 @@ interface Props {
 
 export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  // Collapse history by default when filtering to a service — keep focus on the filtered line items
   const [showHistorial, setShowHistorial] = useState(!detalleIds);
   const togglePanel = (panel: ActivePanel) =>
     setActivePanel((prev) => (prev === panel ? null : panel));

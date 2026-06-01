@@ -3,19 +3,9 @@
  *
  * Unit tests for the detalleIds URL param parsing used in
  * app/(admin)/pedidos/[id]/page.tsx.
- *
- * The logic is: split on "," → map to Number → drop NaN / non-positive values.
- * Extract it here so it can be verified in isolation without rendering the page.
  */
 
-function parseDetalleIds(raw: string | undefined): number[] | null {
-  if (!raw) return null;
-  const ids = raw
-    .split(",")
-    .map(Number)
-    .filter((n) => !isNaN(n) && n > 0);
-  return ids.length ? ids : null;
-}
+import { parseDetalleIds } from "@/lib/utils/pedido-detalle-ids";
 
 describe("parseDetalleIds — detalleIds URL param parsing", () => {
   it("returns null when param is undefined", () => {
