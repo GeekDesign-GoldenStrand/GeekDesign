@@ -99,7 +99,14 @@ export function ProveedoresModal({
   if (!isOpen || materialId === null) return null;
 
   return (
-    <Modal isOpen onClose={onClose} size="xl" ariaLabel="Proveedores" noPadding>
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="xl"
+      ariaLabel="Proveedores"
+      noPadding
+      closeOnBackdropClick={false}
+    >
       <div className="flex min-h-0 flex-col">
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">

@@ -28,7 +28,13 @@ export function AgregarMaterialModal({
   initialPadreId,
 }: AgregarMaterialModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={TITLES[initialTipo]} size="2xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={TITLES[initialTipo]}
+      size="2xl"
+      closeOnBackdropClick={false}
+    >
       <RegistrarMaterialForm
         onCreated={onCreated}
         onClose={onClose}

@@ -36,6 +36,7 @@ interface ModalProps {
   headerBanner?: React.ReactNode;
   /** Tailwind z-index class for the overlay. Bump for modals stacked over modals. */
   zClassName?: string;
+  closeOnBackdropClick?: boolean;
 }
 
 /**
@@ -57,6 +58,7 @@ export function Modal({
   noPadding = false,
   zClassName = "z-50",
   headerBanner,
+  closeOnBackdropClick = true,
 }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -97,7 +99,12 @@ export function Modal({
         pressedOnBackdrop.current = e.target === e.currentTarget;
       }}
       onMouseUp={(e) => {
-        if (dismissable && pressedOnBackdrop.current && e.target === e.currentTarget) {
+        if (
+          dismissable &&
+          closeOnBackdropClick &&
+          pressedOnBackdrop.current &&
+          e.target === e.currentTarget
+        ) {
           onClose();
         }
         pressedOnBackdrop.current = false;
