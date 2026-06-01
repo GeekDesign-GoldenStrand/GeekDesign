@@ -32,7 +32,7 @@ export function GeneralDataCard({ cotizacion }: GeneralDataCardProps) {
       <FieldRow
         label="Nombre de oportunidad"
         value={
-          <span className="font-normal text-gray-500">{cotizacion.nombre_oportunidad ?? "—"}</span>
+          <span className="font-normal text-gray-700">{cotizacion.nombre_oportunidad ?? "—"}</span>
         }
       />
       <FieldRow
@@ -41,12 +41,12 @@ export function GeneralDataCard({ cotizacion }: GeneralDataCardProps) {
       />
       <FieldRow
         label="Creada por"
-        value={<span className="font-normal text-gray-500">{cotizacion.creado_por || "—"}</span>}
+        value={<span className="font-normal text-gray-700">{cotizacion.creado_por || "—"}</span>}
       />
       <FieldRow
         label="Fecha entrega estimada"
         value={
-          <span className="font-normal text-gray-500">
+          <span className="font-normal text-gray-700">
             {formatDate(cotizacion.fecha_fin ?? null)}
           </span>
         }
@@ -54,7 +54,7 @@ export function GeneralDataCard({ cotizacion }: GeneralDataCardProps) {
       <FieldRow
         label="Fecha validación"
         value={
-          <span className="font-normal text-gray-500">
+          <span className="font-normal text-gray-700">
             {formatDate(cotizacion.fecha_validacion ?? null)}
           </span>
         }
@@ -62,7 +62,7 @@ export function GeneralDataCard({ cotizacion }: GeneralDataCardProps) {
       <FieldRow
         label="Fecha aprobación"
         value={
-          <span className="font-normal text-gray-500">
+          <span className="font-normal text-gray-700">
             {formatDate(cotizacion.fecha_aprobacion ?? null)}
           </span>
         }
