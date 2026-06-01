@@ -88,7 +88,11 @@ export function RegistrarMaterialForm({
       .then((r) => r.json())
       .then((payload) => {
         const data = (payload?.data ?? []) as MaterialOption[];
-        setCategorias(data);
+        // "Sin categoría" === no parent (the value="" option below). Never list a
+        // real row by that name so it can't collide with the null option.
+        setCategorias(
+          data.filter((c) => c.nombre_material.trim().toLowerCase() !== "sin categoría")
+        );
       })
       .catch(() => {});
   }, [tipo]);

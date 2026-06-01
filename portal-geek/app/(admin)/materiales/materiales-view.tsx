@@ -320,6 +320,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
               onViewProveedores={handleViewProveedores}
               onAddSubMaterial={handleAddSubMaterial}
               onAddGrupo={handleAddGrupo}
+              groupOrphans={tipoFilter === "all"}
               page={page}
               totalPages={totalPages}
               onPageChange={handlePageChange}

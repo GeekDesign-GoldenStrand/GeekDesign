@@ -15,6 +15,19 @@ export type MaterialesConSubs = Materiales & {
   subMateriales: MaterialesConSubs[];
 };
 
+// "Sin categoría" is the UI label for id_material_padre = NULL (no parent), not
+// a real row. Reject creating/renaming a real categoría to this name so the
+// presentational bucket never collides with an actual category.
+const RESERVED_CATEGORIA_NOMBRE = "sin categoría";
+
+function assertNombreCategoriaPermitido(nombre: string): void {
+  if (nombre.trim().toLowerCase() === RESERVED_CATEGORIA_NOMBRE) {
+    throw new ConflictError(
+      '"Sin categoría" es un nombre reservado: representa los materiales sin categoría asignada.'
+    );
+  }
+}
+
 export interface MaterialProveedor {
   id: number;
   nombre: string;
@@ -238,6 +251,7 @@ export async function createCategoria(
   data: CreateCategoriaMaterialInput
 ): Promise<MaterialesConSubs> {
   const { tipo: _tipo, ...rest } = data;
+  assertNombreCategoriaPermitido(rest.nombre_material);
   const created = await prisma.materiales.create({
     data: {
       nombre_material: rest.nombre_material,
@@ -314,6 +328,11 @@ export async function updateMaterial(
 
       if (!existing) {
         throw new NotFoundError(`Material ${id} no encontrado`);
+      }
+
+      // Renaming a categoría to the reserved "Sin categoría" label is not allowed.
+      if (existing.es_categoria && data.nombre_material !== undefined) {
+        assertNombreCategoriaPermitido(data.nombre_material);
       }
 
       if (data.id_material_padre !== undefined) {

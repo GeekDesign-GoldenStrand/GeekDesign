@@ -3,6 +3,7 @@ import { PaginacionControles } from "@/components/ui/materiales/molecules/Pagina
 import { CategoriaCard } from "@/components/ui/materiales/organisms/CategoriaCard";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
 import { MaterialGroupCard } from "@/components/ui/materiales/organisms/MaterialGroupCard";
+import { SinCategoriaCard } from "@/components/ui/materiales/organisms/SinCategoriaCard";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialesGridProps {
@@ -12,6 +13,11 @@ interface MaterialesGridProps {
   onViewProveedores: (materialId: number, materialName: string) => void;
   onAddSubMaterial: (groupId: number) => void;
   onAddGrupo: (categoriaId: number) => void;
+  // In the unfiltered hierarchical view, orphan grupos/individuales (no parent)
+  // are grouped under a synthetic "Sin categoría" header. In filtered listings
+  // (grupos/individuales/categorias) the result is a flat list, so we render it
+  // flat without that wrapper.
+  groupOrphans: boolean;
   // Server-side pagination state.
   page: number;
   totalPages: number;
@@ -44,6 +50,7 @@ export function MaterialesGrid({
   onViewProveedores,
   onAddSubMaterial,
   onAddGrupo,
+  groupOrphans,
   page,
   totalPages,
   onPageChange,
@@ -96,30 +103,46 @@ export function MaterialesGrid({
             />
           ))}
 
-          {/* Grupos huérfanos (sin categoría) */}
-          {groups.map((group) => (
-            <MaterialGroupCard
-              key={group.id}
-              group={group}
-              visibleColumns={visibleColumns}
-              gridTemplateColumns={templateColumns}
-              onEdit={onEditMaterial}
-              onViewProveedores={onViewProveedores}
-              onAddSubMaterial={onAddSubMaterial}
-            />
-          ))}
-
-          {/* Individuales huérfanos (sin categoría) */}
-          {individuals.map((item) => (
-            <MaterialCard
-              key={item.id}
-              {...item}
-              visibleColumns={visibleColumns}
-              gridTemplateColumns={templateColumns}
-              onEdit={onEditMaterial}
-              onViewProveedores={onViewProveedores}
-            />
-          ))}
+          {/* Grupos/individuales sin categoría (id_material_padre = null).
+              En la vista jerárquica se agrupan bajo "Sin categoría"; en listados
+              filtrados se muestran planos. */}
+          {groupOrphans ? (
+            (groups.length > 0 || individuals.length > 0) && (
+              <SinCategoriaCard
+                grupos={groups}
+                individuales={individuals}
+                visibleColumns={visibleColumns}
+                gridTemplateColumns={templateColumns}
+                onEdit={onEditMaterial}
+                onViewProveedores={onViewProveedores}
+                onAddSubMaterial={onAddSubMaterial}
+              />
+            )
+          ) : (
+            <>
+              {groups.map((group) => (
+                <MaterialGroupCard
+                  key={group.id}
+                  group={group}
+                  visibleColumns={visibleColumns}
+                  gridTemplateColumns={templateColumns}
+                  onEdit={onEditMaterial}
+                  onViewProveedores={onViewProveedores}
+                  onAddSubMaterial={onAddSubMaterial}
+                />
+              ))}
+              {individuals.map((item) => (
+                <MaterialCard
+                  key={item.id}
+                  {...item}
+                  visibleColumns={visibleColumns}
+                  gridTemplateColumns={templateColumns}
+                  onEdit={onEditMaterial}
+                  onViewProveedores={onViewProveedores}
+                />
+              ))}
+            </>
+          )}
         </div>
       )}
 

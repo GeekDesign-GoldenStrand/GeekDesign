@@ -4,6 +4,7 @@
 import { prisma } from "@/lib/db/client";
 import { CreateMaterialSchema, CreateSubMaterialSchema } from "@/lib/schemas/materiales";
 import {
+  createCategoria,
   createGrupo,
   createMaterial,
   createSubMaterial,
@@ -420,6 +421,41 @@ describe("createSubMaterial", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
+// createCategoria — "Sin categoría" is reserved (it means id_material_padre=null)
+// ──────────────────────────────────────────────────────────────────────────────
+describe("createCategoria", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("crea una categoría con un nombre válido", async () => {
+    const CAT = {
+      ...BASE_MATERIAL,
+      es_categoria: true,
+      es_grupo: false,
+      unidad_medida: null,
+      subMateriales: [],
+    };
+    mockCreate.mockResolvedValue(CAT);
+
+    await createCategoria({ tipo: "categoria", nombre_material: "Maderas" });
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ es_categoria: true, es_grupo: false }),
+      })
+    );
+  });
+
+  it.each(["Sin categoría", "sin categoría", "  SIN CATEGORÍA  "])(
+    "rechaza el nombre reservado %s con ConflictError",
+    async (nombre) => {
+      await expect(createCategoria({ tipo: "categoria", nombre_material: nombre })).rejects.toThrow(
+        ConflictError
+      );
+      expect(mockCreate).not.toHaveBeenCalled();
+    }
+  );
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
 // updateMaterial
 // ──────────────────────────────────────────────────────────────────────────────
 describe("updateMaterial", () => {
@@ -444,6 +480,15 @@ describe("updateMaterial", () => {
     await expect(updateMaterial(999, { nombre_material: "No existe" })).rejects.toThrow(
       NotFoundError
     );
+  });
+
+  it("rechaza renombrar una categoría al nombre reservado 'Sin categoría'", async () => {
+    mockFindUnique.mockResolvedValue({ imagen_url: null, es_grupo: false, es_categoria: true });
+
+    await expect(updateMaterial(1, { nombre_material: "Sin categoría" })).rejects.toThrow(
+      ConflictError
+    );
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });
 
