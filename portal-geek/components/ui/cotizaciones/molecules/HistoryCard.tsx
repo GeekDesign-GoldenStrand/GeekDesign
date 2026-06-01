@@ -27,8 +27,8 @@ export function HistoryCard({ historial }: HistoryCardProps) {
                 isFirst ? "bg-gray-300" : "bg-[#9FE1CB]"
               }`}
             />
-            <div>
-              <p className="font-medium text-gray-900 leading-tight">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-gray-900 leading-tight break-words">
                 {isFirst ? (
                   entry.estado_nuevo_label
                 ) : (
@@ -39,13 +39,15 @@ export function HistoryCard({ historial }: HistoryCardProps) {
                   </>
                 )}
               </p>
-              <p className="text-gray-400 mt-0.5 flex items-center gap-1.5">
+              <p className="text-gray-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                 <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${USERS[entry.actor_tipo]}`}
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${USERS[entry.actor_tipo]}`}
                 >
                   {entry.actor_tipo}
                 </span>
-                {entry.usuario_nombre} · {formatDate(entry.fecha_cambio)}
+                <span className="break-words min-w-0">
+                  {entry.usuario_nombre} · {formatDate(entry.fecha_cambio)}
+                </span>
               </p>
             </div>
           </div>

@@ -9,7 +9,9 @@ interface SectionCardProps {
 
 export function SectionCard({ title, icon, children, className = "" }: SectionCardProps) {
   return (
-    <div className={`bg-white border border-gray-100 rounded-xl p-5 shadow-md ${className}`}>
+    <div
+      className={`bg-white border border-gray-100 rounded-xl p-5 shadow-md min-w-0 ${className}`}
+    >
       <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
         {icon && <span className="text-[15px]">{icon}</span>}
         {title}

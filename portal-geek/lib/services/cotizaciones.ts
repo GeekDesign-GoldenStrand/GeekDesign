@@ -349,6 +349,19 @@ export async function updateCotizacion(
       // un-discounted total while still advertising a discount %.
       const pct = existing.porcentaje_descuento ? Number(existing.porcentaje_descuento) : 0;
       computedMontoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+
+      // monto_total is Decimal(10,2) — values above 99,999,999.99 trigger a
+      // Postgres "numeric field overflow" that surfaces to the client as a
+      // 500. Catch it here and return 422 with an actionable message so the
+      // user can adjust line items instead of seeing "Error interno".
+      // Per-item subtotal is already bounded by the Zod cap on
+      // precio_unitario * cantidad — this catches the sum across many lines.
+      const MONTO_TOTAL_MAX = 99999999.99;
+      if (baseSum > MONTO_TOTAL_MAX || computedMontoTotal > MONTO_TOTAL_MAX) {
+        throw new ValidationError(
+          `El monto total de la cotización no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}. Reduce alguna cantidad o precio unitario.`
+        );
+      }
     }
 
     // Use Prisma's checked update type so each field write is validated

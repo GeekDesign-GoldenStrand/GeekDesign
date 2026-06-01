@@ -119,7 +119,18 @@ export function CotizacionDetailPage({
     await onRefetch?.();
   }, [onRefetch]);
 
-  const creadoPor = cotizacion.cliente.nombre_cliente;
+  // "Creada por" = the actor who created the quote, NOT the cliente the
+  // quote is for. The Cotizaciones row has no id_usuario_creador column —
+  // the canonical signal is the historial entry with no previous state
+  // (id_estado_anterior === null). Historial is fetched in fecha_cambio
+  // asc order (lib/services/cotizaciones.ts), so the creation entry is
+  // also historial[0]; we search by id_estado_anterior for robustness in
+  // case ordering ever changes. Same actor-resolution fallback chain as
+  // the historial map above (usuario → cliente → "Sistema").
+  const creationEntry =
+    cotizacion.historial.find((h) => h.id_estado_anterior == null) ?? cotizacion.historial[0];
+  const creadoPor =
+    creationEntry?.usuario?.nombre_completo ?? creationEntry?.cliente?.nombre_cliente ?? "Sistema";
 
   // Edits, adding a discount, and removing a discount all share the same
   // server-side Pendiente-only rule (see updateCotizacion + aplicarDescuento).
