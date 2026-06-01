@@ -81,7 +81,7 @@ export function MaterialCard({
 
   const onProveedoresClick = () => onViewProveedores(id, name);
 
-  // Sizing matches CotizacionesTable + ClientesTable: px-4 py-3, text-sm,
+  // Sizing matches CotizacionesTable: px-4 py-3, text-sm,
   // rounded shadow. Cells inherit text color/weight (no bolded name on desktop)
   // for visual consistency across admin tables.
   return (

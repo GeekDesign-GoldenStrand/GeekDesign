@@ -52,8 +52,21 @@ export const UpdateCotizacionSchema = z.object({
     .array(
       z.object({
         id_detalle: z.number().int().positive(),
-        cantidad: z.number().int().positive(),
-        precio_unitario: z.number().nonnegative(),
+        // Mirror SolicitarItemSchema's cap (storefront uses .max(1000) on the
+        // same field). Safe to apply on the edit path too because cantidad
+        // has always been enforced at creation, so no legacy line item can
+        // exceed it.
+        cantidad: z.number().int().positive().max(1000, "La cantidad no puede superar 1000"),
+        // Tight upper bound so cantidad * precio_unitario always fits in the
+        // DB column type. monto_total / precio_unitario / subtotal are all
+        // Decimal(10,2) → max 99,999,999.99. With cantidad capped at 1000,
+        // a precio cap of 99,999.99 keeps subtotal at 99,999,990.00 — safely
+        // inside the column. Without this guard a large precio would surface
+        // as a Postgres "numeric field overflow" → 500.
+        precio_unitario: z
+          .number()
+          .nonnegative()
+          .max(99999.99, "El precio unitario no puede superar 99,999.99"),
       })
     )
     .optional(),

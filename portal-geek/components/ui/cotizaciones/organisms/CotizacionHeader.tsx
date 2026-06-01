@@ -32,7 +32,7 @@ export function CotizacionHeader({
 }: CotizacionHeaderProps) {
   return (
     <div className="flex justify-between items-start gap-4 flex-wrap mb-6">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 min-w-0">
         <Link
           href={backHref}
           className="inline-flex items-center gap-2 p-2 w-fit text-[13px] shadow-sm rounded-[7px] border border-red-300 font-medium text-red-500 hover:text-red-600 transition-colors"
@@ -41,13 +41,15 @@ export function CotizacionHeader({
           Regresar
         </Link>
 
-        <div>
+        <div className="min-w-0">
           <p className="text-[11px] text-gray-300 uppercase tracking-widest mb-1">Cotización</p>
-          <h1 className="text-[22px] font-medium text-gray-900 leading-none">
+          <h1 className="text-[22px] font-medium text-gray-900 leading-tight break-words">
             {folio ?? "Sin folio"}
           </h1>
           {nombreOportunidad && (
-            <p className="text-[13px] text-gray-500 mt-1.5 leading-tight">{nombreOportunidad}</p>
+            <p className="text-[13px] text-gray-500 mt-1.5 leading-tight break-words">
+              {nombreOportunidad}
+            </p>
           )}
         </div>
       </div>
