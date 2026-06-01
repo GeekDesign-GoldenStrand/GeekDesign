@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  PencilSimple,
   CheckCircle,
   WarningCircle,
   StopCircle,
   CurrencyDollar,
   CaretDown,
+  Info,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 
@@ -142,26 +142,112 @@ function getInvoiceProgressColor(status?: string | null) {
 }
 
 function renderInvoiceStatusIcon(status?: string | null) {
+  const label = status || "No se requiere factura";
   if (!status) {
-    return <StopCircle size={18} className="text-gray-400" weight="fill" />;
+    return (
+      <span title={label}>
+        <StopCircle size={18} className="text-gray-400" weight="fill" />
+      </span>
+    );
   }
 
   if (status === "Facturado") {
-    return <CheckCircle size={18} className="text-[#6ACE0D]" weight="fill" />;
+    return (
+      <span title={label}>
+        <CheckCircle size={18} className="text-[#6ACE0D]" weight="fill" />
+      </span>
+    );
   }
 
-  return <WarningCircle size={18} className="text-[#E42200]" weight="fill" />;
+  return (
+    <span title={label}>
+      <WarningCircle size={18} className="text-[#E42200]" weight="fill" />
+    </span>
+  );
 }
 
 interface PedidoDetalle {
   id_detalle: number;
   id_servicio: number;
+  id_material?: number;
+  id_archivo?: number;
+  cantidad?: number;
+  responsable_recoleccion?: string;
+  notas?: string | null;
+  precio_unitario?: unknown;
+  subtotal?: unknown;
   estatus?: {
     descripcion: string;
   } | null;
   servicio?: {
     nombre_servicio: string;
   };
+  variablesCotizacion?: Array<{
+    id_variable: number;
+    valor: unknown;
+    variable: {
+      nombre_variable: string;
+    };
+  }>;
+}
+
+function groupDetailsBySpecs(details: PedidoDetalle[]): PedidoDetalle[][] {
+  const groups: PedidoDetalle[][] = [];
+
+  for (const detail of details) {
+    let foundGroup = false;
+
+    for (const group of groups) {
+      const first = group[0];
+
+      // Compare specifications
+      const match =
+        detail.id_servicio === first.id_servicio &&
+        detail.id_material === first.id_material &&
+        detail.id_archivo === first.id_archivo &&
+        detail.cantidad === first.cantidad &&
+        detail.responsable_recoleccion === first.responsable_recoleccion &&
+        detail.notas === first.notas &&
+        Number((detail.precio_unitario as string | number) ?? 0) ===
+          Number((first.precio_unitario as string | number) ?? 0);
+
+      if (match) {
+        // Compare variablesCotizacion
+        const vars1 = detail.variablesCotizacion || [];
+        const vars2 = first.variablesCotizacion || [];
+
+        if (vars1.length === vars2.length) {
+          const map1 = new Map(
+            vars1.map((v) => [
+              v.variable.nombre_variable,
+              Number((v.valor as string | number) ?? 0),
+            ])
+          );
+          let varsMatch = true;
+
+          for (const v2 of vars2) {
+            const val1 = map1.get(v2.variable.nombre_variable);
+            if (val1 === undefined || val1 !== Number((v2.valor as string | number) ?? 0)) {
+              varsMatch = false;
+              break;
+            }
+          }
+
+          if (varsMatch) {
+            group.push(detail);
+            foundGroup = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!foundGroup) {
+      groups.push([detail]);
+    }
+  }
+
+  return groups;
 }
 
 interface Pedido {
@@ -195,7 +281,7 @@ interface Props {
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
   selectedServiceId: number | null;
-  onDetalleStatusChange: (detalleId: number, status: string) => void;
+  onDetalleStatusChange: (detalleIds: number[], status: string) => void;
 }
 
 export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange }: Props) {
@@ -206,6 +292,40 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
     );
   }
 
+  const flattenedRows: Array<{
+    key: string;
+    pedido: Pedido;
+    group: PedidoDetalle[];
+    serviceName: string;
+  }> = [];
+
+  if (selectedServiceId) {
+    for (const p of pedidos) {
+      const matchingDetails = p.detalles ?? [];
+      const filteredDetails = matchingDetails.filter((d) => d.id_servicio === selectedServiceId);
+
+      if (filteredDetails.length > 0) {
+        const groups = groupDetailsBySpecs(filteredDetails);
+        groups.forEach((group, idx) => {
+          const firstDetail = group[0];
+          const serviceName = firstDetail.servicio?.nombre_servicio ?? "—";
+          flattenedRows.push({
+            key: `pedido-${p.id_pedido}-group-${idx}`,
+            pedido: p,
+            group,
+            serviceName,
+          });
+        });
+      }
+    }
+  }
+
+  if (selectedServiceId && flattenedRows.length === 0) {
+    return (
+      <div className="flex justify-center py-16 text-[#8e908f]">No se encontraron productos.</div>
+    );
+  }
+
   return (
     <div className="bg-transparent md:bg-white rounded">
       <div className="space-y-4 md:space-y-2">
@@ -213,301 +333,411 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
         <div
           className="hidden md:grid px-4 py-2 rounded bg-[#c6c6c6] text-[#1e1e1e] font-bold text-sm text-center"
           style={{
-            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr",
           }}
         >
           <span className="whitespace-nowrap">Fecha de creación</span>
           <span className="whitespace-nowrap">Fecha de entrega</span>
           <span className="whitespace-nowrap">Empresa</span>
           <span className="whitespace-nowrap">Nombre de oportunidad</span>
-          <span className="whitespace-nowrap">Monto</span>
+          <span className="whitespace-nowrap">{selectedServiceId ? "Subtotal" : "Monto"}</span>
           <span className="whitespace-nowrap">Folio</span>
           <span className="whitespace-nowrap">
-            {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}
+            {selectedServiceId ? "Estatus del servicio" : "Semáforo de servicios"}{" "}
+            <button
+              type="button"
+              aria-label="Ver leyenda del semáforo"
+              className="inline-flex ml-2 cursor-pointer bg-transparent border-0 p-0 leading-none align-middle"
+              onClick={() =>
+                document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              <Info
+                size={24}
+                weight="fill"
+                className="text-black border-2 border-black rounded-full p-0.5"
+              />
+            </button>
           </span>
           <span className="whitespace-nowrap">Estado factura</span>
-          <span className="whitespace-nowrap">Acciones</span>
         </div>
 
         {/* Rows */}
-        {pedidos.map((p) => {
-          const selectedServiceDetail = selectedServiceId
-            ? p.detalles?.find((detalle) => detalle.id_servicio === selectedServiceId)
-            : null;
+        {selectedServiceId
+          ? flattenedRows.map((row) => {
+              const p = row.pedido;
+              const firstDetail = row.group[0];
+              const status = firstDetail
+                ? (firstDetail.estatus?.descripcion ?? "Pendiente")
+                : "Pendiente";
+              const ids = row.group.map((d) => d.id_detalle);
+              const rowTotal = row.group.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0);
 
-          const selectedServiceStatus = selectedServiceDetail?.estatus?.descripcion ?? "Pendiente";
-
-          return (
-            <div key={p.id_pedido}>
-              {/* Desktop Row — entire row opens the pedido detail */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
-                onKeyDown={(e) => {
-                  // Ignore keys bubbling from inner controls (status select, links).
-                  if (e.target !== e.currentTarget) return;
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    router.push(`/pedidos/${p.id_pedido}`);
-                  }
-                }}
-                aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
-                className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
-                style={{
-                  gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 0.5fr",
-                }}
-              >
-                {/* Fecha de creación */}
-                <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
-
-                {/* Fecha de entrega */}
-                <span className="whitespace-nowrap">
-                  {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
-                </span>
-
-                {/* Empresa */}
-                <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
-
-                {/* Nombre de oportunidad */}
-                <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
-
-                {/* Monto */}
-                <span className="whitespace-nowrap">
-                  {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
-                </span>
-
-                {/* Folio */}
-                <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
-
-                {/* Semáforo general o estatus del servicio seleccionado */}
-                <div className="flex justify-center">
-                  {selectedServiceId && selectedServiceDetail ? (
-                    <PedidoStatusPill
-                      status={selectedServiceStatus}
-                      triggerClass="pl-4 pr-3 py-1 text-sm font-medium"
-                      iconSize={14}
-                      onChange={(apiValue) =>
-                        onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue)
+              return (
+                <div key={row.key}>
+                  {/* Desktop Row — entire row opens the pedido detail */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`);
                       }
-                    />
-                  ) : (
-                    <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
-                  )}
-                </div>
-
-                {/* Estado factura */}
-                <div className="flex flex-col items-center px-2 min-w-[180px]">
-                  <div className="flex items-center gap-2 w-full">
-                    <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
-
-                    <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
-                          backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
-                    <span className="text-[#6f6f6f]">Factura:</span>
-                    {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
-                  </div>
-                </div>
-
-                {/* Acciones */}
-                <div className="flex justify-center items-center gap-1">
-                  {/* Fixed slot so the optional design-file clip doesn't shift the edit icon */}
-                  <span
-                    className="flex w-[34px] shrink-0 justify-center"
-                    onClick={(e) => e.stopPropagation()}
+                    }}
+                    aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                    className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+                    style={{
+                      gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr",
+                    }}
                   >
-                    <DesignFileLink
-                      archivos={p.archivos}
-                      className="text-[#8b434a] hover:text-[#7a3a41] transition-colors p-2 relative"
-                    />
-                  </span>
-
-                  <a
-                    href={`/pedidos/${p.id_pedido}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-black hover:text-[#e42200] p-2"
-                    title="Editar pedido"
-                    aria-label={`Editar pedido ${p.folio ?? p.id_pedido}`}
-                  >
-                    <PencilSimple size={18} />
-                  </a>
-                </div>
-              </div>
-
-              {/* Mobile Card */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
-                onKeyDown={(e) => {
-                  // Ignore keys bubbling from inner controls (status select, links).
-                  if (e.target !== e.currentTarget) return;
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    router.push(`/pedidos/${p.id_pedido}`);
-                  }
-                }}
-                aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
-                className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4 cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
-              >
-                {/* Header: pedido id + service status control/semaphore */}
-                <div className="flex justify-between items-start gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                      Pedido
-                    </p>
-
-                    <p className="text-[16px] font-bold text-[#1e1e1e]">#{p.id_pedido}</p>
-                  </div>
-
-                  {/* Service status:
-                    - General view: show semaphore.
-                    - Service-filtered view: show editable status for that service detail. */}
-                  <div className="flex justify-end">
-                    {selectedServiceId && selectedServiceDetail ? (
+                    <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
+                    <span className="whitespace-nowrap">
+                      {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
+                    </span>
+                    <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
+                    <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
+                    <span className="whitespace-nowrap">
+                      {rowTotal > 0 ? `$${rowTotal.toLocaleString("es-MX")} MXN` : "—"}
+                    </span>
+                    <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
+                    <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
                       <PedidoStatusPill
-                        status={selectedServiceStatus}
-                        triggerClass="pl-3 pr-2 py-1 text-[11px] font-bold"
-                        iconSize={12}
-                        onChange={(apiValue) =>
-                          onDetalleStatusChange(selectedServiceDetail.id_detalle, apiValue)
-                        }
+                        status={status}
+                        triggerClass="pl-4 pr-3 py-1 text-sm font-medium"
+                        iconSize={14}
+                        onChange={(apiValue) => onDetalleStatusChange(ids, apiValue)}
                       />
-                    ) : (
-                      <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
-                    )}
+                    </div>
+                    <div className="flex flex-col items-center px-2 min-w-[180px]">
+                      <div className="flex items-center gap-2 w-full">
+                        <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
+                        <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                              backgroundColor: getInvoiceProgressColor(
+                                p.estado_factura?.descripcion
+                              ),
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
+                        <span className="text-[#6f6f6f]">Factura:</span>
+                        {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DesignFileLink
+                            archivos={p.archivos}
+                            className="ml-1 h-7 w-7 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Card */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`)
+                    }
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/pedidos/${p.id_pedido}?detalleIds=${ids.join(",")}`);
+                      }
+                    }}
+                    aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                    className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4 cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                          Pedido
+                        </p>
+                        <p className="text-[16px] font-bold text-[#1e1e1e]">#{p.id_pedido}</p>
+                      </div>
+                      <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                        <PedidoStatusPill
+                          status={status}
+                          triggerClass="pl-3 pr-2 py-1 text-[11px] font-bold"
+                          iconSize={12}
+                          onChange={(apiValue) => onDetalleStatusChange(ids, apiValue)}
+                        />
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-[#F5F5F5] space-y-3">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                            Cliente
+                          </p>
+                          <p className="text-[13px] font-medium text-[#1e1e1e]">
+                            {p.cliente?.nombre_cliente}
+                          </p>
+                          <p className="text-[11px] text-[#8e908f]">
+                            {p.cliente?.empresa || "Sin empresa"}
+                          </p>
+                          <p className="mt-2 text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                            Oportunidad
+                          </p>
+                          <p className="text-[12px] font-medium text-[#1e1e1e]">
+                            {p.nombre_oportunidad ?? "—"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                            Folio
+                          </p>
+                          <p className="text-[12px] font-semibold text-[#575757] mb-2">
+                            {p.folio ?? "—"}
+                          </p>
+                          <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                            Subtotal
+                          </p>
+                          <p className="text-[13px] font-bold text-[#1e1e1e]">
+                            {rowTotal > 0 ? `$${rowTotal.toLocaleString("es-MX")}` : "—"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-[#fcfcfc] rounded-lg p-3 space-y-2 border border-[#f0f0f0]">
+                        <div className="flex justify-between items-center text-[11px] font-bold text-[#8e908f] uppercase">
+                          <span>Estado de Factura</span>
+                          <span>
+                            {getInvoiceProgress(p.estado_factura?.descripcion).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                              backgroundColor: getInvoiceProgressColor(
+                                p.estado_factura?.descripcion
+                              ),
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px]">
+                          <span className="text-[#6f6f6f]">Estatus:</span>
+                          <span className="font-bold text-[#1e1e1e]">
+                            {p.estado_factura?.descripcion || "No se requiere factura"}
+                          </span>
+                          {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                      <div className="flex gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                            Fecha
+                          </p>
+                          <p className="text-[11px] font-medium text-[#575757]">
+                            {formatDate(p.fecha_creacion)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                            Entrega
+                          </p>
+                          <p className="text-[11px] font-medium text-[#575757]">
+                            {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
+                          </p>
+                        </div>
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DesignFileLink
+                          archivos={p.archivos}
+                          className="h-8 w-8 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Client and amount summary */}
-                <div className="pt-2 border-t border-[#F5F5F5] space-y-3">
-                  <div className="flex justify-between items-start gap-4">
-                    {/* Client info */}
-                    <div>
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                        Cliente
-                      </p>
-
-                      <p className="text-[13px] font-medium text-[#1e1e1e]">
-                        {p.cliente?.nombre_cliente}
-                      </p>
-
-                      <p className="text-[11px] text-[#8e908f]">
-                        {p.cliente?.empresa || "Sin empresa"}
-                      </p>
-
-                      <p className="mt-2 text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                        Oportunidad
-                      </p>
-
-                      <p className="text-[12px] font-medium text-[#1e1e1e]">
-                        {p.nombre_oportunidad ?? "—"}
-                      </p>
-                    </div>
-
-                    {/* Folio and amount */}
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                        Folio
-                      </p>
-
-                      <p className="text-[12px] font-semibold text-[#575757] mb-2">
-                        {p.folio ?? "—"}
-                      </p>
-
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
-                        Monto
-                      </p>
-
-                      <p className="text-[13px] font-bold text-[#1e1e1e]">
-                        {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")}` : "—"}
-                      </p>
-                    </div>
+              );
+            })
+          : pedidos.map((p) => (
+              <div key={p.id_pedido}>
+                {/* Desktop Row — entire row opens the pedido detail */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
+                  onKeyDown={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/pedidos/${p.id_pedido}`);
+                    }
+                  }}
+                  aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                  className="hidden md:grid px-4 py-3 bg-white text-[#1e1e1e] rounded shadow text-sm items-center text-center cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+                  style={{
+                    gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr",
+                  }}
+                >
+                  <span className="whitespace-nowrap">{formatDate(p.fecha_creacion)}</span>
+                  <span className="whitespace-nowrap">
+                    {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
+                  </span>
+                  <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
+                  <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
+                  <span className="whitespace-nowrap">
+                    {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
+                  </span>
+                  <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
+                  <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                    <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
                   </div>
-
-                  {/* Invoice status progress */}
-                  <div className="bg-[#fcfcfc] rounded-lg p-3 space-y-2 border border-[#f0f0f0]">
-                    <div className="flex justify-between items-center text-[11px] font-bold text-[#8e908f] uppercase">
-                      <span>Estado de Factura</span>
-                      <span>{getInvoiceProgress(p.estado_factura?.descripcion).toFixed(0)}%</span>
+                  <div className="flex flex-col items-center px-2 min-w-[180px]">
+                    <div className="flex items-center gap-2 w-full">
+                      <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
+                      <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                            backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
+                          }}
+                        />
+                      </div>
                     </div>
-
-                    <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
-                          backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1 text-[11px]">
-                      <span className="text-[#6f6f6f]">Estatus:</span>
-
-                      <span className="font-bold text-[#1e1e1e]">
-                        {p.estado_factura?.descripcion || "Sin facturar"}
-                      </span>
-
+                    <div className="flex items-center gap-1 mt-1 text-[12px] whitespace-nowrap">
+                      <span className="text-[#6f6f6f]">Factura:</span>
                       {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DesignFileLink
+                          archivos={p.archivos}
+                          className="ml-1 h-7 w-7 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Dates and actions */}
-                <div className="flex justify-between items-center pt-2">
-                  <div className="flex gap-4">
-                    {/* Creation date */}
+                {/* Mobile Card */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/pedidos/${p.id_pedido}`)}
+                  onKeyDown={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/pedidos/${p.id_pedido}`);
+                    }
+                  }}
+                  aria-label={`Ver detalle del pedido ${p.folio ?? p.id_pedido}`}
+                  className="md:hidden bg-white p-5 rounded-xl shadow-sm border border-[#F0F0F0] space-y-4 cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200]"
+                >
+                  <div className="flex justify-between items-start gap-4">
                     <div>
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">Fecha</p>
-
-                      <p className="text-[11px] font-medium text-[#575757]">
-                        {formatDate(p.fecha_creacion)}
+                      <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                        Pedido
                       </p>
+                      <p className="text-[16px] font-bold text-[#1e1e1e]">#{p.id_pedido}</p>
                     </div>
-
-                    {/* Estimated delivery date */}
-                    <div>
-                      <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
-                        Entrega
-                      </p>
-
-                      <p className="text-[11px] font-medium text-[#575757]">
-                        {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
-                      </p>
+                    <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                      <ServiceStatusSemaphore summary={p.serviceStatusSummary} />
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <DesignFileLink
-                      archivos={p.archivos}
-                      className="h-10 w-10 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
-                    />
-
-                    <a
-                      href={`/pedidos/${p.id_pedido}`}
-                      className="h-10 w-10 flex items-center justify-center bg-[#F5F5F5] rounded-full text-[#1e1e1e] hover:text-[#e42200] transition-colors"
-                      title="Editar pedido"
-                      aria-label={`Editar pedido ${p.folio ?? p.id_pedido}`}
-                    >
-                      <PencilSimple size={18} />
-                    </a>
+                  <div className="pt-2 border-t border-[#F5F5F5] space-y-3">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                          Cliente
+                        </p>
+                        <p className="text-[13px] font-medium text-[#1e1e1e]">
+                          {p.cliente?.nombre_cliente}
+                        </p>
+                        <p className="text-[11px] text-[#8e908f]">
+                          {p.cliente?.empresa || "Sin empresa"}
+                        </p>
+                        <p className="mt-2 text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                          Oportunidad
+                        </p>
+                        <p className="text-[12px] font-medium text-[#1e1e1e]">
+                          {p.nombre_oportunidad ?? "—"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                          Folio
+                        </p>
+                        <p className="text-[12px] font-semibold text-[#575757] mb-2">
+                          {p.folio ?? "—"}
+                        </p>
+                        <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
+                          Monto
+                        </p>
+                        <p className="text-[13px] font-bold text-[#1e1e1e]">
+                          {p.monto_total != null
+                            ? `$${p.monto_total.toLocaleString("es-MX")}`
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-[#fcfcfc] rounded-lg p-3 space-y-2 border border-[#f0f0f0]">
+                      <div className="flex justify-between items-center text-[11px] font-bold text-[#8e908f] uppercase">
+                        <span>Estado de Factura</span>
+                        <span>{getInvoiceProgress(p.estado_factura?.descripcion).toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${getInvoiceProgress(p.estado_factura?.descripcion)}%`,
+                            backgroundColor: getInvoiceProgressColor(p.estado_factura?.descripcion),
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <span className="text-[#6f6f6f]">Estatus:</span>
+                        <span className="font-bold text-[#1e1e1e]">
+                          {p.estado_factura?.descripcion || "No se requiere factura"}
+                        </span>
+                        {renderInvoiceStatusIcon(p.estado_factura?.descripcion)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="flex gap-4">
+                      <div>
+                        <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                          Fecha
+                        </p>
+                        <p className="text-[11px] font-medium text-[#575757]">
+                          {formatDate(p.fecha_creacion)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#8e908f] uppercase mb-0.5">
+                          Entrega
+                        </p>
+                        <p className="text-[11px] font-medium text-[#575757]">
+                          {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <DesignFileLink
+                        archivos={p.archivos}
+                        className="h-8 w-8 flex items-center justify-center bg-[#fff0f3] rounded-full text-[#8b434a] relative"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            ))}
       </div>
     </div>
   );
