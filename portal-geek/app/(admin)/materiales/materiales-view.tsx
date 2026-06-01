@@ -195,12 +195,10 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setRetryAttempt((n) => n + 1);
   }
 
-  function handleToggleColumn(key: keyof MaterialesVisibleColumns) {
-    setVisibleColumns((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      if (!Object.values(next).some(Boolean)) return prev;
-      return next;
-    });
+  function handleColumnsChange(columns: MaterialesVisibleColumns) {
+    // Guard against an all-hidden table even if a caller passes one in.
+    if (!Object.values(columns).some(Boolean)) return;
+    setVisibleColumns(columns);
   }
 
   function handleResetFilters() {
@@ -290,7 +288,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
             visibleColumns={visibleColumns}
             sortOrder={sortOrder}
             tipoFilter={tipoFilter}
-            onToggleColumn={handleToggleColumn}
+            onColumnsChange={handleColumnsChange}
             onSortChange={handleSortChange}
             onTipoFilterChange={handleTipoFilterChange}
             onResetFilters={handleResetFilters}

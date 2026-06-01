@@ -54,14 +54,20 @@ export function CategoriaCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-[15px] font-semibold uppercase tracking-wide text-[#1e1e1e] truncate">
+          <span
+            className="min-w-0 max-w-[40%] text-[15px] font-semibold uppercase tracking-wide text-[#1e1e1e] truncate"
+            title={categoria.name}
+          >
             {categoria.name}
           </span>
           <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-[#1e1e1e] text-white text-[11px] font-medium">
             {childCount} elemento{childCount !== 1 ? "s" : ""}
           </span>
           {categoria.description && (
-            <span className="hidden md:block text-[12px] text-[#575757] truncate">
+            <span
+              className="hidden md:block min-w-0 max-w-[40%] text-[12px] text-[#575757] truncate"
+              title={categoria.description}
+            >
               {categoria.description}
             </span>
           )}

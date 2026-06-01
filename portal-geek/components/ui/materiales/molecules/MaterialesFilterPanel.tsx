@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 import type { MaterialSortOrder, MaterialTipoFilter, MaterialesVisibleColumns } from "@/types";
 
@@ -8,7 +10,7 @@ interface MaterialesFilterPanelProps {
   visibleColumns: MaterialesVisibleColumns;
   sortOrder: MaterialSortOrder;
   tipoFilter: MaterialTipoFilter;
-  onToggleColumn: (key: keyof MaterialesVisibleColumns) => void;
+  onColumnsChange: (columns: MaterialesVisibleColumns) => void;
   onSortChange: (order: MaterialSortOrder) => void;
   onTipoFilterChange: (value: MaterialTipoFilter) => void;
   onReset: () => void;
@@ -28,12 +30,26 @@ const COLUMN_OPTIONS: Array<{ key: keyof MaterialesVisibleColumns; label: string
   { key: "proveedores", label: "Proveedores" },
 ];
 
+function defaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
+  return {
+    name: true,
+    description: true,
+    unit: true,
+    width: true,
+    height: true,
+    thickness: true,
+    color: true,
+    image: true,
+    proveedores: canViewProveedores,
+  };
+}
+
 export function MaterialesFilterPanel({
   open,
   visibleColumns,
   sortOrder,
   tipoFilter,
-  onToggleColumn,
+  onColumnsChange,
   onSortChange,
   onTipoFilterChange,
   onReset,
@@ -44,8 +60,48 @@ export function MaterialesFilterPanel({
     ? COLUMN_OPTIONS
     : COLUMN_OPTIONS.filter((o) => o.key !== "proveedores");
 
+  // Draft-and-apply: edits stay local until the user clicks "Aplicar", mirroring
+  // the *FilterSidebar family. The table never re-filters on each keystroke/click.
+  const [draftColumns, setDraftColumns] = useState(visibleColumns);
+  const [draftSort, setDraftSort] = useState(sortOrder);
+  const [draftTipo, setDraftTipo] = useState(tipoFilter);
+
+  // Resync the draft from the applied filters every time the panel transitions
+  // from closed to open, so abandoned edits don't persist across reopens.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
+    if (open) {
+      setDraftColumns(visibleColumns);
+      setDraftSort(sortOrder);
+      setDraftTipo(tipoFilter);
+    }
+  }
+
+  function toggleDraftColumn(key: keyof MaterialesVisibleColumns) {
+    setDraftColumns((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      // At least one column must stay visible.
+      if (!Object.values(next).some(Boolean)) return prev;
+      return next;
+    });
+  }
+
+  function apply() {
+    onColumnsChange(draftColumns);
+    onSortChange(draftSort);
+    onTipoFilterChange(draftTipo);
+  }
+
+  function reset() {
+    setDraftColumns(defaultColumns(canViewProveedores));
+    setDraftSort("az");
+    setDraftTipo("all");
+    onReset();
+  }
+
   return (
-    <FilterSidebar open={open} onClose={onClose} onReset={onReset}>
+    <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
         <p className="text-[13px] font-semibold text-[#575757] mb-2">Columnas</p>
         <div className="space-y-2">
@@ -56,8 +112,8 @@ export function MaterialesFilterPanel({
             >
               <input
                 type="checkbox"
-                checked={visibleColumns[option.key]}
-                onChange={() => onToggleColumn(option.key)}
+                checked={draftColumns[option.key]}
+                onChange={() => toggleDraftColumn(option.key)}
                 className={filterSidebarClasses.checkbox}
               />
               {option.label}
@@ -73,8 +129,8 @@ export function MaterialesFilterPanel({
             <input
               type="radio"
               name="material-order"
-              checked={sortOrder === "az"}
-              onChange={() => onSortChange("az")}
+              checked={draftSort === "az"}
+              onChange={() => setDraftSort("az")}
               className={filterSidebarClasses.checkbox}
             />
             De la A a la Z
@@ -83,8 +139,8 @@ export function MaterialesFilterPanel({
             <input
               type="radio"
               name="material-order"
-              checked={sortOrder === "za"}
-              onChange={() => onSortChange("za")}
+              checked={draftSort === "za"}
+              onChange={() => setDraftSort("za")}
               className={filterSidebarClasses.checkbox}
             />
             De la Z a la A
@@ -99,8 +155,8 @@ export function MaterialesFilterPanel({
             <input
               type="radio"
               name="material-tipo"
-              checked={tipoFilter === "all"}
-              onChange={() => onTipoFilterChange("all")}
+              checked={draftTipo === "all"}
+              onChange={() => setDraftTipo("all")}
               className={filterSidebarClasses.checkbox}
             />
             Todos
@@ -109,8 +165,8 @@ export function MaterialesFilterPanel({
             <input
               type="radio"
               name="material-tipo"
-              checked={tipoFilter === "categorias"}
-              onChange={() => onTipoFilterChange("categorias")}
+              checked={draftTipo === "categorias"}
+              onChange={() => setDraftTipo("categorias")}
               className={filterSidebarClasses.checkbox}
             />
             Solo categorías
@@ -119,8 +175,8 @@ export function MaterialesFilterPanel({
             <input
               type="radio"
               name="material-tipo"
-              checked={tipoFilter === "grupos"}
-              onChange={() => onTipoFilterChange("grupos")}
+              checked={draftTipo === "grupos"}
+              onChange={() => setDraftTipo("grupos")}
               className={filterSidebarClasses.checkbox}
             />
             Solo grupos
@@ -129,8 +185,8 @@ export function MaterialesFilterPanel({
             <input
               type="radio"
               name="material-tipo"
-              checked={tipoFilter === "individuales"}
-              onChange={() => onTipoFilterChange("individuales")}
+              checked={draftTipo === "individuales"}
+              onChange={() => setDraftTipo("individuales")}
               className={filterSidebarClasses.checkbox}
             />
             Sin grupo

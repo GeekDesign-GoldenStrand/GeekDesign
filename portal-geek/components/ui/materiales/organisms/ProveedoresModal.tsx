@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
 import { MailIcon, PhoneIcon, UserGearIcon, XIcon } from "@/components/ui/atoms/icons";
 import type { MaterialProveedor } from "@/lib/services/materiales";
 
@@ -140,12 +141,9 @@ export function ProveedoresModal({
               <p className="text-[14px] text-[#8e908f]">
                 Este material no tiene proveedores registrados aún.
               </p>
-              <Link
-                href="/terceros"
-                className="inline-flex items-center px-4 py-2 text-[13px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors"
-              >
-                Ir a Terceros
-              </Link>
+              <Button asChild variant="primary" size="sm">
+                <Link href="/terceros">Ir a Terceros</Link>
+              </Button>
             </div>
           )}
 
