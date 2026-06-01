@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/colaboradores";
 import { FiltrarColaboradoresPanel } from "@/components/ui/colaboradores/molecules/FiltrarColaboradoresPanel";
 import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
+import { formatDate } from "@/lib/utils/date";
 
 const PAGE_SIZE = 20;
 
@@ -57,12 +58,11 @@ function mapApiRow(item: ColaboradorApiRow): ColaboradorRow {
     sucursal: item.colaborador?.sucursal?.nombre_sucursal ?? null,
     id_sucursal: item.colaborador?.sucursal?.id_sucursal ?? null,
     telefono: item.colaborador?.telefono ?? null,
+    // Pre-formatted with the shared DD MMM YYYY helper so every admin card
+    // (Servicios, Pedidos, Cotizaciones, Maquinas, Clientes, Colaboradores)
+    // surfaces dates in the same shape.
     fecha_modificacion: item.colaborador?.fecha_modificacion
-      ? new Date(item.colaborador.fecha_modificacion).toLocaleDateString("es-MX", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+      ? formatDate(item.colaborador.fecha_modificacion)
       : null,
   };
 }

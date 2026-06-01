@@ -5,6 +5,7 @@ import { type KeyboardEvent } from "react";
 
 import { ActionButton, ActionLink } from "@/components/ui/atoms";
 import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
+import { formatDate } from "@/lib/utils/date";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
@@ -15,11 +16,9 @@ type ServicioCardProps = {
 export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
   const router = useRouter();
 
-  const fechaFormateada = new Date(servicio.fecha_modificacion).toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  // Use the shared formatter so this card matches Pedidos / Cotizaciones /
+  // every other entity card in the admin (DD MMM YYYY, e.g. "06 JUN 2026").
+  const fechaFormateada = formatDate(servicio.fecha_modificacion);
 
   const maquinas = servicio.maquinas.map((m) => m.maquina.apodo_maquina);
 
@@ -48,6 +47,8 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
           {servicio.nombre_servicio}
         </h3>
       </div>
+
+      <p className="text-[14px] text-gray-500">Modificado: {fechaFormateada}</p>
 
       {/* Descripción */}
       <div>
@@ -86,16 +87,6 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
             Sin máquinas asignadas
           </p>
         )}
-      </div>
-
-      {/* Última modificación */}
-      <div>
-        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
-          Última modificación
-        </p>
-        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
-          {fechaFormateada}
-        </p>
       </div>
 
       {/* Footer / Actions — stop click bubbling so these don't trigger the card-wide edit navigation */}
