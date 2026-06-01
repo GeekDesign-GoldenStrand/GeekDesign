@@ -304,15 +304,6 @@ export function ColaboradoresView({ currentUserId }: ColaboradoresViewProps) {
     setPage(1);
   }, [search, filterEstatus, filterRoles]);
 
-  function handleRolToggle(id: number) {
-    setFilterRoles((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
-  }
-
-  function handleLimpiarFiltros() {
-    setFilterEstatus("");
-    setFilterRoles([]);
-  }
-
   const q = search.trim().toLowerCase();
   const filtered = colaboradores.filter((u) => {
     if (
@@ -342,9 +333,8 @@ export function ColaboradoresView({ currentUserId }: ColaboradoresViewProps) {
           roles={roles}
           filterEstatus={filterEstatus}
           filterRoles={filterRoles}
-          onEstatusChange={setFilterEstatus}
-          onRolToggle={handleRolToggle}
-          onReset={handleLimpiarFiltros}
+          setFilterEstatus={setFilterEstatus}
+          setFilterRoles={setFilterRoles}
           onClose={() => setFilterOpen(false)}
         />
         {statusError && (

@@ -9,10 +9,10 @@ interface MaterialesToolbarProps {
   visibleColumns: MaterialesVisibleColumns;
   sortOrder: MaterialSortOrder;
   tipoFilter: MaterialTipoFilter;
-  onToggleColumn: (key: keyof MaterialesVisibleColumns) => void;
-  onSortChange: (order: MaterialSortOrder) => void;
-  onTipoFilterChange: (value: MaterialTipoFilter) => void;
-  onResetFilters: () => void;
+  defaultVisibleColumns: MaterialesVisibleColumns;
+  setVisibleColumns: (v: MaterialesVisibleColumns) => void;
+  setSortOrder: (order: MaterialSortOrder) => void;
+  setTipoFilter: (value: MaterialTipoFilter) => void;
   onAddClick?: () => void;
   onFilterClick?: () => void;
   onCloseFilter: () => void;
@@ -26,10 +26,10 @@ export function MaterialesToolbar({
   visibleColumns,
   sortOrder,
   tipoFilter,
-  onToggleColumn,
-  onSortChange,
-  onTipoFilterChange,
-  onResetFilters,
+  defaultVisibleColumns,
+  setVisibleColumns,
+  setSortOrder,
+  setTipoFilter,
   onAddClick,
   onFilterClick,
   onCloseFilter,
@@ -76,10 +76,10 @@ export function MaterialesToolbar({
         visibleColumns={visibleColumns}
         sortOrder={sortOrder}
         tipoFilter={tipoFilter}
-        onToggleColumn={onToggleColumn}
-        onSortChange={onSortChange}
-        onTipoFilterChange={onTipoFilterChange}
-        onReset={onResetFilters}
+        defaultVisibleColumns={defaultVisibleColumns}
+        setVisibleColumns={setVisibleColumns}
+        setSortOrder={setSortOrder}
+        setTipoFilter={setTipoFilter}
         onClose={onCloseFilter}
         canViewProveedores={canViewProveedores}
       />
