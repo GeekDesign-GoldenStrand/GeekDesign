@@ -3,6 +3,7 @@ import React, { useState, useCallback } from "react";
 import AplicarDescuento from "@/app/(admin)/cotizaciones/[id]/aplicar-descuento";
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
+import type { UserRole } from "@/types";
 import {
   QUOTATION_STATUS,
   type Cotizacion,
@@ -23,10 +24,15 @@ type ActivePanel = "edit" | "discount" | null;
 
 interface CotizacionDetailPageProps {
   cotizacion: Cotizacion;
+  userRole?: UserRole;
   onRefetch?: () => Promise<void> | void;
 }
 
-export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetailPageProps) {
+export function CotizacionDetailPage({
+  cotizacion,
+  userRole,
+  onRefetch,
+}: CotizacionDetailPageProps) {
   // ── Panel visibility ──────────────────────
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const togglePanel = (panel: ActivePanel) =>
@@ -113,7 +119,18 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
     await onRefetch?.();
   }, [onRefetch]);
 
-  const creadoPor = cotizacion.cliente.nombre_cliente;
+  // "Creada por" = the actor who created the quote, NOT the cliente the
+  // quote is for. The Cotizaciones row has no id_usuario_creador column —
+  // the canonical signal is the historial entry with no previous state
+  // (id_estado_anterior === null). Historial is fetched in fecha_cambio
+  // asc order (lib/services/cotizaciones.ts), so the creation entry is
+  // also historial[0]; we search by id_estado_anterior for robustness in
+  // case ordering ever changes. Same actor-resolution fallback chain as
+  // the historial map above (usuario → cliente → "Sistema").
+  const creationEntry =
+    cotizacion.historial.find((h) => h.id_estado_anterior == null) ?? cotizacion.historial[0];
+  const creadoPor =
+    creationEntry?.usuario?.nombre_completo ?? creationEntry?.cliente?.nombre_cliente ?? "Sistema";
 
   // Edits, adding a discount, and removing a discount all share the same
   // server-side Pendiente-only rule (see updateCotizacion + aplicarDescuento).
@@ -122,6 +139,11 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
   // — keeps this in lock-step with the backend if the catalog string ever
   // changes.
   const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
+  // PATCH /api/cotizaciones/[id]/descuento requires Direccion. Mirror that
+  // gate here so non-Direccion users don't see discount affordances that
+  // would 403 on save — the discount inputs in the edit modal are also
+  // hidden via userRole there.
+  const canManageDiscount = isMutable && userRole === "Direccion";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
@@ -130,7 +152,7 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
         discountApplied={porcentajeDescuento > 0}
         canEdit={isMutable}
-        canAddDiscount={isMutable}
+        canAddDiscount={canManageDiscount}
         onEdit={() => togglePanel("edit")}
         onDiscount={() => togglePanel("discount")}
       />
@@ -156,6 +178,7 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         }}
         porcentajeDescuento={porcentajeDescuento || null}
         motivoDescuento={cotizacion.motivo_descuento}
+        userRole={userRole}
         onSave={handleSave}
         onClose={() => setActivePanel(null)}
       />
@@ -168,9 +191,11 @@ export function CotizacionDetailPage({ cotizacion, onRefetch }: CotizacionDetail
         fechaEntrega={fields.fecha_fin || cotizacion.fecha_fin}
         servicios={fields.servicios}
         // Trash icon on the discount ribbon is only wired when the quote
-        // can still be mutated — withholding the callback hides the button
-        // in CotizacionSummary (it gates on the prop being defined).
-        onDeleteDiscount={isMutable ? () => togglePanel("discount") : undefined}
+        // can still be mutated AND the viewer is Direccion — withholding
+        // the callback hides the button in CotizacionSummary (it gates on
+        // the prop being defined). Without the role check, other roles
+        // would see the icon and hit a 403 on click.
+        onDeleteDiscount={canManageDiscount ? () => togglePanel("discount") : undefined}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

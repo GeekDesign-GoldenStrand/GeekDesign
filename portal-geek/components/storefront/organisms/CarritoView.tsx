@@ -10,6 +10,7 @@ import {
   removeItem,
   updateQuantity,
   getSubtotal,
+  CANTIDAD_MAX,
   type CarritoItem,
 } from "@/lib/cart/storage";
 interface RelatedService {
@@ -246,9 +247,17 @@ export function CarritoView({ relatedServices }: Props) {
                           <input
                             type="number"
                             min={1}
-                            max={9999}
+                            max={CANTIDAD_MAX}
                             value={item.cantidad}
-                            onChange={(e) => handleCantidad(item.id, Number(e.target.value))}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (!Number.isFinite(val)) return;
+                              const next = Math.floor(val);
+                              // Reject the keystroke above the cap instead of
+                              // snapping — typing "1234" stays at "123".
+                              if (next > CANTIDAD_MAX) return;
+                              handleCantidad(item.id, next);
+                            }}
                             className="w-[36px] text-[18px] text-[#1e1e1e] bg-transparent border-none outline-none text-right"
                           />
                           <CaretDown size={16} className="text-[#1e1e1e] shrink-0" />

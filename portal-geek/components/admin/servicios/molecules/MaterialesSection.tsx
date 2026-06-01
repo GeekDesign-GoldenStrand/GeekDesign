@@ -8,6 +8,7 @@ import { Icon } from "@/components/admin/servicios/atoms/Icon";
 import { Toggle } from "@/components/admin/servicios/atoms/Toggle";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { MaterialDraft, MaterialOption, ProveedorPrecioOption } from "@/types/servicios";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -363,7 +364,7 @@ export function MaterialesSection({
               type="text"
               placeholder="Buscar material o grupo..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(sanitizeUserText(e.target.value))}
               onFocus={() => setAdding(true)}
               maxLength={50}
               className="h-11 flex-1 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"

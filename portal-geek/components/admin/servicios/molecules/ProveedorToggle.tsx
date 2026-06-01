@@ -200,11 +200,24 @@ export function ProveedorToggle({ opciones, value, onChange }: ProveedorTogglePr
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Precio para este servicio:</span>
                     <input
-                      type="number"
-                      min="0"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={precioDraft}
-                      onChange={(e) => setPrecioDraft(e.target.value)}
+                      onChange={(e) => {
+                        // Currency input: digits + optional decimal point + up to 2
+                        // decimal places. Numerical cap at $9,999,999.99 instead of a
+                        // char count, so the effective max is the same regardless of
+                        // decimal usage.
+                        const next = e.target.value;
+                        if (next === "") {
+                          setPrecioDraft("");
+                          return;
+                        }
+                        if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+                        const parsed = parseFloat(next);
+                        if (!isNaN(parsed) && parsed > 9999999.99) return;
+                        setPrecioDraft(next);
+                      }}
                       autoFocus
                       className="h-8 px-2 w-28 rounded-md border border-gray-300 text-sm text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent"
                     />

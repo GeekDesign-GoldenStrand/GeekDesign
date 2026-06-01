@@ -15,8 +15,16 @@ interface Sucursal {
   nombre_sucursal: string;
 }
 
+export interface InitialContact {
+  nombre: string;
+  empresa: string;
+  correo: string;
+  telefono: string;
+}
+
 interface Props {
   sucursales: Sucursal[];
+  initialContact?: InitialContact | null;
 }
 
 const formatPeso = (n: number) =>
@@ -38,19 +46,57 @@ const getMaxDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-export function CheckoutForm({ sucursales }: Props) {
+// The storefront cotización endpoint validates with Zod and returns the raw
+// issue (e.g. "items.1.notas: Too big: expected string to have <=500
+// characters"). End users shouldn't see the field path or the English copy,
+// so strip the path prefix and translate the common cases to Spanish.
+function translateServerError(raw?: string): string {
+  const fallback = "No se pudo enviar la cotización. Revisa los datos e inténtalo de nuevo.";
+  if (!raw) return fallback;
+
+  // The path lives before the first colon (e.g. "items.1.notas").
+  const path = raw.split(":")[0] ?? "";
+  const isNotas = /notas/i.test(path);
+  // Drop the leading Zod path so only the message remains.
+  const message = raw.replace(/^[a-zA-Z0-9_.]+:\s*/, "");
+
+  const tooBig = message.match(/too big[^0-9]*(\d+)\s*characters?/i);
+  if (tooBig) {
+    const max = tooBig[1];
+    return isNotas
+      ? `Las notas de uno de los productos superan el máximo de ${max} caracteres. Acórtalas e inténtalo de nuevo.`
+      : `Uno de los campos supera el máximo de ${max} caracteres.`;
+  }
+
+  const tooSmall = message.match(/too small[^0-9]*(\d+)\s*characters?/i);
+  if (tooSmall) {
+    return `Uno de los campos no alcanza el mínimo de ${tooSmall[1]} caracteres.`;
+  }
+
+  // Any remaining English/Zod-shaped text shouldn't leak to the user.
+  if (/expected|invalid|required|string|number|too (big|small)/i.test(message)) {
+    return fallback;
+  }
+
+  return message || fallback;
+}
+
+export function CheckoutForm({ sucursales, initialContact }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<CarritoItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  const [nombre, setNombre] = useState("");
+  const [nombre, setNombre] = useState(initialContact?.nombre ?? "");
   const [nombreError, setNombreError] = useState<string | null>(null);
-  const [empresa, setEmpresa] = useState("");
-  const [correo, setCorreo] = useState("");
+  const [empresa, setEmpresa] = useState(initialContact?.empresa ?? "");
+  const [correo, setCorreo] = useState(initialContact?.correo ?? "");
   const [correoError, setCorreoError] = useState<string | null>(null);
   // E.164 format (e.g. "+524421234567") from react-phone-number-input.
   // The library returns undefined while the user is typing an incomplete number.
-  const [telefono, setTelefono] = useState<string | undefined>(undefined);
+  // A recognized client's stored phone is already E.164, so we seed it directly.
+  const [telefono, setTelefono] = useState<string | undefined>(
+    initialContact?.telefono || undefined
+  );
   const [telefonoError, setTelefonoError] = useState<string | null>(null);
 
   const PHONE_MAX_DIGITS = 15;
@@ -70,6 +116,24 @@ export function CheckoutForm({ sucursales }: Props) {
   const [notas, setNotas] = useState("");
   const [notasError, setNotasError] = useState<string | null>(null);
   const [fechaEstimada, setFechaEstimada] = useState("");
+
+  // Whether the form is showing prefilled data from a recognized client. Hidden
+  // once they clear it (e.g. on a shared computer or "not me").
+  const [recognized, setRecognized] = useState(Boolean(initialContact));
+
+  async function handleForgetMe() {
+    setRecognized(false);
+    setNombre("");
+    setEmpresa("");
+    setCorreo("");
+    setTelefono(undefined);
+    try {
+      await fetch("/api/storefront/cliente-recognido", { method: "DELETE" });
+    } catch {
+      // Best-effort: clearing the inputs already removed the visible PII; the
+      // cookie will expire on its own if this network call fails.
+    }
+  }
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +248,7 @@ export function CheckoutForm({ sucursales }: Props) {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Error al enviar la cotización");
+        setError(translateServerError(json.error));
         submittingRef.current = false;
         setSubmitting(false);
         return;
@@ -221,6 +285,21 @@ export function CheckoutForm({ sucursales }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-[24px]">
       <section className="bg-white rounded-[10px] border border-[#c2c0c0] p-[24px] flex flex-col gap-[16px]">
         <h2 className="font-bold text-[20px] text-[#1e1e1e]">Tus datos</h2>
+
+        {recognized && (
+          <div className="flex items-center justify-between gap-[12px] rounded-[8px] bg-[#fff8f9] border border-[#e6d2d4] px-[14px] py-[10px]">
+            <p className="text-[14px] text-[#1e1e1e]">
+              Cotizando como <span className="font-semibold">{nombre || correo}</span>.
+            </p>
+            <button
+              type="button"
+              onClick={handleForgetMe}
+              className="text-[14px] font-semibold text-[#8b434a] underline hover:text-[#7a3a41]"
+            >
+              ¿No eres tú?
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[6px]">
           <label htmlFor="nombre" className="text-[14px] font-semibold text-[#1e1e1e]">
