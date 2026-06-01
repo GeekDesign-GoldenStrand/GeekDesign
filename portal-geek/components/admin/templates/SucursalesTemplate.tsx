@@ -140,7 +140,9 @@ export function SucursalesTemplate({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {sucursales.map((s) => {
               const colabNames =
-                (s.colaboradores?.map((c) => c.usuario?.nombre).filter(Boolean) as string[]) ?? [];
+                (s.colaboradores
+                  ?.map((c) => c.usuario?.nombre_completo)
+                  .filter(Boolean) as string[]) ?? [];
               const maqNames =
                 (s.maquinas?.map((m) => m.maquina?.nombre_maquina).filter(Boolean) as string[]) ??
                 [];
