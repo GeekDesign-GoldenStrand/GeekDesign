@@ -31,7 +31,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<Params> }) {
     }
 
     const result = await cancelQuotationByClient(id, body.reason);
-    return ok(result);
+    const response = ok(result);
+    // Invalidate the magic-link session — same rationale as the approve route.
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
   } catch (err) {
     return handleError(err);
   }

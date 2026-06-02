@@ -20,6 +20,7 @@ jest.mock("@/lib/db/client", () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn(),
   },
 }));
@@ -146,7 +147,15 @@ describe("resetPassword (AU-02)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockHashPassword.mockResolvedValue("new-hash");
-    mockTransaction.mockResolvedValue([]);
+    // The service now uses callback-style $transaction with a SELECT FOR UPDATE
+    // lock; route the tx through the same mocked Prisma model methods.
+    mockTransaction.mockImplementation((fn: (tx: unknown) => unknown) =>
+      fn({
+        $queryRaw: jest.fn().mockResolvedValue([]),
+        tokensRecuperacion: prisma.tokensRecuperacion,
+        usuarios: prisma.usuarios,
+      })
+    );
   });
 
   it("AU02-U8: con token válido y vigente hashea y persiste en transacción", async () => {
@@ -160,7 +169,7 @@ describe("resetPassword (AU-02)", () => {
     await resetPassword("raw-token", "NuevaPass123");
 
     expect(mockHashPassword).toHaveBeenCalledWith("NuevaPass123");
-    expect(mockTransaction).toHaveBeenCalledWith(expect.any(Array));
+    expect(mockTransaction).toHaveBeenCalledWith(expect.any(Function));
     expect(mockTokenFindUnique).toHaveBeenCalledWith({
       where: { token_hash: sha256("raw-token") },
     });
@@ -169,7 +178,6 @@ describe("resetPassword (AU-02)", () => {
   it("AU02-U9: con token inexistente lanza NotFoundError", async () => {
     mockTokenFindUnique.mockResolvedValue(null);
     await expect(resetPassword("x", "NuevaPass123")).rejects.toThrow(NotFoundError);
-    expect(mockTransaction).not.toHaveBeenCalled();
   });
 
   it("AU02-U10: con token ya usado lanza NotFoundError", async () => {

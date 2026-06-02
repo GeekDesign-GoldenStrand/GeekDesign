@@ -41,6 +41,9 @@ export function SucursalForm({ mode, initialData, onSubmit, onDelete }: Props) {
   const router = useRouter();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<SucursalFormData>({
     nombre_sucursal: initialData?.nombre_sucursal ?? "",
@@ -55,21 +58,32 @@ export function SucursalForm({ mode, initialData, onSubmit, onDelete }: Props) {
   });
 
   async function handleSubmit() {
-    await onSubmit(formData);
-
-    router.push("/sucursales");
-
-    router.refresh();
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onSubmit(formData);
+      router.push("/sucursales");
+      router.refresh();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "No se pudo guardar la sucursal");
+      setSubmitting(false);
+    }
   }
 
   async function handleDelete() {
-    if (!onDelete) return;
-
-    await onDelete();
-
-    router.push("/sucursales");
-
-    router.refresh();
+    if (!onDelete || deleting) return;
+    setDeleting(true);
+    setSubmitError(null);
+    try {
+      await onDelete();
+      router.push("/sucursales");
+      router.refresh();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "No se pudo eliminar la sucursal");
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
   }
 
   return (
@@ -166,11 +180,18 @@ export function SucursalForm({ mode, initialData, onSubmit, onDelete }: Props) {
             </div>
           </div>
 
+          {submitError && (
+            <div role="alert" className="mt-12 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+              {submitError}
+            </div>
+          )}
+
           {/* Bottom Actions */}
           <div className="flex justify-end items-center gap-6 mt-24">
             {mode === "edit" && (
               <button
                 type="button"
+                disabled={submitting || deleting}
                 onClick={() => {
                   const skipModal = localStorage.getItem("hideDeleteConfirmation") === "true";
 
@@ -187,18 +208,25 @@ export function SucursalForm({ mode, initialData, onSubmit, onDelete }: Props) {
                     font-medium
                     hover:text-[#E42200]
                     transition-colors
+                    disabled:opacity-50
+                    disabled:cursor-not-allowed
                 "
               >
-                Eliminar
+                {deleting ? "Eliminando…" : "Eliminar"}
               </button>
             )}
 
-            <Button variant="secondary" size="md" onClick={() => router.push("/sucursales")}>
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={submitting || deleting}
+              onClick={() => router.push("/sucursales")}
+            >
               Cancelar
             </Button>
 
-            <Button variant="primary" size="md" onClick={handleSubmit}>
-              Guardar
+            <Button variant="primary" size="md" disabled={submitting} onClick={handleSubmit}>
+              {submitting ? "Guardando…" : "Guardar"}
             </Button>
           </div>
         </div>

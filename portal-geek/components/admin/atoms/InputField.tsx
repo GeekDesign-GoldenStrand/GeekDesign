@@ -4,11 +4,25 @@ interface Props {
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  /**
+   * Caps how many characters the input accepts. Default 200 — long enough for
+   * names/addresses, short enough that a paste-bomb can't lock up the page.
+   * Forms with stricter server-side caps (e.g. a 50-char folio) should pass
+   * their own matching value.
+   */
+  maxLength?: number;
 }
 
 // Generic controlled input for admin forms.
 // Keeping labels and input styles together avoids duplicated form markup.
-export function InputField({ label, value, onChange, placeholder, type = "text" }: Props) {
+export function InputField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  maxLength = 200,
+}: Props) {
   return (
     <div className="flex flex-col gap-2">
       <label className="font-bold text-[#1E1E1E] text-[16px]">{label}</label>
@@ -17,6 +31,7 @@ export function InputField({ label, value, onChange, placeholder, type = "text" 
         type={type}
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
         className="
           w-full

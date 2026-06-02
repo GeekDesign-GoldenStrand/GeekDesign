@@ -26,7 +26,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<Params> }) {
     }
 
     const result = await approveQuotation(id);
-    return created(result);
+    const response = created(result);
+    // Invalidate the magic-link session — the cotización is now terminal and
+    // the cookie should not grant 24h of further access on a shared computer.
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
   } catch (err) {
     return handleError(err);
   }

@@ -49,27 +49,31 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
   const hash = crypto.createHash("sha256").update(token).digest("hex");
-
-  const record = await prisma.tokensRecuperacion.findUnique({
-    where: { token_hash: hash },
-  });
-
-  if (!record || record.usado || record.expira_en < new Date()) {
-    throw new NotFoundError("El enlace de recuperación es inválido o ya expiró");
-  }
-
   const passwordHash = await hashPassword(newPassword);
 
-  await prisma.$transaction([
-    prisma.usuarios.update({
+  await prisma.$transaction(async (tx) => {
+    // Lock the token row so two simultaneous reset submissions can't both
+    // pass the `!record.usado` check. Mirrors consumeAccessToken.
+    await tx.$queryRaw`SELECT 1 FROM "TOKENS_RECUPERACION" WHERE token_hash = ${hash} FOR UPDATE`;
+
+    const record = await tx.tokensRecuperacion.findUnique({
+      where: { token_hash: hash },
+    });
+
+    if (!record || record.usado || record.expira_en < new Date()) {
+      throw new NotFoundError("El enlace de recuperación es inválido o ya expiró");
+    }
+
+    await tx.usuarios.update({
       where: { id_usuario: record.id_usuario },
       data: { contrasena_hash: passwordHash },
-    }),
-    prisma.tokensRecuperacion.update({
+    });
+
+    await tx.tokensRecuperacion.update({
       where: { id: record.id },
       data: { usado: true },
-    }),
-  ]);
+    });
+  });
 }
 
 function escapeHtml(str: string): string {

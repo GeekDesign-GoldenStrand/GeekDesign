@@ -11,6 +11,11 @@ import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { MaterialDraft, MaterialOption, ProveedorPrecioOption } from "@/types/servicios";
 
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+});
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type GrupoConSubs = {
@@ -579,8 +584,8 @@ function MaterialRow({
         )}
         {proveedores.length === 1 && (
           <span className="text-[13px] text-[#1e1e1e] text-center">
-            {proveedores[0].proveedor.nombre_proveedor} — $
-            {Number(proveedores[0].precio).toFixed(2)}
+            {proveedores[0].proveedor.nombre_proveedor} —{" "}
+            {currencyFormatter.format(Number(proveedores[0].precio))}
           </span>
         )}
         {proveedores.length > 1 && (
@@ -596,7 +601,7 @@ function MaterialRow({
           >
             {proveedores.map((p) => (
               <SelectOption key={p.id_proveedor_precio} value={String(p.id_proveedor_precio)}>
-                {p.proveedor.nombre_proveedor} — ${Number(p.precio).toFixed(2)}
+                {p.proveedor.nombre_proveedor} — {currencyFormatter.format(Number(p.precio))}
               </SelectOption>
             ))}
           </Select>

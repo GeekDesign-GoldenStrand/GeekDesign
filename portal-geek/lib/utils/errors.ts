@@ -70,6 +70,15 @@ export class ConflictError extends AppError {
   }
 }
 
+// 503 — feature exists in the surface but isn't wired to a real implementation
+// yet. Lets the UI show a clear "en construcción" message instead of a raw 500.
+export class NotImplementedError extends AppError {
+  constructor(message = "Esta función aún no está disponible") {
+    super(message, 503);
+    this.name = "NotImplementedError";
+  }
+}
+
 // 429 helper for clients that exceed a rate limit. Pass the retry delay (in
 // seconds, or ms via the helper below) and the user-facing message and the
 // `Retry-After` header are derived from it, so the client knows how long to wait

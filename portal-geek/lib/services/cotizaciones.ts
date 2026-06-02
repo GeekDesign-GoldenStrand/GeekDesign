@@ -198,7 +198,9 @@ export async function listCotizaciones(
     where.AND = andConditions;
   }
 
-  const [items, total] = await Promise.all([
+  // Single snapshot for count + findMany so concurrent writes can't make page
+  // N show 0 items while total > 0.
+  const [items, total] = await prisma.$transaction([
     prisma.cotizaciones.findMany({
       where,
       skip,

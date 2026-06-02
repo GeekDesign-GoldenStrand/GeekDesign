@@ -21,6 +21,10 @@ jest.mock("@/lib/auth/session", () => ({
 const mockPeekRateLimit = jest.fn(() => ({ allowed: true, remaining: 4, retryAfterMs: 0 }));
 jest.mock("@/lib/utils/rate-limit", () => ({
   peekRateLimit: (...args: unknown[]) => mockPeekRateLimit(...(args as [])),
+  // forgot-password now rate-limits with checkRateLimit (per-IP, every attempt
+  // counts). Default to "allowed" so existing tests pass; specific tests can
+  // override on the mock if they want to assert the 429 path.
+  checkRateLimit: jest.fn().mockReturnValue({ allowed: true, retryAfterMs: 0 }),
   recordAttempt: jest.fn(),
   clearRateLimit: jest.fn(),
 }));

@@ -54,7 +54,7 @@ export const UpdateCotizacionSchema = z.object({
       message: "pdf_url debe usar https://",
     })
     .optional(),
-  notas: z.string().optional(),
+  notas: z.string().max(2000, "Las notas no pueden superar los 2000 caracteres").optional(),
 
   // Added for EditarCotizacion
   id_cliente: z.number().int().positive().optional(),
@@ -164,7 +164,18 @@ const SolicitarItemSchema = z.object({
     .optional(),
   // Original filename supplied by the client (e.g. "logo_cliente.ai").
   // Stored as ArchivosDisenio.nombre_archivo so admins see a human-readable name.
-  disenio_nombre: z.string().min(1).max(255).optional(),
+  // Reject path separators, control chars, and HTML metacharacters — the field
+  // is admin-rendered and the underlying file is referenced by disenio_key
+  // (uuid-based), so the visible name doesn't need to carry slashes or quotes.
+  disenio_nombre: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(
+      /^[\w\s.,\-()[\]áéíóúüñÁÉÍÓÚÜÑ]+$/,
+      "El nombre del archivo solo puede contener letras, números, espacios y . , - _ ( ) [ ]"
+    )
+    .optional(),
   variables: z
     .array(
       z.object({

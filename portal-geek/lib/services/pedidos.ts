@@ -190,7 +190,10 @@ export async function listPedidos(
   // Execute two queries in parallel:
   // 1. Fetch the paginated list of orders with relations
   // 2. Count the total number of matching orders (for pagination metadata)
-  const [items, total] = await Promise.all([
+  // Wrap count + findMany in a single transaction so they share a consistent
+  // snapshot. Without this, concurrent inserts/deletes between the two queries
+  // can shift rows across pages (page 5 returns 0 items while total > 0).
+  const [items, total] = await prisma.$transaction([
     prisma.pedidos.findMany({
       where,
       skip,
