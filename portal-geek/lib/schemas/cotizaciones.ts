@@ -1,4 +1,4 @@
-import { isValidPhoneNumber } from "react-phone-number-input";
+import { isValidPhoneNumber } from "libphonenumber-js";
 import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
