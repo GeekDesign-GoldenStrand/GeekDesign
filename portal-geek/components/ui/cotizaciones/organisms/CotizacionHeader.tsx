@@ -40,15 +40,11 @@ export function CotizacionHeader({
         </Link>
 
         <div className="min-w-0">
-          <p className="text-[11px] text-gray-300 uppercase tracking-widest mb-1">Cotización</p>
-          <h1 className="text-[22px] font-medium text-gray-900 leading-tight break-words">
-            {folio ?? "Sin folio"}
+          <p className="text-[11px] text-gray-600 uppercase tracking-widest mb-1">Cotización</p>
+          <h1 className="text-[22px] font-medium text-gray-900 leading-none">
+            {nombreOportunidad ?? "Sin nombre"}
           </h1>
-          {nombreOportunidad && (
-            <p className="text-[13px] text-gray-500 mt-1.5 leading-tight break-words">
-              {nombreOportunidad}
-            </p>
-          )}
+          <p className="text-[13px] text-gray-500 mt-1.5 leading-tight">{folio ?? "Sin folio"}</p>
         </div>
       </div>
 
@@ -75,14 +71,6 @@ export function CotizacionHeader({
             </button>
           )}
         </div>
-      </div>
-
-      <div>
-        <p className="text-[11px] text-gray-600 uppercase tracking-widest mb-1">Cotización</p>
-        <h1 className="text-[22px] font-medium text-gray-900 leading-none">
-          {nombreOportunidad ?? "Sin nombre"}
-        </h1>
-        <p className="text-[13px] text-gray-500 mt-1.5 leading-tight">{folio ?? "Sin folio"}</p>
       </div>
     </div>
   );
