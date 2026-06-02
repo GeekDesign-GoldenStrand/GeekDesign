@@ -2,6 +2,7 @@
 
 import { X } from "@phosphor-icons/react";
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -33,23 +34,30 @@ export function FilterSidebar({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  return (
+  useEffect(() => {
+    if (!open) return;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [open]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
     <>
       <div
-        aria-hidden={!open}
+        aria-hidden="true"
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
-          open ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
+        className="fixed inset-0 z-[80] bg-black/40 transition-opacity duration-200"
       />
 
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[22rem] bg-white shadow-[0_0_30px_rgba(0,0,0,0.18)] text-black transform transition-transform duration-200 ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
+        className="fixed top-0 right-0 z-[90] h-full w-full sm:w-[22rem] bg-white shadow-[0_0_30px_rgba(0,0,0,0.18)] text-black transform transition-transform duration-200 translate-x-0"
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
@@ -89,7 +97,8 @@ export function FilterSidebar({
           </div>
         </div>
       </aside>
-    </>
+    </>,
+    document.body
   );
 }
 
