@@ -16,6 +16,7 @@ type Props = {
   setFilterCliente: (value: string) => void;
   filterEstatus: string[];
   setFilterEstatus: (value: string[]) => void;
+  resetEstatus?: string[];
   filterFechaFinDesde: string;
   setFilterFechaFinDesde: (value: string) => void;
   filterFechaFinHasta: string;
@@ -30,6 +31,7 @@ export function CotizacionesFilterSidebar({
   setFilterCliente,
   filterEstatus,
   setFilterEstatus,
+  resetEstatus = [],
   filterFechaFinDesde,
   setFilterFechaFinDesde,
   filterFechaFinHasta,
@@ -56,11 +58,11 @@ export function CotizacionesFilterSidebar({
 
   function reset() {
     setDraftCliente("");
-    setDraftEstatus([]);
+    setDraftEstatus(resetEstatus);
     setDraftFechaFinDesde("");
     setDraftFechaFinHasta("");
     setFilterCliente("");
-    setFilterEstatus([]);
+    setFilterEstatus(resetEstatus);
     setFilterFechaFinDesde("");
     setFilterFechaFinHasta("");
   }

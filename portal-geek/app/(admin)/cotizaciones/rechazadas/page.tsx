@@ -35,11 +35,22 @@ type CotizacionApi = {
   } | null;
 };
 
+const LOST_STATUS_OPTIONS = [
+  { label: "Rechazada", value: "Rechazada" },
+  { label: "Cancelada", value: "Cancelada" },
+];
+
+const DEFAULT_LOST_STATUSES = LOST_STATUS_OPTIONS.map((status) => status.value);
+
 export default function CotizacionesRechazadasPage() {
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [filterCliente, setFilterCliente] = useState("");
+  const [filterEstatus, setFilterEstatus] = useState<string[]>(DEFAULT_LOST_STATUSES);
+  const [filterFechaFinDesde, setFilterFechaFinDesde] = useState("");
+  const [filterFechaFinHasta, setFilterFechaFinHasta] = useState("");
 
   const pageSize = 13;
 
@@ -48,9 +59,12 @@ export default function CotizacionesRechazadasPage() {
       const params = new URLSearchParams();
       params.set("page", page.toString());
       params.set("pageSize", pageSize.toString());
-      params.set("estatus", "Rechazada");
-      params.append("estatus", "Cancelada");
+      const statusesToQuery = filterEstatus.length > 0 ? filterEstatus : DEFAULT_LOST_STATUSES;
+      statusesToQuery.forEach((status) => params.append("estatus", status));
       if (search) params.set("search", search);
+      if (filterCliente) params.set("cliente", filterCliente);
+      if (filterFechaFinDesde) params.set("fechaFinDesde", filterFechaFinDesde);
+      if (filterFechaFinHasta) params.set("fechaFinHasta", filterFechaFinHasta);
 
       const res = await fetch(`/api/cotizaciones?${params.toString()}`);
       const json = await res.json();
@@ -79,7 +93,7 @@ export default function CotizacionesRechazadasPage() {
     } catch {
       console.error("Error loading lost opportunities");
     }
-  }, [search, page]);
+  }, [search, page, filterCliente, filterEstatus, filterFechaFinDesde, filterFechaFinHasta]);
 
   useEffect(() => {
     async function load() {
@@ -93,21 +107,38 @@ export default function CotizacionesRechazadasPage() {
       title="Oportunidades Perdidas"
       cotizaciones={cotizaciones}
       search={search}
-      setSearch={setSearch}
+      setSearch={(value) => {
+        setSearch(value);
+        setPage(1);
+      }}
       onDelete={() => {}}
       onStatusChange={() => {}}
       page={page}
       setPage={setPage}
       total={total}
-      filterCliente=""
-      setFilterCliente={() => {}}
-      filterEstatus={["Rechazada", "Cancelada"]}
-      setFilterEstatus={() => {}}
-      filterFechaFinDesde=""
-      setFilterFechaFinDesde={() => {}}
-      filterFechaFinHasta=""
-      setFilterFechaFinHasta={() => {}}
+      filterCliente={filterCliente}
+      setFilterCliente={(value) => {
+        setFilterCliente(value);
+        setPage(1);
+      }}
+      filterEstatus={filterEstatus}
+      setFilterEstatus={(value) => {
+        setFilterEstatus(value);
+        setPage(1);
+      }}
+      filterFechaFinDesde={filterFechaFinDesde}
+      setFilterFechaFinDesde={(value) => {
+        setFilterFechaFinDesde(value);
+        setPage(1);
+      }}
+      filterFechaFinHasta={filterFechaFinHasta}
+      setFilterFechaFinHasta={(value) => {
+        setFilterFechaFinHasta(value);
+        setPage(1);
+      }}
       isArchive={true}
+      statusOptions={LOST_STATUS_OPTIONS}
+      resetEstatus={DEFAULT_LOST_STATUSES}
     />
   );
 }
