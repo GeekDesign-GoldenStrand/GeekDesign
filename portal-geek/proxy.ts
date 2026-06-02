@@ -23,6 +23,24 @@ function rejectIfOversize(request: NextRequest): NextResponse | null {
 }
 
 export async function proxy(request: NextRequest) {
+  // Body-size cap runs first so a 100 MB POST can't reach the server regardless
+  // of NODE_ENV / SKIP_AUTH. The matcher includes /api/:path* only so this
+  // check can fire for API routes too.
+  const oversize = rejectIfOversize(request);
+  if (oversize) return oversize;
+
+  // Dev shortcut: in `next dev` (NODE_ENV=development) or when SKIP_AUTH=true,
+  // let every request through without touching session cookies.
+  if (process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+
+  // /api/* routes have their own auth guards (withAuth/withRole/withSection)
+  // and must not get redirected to /login by the page-level proxy.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   // Dev-time bypass: no auth secret configured yet → let every request through.
@@ -57,25 +75,6 @@ export async function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
-}
-
-export async function middleware(request: NextRequest) {
-  // Body-size cap applies BEFORE any auth shortcut so a 100 MB POST can't
-  // reach the dev server regardless of NODE_ENV / SKIP_AUTH.
-  const oversize = rejectIfOversize(request);
-  if (oversize) return oversize;
-
-  if (process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development") {
-    return NextResponse.next();
-  }
-
-  // /api/* routes have their own auth guards (withAuth/withRole/withSection)
-  // — don't run the page-level proxy on them. The matcher includes /api/:path*
-  // only so the body-size check above can fire.
-  if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.next();
-  }
-  return proxy(request);
 }
 
 export const config = {
