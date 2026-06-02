@@ -1,5 +1,6 @@
 import type { Servicios } from "@prisma/client";
 import type { Metadata } from "next";
+import { preload } from "react-dom";
 
 import { ServiceCatalogCard } from "@/components/storefront/atoms/ServiceCatalogCard";
 import { AnnouncementBar } from "@/components/storefront/molecules/AnnouncementBar";
@@ -27,6 +28,7 @@ async function getCatalogo(query?: string): Promise<Servicios[]> {
 }
 
 export default async function StorefrontHome({ searchParams }: Props) {
+  preload("/storefront/hero-bg.jpg", { as: "image", fetchPriority: "high" });
   const { q } = await searchParams;
   const services = await getCatalogo(q);
 
