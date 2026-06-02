@@ -9,6 +9,15 @@ import { formatDate } from "@/lib/utils/date";
 
 import DeliveryDateTrafficLight from "../atoms/DeliveryDateTrafficLight";
 
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+});
+
+function formatMXN(value: number): string {
+  return currencyFormatter.format(value);
+}
+
 type Cotizacion = {
   id_cotizacion: number;
   fecha_creacion: string;
@@ -152,9 +161,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
               <span className="truncate px-2 min-w-0">{c.empresa || "—"}</span>
               <span className="truncate px-2 min-w-0">{c.nombre_oportunidad ?? "—"}</span>
               <span className="whitespace-nowrap">{c.folio ?? "—"}</span>
-              <span className="whitespace-nowrap">
-                ${c.monto_total.toLocaleString("es-MX")} MXN
-              </span>
+              <span className="whitespace-nowrap">{formatMXN(c.monto_total)}</span>
               <div className="flex justify-center">
                 {getAllowedQuotationStatuses(c.estatus).length > 1 ? (
                   <StatusPill
@@ -227,7 +234,7 @@ export function CotizacionesTable({ cotizaciones, onStatusChange }: Props) {
                     Monto
                   </p>
                   <p className="text-[13px] font-bold text-[#1e1e1e]">
-                    ${c.monto_total.toLocaleString("es-MX")}
+                    {formatMXN(c.monto_total)}
                     <DeliveryDateTrafficLight deliveryDate={c.fecha_estimada || null} />
                   </p>
                 </div>

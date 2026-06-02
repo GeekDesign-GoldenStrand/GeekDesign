@@ -169,6 +169,13 @@ export default function MaquinasGrid() {
           </button>
         </div>
       )}
+      {!isLoadingMaquinas && !fetchError && filteredMaquinas.length === 0 && (
+        <p className="my-6 text-center text-sm text-[#575757]">
+          {search
+            ? `No se encontraron máquinas que coincidan con "${search}".`
+            : "Aún no hay máquinas registradas."}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredMaquinas.map((m) => (

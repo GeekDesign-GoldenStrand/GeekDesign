@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreatePedidoInput, UpdatePedidoInput } from "@/lib/schemas/pedidos";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, NotImplementedError } from "@/lib/utils/errors";
 
 // Type for pedidos including frontend-required relations
 type PedidoWithRelations = Prisma.PedidosGetPayload<{
@@ -380,21 +380,25 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
   };
 }
 
+// Manual pedido CRUD is not part of the demo flow — pedidos are created from
+// approved cotizaciones and edited via dedicated routes (status, detalle,
+// terceros). These stubs return a friendly 503 instead of a 500 stack trace if
+// the routes are hit by mistake.
+
 export async function createPedido(data: CreatePedidoInput): Promise<Pedidos> {
   void data;
-  throw new Error("Not implemented");
+  throw new NotImplementedError("El registro manual de pedidos aún no está disponible");
 }
 
 export async function updatePedido(id: number, data: UpdatePedidoInput): Promise<Pedidos> {
   void id;
   void data;
-  throw new Error("Not implemented");
+  throw new NotImplementedError("La actualización general de pedidos aún no está disponible");
 }
 
 export async function deletePedido(id: number): Promise<void> {
-  // TODO: implement
   void id;
-  throw new Error("Not implemented");
+  throw new NotImplementedError("La eliminación de pedidos aún no está disponible");
 }
 
 type PrismaTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];

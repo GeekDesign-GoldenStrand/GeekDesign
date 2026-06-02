@@ -278,73 +278,76 @@ export function PedidosTemplate({
         />
 
         {/* Pagination — windowed: first, last, current ±1, with ellipsis. */}
-        {(() => {
-          const totalPages = Math.max(1, Math.ceil(total / pageSize));
-          const pageItems: Array<number | "…"> = [];
-          const add = (n: number) => {
-            if (!pageItems.includes(n)) pageItems.push(n);
-          };
-          add(1);
-          for (let p = page - 1; p <= page + 1; p++) {
-            if (p > 1 && p < totalPages) add(p);
-          }
-          if (totalPages > 1) add(totalPages);
-          const withEllipsis: Array<number | "…"> = [];
-          for (let i = 0; i < pageItems.length; i++) {
-            const cur = pageItems[i] as number;
-            const prev = pageItems[i - 1];
-            if (typeof prev === "number" && cur - prev > 1) withEllipsis.push("…");
-            withEllipsis.push(cur);
-          }
-          return (
-            <div className="flex justify-end mt-8 mb-6 pr-4">
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage(page - 1)}
-                  aria-label="Página anterior"
-                  className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
-                >
-                  {"<"}
-                </button>
+        {/* Hide entirely when there's nothing to paginate so the empty-state */}
+        {/* message doesn't sit next to page-number buttons. */}
+        {total > pageSize &&
+          (() => {
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            const pageItems: Array<number | "…"> = [];
+            const add = (n: number) => {
+              if (!pageItems.includes(n)) pageItems.push(n);
+            };
+            add(1);
+            for (let p = page - 1; p <= page + 1; p++) {
+              if (p > 1 && p < totalPages) add(p);
+            }
+            if (totalPages > 1) add(totalPages);
+            const withEllipsis: Array<number | "…"> = [];
+            for (let i = 0; i < pageItems.length; i++) {
+              const cur = pageItems[i] as number;
+              const prev = pageItems[i - 1];
+              if (typeof prev === "number" && cur - prev > 1) withEllipsis.push("…");
+              withEllipsis.push(cur);
+            }
+            return (
+              <div className="flex justify-end mt-8 mb-6 pr-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    aria-label="Página anterior"
+                    className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    {"<"}
+                  </button>
 
-                {withEllipsis.map((item, idx) =>
-                  item === "…" ? (
-                    <span
-                      key={`ellipsis-${idx}`}
-                      className="w-[36px] h-[36px] flex items-center justify-center text-[#575757]"
-                    >
-                      …
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      onClick={() => setPage(item)}
-                      aria-current={item === page ? "page" : undefined}
-                      className={`w-[36px] h-[36px] rounded-[4px] font-bold text-[15px]
+                  {withEllipsis.map((item, idx) =>
+                    item === "…" ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="w-[36px] h-[36px] flex items-center justify-center text-[#575757]"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setPage(item)}
+                        aria-current={item === page ? "page" : undefined}
+                        className={`w-[36px] h-[36px] rounded-[4px] font-bold text-[15px]
                       ${
                         item === page
                           ? "bg-[#e42200] text-white"
                           : "bg-gray-100 text-[#1e1e1e] hover:bg-gray-200"
                       }`}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
 
-                <button
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(page + 1)}
-                  aria-label="Página siguiente"
-                  className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
-                >
-                  {">"}
-                </button>
+                  <button
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(page + 1)}
+                    aria-label="Página siguiente"
+                    className="w-[36px] h-[36px] border border-gray-300 rounded-[4px] flex items-center justify-center text-[#1e1e1e] hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    {">"}
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Leyenda / Index */}
         <div

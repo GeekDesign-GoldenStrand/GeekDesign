@@ -4,8 +4,13 @@ import { DesignFileLink } from "@/components/admin/molecules/DesignFileLink";
 import { SectionCard } from "@/components/ui/cotizaciones/atoms/SectionCard";
 import type { PedidoLineItem } from "@/types/pedido";
 
-function money(value: string) {
-  return `$${Number(value).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+});
+
+function money(value: string | number) {
+  return currencyFormatter.format(Number(value));
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -156,7 +161,7 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
         <div className="text-[15px] flex gap-6">
           <span className="text-gray-700">Total</span>
           <span className="font-semibold text-gray-900 min-w-[110px] text-right">
-            {`$${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN`}
+            {money(total)}
           </span>
         </div>
       </div>
