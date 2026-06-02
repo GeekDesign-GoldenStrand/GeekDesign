@@ -8,6 +8,7 @@ import { ok } from "@/lib/utils/api";
 import { ConflictError, handleError, RateLimitError, ValidationError } from "@/lib/utils/errors";
 import { peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
 import { getClientIp } from "@/lib/utils/request-ip";
+import { assertSameOrigin } from "@/lib/utils/same-origin";
 
 // Public endpoint — no auth required. Rate-limited by IP to cap anonymous abuse.
 // Only issues presigned PUTs for the "disenios" category.
@@ -30,6 +31,7 @@ const RATE_LIMIT = { maxAttempts: 20, windowMs: 60_000 };
 
 export async function POST(req: NextRequest) {
   try {
+    assertSameOrigin(req);
     const rateKey = `upload-disenios:${getClientIp(req, "anonymous")}`;
     const { allowed, retryAfterMs } = peekRateLimit(rateKey, RATE_LIMIT);
     if (!allowed) throw RateLimitError.fromMs(retryAfterMs);
@@ -73,6 +75,7 @@ export async function POST(req: NextRequest) {
 // disenios/ prefix only. Refuses to delete keys already persisted in ArchivosDisenio.
 export async function DELETE(req: NextRequest) {
   try {
+    assertSameOrigin(req);
     const rateKey = `upload-disenios:${getClientIp(req, "anonymous")}`;
     const { allowed, retryAfterMs } = peekRateLimit(rateKey, RATE_LIMIT);
     if (!allowed) throw RateLimitError.fromMs(retryAfterMs);

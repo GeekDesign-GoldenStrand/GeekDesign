@@ -1,3 +1,4 @@
+import { isValidPhoneNumber } from "react-phone-number-input";
 import { z } from "zod";
 
 import { isValidKey } from "@/lib/storage/keys";
@@ -10,7 +11,7 @@ export const CreateCotizacionSchema = z.object({
   id_cliente: z.number().int().positive(),
   id_estatus_cotizacion: z.number().int().positive().optional(),
   folio: z.string().max(50).optional(),
-  monto_total: z.number().nonnegative(),
+  monto_total: z.number().finite().nonnegative(),
   empresa_cliente: z
     .string()
     .max(100)
@@ -20,7 +21,14 @@ export const CreateCotizacionSchema = z.object({
       message: "La empresa solo debe contener caracteres en inglés o español y signos comunes",
     }),
   fecha_fin: z.coerce.date().optional(),
-  pdf_url: z.string().url().max(500).optional(),
+  pdf_url: z
+    .string()
+    .url()
+    .max(500)
+    .refine((u) => u.startsWith("https://"), {
+      message: "pdf_url debe usar https://",
+    })
+    .optional(),
   notas: z
     .string()
     .optional()
@@ -33,12 +41,19 @@ export const CreateCotizacionSchema = z.object({
 export const UpdateCotizacionSchema = z.object({
   // Existing fields
   id_estatus_cotizacion: z.number().int().positive().optional(),
-  monto_total: z.number().nonnegative().optional(),
+  monto_total: z.number().finite().nonnegative().optional(),
   empresa_cliente: z.string().max(100).optional(),
   fecha_fin: z.coerce.date().optional(),
   fecha_validacion: z.coerce.date().optional(),
   fecha_aprobacion: z.coerce.date().optional(),
-  pdf_url: z.string().url().max(500).optional(),
+  pdf_url: z
+    .string()
+    .url()
+    .max(500)
+    .refine((u) => u.startsWith("https://"), {
+      message: "pdf_url debe usar https://",
+    })
+    .optional(),
   notas: z.string().optional(),
 
   // Added for EditarCotizacion
@@ -173,7 +188,11 @@ const SolicitarClienteSchema = z.object({
   nombre_cliente: z.string().min(1).max(100),
   empresa: z.string().max(100).optional(),
   correo_electronico: emailField({ max: 150 }),
-  numero_telefono: z.string().min(1).max(20),
+  numero_telefono: z
+    .string()
+    .min(1)
+    .max(20)
+    .refine(isValidPhoneNumber, { message: "Número de teléfono inválido" }),
 });
 
 export const SolicitarCotizacionSchema = z.object({

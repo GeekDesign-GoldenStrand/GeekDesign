@@ -4,6 +4,12 @@ import { emailField } from "@/lib/utils/email";
 
 import { noEmoji, textOnly, addressOnly } from "./text-validation";
 
+// Admin form accepts free-form phone (local 10-digit numbers, sometimes with
+// country code or spaces). Restrict the character set so the column can't
+// store arbitrary strings, but don't require E.164 — that's enforced only on
+// the storefront schema where the PhoneInput component already produces it.
+const PHONE_CHARS = /^[\d\s\-+()]+$/;
+
 export const CreateClienteSchema = z.object({
   nombre_cliente: z
     .string()
@@ -23,14 +29,9 @@ export const CreateClienteSchema = z.object({
     }),
   rfc: z.string().length(13).optional(),
   correo_electronico: emailField({ max: 150 }),
-  numero_telefono: z
-    .string()
-    .min(1)
-    .max(20)
-    .refine(noEmoji, { message: "El teléfono no debe contener emojis" })
-    .refine(textOnly, {
-      message: "El teléfono solo debe contener caracteres en inglés o español y signos comunes",
-    }),
+  numero_telefono: z.string().min(7, "El teléfono es demasiado corto").max(20).regex(PHONE_CHARS, {
+    message: "El teléfono solo debe contener dígitos, espacios, +, -, ( y )",
+  }),
   ubicacion: z
     .string()
     .max(200)

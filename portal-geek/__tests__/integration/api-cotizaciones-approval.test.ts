@@ -50,6 +50,7 @@ jest.mock("@/lib/db/client", () => ({
       upsert: jest.fn(),
       deleteMany: jest.fn(),
     },
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn().mockImplementation((cb) => cb(prisma)),
   },
 }));

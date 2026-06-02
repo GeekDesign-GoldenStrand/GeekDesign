@@ -91,17 +91,23 @@ export async function issueAccessToken(params: {
  */
 export async function consumeAccessToken(raw: string): Promise<number> {
   const token_hash = hashToken(raw);
-  const record = await prisma.tokensAccesoCotizacion.findUnique({
-    where: { token_hash },
+  return prisma.$transaction(async (tx) => {
+    // Lock the token row first. Without this, two concurrent clicks on the
+    // same magic link both pass the `usado=false` check and both mint sessions.
+    await tx.$queryRaw`SELECT 1 FROM "TOKENSACCESOCOTIZACION" WHERE token_hash = ${token_hash} FOR UPDATE`;
+
+    const record = await tx.tokensAccesoCotizacion.findUnique({
+      where: { token_hash },
+    });
+    if (!record || record.usado || record.expira_en < new Date()) {
+      throw new NotFoundError("El enlace de acceso es inválido o ya expiró");
+    }
+    await tx.tokensAccesoCotizacion.update({
+      where: { id: record.id },
+      data: { usado: true },
+    });
+    return record.id_cotizacion;
   });
-  if (!record || record.usado || record.expira_en < new Date()) {
-    throw new NotFoundError("El enlace de acceso es inválido o ya expiró");
-  }
-  await prisma.tokensAccesoCotizacion.update({
-    where: { id: record.id },
-    data: { usado: true },
-  });
-  return record.id_cotizacion;
 }
 
 export async function signSessionJWT(id_cotizacion: number): Promise<string> {

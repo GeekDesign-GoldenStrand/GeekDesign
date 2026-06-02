@@ -8,6 +8,7 @@ import { changeDetallePedidoStatus, listPedidos, PEDIDO_STATUS } from "@/lib/ser
 jest.mock("@/lib/db/client", () => {
   const mockPrisma = {
     $transaction: jest.fn(),
+    $queryRaw: jest.fn().mockResolvedValue([]),
 
     pedidos: {
       findMany: jest.fn(),

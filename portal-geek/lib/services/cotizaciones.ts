@@ -281,6 +281,10 @@ export async function updateCotizacion(
   data: UpdateCotizacionInput
 ): Promise<Cotizaciones> {
   return prisma.$transaction(async (tx) => {
+    // Lock the Cotizaciones row so a concurrent aplicarDescuento can't mutate
+    // monto_total against an out-of-date base. Both write paths take this lock.
+    await tx.$queryRaw`SELECT 1 FROM "COTIZACIONES" WHERE id_cotizacion = ${id} FOR UPDATE`;
+
     const existing = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: id },
       select: {
@@ -414,71 +418,68 @@ export async function aplicarDescuento(
   porcentaje: number | null,
   motivo?: string | null
 ) {
-  const cotizacion = await prisma.cotizaciones.findUnique({
-    where: { id_cotizacion },
-    select: {
-      id_cotizacion: true,
-      monto_total: true,
-      porcentaje_descuento: true,
-      id_estatus_cotizacion: true,
-      estatus: { select: { descripcion: true } },
-      pedido: {
-        select: {
-          detalles: { select: { subtotal: true } },
+  return prisma.$transaction(async (tx) => {
+    // Lock the row so updateCotizacion and aplicarDescuento can't both rewrite
+    // monto_total off stale snapshots of the line items.
+    await tx.$queryRaw`SELECT 1 FROM "COTIZACIONES" WHERE id_cotizacion = ${id_cotizacion} FOR UPDATE`;
+
+    const cotizacion = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion },
+      select: {
+        id_cotizacion: true,
+        monto_total: true,
+        porcentaje_descuento: true,
+        id_estatus_cotizacion: true,
+        estatus: { select: { descripcion: true } },
+        pedido: {
+          select: {
+            detalles: { select: { subtotal: true } },
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!cotizacion) {
-    throw new NotFoundError("Cotización no encontrada");
-  }
+    if (!cotizacion) {
+      throw new NotFoundError("Cotización no encontrada");
+    }
 
-  // Discounts share the same Pendiente-only rule as line-item edits — once
-  // the cliente has validated the quote, neither price nor discount can be
-  // mutated. Covers both the "apply discount" and "remove discount"
-  // (porcentaje === null) call paths since both write to the same fields.
-  if (cotizacion.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
-    throw new ConflictError(
-      `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${cotizacion.estatus.descripcion}')`
-    );
-  }
+    // Discounts share the same Pendiente-only rule as line-item edits — once
+    // the cliente has validated the quote, neither price nor discount can be
+    // mutated. Covers both the "apply discount" and "remove discount"
+    // (porcentaje === null) call paths since both write to the same fields.
+    if (cotizacion.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
+      throw new ConflictError(
+        `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${cotizacion.estatus.descripcion}')`
+      );
+    }
 
-  // Decimal arithmetic in JS — convert through Number once and round to 2
-  // decimals so we don't drift on repeated discounts. Cotización amounts
-  // fit well within Number's safe-integer range. If the cotización has no
-  // detalles (very rare — cart-submitted cotizaciones always do), fall back
-  // to the stored monto_total so callers still get *something* sensible.
-  const detalles = cotizacion.pedido?.detalles ?? [];
-  const baseOriginal = detalles.length
-    ? detalles.reduce((acc, d) => acc + Number(d.subtotal), 0)
-    : Number(cotizacion.monto_total);
+    const detalles = cotizacion.pedido?.detalles ?? [];
+    const baseOriginal = detalles.length
+      ? detalles.reduce((acc, d) => acc + Number(d.subtotal), 0)
+      : Number(cotizacion.monto_total);
 
-  // porcentaje === null is the delete path: clear the discount, drop the
-  // motivo and restore monto_total to the original sum of subtotales.
-  if (porcentaje === null) {
-    return prisma.cotizaciones.update({
+    if (porcentaje === null) {
+      return tx.cotizaciones.update({
+        where: { id_cotizacion },
+        data: {
+          porcentaje_descuento: null,
+          motivo_descuento: null,
+          monto_total: baseOriginal,
+        },
+      });
+    }
+
+    const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
+    const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
+
+    return tx.cotizaciones.update({
       where: { id_cotizacion },
       data: {
-        porcentaje_descuento: null,
-        motivo_descuento: null,
-        monto_total: baseOriginal,
+        porcentaje_descuento: porcentaje,
+        motivo_descuento: motivoNormalizado,
+        monto_total: montoConDescuento,
       },
     });
-  }
-
-  const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
-
-  // Trim then normalize "" / null → null so the column never holds whitespace-only.
-  const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
-
-  return prisma.cotizaciones.update({
-    where: { id_cotizacion },
-    data: {
-      porcentaje_descuento: porcentaje,
-      motivo_descuento: motivoNormalizado,
-      monto_total: montoConDescuento,
-    },
   });
 }
 
@@ -635,6 +636,11 @@ export async function changeQuotationStatus(
 // only after the cookie has been verified against this quotationId.
 export async function approveQuotation(quotationId: number) {
   return prisma.$transaction(async (tx) => {
+    // Lock the Cotizaciones row before reading estatus to prevent double-submit
+    // approving an already-approved/cancelled quotation. Without FOR UPDATE,
+    // two concurrent requests both see estatus=Validada and both proceed.
+    await tx.$queryRaw`SELECT 1 FROM "COTIZACIONES" WHERE id_cotizacion = ${quotationId} FOR UPDATE`;
+
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
       include: { estatus: true, pedido: true, cliente: true },
@@ -725,6 +731,9 @@ export async function approveQuotation(quotationId: number) {
 // after the magic-link session cookie has been verified.
 export async function cancelQuotationByClient(quotationId: number, reason?: string) {
   return prisma.$transaction(async (tx) => {
+    // Lock so concurrent approve/cancel can't both pass the estatus guard.
+    await tx.$queryRaw`SELECT 1 FROM "COTIZACIONES" WHERE id_cotizacion = ${quotationId} FOR UPDATE`;
+
     const quotation = await tx.cotizaciones.findUnique({
       where: { id_cotizacion: quotationId },
       include: { estatus: true, cliente: true },

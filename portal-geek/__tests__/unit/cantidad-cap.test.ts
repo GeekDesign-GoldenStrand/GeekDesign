@@ -13,7 +13,7 @@ const baseSolicitarPayload = (cantidad: number) => ({
   cliente: {
     nombre_cliente: "Cliente Prueba",
     correo_electronico: "cliente@example.com",
-    numero_telefono: "5512345678",
+    numero_telefono: "+525512345678",
   },
   id_sucursal: 1,
   fecha_estimada: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

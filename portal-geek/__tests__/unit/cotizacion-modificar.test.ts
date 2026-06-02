@@ -9,6 +9,7 @@ import { NotFoundError } from "@/lib/utils/errors";
 jest.mock("@/lib/db/client", () => ({
   prisma: {
     $transaction: jest.fn(),
+    $queryRaw: jest.fn().mockResolvedValue([]),
     cotizaciones: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -70,6 +71,7 @@ describe("updateCotizacion", () => {
     // Default: transaction passes tx = prisma
     mockTransaction.mockImplementation((fn) =>
       fn({
+        $queryRaw: jest.fn().mockResolvedValue([]),
         cotizaciones: {
           findUnique: mockFindUnique,
           update: mockUpdate,

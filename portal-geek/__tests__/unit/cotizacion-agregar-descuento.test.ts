@@ -22,6 +22,7 @@ jest.mock("@/lib/db/client", () => ({
 
 const mockFindUnique = prisma.cotizaciones.findUnique as jest.Mock;
 const mockUpdate = prisma.cotizaciones.update as jest.Mock;
+const mockTransaction = prisma.$transaction as jest.Mock;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 const COTIZACION_PENDIENTE = {
@@ -51,7 +52,20 @@ const COTIZACION_APROBADA = {
 // aplicarDescuento — COT-06
 // ─────────────────────────────────────────────────────────────────────────────
 describe("aplicarDescuento", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // The service now wraps everything in $transaction with a row lock; the tx
+    // object proxies findUnique/update to the same mocked methods.
+    mockTransaction.mockImplementation((fn) =>
+      fn({
+        $queryRaw: jest.fn().mockResolvedValue([]),
+        cotizaciones: {
+          findUnique: mockFindUnique,
+          update: mockUpdate,
+        },
+      })
+    );
+  });
 
   // ── Not found ─────────────────────────────────────────────────────────────
   it("lanza NotFoundError cuando la cotización no existe", async () => {

@@ -704,6 +704,12 @@ export async function changeDetallePedidoStatus(
       throw new NotFoundError("Detalle de pedido not found");
     }
 
+    // Lock the parent pedido row so concurrent detalle updates that finalize
+    // sibling rows can't both compute allDetailsAreFinal on stale snapshots.
+    // Without this, two requests can each see one detalle still pending and
+    // leave the pedido in the wrong state.
+    await tx.$queryRaw`SELECT 1 FROM "PEDIDOS" WHERE id_pedido = ${currentDetalle.id_pedido} FOR UPDATE`;
+
     const currentStatus = (currentDetalle.estatus?.descripcion ??
       PEDIDO_STATUS.PENDIENTE) as PedidoStatus;
 

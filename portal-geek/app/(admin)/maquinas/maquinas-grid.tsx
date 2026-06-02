@@ -66,6 +66,7 @@ export default function MaquinasGrid() {
   const [maquinas, setMaquinas] = useState<MaquinaCardProps[]>([]);
   const [search, setSearch] = useState("");
   const [isLoadingMaquinas, setIsLoadingMaquinas] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -83,9 +84,12 @@ export default function MaquinasGrid() {
 
   async function fetchMaquinas() {
     setIsLoadingMaquinas(true);
+    setFetchError(null);
     try {
       const data = await getMaquinas();
       setMaquinas(data);
+    } catch {
+      setFetchError("No se pudieron cargar las máquinas. Intenta de nuevo.");
     } finally {
       setIsLoadingMaquinas(false);
     }
@@ -153,6 +157,18 @@ export default function MaquinasGrid() {
         }}
       />
       {isLoadingMaquinas && <p className="text-14 font-ibm plex-sans">Cargando máquinas...</p>}
+      {fetchError && !isLoadingMaquinas && (
+        <div className="my-4 flex items-center justify-between rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{fetchError}</span>
+          <button
+            type="button"
+            onClick={() => fetchMaquinas()}
+            className="ml-4 rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredMaquinas.map((m) => (

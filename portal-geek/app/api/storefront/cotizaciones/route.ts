@@ -7,6 +7,7 @@ import { created } from "@/lib/utils/api";
 import { handleError, RateLimitError } from "@/lib/utils/errors";
 import { peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
 import { getClientIp } from "@/lib/utils/request-ip";
+import { assertSameOrigin } from "@/lib/utils/same-origin";
 
 // KIKW12 review #3: rate-limit public DB-write endpoint per IP. Submitting a
 // cotización runs a multi-row transaction (Cliente upsert + Pedido + N×Detalle
@@ -22,6 +23,7 @@ const SUBMIT_RATE_LIMIT = { maxAttempts: 10, windowMs: 15 * 60_000 };
 // in one transaction. Returns the folio + lookup URL.
 export async function POST(req: NextRequest) {
   try {
+    assertSameOrigin(req);
     const ip = getClientIp(req);
     const rateKey = `storefront:cotizaciones:${ip}`;
     const { allowed, retryAfterMs } = peekRateLimit(rateKey, SUBMIT_RATE_LIMIT);

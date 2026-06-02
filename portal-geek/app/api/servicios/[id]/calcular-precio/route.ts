@@ -6,6 +6,7 @@ import { ok } from "@/lib/utils/api";
 import { handleError, RateLimitError } from "@/lib/utils/errors";
 import { peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
 import { getClientIp } from "@/lib/utils/request-ip";
+import { assertSameOrigin } from "@/lib/utils/same-origin";
 
 // KIKW12 review #3: rate-limit per IP. This endpoint is called from a debounced
 // fetch as the cliente types, so the limit needs to be generous for legitimate
@@ -18,6 +19,7 @@ const PRICING_RATE_LIMIT = { maxAttempts: 60, windowMs: 60_000 };
 // gates access, not a session.
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    assertSameOrigin(req);
     const ip = getClientIp(req);
     const rateKey = `calcular-precio:${ip}`;
     const { allowed, retryAfterMs } = peekRateLimit(rateKey, PRICING_RATE_LIMIT);

@@ -12,7 +12,7 @@ const baseItem = {
 const baseCliente = {
   nombre_cliente: "Juan Pérez",
   correo_electronico: "juan@example.com",
-  numero_telefono: "5511223344",
+  numero_telefono: "+525511223344",
 };
 
 describe("SolicitarCotizacionSchema — disenio_key", () => {

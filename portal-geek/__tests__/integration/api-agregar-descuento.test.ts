@@ -41,14 +41,18 @@ jest.mock("@/lib/auth/guards", () => ({
 const mockCotizacionFindUnique = jest.fn();
 const mockCotizacionUpdate = jest.fn();
 
-jest.mock("@/lib/db/client", () => ({
-  prisma: {
+jest.mock("@/lib/db/client", () => {
+  const prismaMock = {
     cotizaciones: {
       findUnique: (...args: unknown[]) => mockCotizacionFindUnique(...args),
       update: (...args: unknown[]) => mockCotizacionUpdate(...args),
     },
-  },
-}));
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $transaction: jest.fn(),
+  };
+  prismaMock.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prismaMock));
+  return { prisma: prismaMock };
+});
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 describe("PATCH /api/cotizaciones/[id]/descuento — COT-06 Agregar/eliminar descuento", () => {

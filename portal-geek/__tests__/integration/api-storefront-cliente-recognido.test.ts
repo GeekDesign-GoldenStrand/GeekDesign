@@ -27,8 +27,8 @@ jest.mock("jose", () => ({
   jwtVerify: jest.fn(),
 }));
 
-jest.mock("@/lib/db/client", () => ({
-  prisma: {
+jest.mock("@/lib/db/client", () => {
+  const prismaMock = {
     tokensAccesoCotizacion: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -36,8 +36,12 @@ jest.mock("@/lib/db/client", () => ({
     cotizaciones: {
       findUnique: jest.fn(),
     },
-  },
-}));
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $transaction: jest.fn(),
+  };
+  prismaMock.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prismaMock));
+  return { prisma: prismaMock };
+});
 
 const mockTokenFindUnique = prisma.tokensAccesoCotizacion.findUnique as jest.Mock;
 const mockTokenUpdate = prisma.tokensAccesoCotizacion.update as jest.Mock;

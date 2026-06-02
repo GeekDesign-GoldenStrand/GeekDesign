@@ -77,6 +77,7 @@ jest.mock("@/lib/db/client", () => ({
   prisma: {
     $transaction: jest.fn().mockImplementation((fn) =>
       fn({
+        $queryRaw: jest.fn().mockResolvedValue([]),
         cotizaciones: {
           findUnique: jest.fn().mockResolvedValue({
             id_cotizacion: 1,
@@ -257,6 +258,7 @@ describe("PUT /api/cotizaciones/[id] — COT-XX Modificar cotización", () => {
 
     (prisma.$transaction as jest.Mock).mockImplementationOnce((fn) =>
       fn({
+        $queryRaw: jest.fn().mockResolvedValue([]),
         cotizaciones: {
           findUnique: jest.fn().mockResolvedValue(null),
           update: jest.fn(),

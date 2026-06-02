@@ -8,6 +8,7 @@ import { emailField } from "@/lib/utils/email";
 import { handleError, RateLimitError } from "@/lib/utils/errors";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { getClientIp } from "@/lib/utils/request-ip";
+import { assertSameOrigin } from "@/lib/utils/same-origin";
 
 // KIKW12 review #1b/#2: re-issue a magic-link to the cliente on file when they
 // look up a cotización from /tienda/cotizacion. We ALWAYS respond 200 with the
@@ -27,6 +28,7 @@ type Params = { folio: string };
 
 export async function POST(req: NextRequest, ctx: { params: Promise<Params> }) {
   try {
+    assertSameOrigin(req);
     const ip = getClientIp(req);
     const { allowed, retryAfterMs } = checkRateLimit(`access-link:${ip}`, LINK_RATE_LIMIT);
     if (!allowed) {

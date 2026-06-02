@@ -18,6 +18,15 @@ import {
 import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 import { formatDate } from "@/lib/utils/date";
 
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+});
+
+function formatMXN(value: number): string {
+  return currencyFormatter.format(value);
+}
+
 // UI → API
 const STATUS_MAP_UI_TO_API: Record<string, string> = {
   Pendiente: "Pendiente",
@@ -399,10 +408,17 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                     <span className="whitespace-nowrap">
                       {p.fecha_estimada ? formatDate(p.fecha_estimada) : "—"}
                     </span>
-                    <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
-                    <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
+                    <span className="truncate px-2 min-w-0" title={p.cliente?.empresa ?? undefined}>
+                      {p.cliente?.empresa ?? "—"}
+                    </span>
+                    <span
+                      className="truncate px-2 min-w-0"
+                      title={p.nombre_oportunidad ?? undefined}
+                    >
+                      {p.nombre_oportunidad ?? "—"}
+                    </span>
                     <span className="whitespace-nowrap">
-                      {rowTotal > 0 ? `$${rowTotal.toLocaleString("es-MX")} MXN` : "—"}
+                      {rowTotal > 0 ? formatMXN(rowTotal) : "—"}
                     </span>
                     <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
                     <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
@@ -480,16 +496,25 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                           <p className="text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
                             Cliente
                           </p>
-                          <p className="text-[13px] font-medium text-[#1e1e1e]">
+                          <p
+                            className="text-[13px] font-medium text-[#1e1e1e] line-clamp-1 break-words"
+                            title={p.cliente?.nombre_cliente ?? undefined}
+                          >
                             {p.cliente?.nombre_cliente}
                           </p>
-                          <p className="text-[11px] text-[#8e908f]">
+                          <p
+                            className="text-[11px] text-[#8e908f] line-clamp-1 break-words"
+                            title={p.cliente?.empresa ?? undefined}
+                          >
                             {p.cliente?.empresa || "Sin empresa"}
                           </p>
                           <p className="mt-2 text-[10px] font-bold text-[#8e908f] uppercase tracking-[1px] mb-1">
                             Oportunidad
                           </p>
-                          <p className="text-[12px] font-medium text-[#1e1e1e]">
+                          <p
+                            className="text-[12px] font-medium text-[#1e1e1e] line-clamp-2 break-words"
+                            title={p.nombre_oportunidad ?? undefined}
+                          >
                             {p.nombre_oportunidad ?? "—"}
                           </p>
                         </div>
@@ -504,7 +529,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                             Subtotal
                           </p>
                           <p className="text-[13px] font-bold text-[#1e1e1e]">
-                            {rowTotal > 0 ? `$${rowTotal.toLocaleString("es-MX")}` : "—"}
+                            {rowTotal > 0 ? formatMXN(rowTotal) : "—"}
                           </p>
                         </div>
                       </div>
@@ -592,7 +617,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   <span className="truncate px-2 min-w-0">{p.cliente?.empresa ?? "—"}</span>
                   <span className="truncate px-2 min-w-0">{p.nombre_oportunidad ?? "—"}</span>
                   <span className="whitespace-nowrap">
-                    {p.monto_total != null ? `$${p.monto_total.toLocaleString("es-MX")} MXN` : "—"}
+                    {p.monto_total != null ? formatMXN(p.monto_total) : "—"}
                   </span>
                   <span className="whitespace-nowrap font-medium">{p.folio ?? "—"}</span>
                   <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
@@ -680,9 +705,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                           Monto
                         </p>
                         <p className="text-[13px] font-bold text-[#1e1e1e]">
-                          {p.monto_total != null
-                            ? `$${p.monto_total.toLocaleString("es-MX")}`
-                            : "—"}
+                          {p.monto_total != null ? formatMXN(p.monto_total) : "—"}
                         </p>
                       </div>
                     </div>
