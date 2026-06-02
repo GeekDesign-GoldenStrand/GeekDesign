@@ -32,6 +32,10 @@ export interface EvaluatorImplicits {
   precio_material: number;
   costo_instalador: number;
   costo_proveedor: number;
+  // Per-material slug tokens (e.g. `costo_material_mdf_3mm`) injected by the
+  // pricing layer based on the customer's selected material — that's how
+  // FormulaSection's material chip identifiers resolve at evaluation time.
+  [key: string]: number;
 }
 
 export interface EvaluateFormulaInput {
@@ -69,11 +73,11 @@ export function evaluateFormula(input: EvaluateFormulaInput): number {
 }
 
 function buildScope(input: EvaluateFormulaInput): Record<string, number> {
+  // Spread all implicits — covers the fixed trio (precio_material, costo_instalador,
+  // costo_proveedor) plus any dynamic per-material tokens injected by the caller.
   const scope: Record<string, number> = {
     iva: IVA_MX,
-    precio_material: input.implicits.precio_material,
-    costo_instalador: input.implicits.costo_instalador,
-    costo_proveedor: input.implicits.costo_proveedor,
+    ...input.implicits,
   };
 
   for (const v of input.variables) {
