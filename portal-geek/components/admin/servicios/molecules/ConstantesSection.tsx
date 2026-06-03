@@ -33,11 +33,15 @@ const MAX_VALOR_DIGITOS = 8;
 // Stored value = short symbol. Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
   { value: "$", label: "$ - pesos" },
+  { value: "mm", label: "mm - milímetros" },
+  { value: "mm²", label: "mm² - milímetros cuadrados" },
   { value: "cm", label: "cm - centímetros" },
   { value: "cm²", label: "cm² - centímetros cuadrados" },
   { value: "m", label: "m - metros" },
   { value: "m²", label: "m² - metros cuadrados" },
   { value: "pz", label: "pz - piezas" },
+  { value: "ms", label: "ms - milisegundos" },
+  { value: "s", label: "s - segundos" },
   { value: "min", label: "min - minutos" },
   { value: "h", label: "h - horas" },
   { value: "%", label: "% - porcentaje" },

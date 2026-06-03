@@ -34,11 +34,15 @@ const MAX_VALOR_DIGITOS = 8;
 // Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
   { value: "$", label: "$" },
+  { value: "mm", label: "mm" },
+  { value: "mm²", label: "mm²" },
   { value: "cm", label: "cm" },
   { value: "cm²", label: "cm²" },
   { value: "m", label: "m" },
   { value: "m²", label: "m²" },
   { value: "pz", label: "pz" },
+  { value: "ms", label: "ms" },
+  { value: "s", label: "s" },
   { value: "min", label: "min" },
   { value: "h", label: "hrs " },
   { value: "%", label: "% " },
