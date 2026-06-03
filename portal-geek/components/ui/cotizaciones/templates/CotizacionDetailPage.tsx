@@ -110,7 +110,7 @@ export function CotizacionDetailPage({
     : 0;
   const baseAmount = serviciosSubtotal || montoTotalActual;
   const hasAdjustment = porcentajeDescuento !== 0;
-  const adjustmentAmount = hasAdjustment ? Math.abs(baseAmount - montoTotalActual) : 0;
+  const adjustmentAmount = hasAdjustment ? baseAmount - montoTotalActual : 0;
   const adjustmentLabel = hasAdjustment
     ? `${porcentajeDescuento < 0 ? "Interés" : "Descuento"} ${Math.abs(
         Math.round(porcentajeDescuento)
@@ -152,21 +152,8 @@ export function CotizacionDetailPage({
       <CotizacionHeader
         folio={cotizacion.folio}
         nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
-        discountApplied={hasAdjustment}
         canEdit={isMutable}
-        canAddDiscount={canManageDiscount}
         onEdit={() => togglePanel("edit")}
-        onDiscount={() => togglePanel("discount")}
-      />
-
-      <AplicarDescuento
-        idCotizacion={cotizacion.id_cotizacion}
-        baseAmount={baseAmount}
-        isOpen={activePanel === "discount"}
-        initialPercentage={porcentajeDescuento || undefined}
-        initialMotivo={cotizacion.motivo_descuento ?? undefined}
-        onApplied={handleDiscountApplied}
-        onClose={() => setActivePanel(null)}
       />
 
       <EditarCotizacion
@@ -182,6 +169,16 @@ export function CotizacionDetailPage({
         motivoDescuento={cotizacion.motivo_descuento}
         userRole={userRole}
         onSave={handleSave}
+        onClose={() => setActivePanel(null)}
+        onDiscountApplied={handleDiscountApplied}
+      />
+      <AplicarDescuento
+        idCotizacion={cotizacion.id_cotizacion}
+        baseAmount={baseAmount}
+        isOpen={activePanel === "discount"}
+        initialPercentage={porcentajeDescuento || undefined}
+        initialMotivo={cotizacion.motivo_descuento ?? undefined}
+        onApplied={handleDiscountApplied}
         onClose={() => setActivePanel(null)}
       />
 

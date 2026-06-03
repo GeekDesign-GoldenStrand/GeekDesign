@@ -83,6 +83,8 @@ interface EditarCotizacionProps {
   userRole?: UserRole;
   onSave: (data: EditableFields) => void;
   onClose: () => void;
+  // Called when a discount/interest is successfully applied via this modal
+  onDiscountApplied?: () => void;
 }
 
 export default function EditarCotizacion({
@@ -95,6 +97,7 @@ export default function EditarCotizacion({
   userRole,
   onSave,
   onClose,
+  onDiscountApplied,
 }: EditarCotizacionProps) {
   const [fields, setFields] = useState<EditableFields>({
     ...initial,
@@ -102,14 +105,14 @@ export default function EditarCotizacion({
   });
 
   const initialDiscountPercentage = porcentajeDescuento ?? 0;
-  const hasInitialDiscount = initialDiscountPercentage > 0;
+
   // Mirror the server-side gate on PATCH /api/cotizaciones/[id]/descuento,
   // which requires Direccion. Without this check, non-Direccion users would
   // still see the discount inputs on a quotation that already has one and
   // hit a 403 only on save. The totals breakdown below still shows the
   // existing discount as read-only.
   const canEditDiscount = userRole === "Direccion";
-  const showDiscountSection = hasInitialDiscount && canEditDiscount;
+  const showDiscountSection = canEditDiscount;
 
   // String source of truth for the input — preserves lone "-" mid-typing.
   // Numeric `discountPercentage` is derived below.
@@ -223,8 +226,7 @@ export default function EditarCotizacion({
   };
 
   const newSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
-  const discountPct =
-    hasInitialDiscount && Number.isFinite(discountPercentage) ? discountPercentage : 0;
+  const discountPct = Number.isFinite(discountPercentage) ? discountPercentage : 0;
   // Positive pct = discount (subtracts), negative = surcharge/interest (adds).
   const hasDiscount = discountPct !== 0;
   const discountAmount = hasDiscount ? Math.round(newSubtotal * discountPct) / 100 : 0;
@@ -350,6 +352,11 @@ export default function EditarCotizacion({
           }
           return;
         }
+
+        // Discount successfully applied – notify parent if needed
+        if (onDiscountApplied) {
+          onDiscountApplied();
+        }
       }
 
       alert("Cotización actualizada correctamente");
@@ -443,7 +450,7 @@ export default function EditarCotizacion({
         {showDiscountSection && (
           <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
             <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
-              Descuento
+              {Number(discountPercentageText) < 0 ? "Interés" : "Descuento"}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
