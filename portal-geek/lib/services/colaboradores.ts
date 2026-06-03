@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db/client";
 import type { CreateColaboradorInput, UpdateColaboradorInput } from "@/lib/schemas/colaboradores";
@@ -24,19 +26,51 @@ const COLABORADOR_SELECT = {
   },
 } as const;
 
-export async function listColaboradores(page: number, pageSize: number) {
+export interface ListColaboradoresFilters {
+  search?: string;
+  estatusColaborador?: string;
+  roles?: number[];
+}
+
+export async function listColaboradores(
+  page: number,
+  pageSize: number,
+  filters: ListColaboradoresFilters = {}
+) {
   const skip = (page - 1) * pageSize;
+
+  // Búsqueda y filtros se aplican en el servidor para que recorran TODOS los
+  // colaboradores, no solo la página cargada.
+  const where: Prisma.UsuariosWhereInput = {
+    estatus: { not: "Inactivo" },
+    // El filtro de estatus_colaborador (vía relación) ya exige que exista el
+    // colaborador; si no se filtra, basta con que la relación no sea nula.
+    colaborador: filters.estatusColaborador
+      ? { is: { estatus_colaborador: filters.estatusColaborador } }
+      : { isNot: null },
+  };
+
+  const search = filters.search?.trim();
+  if (search) {
+    where.OR = [
+      { nombre_completo: { contains: search, mode: "insensitive" } },
+      { correo_electronico: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters.roles && filters.roles.length > 0) {
+    where.id_rol = { in: filters.roles };
+  }
+
   const [items, total] = await prisma.$transaction([
     prisma.usuarios.findMany({
       skip,
       take: pageSize,
-      where: { colaborador: { isNot: null }, estatus: { not: "Inactivo" } },
+      where,
       select: COLABORADOR_SELECT,
       orderBy: { fecha_creacion: "desc" },
     }),
-    prisma.usuarios.count({
-      where: { colaborador: { isNot: null }, estatus: { not: "Inactivo" } },
-    }),
+    prisma.usuarios.count({ where }),
   ]);
   return { items, total };
 }
