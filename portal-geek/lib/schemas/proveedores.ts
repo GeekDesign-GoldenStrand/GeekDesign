@@ -28,10 +28,7 @@ export const CreateProveedorSchema = z.object({
     const parts = val.split(",").map((p) => p.trim());
     return parts.length > 0 && parts.every((p) => validTipos.includes(p));
   }, "Tipo inválido. Valores aceptados: Proveedor de material, Proveedor de servicio."),
-  telefono: z
-    .string()
-    .min(1, "El teléfono es requerido.")
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+  telefono: z.string().min(1, "El teléfono es requerido.").max(20, "Máximo 20 caracteres."),
   correo: emailField({ max: 150, message: "Correo electrónico inválido." }),
   descripcion_proveedor: z.string().max(500, "Máximo 500 caracteres.").optional(),
   ubicacion: z

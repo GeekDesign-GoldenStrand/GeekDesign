@@ -210,7 +210,13 @@ export function ImageUploader(props: ImageUploaderProps) {
     <div className="space-y-3">
       {label && <label className="block text-[14px] font-medium text-[#1e1e1e]">{label}</label>}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      <div
+        className={
+          isSingle
+            ? "flex flex-wrap gap-4 [&>*]:w-[180px]"
+            : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
+        }
+      >
         {slots.map((slot) => (
           <div
             key={slot.id}
