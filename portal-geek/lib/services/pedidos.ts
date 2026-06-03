@@ -383,9 +383,21 @@ export async function createPedido(data: CreatePedidoInput): Promise<Pedidos> {
 }
 
 export async function updatePedido(id: number, data: UpdatePedidoInput): Promise<Pedidos> {
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  // Solo se actualizan los campos provistos: Prisma ignora los `undefined`, así
+  // que un PUT parcial (p. ej. solo notas) no pisa el resto de columnas. El
+  // cambio de estatus tiene su propio endpoint (PATCH /api/pedidos/:id/estatus).
+  return prisma.pedidos.update({
+    where: { id_pedido: id },
+    data: {
+      id_estatus: data.id_estatus,
+      id_sucursal: data.id_sucursal,
+      fecha_estimada: data.fecha_estimada,
+      fecha_fin: data.fecha_fin,
+      facturado: data.facturado,
+      numero_factura: data.numero_factura,
+      notas: data.notas,
+    },
+  });
 }
 
 export async function deletePedido(id: number): Promise<void> {
