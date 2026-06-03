@@ -1,3 +1,4 @@
+import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import React, { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ui/atoms";
@@ -9,7 +10,6 @@ import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import {
   DISCOUNT_MAX,
   DISCOUNT_MIN,
-  DISCOUNT_STEP,
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
 
@@ -36,17 +36,35 @@ export default function AplicarDescuento({
   onApplied,
   onClose,
 }: AplicarDescuentoProps) {
-  const [percentage, setPercentage] = useState<number>(initialPercentage ?? DISCOUNT_MIN);
+  // Default to +5 (a sensible small discount) when no existing adjustment
+  // — avoids the modal opening at the lower bound (−20% interés) which
+  // would surprise users opening the modal to apply a discount.
+  const DEFAULT_PCT = 5;
+  // String state lets the user type a lone "-" mid-keystroke (becomes "-5")
+  // without it disappearing — a number-state input would render NaN as
+  // empty and swallow the sign before the digit arrives.
+  const [percentageText, setPercentageText] = useState<string>(
+    String(initialPercentage ?? DEFAULT_PCT)
+  );
   const [motivo, setMotivo] = useState<string>(initialMotivo ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const hasExistingDiscount = (initialPercentage ?? 0) > 0;
+  // Derived numeric value — NaN when the field is empty, "-" alone, or "-0".
+  const percentage = (() => {
+    if (percentageText === "" || percentageText === "-") return Number.NaN;
+    const parsed = parseInt(percentageText, 10);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  })();
+
+  // An adjustment exists when porcentaje is set AND non-zero — covers both
+  // discounts (positive) and surcharges/interest (negative).
+  const hasExistingDiscount = initialPercentage != null && initialPercentage !== 0;
 
   useEffect(() => {
     if (!isOpen) return;
-    setPercentage(initialPercentage ?? DISCOUNT_MIN);
+    setPercentageText(String(initialPercentage ?? DEFAULT_PCT));
     setMotivo(initialMotivo ?? "");
     setServerError(null);
     setIsDeleting(false);
@@ -54,7 +72,16 @@ export default function AplicarDescuento({
 
   useEffect(() => {
     setServerError(null);
-  }, [percentage, motivo]);
+  }, [percentageText, motivo]);
+
+  // Step ±1, skip 0 (which is rejected by the validator), clamp to range.
+  function bumpPercentage(delta: number) {
+    const current = Number.isFinite(percentage) ? percentage : 0;
+    let next = current + delta;
+    if (next === 0) next = delta > 0 ? 1 : -1;
+    next = Math.max(DISCOUNT_MIN, Math.min(DISCOUNT_MAX, next));
+    setPercentageText(String(next));
+  }
 
   if (!isOpen) return null;
 
@@ -62,11 +89,16 @@ export default function AplicarDescuento({
   const isPercentageValid = validationError === null;
   const displayedError = serverError ?? (!hasExistingDiscount ? validationError : null);
 
+  // Clamp preview to the full signed range so negatives flow through.
   const previewPct = Number.isFinite(percentage)
-    ? Math.min(Math.max(0, percentage), DISCOUNT_MAX)
+    ? Math.min(Math.max(DISCOUNT_MIN, percentage), DISCOUNT_MAX)
     : 0;
-  const computed = baseAmount * (previewPct / 100);
-  const afterDiscount = baseAmount - computed;
+  // Positive pct → reduces total (savings shown). Negative pct → raises
+  // total (interest shown). adjustmentAmount is always the absolute MXN
+  // delta; isCharge controls the labels and sign in the UI.
+  const isCharge = previewPct < 0;
+  const adjustmentAmount = Math.abs(baseAmount * (previewPct / 100));
+  const afterDiscount = baseAmount - baseAmount * (previewPct / 100);
 
   // ── Delete ────────────────────────────────
   async function handleDelete() {
@@ -154,14 +186,17 @@ export default function AplicarDescuento({
     }
   }
 
-  // ── Delete-confirmation modal (when a discount already exists) ────
+  // ── Delete-confirmation modal (when an adjustment already exists) ──
   if (hasExistingDiscount) {
-    const existingComputed = baseAmount * ((initialPercentage ?? 0) / 100);
+    const existingPct = initialPercentage ?? 0;
+    const existingIsCharge = existingPct < 0;
+    const existingLabel = existingIsCharge ? "interés" : "descuento";
+    const existingDelta = Math.abs(baseAmount * (existingPct / 100));
 
     return (
       <ConfirmDialog
         isOpen
-        title="Eliminar descuento"
+        title={`Eliminar ${existingLabel}`}
         confirmLabel="Sí, eliminar"
         loadingLabel="Eliminando…"
         loading={isDeleting}
@@ -171,8 +206,8 @@ export default function AplicarDescuento({
         description={
           <>
             <p className="mb-2 text-[14px] text-gray-700">
-              ¿Estás seguro de que deseas eliminar el descuento de{" "}
-              <span className="font-semibold">{initialPercentage}%</span>?
+              ¿Estás seguro de que deseas eliminar el {existingLabel} de{" "}
+              <span className="font-semibold">{Math.abs(existingPct)}%</span>?
             </p>
             {initialMotivo && (
               <p className="mb-2 text-[13px] text-gray-500">
@@ -181,8 +216,8 @@ export default function AplicarDescuento({
             )}
             <p className="text-[13px] text-gray-400">
               El monto total volverá a{" "}
-              <span className="font-medium text-gray-700">{fmt(baseAmount)}</span> (se revertirá el
-              ahorro de {fmt(existingComputed)}).
+              <span className="font-medium text-gray-700">{fmt(baseAmount)}</span> (se revertirá{" "}
+              {existingIsCharge ? "el cargo" : "el ahorro"} de {fmt(existingDelta)}).
             </p>
           </>
         }
@@ -192,49 +227,72 @@ export default function AplicarDescuento({
 
   // ── Apply form when no discount exists ────
   return (
-    <ModalShell title="Agregar descuento" onClose={onClose}>
+    <ModalShell title={isCharge ? "Agregar interés" : "Agregar descuento"} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <div className="flex flex-wrap gap-4 mb-4">
           <div className="flex flex-col text-[13px] text-[#575757]">
             <label className="font-medium mb-1">
-              Porcentaje de descuento (%) <span className="text-[#A32D2D]">*</span>
+              Ajuste (%) <span className="text-[#A32D2D]">*</span>
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="^[0-9]+$"
-              min={DISCOUNT_MIN}
-              max={DISCOUNT_MAX}
-              value={Number.isFinite(percentage) ? percentage : ""}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === "") {
-                  setPercentage(Number.NaN);
-                  return;
-                }
-                if (!/^\d+$/.test(raw)) return;
-                const parsed = parseInt(raw, 10);
-                if (Number.isNaN(parsed)) {
-                  setPercentage(Number.NaN);
-                  return;
-                }
-                const clamped = Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX);
-                setPercentage(clamped);
-              }}
-              aria-invalid={!isPercentageValid}
-              className={`w-32 text-[22px] font-medium border rounded-lg px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 ${
+            <div
+              className={`relative w-32 border rounded-lg bg-white focus-within:outline-none focus-within:ring-2 ${
                 isPercentageValid
-                  ? "border-gray-200 focus:ring-blue-100"
-                  : "border-red-300 focus:ring-red-100"
+                  ? "border-gray-200 focus-within:ring-blue-100"
+                  : "border-red-300 focus-within:ring-red-100"
               }`}
-            />
+            >
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="^-?[0-9]+$"
+                min={DISCOUNT_MIN}
+                max={DISCOUNT_MAX}
+                value={percentageText}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  // Accept "" and "-" verbatim so the sign survives mid-typing.
+                  if (raw === "" || raw === "-") {
+                    setPercentageText(raw);
+                    return;
+                  }
+                  if (!/^-?\d+$/.test(raw)) return;
+                  const parsed = parseInt(raw, 10);
+                  if (!Number.isFinite(parsed)) return;
+                  const clamped = Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX);
+                  setPercentageText(String(clamped));
+                }}
+                aria-invalid={!isPercentageValid}
+                className="w-full text-[22px] font-medium pl-3 pr-7 py-2 text-gray-900 bg-transparent focus:outline-none rounded-lg"
+              />
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => bumpPercentage(1)}
+                  aria-label="Incrementar 1%"
+                  className="h-4 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
+                >
+                  <CaretUp size={10} weight="bold" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bumpPercentage(-1)}
+                  aria-label="Decrementar 1%"
+                  className="h-4 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
+                >
+                  <CaretDown size={10} weight="bold" />
+                </button>
+              </div>
+            </div>
             <p className="text-[11px] text-gray-400 mt-1">
-              Múltiplos de {DISCOUNT_STEP}% (mínimo {DISCOUNT_MIN}%, máximo {DISCOUNT_MAX}%)
+              Rango {DISCOUNT_MIN}% a {DISCOUNT_MAX}%. Positivo = descuento, negativo = interés
+              (pagos en plazos).
             </p>
           </div>
 
           <div className="flex flex-col text-[13px] text-[#575757] flex-1 min-w-[220px]">
-            <label className="font-medium mb-1">Motivo del descuento (opcional)</label>
+            <label className="font-medium mb-1">
+              Motivo {isCharge ? "del interés" : "del descuento"} (opcional)
+            </label>
             <input
               type="text"
               value={motivo}
@@ -246,19 +304,37 @@ export default function AplicarDescuento({
           </div>
         </div>
 
-        <div className="bg-[#FCEBEB] rounded-lg px-4 py-3 flex justify-between items-center mb-2">
+        <div
+          className={`rounded-lg px-4 py-3 flex justify-between items-center mb-2 ${
+            isCharge ? "bg-amber-50" : "bg-[#FCEBEB]"
+          }`}
+        >
           <div>
-            <p className="text-[13px] text-[#791F1F] font-medium">Descuento aplicado</p>
-            <p className="text-[12px] text-[#A32D2D] mt-0.5">
-              {previewPct}% sobre {fmt(baseAmount)}
+            <p
+              className={`text-[13px] font-medium ${isCharge ? "text-amber-800" : "text-[#791F1F]"}`}
+            >
+              {isCharge ? "Interés aplicado" : "Descuento aplicado"}
+            </p>
+            <p className={`text-[12px] mt-0.5 ${isCharge ? "text-amber-700" : "text-[#A32D2D]"}`}>
+              {Math.abs(previewPct)}% sobre {fmt(baseAmount)}
             </p>
           </div>
-          <p className="text-[18px] font-medium text-[#A32D2D]">− {fmt(computed)}</p>
+          <p
+            className={`text-[18px] font-medium ${isCharge ? "text-amber-700" : "text-[#A32D2D]"}`}
+          >
+            {isCharge ? "+" : "−"} {fmt(adjustmentAmount)}
+          </p>
         </div>
 
         <div className="flex justify-between items-center px-4 py-3 bg-gray-50 rounded-lg">
-          <p className="text-[13px] text-gray-400">Total con descuento</p>
-          <p className="text-[18px] font-medium text-[#3B6D11]">{fmt(afterDiscount)}</p>
+          <p className="text-[13px] text-gray-400">
+            {isCharge ? "Total con interés" : "Total con descuento"}
+          </p>
+          <p
+            className={`text-[18px] font-medium ${isCharge ? "text-amber-700" : "text-[#3B6D11]"}`}
+          >
+            {fmt(afterDiscount)}
+          </p>
         </div>
 
         {displayedError && (
@@ -287,7 +363,7 @@ export default function AplicarDescuento({
             disabled={isSubmitting || !isPercentageValid}
             loading={isSubmitting}
           >
-            {isSubmitting ? "Aplicando…" : "Aplicar descuento"}
+            {isSubmitting ? "Aplicando…" : isCharge ? "Aplicar interés" : "Aplicar descuento"}
           </Button>
         </div>
       </form>

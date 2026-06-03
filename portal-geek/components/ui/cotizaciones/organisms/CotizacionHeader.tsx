@@ -57,7 +57,7 @@ export function CotizacionHeader({
               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-medium border border-gray-200 bg-white shadow-sm text-gray-800 hover:bg-gray-50 active:scale-[0.98] transition-all"
             >
               <Tag size={15} />
-              Agregar descuento
+              Agregar ajuste
             </button>
           )}
           {canEdit && (

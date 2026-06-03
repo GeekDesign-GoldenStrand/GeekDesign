@@ -76,30 +76,29 @@ export const CotizacionIdParams = z.object({
 });
 
 // ─────────────────────────────────────────────
-// Discount rules — single source of truth shared by the API (this Zod
-// schema) and the front-end modal (AplicarDescuento). Edit one place
-// and both the client-side validation messages and the server-side
-// guard move in lockstep.
+// Discount / surcharge rules — single source of truth shared by the API
+// (this Zod schema) and the front-end modal (AplicarDescuento).
+//
+// Range is symmetric around zero: positive values are discounts (reduce
+// the total), negative values are surcharges/interest applied when the
+// client opts to pay en plazos. Any integer in [DISCOUNT_MIN, DISCOUNT_MAX]
+// is valid — there is no step constraint.
 // ─────────────────────────────────────────────
-export const DISCOUNT_MIN = 5;
+export const DISCOUNT_MIN = -20;
 export const DISCOUNT_MAX = 20;
-export const DISCOUNT_STEP = 5;
 
-// Validation message catalog — kept here so the front-end can show the
-// exact same copy the server would reject with. Keys match the alts in
-// the COT-06 sequence diagram.
 export const DISCOUNT_ERROR = {
   NOT_INTEGER: "Ingresa un número entero",
-  ZERO: "El descuento debe ser mayor o igual a 5%",
-  TOO_LOW: `El descuento debe ser de al menos ${DISCOUNT_MIN}%`,
-  TOO_HIGH: `El descuento no puede superar el ${DISCOUNT_MAX}%`,
-  NOT_MULTIPLE: `El descuento debe ser múltiplo de ${DISCOUNT_STEP}, mínimo ${DISCOUNT_MIN}%`,
+  ZERO: "Para no aplicar ajuste, elimina el actual en lugar de usar 0%",
+  TOO_LOW: `El valor no puede ser menor a ${DISCOUNT_MIN}%`,
+  TOO_HIGH: `El valor no puede superar ${DISCOUNT_MAX}%`,
 } as const;
 
 // Returns the first applicable error string for a percentage, or null
 // when the value is acceptable. Used directly by the modal and mirrored
 // by the Zod schema below so both layers reject the same set of inputs
-// with the same messaging.
+// with the same messaging. 0 is rejected because the null path (remove
+// adjustment) covers the "no change" intent unambiguously.
 export function validateDescuentoPercentage(value: number): string | null {
   if (!Number.isFinite(value) || !Number.isInteger(value)) {
     return DISCOUNT_ERROR.NOT_INTEGER;
@@ -107,11 +106,11 @@ export function validateDescuentoPercentage(value: number): string | null {
   if (value === 0) {
     return DISCOUNT_ERROR.ZERO;
   }
+  if (value < DISCOUNT_MIN) {
+    return DISCOUNT_ERROR.TOO_LOW;
+  }
   if (value > DISCOUNT_MAX) {
     return DISCOUNT_ERROR.TOO_HIGH;
-  }
-  if (value < DISCOUNT_MIN || value % DISCOUNT_STEP !== 0) {
-    return DISCOUNT_ERROR.NOT_MULTIPLE;
   }
   return null;
 }
@@ -122,7 +121,7 @@ export const AplicarDescuentoSchema = z.object({
     .int(DISCOUNT_ERROR.NOT_INTEGER)
     .min(DISCOUNT_MIN, DISCOUNT_ERROR.TOO_LOW)
     .max(DISCOUNT_MAX, DISCOUNT_ERROR.TOO_HIGH)
-    .refine((v) => v % DISCOUNT_STEP === 0, DISCOUNT_ERROR.NOT_MULTIPLE)
+    .refine((v) => v !== 0, DISCOUNT_ERROR.ZERO)
     .nullable(),
   motivo_descuento: z.string().max(255).nullable().optional(),
 });

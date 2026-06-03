@@ -1,3 +1,4 @@
+import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
@@ -110,7 +111,16 @@ export default function EditarCotizacion({
   const canEditDiscount = userRole === "Direccion";
   const showDiscountSection = hasInitialDiscount && canEditDiscount;
 
-  const [discountPercentage, setDiscountPercentage] = useState<number>(initialDiscountPercentage);
+  // String source of truth for the input — preserves lone "-" mid-typing.
+  // Numeric `discountPercentage` is derived below.
+  const [discountPercentageText, setDiscountPercentageText] = useState<string>(
+    String(initialDiscountPercentage)
+  );
+  const discountPercentage = (() => {
+    if (discountPercentageText === "" || discountPercentageText === "-") return Number.NaN;
+    const parsed = parseInt(discountPercentageText, 10);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  })();
   const [discountMotivo, setDiscountMotivo] = useState<string>(motivoDescuento ?? "");
   const [discountSnapshot, setDiscountSnapshot] = useState<{
     percentage: number;
@@ -125,6 +135,16 @@ export default function EditarCotizacion({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Step ±1, skip 0 (validator rejects it), clamp to range.
+  const bumpDiscount = (delta: number) => {
+    setValidationError(null);
+    const current = Number.isFinite(discountPercentage) ? discountPercentage : 0;
+    let next = current + delta;
+    if (next === 0) next = delta > 0 ? 1 : -1;
+    next = Math.max(DISCOUNT_MIN, Math.min(DISCOUNT_MAX, next));
+    setDiscountPercentageText(String(next));
+  };
 
   // Snapshot of initial at the time the modal opened — used to detect
   // whether anything actually changed before firing the PATCH.
@@ -143,7 +163,7 @@ export default function EditarCotizacion({
     const freshDiscountPercentage = porcentajeDescuento ?? 0;
     const freshDiscountMotivo = motivoDescuento ?? "";
 
-    setDiscountPercentage(freshDiscountPercentage);
+    setDiscountPercentageText(String(freshDiscountPercentage));
     setDiscountMotivo(freshDiscountMotivo);
     setDiscountSnapshot({
       percentage: freshDiscountPercentage,
@@ -205,7 +225,8 @@ export default function EditarCotizacion({
   const newSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
   const discountPct =
     hasInitialDiscount && Number.isFinite(discountPercentage) ? discountPercentage : 0;
-  const hasDiscount = discountPct > 0;
+  // Positive pct = discount (subtracts), negative = surcharge/interest (adds).
+  const hasDiscount = discountPct !== 0;
   const discountAmount = hasDiscount ? Math.round(newSubtotal * discountPct) / 100 : 0;
   const newTotal = newSubtotal - discountAmount;
   const discountChanged = !discountFieldsAreEqual(
@@ -428,38 +449,50 @@ export default function EditarCotizacion({
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
                 <span className="font-medium">Porcentaje</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="^[0-9]+$"
-                  min={DISCOUNT_MIN}
-                  max={DISCOUNT_MAX}
-                  value={Number.isFinite(discountPercentage) ? discountPercentage : ""}
-                  onChange={(e) => {
-                    setValidationError(null);
-
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      setDiscountPercentage(Number.NaN);
-                      return;
-                    }
-
-                    if (!/^\d+$/.test(raw)) return;
-                    const parsed = parseInt(raw, 10);
-                    if (Number.isNaN(parsed)) {
-                      setDiscountPercentage(Number.NaN);
-                      return;
-                    }
-
-                    // Only clamp the upper bound on change — clamping the lower
-                    // bound mid-keystroke prevents typing valid multi-digit
-                    // values (e.g. "10" briefly passes through "1", which
-                    // would otherwise jump to DISCOUNT_MIN). The min and the
-                    // step rule are enforced on submit via validateDescuentoPercentage.
-                    setDiscountPercentage(Math.min(parsed, DISCOUNT_MAX));
-                  }}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
+                <div className="relative w-full border border-gray-200 rounded-lg bg-white focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-100">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="^-?[0-9]+$"
+                    min={DISCOUNT_MIN}
+                    max={DISCOUNT_MAX}
+                    value={discountPercentageText}
+                    onChange={(e) => {
+                      setValidationError(null);
+                      const raw = e.target.value;
+                      // Accept "" and "-" verbatim so the sign survives mid-typing.
+                      if (raw === "" || raw === "-") {
+                        setDiscountPercentageText(raw);
+                        return;
+                      }
+                      if (!/^-?\d+$/.test(raw)) return;
+                      const parsed = parseInt(raw, 10);
+                      if (!Number.isFinite(parsed)) return;
+                      setDiscountPercentageText(
+                        String(Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX))
+                      );
+                    }}
+                    className="w-full pl-3 pr-7 py-2 text-[13px] text-gray-800 bg-transparent focus:outline-none rounded-lg"
+                  />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
+                    <button
+                      type="button"
+                      onClick={() => bumpDiscount(1)}
+                      aria-label="Incrementar 1%"
+                      className="h-3.5 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
+                    >
+                      <CaretUp size={9} weight="bold" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => bumpDiscount(-1)}
+                      aria-label="Decrementar 1%"
+                      className="h-3.5 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
+                    >
+                      <CaretDown size={9} weight="bold" />
+                    </button>
+                  </div>
+                </div>
               </label>
 
               <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
@@ -571,16 +604,26 @@ export default function EditarCotizacion({
                 </div>
                 <div className="flex gap-6">
                   <span title={discountMotivo.trim() || undefined}>
-                    Descuento {Math.round(discountPct)}%
+                    {discountPct < 0 ? "Interés" : "Descuento"} {Math.abs(Math.round(discountPct))}%
                     {discountMotivo.trim() ? ` — ${discountMotivo.trim()}` : ""}
                   </span>
-                  <span className="min-w-[110px] text-right text-red-600">
-                    − {formatAmount(discountAmount)}
+                  <span
+                    className={`min-w-[110px] text-right ${
+                      discountPct < 0 ? "text-amber-700" : "text-red-600"
+                    }`}
+                  >
+                    {discountPct < 0 ? "+" : "−"} {formatAmount(Math.abs(discountAmount))}
                   </span>
                 </div>
                 <div className="flex gap-6 mt-1 text-[14px]">
-                  <span className="text-gray-600">Total con descuento</span>
-                  <span className="min-w-[110px] text-right text-[16px] font-medium text-[#3B6D11]">
+                  <span className="text-gray-600">
+                    {discountPct < 0 ? "Total con interés" : "Total con descuento"}
+                  </span>
+                  <span
+                    className={`min-w-[110px] text-right text-[16px] font-medium ${
+                      discountPct < 0 ? "text-amber-700" : "text-[#3B6D11]"
+                    }`}
+                  >
                     {formatAmount(newTotal)}
                   </span>
                 </div>

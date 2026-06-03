@@ -345,11 +345,12 @@ export async function updateCotizacion(
       });
       const baseSum = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
 
-      // Re-apply the stored discount so monto_total stays consistent with
-      // porcentaje_descuento. Without this the row would drift to an
-      // un-discounted total while still advertising a discount %.
+      // Re-apply the stored discount/surcharge so monto_total stays consistent
+      // with porcentaje_descuento. Positive pct = discount (reduces total),
+      // negative pct = surcharge/interest (increases total). Without this the
+      // row would drift to an unadjusted total while still advertising a %.
       const pct = existing.porcentaje_descuento ? Number(existing.porcentaje_descuento) : 0;
-      computedMontoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+      computedMontoTotal = pct !== 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
 
       // monto_total is Decimal(10,2) — values above 99,999,999.99 trigger a
       // Postgres "numeric field overflow" that surfaces to the client as a

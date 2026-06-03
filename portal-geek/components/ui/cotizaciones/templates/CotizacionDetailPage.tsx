@@ -100,20 +100,22 @@ export function CotizacionDetailPage({
     [onRefetch]
   );
 
-  // ── Discount (COT-06) ─────────────────────
+  // ── Discount/surcharge (COT-06) ───────────
+  // porcentajeDescuento is signed: positive = discount (reduces total),
+  // negative = interest/surcharge (raises total). Labels flip on the sign.
   const serviciosSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
   const montoTotalActual = parseFloat(cotizacion.monto_total);
   const porcentajeDescuento = cotizacion.porcentaje_descuento
     ? parseFloat(cotizacion.porcentaje_descuento)
     : 0;
   const baseAmount = serviciosSubtotal || montoTotalActual;
-  const discountAmount = porcentajeDescuento > 0 ? Math.max(0, baseAmount - montoTotalActual) : 0;
-  const discountLabel =
-    porcentajeDescuento > 0
-      ? `Descuento ${Math.round(porcentajeDescuento)}%${
-          cotizacion.motivo_descuento ? ` — ${cotizacion.motivo_descuento}` : ""
-        }`
-      : "";
+  const hasAdjustment = porcentajeDescuento !== 0;
+  const adjustmentAmount = hasAdjustment ? Math.abs(baseAmount - montoTotalActual) : 0;
+  const adjustmentLabel = hasAdjustment
+    ? `${porcentajeDescuento < 0 ? "Interés" : "Descuento"} ${Math.abs(
+        Math.round(porcentajeDescuento)
+      )}%${cotizacion.motivo_descuento ? ` — ${cotizacion.motivo_descuento}` : ""}`
+    : "";
 
   const handleDiscountApplied = useCallback(async () => {
     await onRefetch?.();
@@ -150,7 +152,7 @@ export function CotizacionDetailPage({
       <CotizacionHeader
         folio={cotizacion.folio}
         nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
-        discountApplied={porcentajeDescuento > 0}
+        discountApplied={hasAdjustment}
         canEdit={isMutable}
         canAddDiscount={canManageDiscount}
         onEdit={() => togglePanel("edit")}
@@ -220,8 +222,8 @@ export function CotizacionDetailPage({
       <div className="mb-4">
         <LineItemsTable
           servicios={fields.servicios}
-          discountAmount={discountAmount || undefined}
-          discountLabel={discountLabel || undefined}
+          discountAmount={adjustmentAmount || undefined}
+          discountLabel={adjustmentLabel || undefined}
         />
       </div>
 
