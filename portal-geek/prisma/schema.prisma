@@ -461,6 +461,7 @@ model Pedidos {
   fecha_creacion    DateTime  @default(now())
   fecha_fin         DateTime?
   fecha_estimada    DateTime?
+  monto_anticipo    Decimal?  @db.Decimal(10, 2) // ST-17: anticipo fijado por Dirección; NULL = aún sin definir
   factura           Boolean   @default(false)
   facturado         Boolean   @default(false)
   numero_factura    String?   @db.VarChar(100)
@@ -756,7 +757,7 @@ model Pagos {
   fecha                  DateTime @default(now())
   monto_pago             Decimal  @db.Decimal(10, 2)
   metodo_pago            String   @db.VarChar(30)  // efectivo / transferencia / Mercado Pago
-  referencia_mercadopago String?  @db.VarChar(255)
+  referencia_mercadopago String?  @unique @db.VarChar(255) // ST-17 D6: idempotencia del webhook (payment id de MP)
   estatus_pago           String   @db.VarChar(20)  // Pendiente / Pagado / Reembolsado
 
   pedido Pedidos @relation(fields: [id_pedido], references: [id_pedido])
