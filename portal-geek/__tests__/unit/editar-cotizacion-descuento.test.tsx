@@ -128,7 +128,7 @@ describe("EditarCotizacion discount editing", () => {
     await setupReady();
 
     expect(screen.getByText("Descuento")).toBeInTheDocument();
-    expect(screen.getByLabelText("Porcentaje")).toHaveValue(10);
+    expect(screen.getByLabelText("Porcentaje")).toHaveValue("10");
     expect(screen.getByLabelText("Motivo")).toHaveValue("Cliente frecuente");
   });
 
@@ -224,10 +224,10 @@ describe("EditarCotizacion discount editing", () => {
     const input = screen.getByLabelText("Porcentaje");
 
     fireEvent.change(input, { target: { value: "1" } });
-    expect(input).toHaveValue(1);
+    expect(input).toHaveValue("1");
 
     fireEvent.change(input, { target: { value: "10" } });
-    expect(input).toHaveValue(10);
+    expect(input).toHaveValue("10");
   });
 
   it("clamps the discount input to the upper bound when a higher value is typed", async () => {
@@ -236,7 +236,7 @@ describe("EditarCotizacion discount editing", () => {
     const input = screen.getByLabelText("Porcentaje");
 
     fireEvent.change(input, { target: { value: "50" } });
-    expect(input).toHaveValue(20);
+    expect(input).toHaveValue("20");
   });
 
   it("strips emojis and decorative characters from the discount reason", async () => {
