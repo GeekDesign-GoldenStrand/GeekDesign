@@ -91,6 +91,7 @@ export function MaterialesFilterPanel({
     onColumnsChange(draftColumns);
     onSortChange(draftSort);
     onTipoFilterChange(draftTipo);
+    onClose();
   }
 
   function reset() {

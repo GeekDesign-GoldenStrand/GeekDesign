@@ -1,6 +1,6 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-// Zod is a schema validation library that provides detailed error information when validation fails.
 
 import type { ApiResponse } from "@/types";
 
@@ -126,6 +126,13 @@ export function handleError(err: unknown): NextResponse<ApiResponse<never>> {
   if (err instanceof ZodError) {
     const message = err.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ");
     return NextResponse.json({ data: null, error: message }, { status: 422 });
+  }
+  // P2020: numeric field overflow — bad input slipped past schema validation.
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2020") {
+    return NextResponse.json(
+      { data: null, error: "Valor numérico fuera del rango permitido" },
+      { status: 422 }
+    );
   }
   if (err instanceof ConfigurationError) {
     if (process.env.NODE_ENV !== "test") {

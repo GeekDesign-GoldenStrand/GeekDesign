@@ -58,7 +58,7 @@ export function MaterialGroupCard({
           >
             {group.name}
           </span>
-          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-[#df2646] text-white text-[11px] font-medium">
+          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-[#e42200] text-white text-[11px] font-medium">
             {subCount} variante{subCount !== 1 ? "s" : ""}
           </span>
           {group.description && (

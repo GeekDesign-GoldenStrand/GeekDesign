@@ -72,6 +72,9 @@ export function useServicioForm({
     key: K,
     value: NuevoServicioFormState[K]
   ) {
+    if (submitError && (key === "variables" || key === "constantes" || key === "formulaChunks")) {
+      setSubmitError(null);
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -133,6 +136,24 @@ export function useServicioForm({
       }
       if (repeatedWords(form.descripcion_servicio)) {
         setSubmitError("La descripción repite la misma palabra varias veces.");
+        return;
+      }
+    }
+
+    // Reject adjacent tokens with no binary operator between them. Without this
+    // the chunks "ancho" + "" + "iva" serialize as "anchoiva" which the parser
+    // either rejects or evaluates against the wrong identifier. Tokens at odd
+    // indices, text chunks at even — for every neighboring token pair we
+    // require at least one of + - * / in the text chunk between them.
+    for (let i = 1; i < form.formulaChunks.length - 2; i += 2) {
+      const current = form.formulaChunks[i];
+      const between = form.formulaChunks[i + 1];
+      const next = form.formulaChunks[i + 2];
+      if (current.type !== "token" || next.type !== "token") continue;
+      if (!/[+\-*/]/.test(between.value)) {
+        setSubmitError(
+          `Falta un operador (+, -, * o /) entre "${current.value}" y "${next.value}" en la fórmula.`
+        );
         return;
       }
     }
@@ -216,9 +237,12 @@ export function useServicioForm({
     maquinas.error ||
     materiales.error;
 
-  // A servicio is only saveable when every required piece is in place. The list
-  // is exposed so the form can render it as a "missing requirements" hint next
-  // to the disabled submit button instead of leaving the user guessing.
+  // A servicio is only saveable when every required piece is in place. The
+  // full requirements set is enforced only on CREATE — on EDIT we relax to
+  // what the backend schema actually requires (nombre + sucursal). Otherwise
+  // existing services that lack one of the optional pieces (e.g. only 1 image,
+  // no formula yet) get locked out of any further edits, which surfaced as
+  // "I added a máquina and can't save" bug.
   const missingRequirements: string[] = [];
   if (form.nombre_servicio.trim().length === 0) {
     missingRequirements.push("Nombre del servicio");
@@ -226,20 +250,22 @@ export function useServicioForm({
   if (form.id_sucursal === null) {
     missingRequirements.push("Sucursal");
   }
-  if (form.id_maquinas.length === 0) {
-    missingRequirements.push("Al menos una máquina");
-  }
-  if (form.materiales.length === 0) {
-    missingRequirements.push("Al menos un material");
-  }
-  if (form.imagenes.length < 2) {
-    missingRequirements.push(`Al menos 2 imágenes (tienes ${form.imagenes.length})`);
-  }
-  const hasFormulaSubstance = form.formulaChunks.some(
-    (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
-  );
-  if (!hasFormulaSubstance) {
-    missingRequirements.push("Fórmula");
+  if (mode === "create") {
+    if (form.id_maquinas.length === 0) {
+      missingRequirements.push("Al menos una máquina");
+    }
+    if (form.materiales.length === 0) {
+      missingRequirements.push("Al menos un material");
+    }
+    if (form.imagenes.length < 2) {
+      missingRequirements.push(`Al menos 2 imágenes (tienes ${form.imagenes.length})`);
+    }
+    const hasFormulaSubstance = form.formulaChunks.some(
+      (c) => (c.type === "text" && c.value.trim() !== "") || (c.type === "token" && !c.immutable)
+    );
+    if (!hasFormulaSubstance) {
+      missingRequirements.push("Fórmula");
+    }
   }
   const canSubmit = missingRequirements.length === 0;
 

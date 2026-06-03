@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
 import { ActionButton, ActionLink } from "@/components/ui/atoms";
 import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
+import { formatDate } from "@/lib/utils/date";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
@@ -12,11 +11,7 @@ type ServicioCardProps = {
 };
 
 export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
-  const fechaFormateada = new Date(servicio.fecha_modificacion).toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const fechaFormateada = formatDate(servicio.fecha_modificacion);
 
   const maquinas = servicio.maquinas.map((m) => m.maquina.apodo_maquina);
 
@@ -24,13 +19,12 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
     <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
       {/* Header */}
       <div>
-        <Link
-          href={`/servicios/${servicio.id_servicio}`}
-          className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] hover:text-[#e42200] transition-colors break-words"
-        >
+        <h3 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
           {servicio.nombre_servicio}
-        </Link>
+        </h3>
       </div>
+
+      <p className="text-[14px] text-gray-500">Modificado: {fechaFormateada}</p>
 
       {/* Descripción */}
       <div>

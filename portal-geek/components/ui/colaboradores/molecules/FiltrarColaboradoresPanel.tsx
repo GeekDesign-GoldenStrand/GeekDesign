@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { FilterSidebar, filterSidebarClasses } from "@/components/admin/organisms/FilterSidebar";
 
 interface Rol {
@@ -12,9 +14,8 @@ interface FiltrarColaboradoresPanelProps {
   roles: Rol[];
   filterEstatus: string;
   filterRoles: number[];
-  onEstatusChange: (v: string) => void;
-  onRolToggle: (id: number) => void;
-  onReset: () => void;
+  setFilterEstatus: (v: string) => void;
+  setFilterRoles: (v: number[]) => void;
   onClose: () => void;
 }
 
@@ -29,13 +30,40 @@ export function FiltrarColaboradoresPanel({
   roles,
   filterEstatus,
   filterRoles,
-  onEstatusChange,
-  onRolToggle,
-  onReset,
+  setFilterEstatus,
+  setFilterRoles,
   onClose,
 }: FiltrarColaboradoresPanelProps) {
+  const [draftEstatus, setDraftEstatus] = useState(filterEstatus);
+  const [draftRoles, setDraftRoles] = useState<number[]>(filterRoles);
+
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
+    if (open) {
+      setDraftEstatus(filterEstatus);
+      setDraftRoles(filterRoles);
+    }
+  }
+
+  function toggleRol(id: number) {
+    setDraftRoles((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
+  }
+
+  function reset() {
+    setDraftEstatus("");
+    setDraftRoles([]);
+    setFilterEstatus("");
+    setFilterRoles([]);
+  }
+
+  function apply() {
+    setFilterEstatus(draftEstatus);
+    setFilterRoles(draftRoles);
+  }
+
   return (
-    <FilterSidebar open={open} onClose={onClose} onReset={onReset}>
+    <FilterSidebar open={open} onClose={onClose} onApply={apply} onReset={reset}>
       <div>
         <p className="text-[13px] font-semibold text-[#575757] mb-2">Estado</p>
         <div className="space-y-2">
@@ -47,8 +75,8 @@ export function FiltrarColaboradoresPanel({
               <input
                 type="radio"
                 name="colab-estatus"
-                checked={filterEstatus === opt.value}
-                onChange={() => onEstatusChange(opt.value)}
+                checked={draftEstatus === opt.value}
+                onChange={() => setDraftEstatus(opt.value)}
                 className={filterSidebarClasses.checkbox}
               />
               {opt.label}
@@ -67,8 +95,8 @@ export function FiltrarColaboradoresPanel({
             >
               <input
                 type="checkbox"
-                checked={filterRoles.includes(r.id_rol)}
-                onChange={() => onRolToggle(r.id_rol)}
+                checked={draftRoles.includes(r.id_rol)}
+                onChange={() => toggleRol(r.id_rol)}
                 className={filterSidebarClasses.checkbox}
               />
               {r.nombre_rol}

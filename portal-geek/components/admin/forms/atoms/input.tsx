@@ -14,7 +14,7 @@ export function Input({ label, error, required, className = "", ...props }: inpu
         </label>
       )}
       <input
-        className={`h-11 px-4 text-base rounded-md border border-gray-300 bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#e42200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${error ? "border-[#e42200]" : ""} ${className}`}
+        className={`h-12 px-4 text-[15px] rounded-[10px] border border-[#b9b8b8] bg-white text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#df2646] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${error ? "border-[#df2646]" : ""} ${className}`}
         {...props}
       />
       {error && <span className="text-xs text-[#e42200]">{error}</span>}

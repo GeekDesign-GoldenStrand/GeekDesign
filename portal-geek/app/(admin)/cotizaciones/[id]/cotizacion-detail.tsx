@@ -52,7 +52,7 @@ export default function CotizacionDetail({ id, userRole }: { id: string; userRol
 
   return (
     <div>
-      <AdminHeader title={`Cotización ${cotizacion.nombre_oportunidad || "Sin nombre"}`} />
+      <AdminHeader title={`Cotización — ${cotizacion.nombre_oportunidad || "Sin nombre"}`} />
       <CotizacionDetailPage cotizacion={cotizacion} userRole={userRole} onRefetch={refetch} />
     </div>
   );

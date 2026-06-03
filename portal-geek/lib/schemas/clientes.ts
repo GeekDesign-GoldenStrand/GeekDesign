@@ -38,7 +38,11 @@ export const CreateClienteSchema = z.object({
     .refine((v) => (v ? addressOnly(v) : true), {
       message: "La ubicación solo debe contener caracteres válidos de dirección",
     }),
-  categoria: z.enum(["Black", "Silver", "Gold", "Emprendedor", "Baneado"]).optional(),
+  // `.nullable()` so the admin can clear the column (via the "Sin categoría"
+  // option in the CategoryDropdown) — Prisma accepts `null` and the DB column
+  // is already optional. `.optional()` covers the create path where the
+  // category may simply be omitted.
+  categoria: z.enum(["Black", "Silver", "Gold", "Emprendedor", "Baneado"]).nullable().optional(),
 });
 
 export const UpdateClienteSchema = CreateClienteSchema.partial();

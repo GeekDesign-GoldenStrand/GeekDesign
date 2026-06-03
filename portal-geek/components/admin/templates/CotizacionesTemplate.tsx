@@ -21,6 +21,8 @@ export type Cotizacion = {
   archivos: { id: number; nombre: string }[];
 };
 
+type StatusOption = { label: string; value: string };
+
 // Component props
 type CotizacionesTemplateProps = {
   cotizaciones: Cotizacion[];
@@ -42,6 +44,8 @@ type CotizacionesTemplateProps = {
   setFilterFechaFinHasta: (value: string) => void;
   isArchive?: boolean;
   title?: string;
+  statusOptions?: StatusOption[];
+  resetEstatus?: string[];
 };
 
 export function CotizacionesTemplate({
@@ -63,13 +67,53 @@ export function CotizacionesTemplate({
   setFilterFechaFinHasta,
   isArchive = false,
   title = "Cotizaciones",
+  statusOptions,
+  resetEstatus = [],
 }: CotizacionesTemplateProps) {
   const pageSize = 13;
 
   const [showFilter, setShowFilter] = useState(false);
 
+  const activeFilterChips = [
+    filterCliente
+      ? {
+          key: "cliente",
+          label: `Cliente/Empresa: ${filterCliente}`,
+          clear: () => setFilterCliente(""),
+        }
+      : null,
+    ...filterEstatus.map((s) => ({
+      key: `estatus-${s}`,
+      label: s,
+      clear: () => setFilterEstatus(filterEstatus.filter((e) => e !== s)),
+    })),
+    filterFechaFinDesde
+      ? {
+          key: "desde",
+          label: `Desde: ${filterFechaFinDesde}`,
+          clear: () => setFilterFechaFinDesde(""),
+        }
+      : null,
+    filterFechaFinHasta
+      ? {
+          key: "hasta",
+          label: `Hasta: ${filterFechaFinHasta}`,
+          clear: () => setFilterFechaFinHasta(""),
+        }
+      : null,
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+  const filterCount = activeFilterChips.length;
+
+  function clearAllFilters() {
+    setFilterCliente("");
+    setFilterEstatus([]);
+    setFilterFechaFinDesde("");
+    setFilterFechaFinHasta("");
+  }
+
   // Mapping between UI labels and API values
-  const STATUS_OPTIONS = [
+  const defaultStatusOptions = [
     { label: "Pendiente", value: "Pendiente" },
     { label: "Validada", value: "Validada" },
     { label: "Aprobada", value: "Aprobada" },
@@ -88,6 +132,7 @@ export function CotizacionesTemplate({
               onSearchChange={setSearch}
               searchPlaceholder="Buscar por folio o nombre de oportunidad"
               onFiltrar={() => setShowFilter(true)}
+              filterCount={filterCount}
             />
           </div>
 
@@ -114,14 +159,44 @@ export function CotizacionesTemplate({
           )}
         </div>
 
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.clear}
+                  aria-label={`Quitar filtro ${chip.label}`}
+                  className="leading-none hover:text-[#b31a00]"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
+
         <CotizacionesFilterSidebar
           open={showFilter}
           onClose={() => setShowFilter(false)}
-          statusOptions={STATUS_OPTIONS}
+          statusOptions={statusOptions ?? defaultStatusOptions}
           filterCliente={filterCliente}
           setFilterCliente={setFilterCliente}
           filterEstatus={filterEstatus}
           setFilterEstatus={setFilterEstatus}
+          resetEstatus={resetEstatus}
           filterFechaFinDesde={filterFechaFinDesde}
           setFilterFechaFinDesde={setFilterFechaFinDesde}
           filterFechaFinHasta={filterFechaFinHasta}

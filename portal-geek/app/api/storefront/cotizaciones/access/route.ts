@@ -4,8 +4,11 @@ import { prisma } from "@/lib/db/client";
 import {
   consumeAccessToken,
   signSessionJWT,
+  signClienteJWT,
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_MAX_AGE,
+  CLIENTE_COOKIE_NAME,
+  CLIENTE_COOKIE_MAX_AGE,
 } from "@/lib/services/cotizacion-access";
 
 // KIKW12 review #1b/#2: magic-link consume endpoint.
@@ -31,9 +34,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(fallbackUrl);
   }
 
+  // Resolve folio (for redirect) and the owning cliente (to refresh the
+  // long-lived "recognized client" cookie used for checkout prefill).
   const cot = await prisma.cotizaciones.findUnique({
     where: { id_cotizacion },
-    select: { folio: true },
+    select: { folio: true, id_cliente: true },
   });
   if (!cot?.folio) {
     return NextResponse.redirect(fallbackUrl);
@@ -48,5 +53,20 @@ export async function GET(req: NextRequest) {
     path: "/",
     maxAge: SESSION_COOKIE_MAX_AGE,
   });
+
+  // The client just proved email control — set/refresh the recognized-client
+  // cookie so their next checkout prefills. Rolling the 90-day TTL on every
+  // link click keeps an active client recognized indefinitely.
+  const id_cliente = cot.id_cliente;
+  if (typeof id_cliente === "number") {
+    const clienteJwt = await signClienteJWT(id_cliente);
+    response.cookies.set(CLIENTE_COOKIE_NAME, clienteJwt, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: CLIENTE_COOKIE_MAX_AGE,
+    });
+  }
   return response;
 }

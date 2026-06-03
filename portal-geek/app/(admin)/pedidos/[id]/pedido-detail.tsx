@@ -14,7 +14,15 @@ async function fetchPedido(id: string): Promise<Pedido> {
   return json.data;
 }
 
-export default function PedidoDetail({ id, role }: { id: string; role: UserRole }) {
+export default function PedidoDetail({
+  id,
+  role,
+  detalleIds,
+}: {
+  id: string;
+  role: UserRole;
+  detalleIds?: number[] | null;
+}) {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,14 +58,12 @@ export default function PedidoDetail({ id, role }: { id: string; role: UserRole 
   if (error) return <p className="px-8 pt-6 text-sm text-[#e42200]">{error}</p>;
   if (!pedido) return null;
 
-  const title = pedido.pedido.nombre_oportunidad
-    ? `Pedido — ${pedido.pedido.nombre_oportunidad}`
-    : `Pedido #${pedido.pedido.id_pedido}`;
+  const title = `Pedido — ${pedido.pedido.nombre_oportunidad ?? "Sin nombre"}`;
 
   return (
     <div>
       <AdminHeader title={title} />
-      <PedidoDetailPage pedido={pedido} role={role} onRefetch={refetch} />
+      <PedidoDetailPage pedido={pedido} role={role} onRefetch={refetch} detalleIds={detalleIds} />
     </div>
   );
 }

@@ -60,7 +60,11 @@ describe("Servicio de Sucursales (Mock DB)", () => {
       expect(result.total).toBe(2);
 
       expect(mockFindMany).toHaveBeenCalledWith({
-        where: {},
+        where: {
+          NOT: {
+            estatus: "Eliminada",
+          },
+        },
         skip: 0,
         take: 10,
         orderBy: {
@@ -73,7 +77,11 @@ describe("Servicio de Sucursales (Mock DB)", () => {
       });
 
       expect(mockCount).toHaveBeenCalledWith({
-        where: {},
+        where: {
+          NOT: {
+            estatus: "Eliminada",
+          },
+        },
       });
     });
 
@@ -103,6 +111,9 @@ describe("Servicio de Sucursales (Mock DB)", () => {
 
       expect(mockFindMany).toHaveBeenCalledWith({
         where: {
+          NOT: {
+            estatus: "Eliminada",
+          },
           AND: [
             {
               estatus: {
@@ -124,6 +135,9 @@ describe("Servicio de Sucursales (Mock DB)", () => {
 
       expect(mockCount).toHaveBeenCalledWith({
         where: {
+          NOT: {
+            estatus: "Eliminada",
+          },
           AND: [
             {
               estatus: {

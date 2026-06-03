@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { ClientesTable, type ClientCategory } from "@/components/ui/clientes";
+import { ClientesGrid, type ClientCategory } from "@/components/ui/clientes";
 
 export function ClientesView() {
   // State for data management, loading, errors, and search
@@ -54,8 +54,9 @@ export function ClientesView() {
     fetchClientes();
   }, [fetchClientes]);
 
-  // Update client category
-  const handleUpdateCategory = async (id: number, category: ClientCategory) => {
+  // Update client category. `category` may be `null` when the admin picks
+  // "Sin categoría" — the server schema accepts null and clears the column.
+  const handleUpdateCategory = async (id: number, category: ClientCategory | null) => {
     try {
       const res = await fetch(`/api/clientes/${id}`, {
         method: "PUT",
@@ -87,7 +88,7 @@ export function ClientesView() {
             {error}
           </div>
         ) : (
-          <ClientesTable
+          <ClientesGrid
             items={clientes}
             loading={loading}
             total={total}
