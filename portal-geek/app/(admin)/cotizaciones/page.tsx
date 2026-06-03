@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import { CotizacionesTemplate } from "@/components/admin/templates/CotizacionesTemplate";
 
@@ -53,17 +53,15 @@ export default function CotizacionesPage() {
   const [filterFechaFinDesde, setFilterFechaFinDesde] = useState("");
   const [filterFechaFinHasta, setFilterFechaFinHasta] = useState("");
 
-  // Reset to page 1 whenever a filter or the search query changes — without
-  // this, applying a narrower filter while on page N can land the user on an
-  // empty page. Page itself is intentionally excluded from the deps so
-  // pagination clicks don't loop back to page 1.
-  useEffect(() => {
-    if (page !== 1) setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filterCliente, filterEstatus, filterFechaFinDesde, filterFechaFinHasta]);
+  // Buscar/filtrar mientras estás en la página N dispara dos fetches casi a la
+  // vez (uno con la página vieja, otro tras acotarla). Este contador asegura que
+  // solo la respuesta más reciente actualice el estado, evitando que una página
+  // vacía (obsoleta) sobrescriba los resultados de la búsqueda.
+  const requestIdRef = useRef(0);
 
   // Fetch quotations from API with filters and pagination
   const fetchCotizaciones = useCallback(async () => {
+    const reqId = ++requestIdRef.current;
     try {
       const params = new URLSearchParams();
       params.set("page", page.toString());
@@ -77,6 +75,21 @@ export default function CotizacionesPage() {
 
       const res = await fetch(`/api/cotizaciones?${params.toString()}`);
       const json = await res.json();
+
+      // Descarta la respuesta si ya se disparó una petición más reciente.
+      if (reqId !== requestIdRef.current) return;
+
+      // La búsqueda/filtros se aplican sobre TODOS los registros en el servidor.
+      // Si la página actual quedó fuera de rango tras filtrar, acota a la última
+      // válida en lugar de saltar a la 1: el cambio de `page` dispara un refetch
+      // que traerá datos. (Este setState ocurre tras el await, no de forma
+      // síncrona en un efecto, así que no infringe la regla de hooks.)
+      const nextTotal = json.total ?? 0;
+      const totalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
+      if (page > totalPages) {
+        setPage(totalPages);
+        return;
+      }
 
       // Map raw API response into frontend-friendly type
       const mapped: Cotizacion[] = (json.data ?? []).map((c: CotizacionApi) => ({
@@ -99,7 +112,7 @@ export default function CotizacionesPage() {
       }));
 
       setCotizaciones(mapped);
-      setTotal(json.total ?? 0);
+      setTotal(nextTotal);
     } catch {
       console.error("Error loading quotations");
     }

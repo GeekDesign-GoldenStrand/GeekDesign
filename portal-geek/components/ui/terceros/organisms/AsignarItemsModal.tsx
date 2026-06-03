@@ -199,7 +199,7 @@ export function AsignarItemsModal({
       isOpen={isOpen}
       onClose={onClose}
       ariaLabel={title}
-      size="xl"
+      size="lg"
       noPadding
       zClassName="z-[60]"
     >
@@ -306,7 +306,7 @@ export function AsignarItemsModal({
           )}
         </div>
 
-        <div className="p-6 border-t border-[#e8e8e8] flex flex-col gap-3 bg-gray-50/30">
+        <div className="p-6 flex flex-col gap-3 bg-gray-50/30">
           {saveError && (
             <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
               {saveError}

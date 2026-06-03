@@ -143,9 +143,11 @@ export function MaterialesView({ role }: { role: UserRole }) {
   const [retryAttempt, setRetryAttempt] = useState(0);
 
   useEffect(() => {
+    // La búsqueda no reinicia la página: se aplica sobre TODOS los registros en
+    // el servidor y el fetch acota la página a la última válida si quedó fuera
+    // de rango (ver clamp más abajo), igual que en sucursales.
     const id = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [search]);
@@ -169,12 +171,22 @@ export function MaterialesView({ role }: { role: UserRole }) {
       })
       .then((payload) => {
         if (abortController.signal.aborted) return;
-        const items = ((payload?.data ?? []) as MaterialApiRow[]).map((row) => mapMaterialRow(row));
         const total = payload?.total ?? 0;
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+        // Si la página actual quedó fuera de rango tras buscar/filtrar, acota a
+        // la última válida en lugar de saltar a la 1: el cambio de `page`
+        // dispara un refetch que traerá datos (nunca una página vacía).
+        if (page > pages) {
+          setPage(pages);
+          return;
+        }
+
+        const items = ((payload?.data ?? []) as MaterialApiRow[]).map((row) => mapMaterialRow(row));
         dispatch({
           type: "success",
           rows: items,
-          totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+          totalPages: pages,
         });
       })
       .catch(() => {

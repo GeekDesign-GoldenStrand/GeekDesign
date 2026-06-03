@@ -122,7 +122,7 @@ export function AsignarSucursalModal({
   onSubmit,
 }: AsignarSucursalModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Asignar sucursal" size="md" noPadding>
+    <Modal isOpen={isOpen} onClose={onClose} title="Asignar sucursal" size="lg" noPadding>
       <AsignarSucursalForm
         key={colaboradorId ?? "none"}
         colaboradorName={colaboradorName}

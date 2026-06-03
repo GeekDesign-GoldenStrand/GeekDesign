@@ -63,7 +63,7 @@ export function EditarMaterialModal({
       isOpen
       onClose={onClose}
       title={freshMaterial?.tipo === "grupo" ? "Editar Grupo de Material" : "Editar Material"}
-      size="2xl"
+      size="lg"
     >
       {isLoading && <p className="text-[#8e908f] text-[14px]">Cargando datos del material...</p>}
 

@@ -151,15 +151,27 @@ describe("PUT /api/instaladores/[id] — INST-02 Modificar instalador", () => {
     expect(res.body.error).toContain("tipo");
   });
 
-  it("retorna 422 cuando el teléfono no tiene 10 dígitos", async () => {
+  it("retorna 422 cuando el telefono supera 20 caracteres", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await makeApp("PUT", { PUT: routes.PUT })
       .put("/api/instaladores/1")
-      .send({ telefono: "12345" });
+      .send({ telefono: "1".repeat(21) });
 
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("telefono");
+  });
+
+  it("acepta telefono en formato E.164 internacional", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockUpdate.mockResolvedValue({ ...BASE_INSTALADOR, telefono: "+524421234567" });
+
+    const res = await makeApp("PUT", { PUT: routes.PUT })
+      .put("/api/instaladores/1")
+      .send({ telefono: "+524421234567" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.telefono).toBe("+524421234567");
   });
 
   it("acepta un color hexadecimal válido", async () => {
