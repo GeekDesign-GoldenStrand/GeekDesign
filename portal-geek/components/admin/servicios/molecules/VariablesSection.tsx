@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { hasCharRun, repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
+import { hasCharRun, repeatedWords } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
@@ -72,6 +72,10 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
       setError("Escribe el nombre de la variable");
       return;
     }
+    if (!/^[A-Za-záéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(draft.etiqueta.trim())) {
+      setError("El nombre solo puede contener letras");
+      return;
+    }
     if (hasCharRun(draft.etiqueta)) {
       setError("El nombre tiene letras repetidas sin coherencia.");
       return;
@@ -100,6 +104,15 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
     const valorParsed = parseFloat(draft.valor_default);
     if (isNaN(valorParsed)) {
       setError("El valor de la variable debe ser un número");
+      return;
+    }
+    if (valorParsed > 999999.99) {
+      setError("El valor no puede superar 999,999.99");
+      return;
+    }
+    const dotIdx = draft.valor_default.indexOf(".");
+    if (dotIdx !== -1 && draft.valor_default.length - dotIdx - 1 > 2) {
+      setError("Máximo 2 decimales permitidos");
       return;
     }
 
@@ -188,9 +201,12 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
             type="text"
             placeholder="Ej. Ancho de la pieza"
             value={draft.etiqueta}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, etiqueta: sanitizeUserText(e.target.value) }))
-            }
+            onChange={(e) => {
+              const next = e.target.value
+                .normalize("NFC")
+                .replace(/[^A-Za-záéíóúÁÉÍÓÚñÑüÜ ]/gu, "");
+              setDraft((d) => ({ ...d, etiqueta: next }));
+            }}
             className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
             maxLength={MAX_NOMBRE_LEN}
           />
@@ -222,7 +238,10 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
               // let slip through via paste or "e" key.
               const next = e.target.value;
               const digitCount = next.replace(/\./g, "").length;
-              if (next === "" || (/^\d*\.?\d*$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)) {
+              if (
+                next === "" ||
+                (/^\d*\.?\d{0,2}$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
+              ) {
                 setDraft((d) => ({ ...d, valor_default: next }));
               }
             }}
