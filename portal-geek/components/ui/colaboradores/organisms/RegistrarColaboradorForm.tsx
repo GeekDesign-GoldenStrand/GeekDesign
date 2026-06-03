@@ -50,6 +50,48 @@ const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function parseFechaNacimiento(value: string): string | null {
+  const trimmed = value.replace(/\s/g, "").trim();
+  if (!trimmed) return null;
+
+  const slashOrDashMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+  let day: number;
+  let month: number;
+  let year: number;
+
+  if (slashOrDashMatch) {
+    day = Number(slashOrDashMatch[1]);
+    month = Number(slashOrDashMatch[2]);
+    year = Number(slashOrDashMatch[3]);
+  } else if (isoMatch) {
+    year = Number(isoMatch[1]);
+    month = Number(isoMatch[2]);
+    day = Number(isoMatch[3]);
+  } else {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day);
+
+  const isValidDate =
+    date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+
+  if (!isValidDate) return null;
+
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function formatFechaNacimiento(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 function calcularEdad(fechaNacimiento: string): number | null {
   if (!fechaNacimiento) return null;
   const [year, month, day] = fechaNacimiento.split("-").map(Number);
@@ -77,17 +119,31 @@ export function RegistrarColaboradorForm({
     id_sucursal: "",
   });
 
+  const [fechaNacimientoText, setFechaNacimientoText] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const edad = calcularEdad(form.fecha_nacimiento);
+  const fechaNacimientoIso = parseFechaNacimiento(fechaNacimientoText);
+  const edad = fechaNacimientoIso ? calcularEdad(fechaNacimientoIso) : null;
 
   function setField(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
     setTouched((prev) => ({ ...prev, [key]: true }));
+  }
+
+  function setFechaNacimiento(value: string) {
+    const normalized = normalizeFechaNacimientoInput(value);
+
+    setFechaNacimientoText(normalized);
+    setTouched((prev) => ({ ...prev, fecha_nacimiento: true }));
+    setErrors((prev) => ({ ...prev, fecha_nacimiento: "" }));
+
+    const parsed = parseFechaNacimiento(normalized);
+    setForm((prev) => ({ ...prev, fecha_nacimiento: parsed ?? "" }));
   }
 
   function getFieldClass(key: keyof typeof form) {
@@ -96,12 +152,24 @@ export function RegistrarColaboradorForm({
     return "";
   }
 
+  function normalizeFechaNacimientoInput(value: string): string {
+    return value
+      .replace(/\s/g, "")
+      .replace(/[^\d/-]/g, "")
+      .slice(0, 10);
+  }
+
   function validate() {
-    const edadCalculada = calcularEdad(form.fecha_nacimiento);
+    const fechaNacimientoIso = parseFechaNacimiento(fechaNacimientoText);
+    const edadCalculada = fechaNacimientoIso ? calcularEdad(fechaNacimientoIso) : null;
     const fechaErrors: Record<string, string> = {};
 
-    if (!form.fecha_nacimiento) {
+    if (!fechaNacimientoText.trim()) {
       fechaErrors.fecha_nacimiento = "La fecha de nacimiento es requerida";
+    } else if (!fechaNacimientoIso) {
+      fechaErrors.fecha_nacimiento = "Usa el formato dd/mm/aaaa. Ejemplo: 02/06/1999";
+    } else if (fechaNacimientoIso > TODAY) {
+      fechaErrors.fecha_nacimiento = "La fecha de nacimiento no puede ser futura";
     } else if (!edadCalculada || edadCalculada < 16 || edadCalculada > 100) {
       fechaErrors.fecha_nacimiento = "La edad debe ser entre 16 y 100 años";
     }
@@ -212,12 +280,30 @@ export function RegistrarColaboradorForm({
           </div>
 
           <div>
-            <label className={LABEL}>Fecha de nacimiento *</label>
+            <label htmlFor="fecha_nacimiento" className={LABEL}>
+              Fecha de nacimiento *
+            </label>
             <input
-              type="date"
-              max={TODAY}
-              value={form.fecha_nacimiento}
-              onChange={(e) => setField("fecha_nacimiento", e.target.value)}
+              id="fecha_nacimiento"
+              name="fecha_nacimiento"
+              type="text"
+              inputMode="numeric"
+              autoComplete="bday"
+              placeholder="dd/mm/aaaa"
+              maxLength={10}
+              pattern="\d{2}/\d{2}/\d{4}|\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2}"
+              value={fechaNacimientoText}
+              onChange={(e) => setFechaNacimiento(e.target.value)}
+              onBlur={() => {
+                const parsed = parseFechaNacimiento(fechaNacimientoText);
+                if (parsed) {
+                  setFechaNacimientoText(formatFechaNacimiento(parsed));
+                }
+              }}
+              aria-invalid={Boolean(errors.fecha_nacimiento)}
+              aria-describedby={
+                errors.fecha_nacimiento ? "fecha_nacimiento-error" : "fecha_nacimiento-help"
+              }
               className={`${FIELD} ${
                 errors.fecha_nacimiento
                   ? FIELD_ERROR
@@ -226,7 +312,17 @@ export function RegistrarColaboradorForm({
                     : ""
               }`}
             />
-            {errors.fecha_nacimiento && <p className={ERROR_MSG}>{errors.fecha_nacimiento}</p>}
+
+            <p id="fecha_nacimiento-help" className="text-[12px] text-[#8e908f] mt-1">
+              Formato: dd/mm/aaaa. Ejemplo: 02/06/1999. No uses espacios.
+            </p>
+
+            {errors.fecha_nacimiento && (
+              <p id="fecha_nacimiento-error" role="alert" className={ERROR_MSG}>
+                {errors.fecha_nacimiento}
+              </p>
+            )}
+
             {edad !== null && !errors.fecha_nacimiento && (
               <p className="text-[13px] text-[#575757] mt-1">Edad: {edad}</p>
             )}
