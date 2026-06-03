@@ -3,11 +3,12 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
-import { formatPhoneNumber } from "@/lib/utils/format";
+import { toE164 } from "@/lib/utils/format";
 import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
@@ -40,7 +41,7 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   if (!form.correo.trim()) errs.correo = "El correo es requerido.";
   else if (!EMAIL_REGEX.test(form.correo)) errs.correo = "Correo electrónico inválido.";
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
-  else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
+  else if (!isValidPhoneNumber(form.telefono)) errs.telefono = "Número de teléfono inválido.";
   if (!["Instalador", "Contratista"].includes(form.tipo)) errs.tipo = "Seleccione un tipo válido.";
   if (form.ubicacion) {
     if (form.ubicacion.length > 100) errs.ubicacion = "Máximo 100 caracteres.";
@@ -114,7 +115,10 @@ export function EditarInstaladorModal({
   onClose,
   onSubmit,
 }: EditarInstaladorModalProps) {
-  const [form, setForm] = useState<InstaladorFormData>(initialData);
+  const [form, setForm] = useState<InstaladorFormData>(() => ({
+    ...initialData,
+    telefono: toE164(initialData.telefono),
+  }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -135,7 +139,7 @@ export function EditarInstaladorModal({
     if (touched[key]) {
       const val = form[key as keyof typeof form];
       if (key === "correo") return EMAIL_REGEX.test(val) ? FIELD_SUCCESS : "";
-      if (key === "telefono") return val && /^\d{10}$/.test(val) ? FIELD_SUCCESS : "";
+      if (key === "telefono") return val && isValidPhoneNumber(val) ? FIELD_SUCCESS : "";
       if (typeof val === "string" && val.trim()) return FIELD_SUCCESS;
     }
     return "";
@@ -261,16 +265,10 @@ export function EditarInstaladorModal({
             <label className={LABEL}>
               Teléfono <span className="text-[#e42200]">*</span>
             </label>
-            <input
-              type="tel"
-              inputMode="numeric"
-              placeholder="442 123 4567"
-              value={formatPhoneNumber(form.telefono)}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                setField("telefono", digits);
-              }}
-              className={`${FIELD} ${getFieldClass("telefono")}`}
+            <PhoneInputMX
+              value={form.telefono}
+              onChange={(e164) => setField("telefono", e164)}
+              hasError={!!allErrors.telefono}
             />
             {allErrors.telefono && <p className={ERROR_MSG}>{allErrors.telefono}</p>}
           </div>

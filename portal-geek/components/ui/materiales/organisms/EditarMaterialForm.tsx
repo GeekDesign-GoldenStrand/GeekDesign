@@ -244,7 +244,9 @@ export function EditarMaterialForm({
       )}
 
       <div>
-        <label className={LABEL}>Nombre *</label>
+        <label className={LABEL}>
+          Nombre <span className="text-[#e42200]">*</span>
+        </label>
         <input
           type="text"
           maxLength={100}
@@ -272,7 +274,9 @@ export function EditarMaterialForm({
       {needsDimensions && (
         <>
           <div>
-            <label className={LABEL}>Unidad de medida *</label>
+            <label className={LABEL}>
+              Unidad de medida <span className="text-[#e42200]">*</span>
+            </label>
             <Select
               value={form.unidad_medida}
               onChange={(v) => setField("unidad_medida", v)}
@@ -338,7 +342,9 @@ export function EditarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Descripción de color *</label>
+            <label className={LABEL}>
+              Descripción de color <span className="text-[#e42200]">*</span>
+            </label>
             <input
               type="text"
               maxLength={50}

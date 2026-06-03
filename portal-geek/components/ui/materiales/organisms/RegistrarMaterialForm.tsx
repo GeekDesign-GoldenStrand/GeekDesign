@@ -217,7 +217,9 @@ export function RegistrarMaterialForm({
       {/* Tipo selector — only shown when not locked by parent */}
       {!initialPadreId && (
         <div>
-          <label className={LABEL}>Tipo de material *</label>
+          <label className={LABEL}>
+            Tipo de material <span className="text-[#e42200]">*</span>
+          </label>
           <Select
             value={tipo}
             onChange={(v) => {
@@ -236,7 +238,9 @@ export function RegistrarMaterialForm({
       {/* Parent group selector for sub-materials */}
       {tipo === "sub" && !initialPadreId && (
         <div>
-          <label className={LABEL}>Grupo padre *</label>
+          <label className={LABEL}>
+            Grupo padre <span className="text-[#e42200]">*</span>
+          </label>
           <Select
             value={form.id_material_padre}
             onChange={(v) => setField("id_material_padre", v)}
@@ -264,7 +268,9 @@ export function RegistrarMaterialForm({
       )}
 
       <div>
-        <label className={LABEL}>Nombre *</label>
+        <label className={LABEL}>
+          Nombre <span className="text-[#e42200]">*</span>
+        </label>
         <input
           type="text"
           maxLength={100}
@@ -292,7 +298,9 @@ export function RegistrarMaterialForm({
       {needsDimensions && (
         <>
           <div>
-            <label className={LABEL}>Unidad de medida *</label>
+            <label className={LABEL}>
+              Unidad de medida <span className="text-[#e42200]">*</span>
+            </label>
             <Select
               value={form.unidad_medida}
               onChange={(v) => setField("unidad_medida", v)}
@@ -358,7 +366,9 @@ export function RegistrarMaterialForm({
           </div>
 
           <div>
-            <label className={LABEL}>Descripción de color *</label>
+            <label className={LABEL}>
+              Descripción de color <span className="text-[#e42200]">*</span>
+            </label>
             <input
               type="text"
               maxLength={50}

@@ -27,10 +27,7 @@ export const CreateInstaladorSchema = z.object({
       message: "El apodo solo debe contener caracteres en inglés o español y signos comunes",
     }),
   tipo: z.enum(["Instalador", "Contratista"]),
-  telefono: z
-    .string()
-    .min(1, "El teléfono es requerido.")
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+  telefono: z.string().min(1, "El teléfono es requerido.").max(20, "Máximo 20 caracteres."),
   correo: emailField({ max: 150, message: "Correo electrónico inválido." }),
   costo_instalacion: z.number().nonnegative("El costo de instalación no puede ser negativo."),
   notas: z.string().max(500).optional(),

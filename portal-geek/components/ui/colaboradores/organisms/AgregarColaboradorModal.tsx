@@ -32,7 +32,7 @@ export function AgregarColaboradorModal({
   sucursales,
 }: AgregarColaboradorModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Agregar Colaborador" size="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Agregar Colaborador" size="lg">
       <RegistrarColaboradorForm
         roles={roles}
         sucursales={sucursales}

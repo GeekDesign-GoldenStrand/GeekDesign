@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
-import MaquinaInput from "@/components/ui/atoms/FormInput";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import MultiSelect, {
@@ -12,6 +11,12 @@ import MultiSelect, {
 } from "@/components/ui/maquinas/molecules/MultiSelect";
 import { stripEmoji } from "@/lib/utils/format";
 import type { MaquinaCardProps } from "@/types";
+
+const FIELD =
+  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
+const FIELD_ERROR = "border-[#e42200]";
+const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
+const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 interface SucursalOption {
   id_sucursal: number;
@@ -221,7 +226,7 @@ export default function EditarMaquina({ id, isOpen, onEdit, onClose }: EditarMaq
   }
 
   return (
-    <Modal isOpen onClose={onClose} title="Editar Máquina" size="2xl">
+    <Modal isOpen onClose={onClose} title="Editar Máquina" size="lg">
       {isLoadingFresh && (
         <p className="text-[#8e908f] text-[14px]">Cargando datos de la máquina...</p>
       )}
@@ -233,86 +238,102 @@ export default function EditarMaquina({ id, isOpen, onEdit, onClose }: EditarMaq
       )}
 
       {!isLoadingFresh && !fetchError && freshData && (
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
           {serverError && (
-            <div className="rounded-md bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2 mb-4">
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
               {serverError}
             </div>
           )}
 
-          <MaquinaInput
-            name="machineName"
-            label="Modelo"
-            error={machineNameError}
-            required
-            maxInputLength={30}
-            value={machineName}
-            onChange={(e) => {
-              setMachineName(stripEmoji(e.target.value));
-              setMachineNameError(null);
-            }}
-          />
-          <MaquinaInput
-            name="machineNickname"
-            label="Apodo"
-            error={machineNicknameError}
-            required
-            maxInputLength={30}
-            value={machineNickname}
-            onChange={(e) => {
-              setMachineNickname(stripEmoji(e.target.value));
-              setMachineNicknameError(null);
-            }}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>
+                Modelo <span className="text-[#e42200]">*</span>
+              </label>
+              <input
+                name="machineName"
+                maxLength={30}
+                value={machineName}
+                onChange={(e) => {
+                  setMachineName(stripEmoji(e.target.value));
+                  setMachineNameError(null);
+                }}
+                className={`${FIELD} ${machineNameError ? FIELD_ERROR : ""}`}
+              />
+              {machineNameError && <p className={ERROR_MSG}>{machineNameError}</p>}
+            </div>
 
-          <div className="flex flex-col text-[13px] text-[#575757] mb-6">
-            <label className="font-medium">
-              Tipo <span className="text-[#e42200]">*</span>
-            </label>
-            <Select
-              value={machineType}
-              onChange={(v) => {
-                setMachineType(v);
-                setMachineTypeError(null);
-              }}
-              placeholder="Seleccionar tipo..."
-              size="sm"
-              error={machineTypeError ?? undefined}
-            >
-              <SelectOption value="Láser CO2">Láser CO2</SelectOption>
-              <SelectOption value="Láser Fibra">Láser Fibra</SelectOption>
-              <SelectOption value="Bordadora">Bordadora</SelectOption>
-            </Select>
+            <div>
+              <label className={LABEL}>
+                Apodo <span className="text-[#e42200]">*</span>
+              </label>
+              <input
+                name="machineNickname"
+                maxLength={30}
+                value={machineNickname}
+                onChange={(e) => {
+                  setMachineNickname(stripEmoji(e.target.value));
+                  setMachineNicknameError(null);
+                }}
+                className={`${FIELD} ${machineNicknameError ? FIELD_ERROR : ""}`}
+              />
+              {machineNicknameError && <p className={ERROR_MSG}>{machineNicknameError}</p>}
+            </div>
           </div>
 
-          <MaquinaInput
-            name="machineDescription"
-            label="Descripción"
-            longText
-            placeholderLongText="Área de trabajo o especificaciones de la máquina"
-            maxInputLength={200}
-            value={machineDescription}
-            onChange={(e) => setMachineDescription(stripEmoji(e.target.value))}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>
+                Tipo <span className="text-[#e42200]">*</span>
+              </label>
+              <Select
+                value={machineType}
+                onChange={(v) => {
+                  setMachineType(v);
+                  setMachineTypeError(null);
+                }}
+                placeholder="Seleccionar tipo..."
+                size="sm"
+                error={machineTypeError ?? undefined}
+              >
+                <SelectOption value="Láser CO2">Láser CO2</SelectOption>
+                <SelectOption value="Láser Fibra">Láser Fibra</SelectOption>
+                <SelectOption value="Bordadora">Bordadora</SelectOption>
+              </Select>
+            </div>
 
-          <div className="flex flex-col text-[13px] text-[#575757] mb-6">
-            <label className="font-medium">Sucursal</label>
-            <Select
-              value={selectedSucursal}
-              onChange={setSelectedSucursal}
-              placeholder="Seleccionar sucursal..."
-              size="sm"
-            >
-              {sucursalOptions.map((s) => (
-                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
-                  {s.nombre_sucursal}
-                </SelectOption>
-              ))}
-            </Select>
+            <div>
+              <label className={LABEL}>Sucursal</label>
+              <Select
+                value={selectedSucursal}
+                onChange={setSelectedSucursal}
+                placeholder="Seleccionar sucursal..."
+                size="sm"
+              >
+                {sucursalOptions.map((s) => (
+                  <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                    {s.nombre_sucursal}
+                  </SelectOption>
+                ))}
+              </Select>
+            </div>
           </div>
 
-          <div className="flex flex-col text-[13px] text-[#575757] mb-6">
-            <label className="font-medium">Servicios</label>
+          <div>
+            <label className={LABEL}>Descripción</label>
+            <textarea
+              name="machineDescription"
+              rows={4}
+              maxLength={200}
+              placeholder="Área de trabajo o especificaciones de la máquina"
+              value={machineDescription}
+              onChange={(e) => setMachineDescription(stripEmoji(e.target.value))}
+              className={`${FIELD} resize-none`}
+            />
+          </div>
+
+          <div>
+            <label className={LABEL}>Servicios</label>
             <MultiSelect
               options={servicioOptions}
               value={selectedServicios}
@@ -321,7 +342,7 @@ export default function EditarMaquina({ id, isOpen, onEdit, onClose }: EditarMaq
             />
           </div>
 
-          <div className="flex justify-end gap-3 mt-4">
+          <div className="flex justify-end gap-3 mt-2">
             <Button
               type="button"
               variant="secondary"
