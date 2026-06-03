@@ -259,7 +259,9 @@ export function FormulaVariablesForm({
             </label>
             <input
               id="cantidad"
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="^[0-9]+$"
               min={1}
               max={CANTIDAD_MAX}
               value={cantidad}
@@ -269,11 +271,10 @@ export function FormulaVariablesForm({
                   setCantidad("");
                   return;
                 }
+                if (!/^\d+$/.test(raw)) return;
                 const val = Number(raw);
-                if (!Number.isFinite(val)) return;
-                const next = Math.floor(val);
-                if (next > CANTIDAD_MAX) return;
-                setCantidad(String(Math.max(1, next)));
+                if (val > CANTIDAD_MAX) return;
+                setCantidad(String(Math.max(1, Math.floor(val))));
               }}
               onBlur={(e) => {
                 const val = e.target.value.trim();
@@ -285,6 +286,7 @@ export function FormulaVariablesForm({
                     setCalcError("El valor debe ser mayor que 0");
                   } else {
                     setCalcError(null);
+                    setCantidad(String(num));
                   }
                 }
               }}
@@ -304,18 +306,31 @@ export function FormulaVariablesForm({
               <div className="relative">
                 <input
                   id={`var-${v.id_variable}`}
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="any"
+                  pattern="^[0-9]*\.?[0-9]+$"
                   min={VAR_MIN}
                   max={VAR_MAX}
                   value={
                     Number.isFinite(values[v.nombre_variable]) ? values[v.nombre_variable] : ""
                   }
-                  onChange={(e) => handleVarChange(v.nombre_variable, e.target.value)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      // allow empty as sentinel
+                      handleVarChange(v.nombre_variable, "");
+                      return;
+                    }
+                    // Allow only digits and a single decimal point
+                    if (!/^\d*\.?\d*$/.test(raw)) return;
+                    const num = Number(raw);
+                    if (!Number.isFinite(num)) return;
+                    if (num <= VAR_MIN) return;
+                    if (num > VAR_MAX) return;
+                    handleVarChange(v.nombre_variable, raw);
+                  }}
                   onKeyDown={(e) => {
-                    // Block the minus key outright so the input visually can't
-                    // hold a negative; handleVarChange also rejects programmatically.
+                    // Block the minus and exponent keys
                     if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault();
                   }}
                   className="h-[40px] w-full rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] pr-[44px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
