@@ -152,7 +152,7 @@ export function ConstantesSection({
 
   const chipDescripcion = (c: ConstanteDraft): string => {
     if (c.origen === "global") {
-      return c.nombre_constante === "iva" ? "16% — fijo" : "Constante del sistema";
+      return c.nombre_constante === "iva" ? "16% del subtotal" : "Constante del sistema";
     }
     const partes = [
       c.id_tipo_variable ? tipoNombre(c.id_tipo_variable) : null,
