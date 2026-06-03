@@ -3,6 +3,12 @@ import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 import { evaluateFormula } from "@/lib/utils/formula-evaluator";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 
+// Profit margin applied to every quoted price. The formula yields the
+// "total cost with IVA"; the selling price marks this up so the gross profit
+// equals MARGEN_GANANCIA of the selling price (the standard "margin on sale"
+// metric, not markup on cost). Formula:  precio_final = costo / (1 - margen).
+const MARGEN_GANANCIA = 0.3;
+
 export interface CalcularPrecioInput {
   id_servicio: number;
   id_material: number;
@@ -125,7 +131,7 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
   );
   const materialTokenKey = `costo_material_${materialSlug}`;
 
-  const precioUnitario = evaluateFormula({
+  const costoTotal = evaluateFormula({
     expresion: formula.expresion,
     variables,
     constantes,
@@ -137,5 +143,10 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
     },
   });
 
-  return Math.round(precioUnitario * 100) / 100;
+  // Apply the profit margin so the quoted price yields MARGEN_GANANCIA of
+  // gross profit on the sale. Division (not multiplication) is intentional
+  // — see MARGEN_GANANCIA constant comment.
+  const precioConMargen = costoTotal / (1 - MARGEN_GANANCIA);
+
+  return Math.round(precioConMargen * 100) / 100;
 }
