@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import type { PedidoServiceOption } from "@/components/admin/molecules/PedidosServiceTabs";
 import type { ServiceStatusSummary } from "@/components/admin/molecules/ServiceStatusSemaphore";
@@ -111,23 +111,15 @@ export function PedidosView({ role }: Props) {
 
   const [services, setServices] = useState<PedidoServiceOption[]>([]);
 
-  // Reset to page 1 whenever a filter or the search query changes — see the
-  // matching effect in cotizaciones/page.tsx for the rationale.
-  useEffect(() => {
-    if (page !== 1) setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    search,
-    serviceIds,
-    clienteEmpresa,
-    estatuses,
-    fechaEstimadaDesde,
-    fechaEstimadaHasta,
-    detalleEstatuses,
-  ]);
+  // Buscar/filtrar mientras estás en la página N dispara dos fetches casi a la
+  // vez (uno con la página vieja, otro tras acotarla). Este contador asegura que
+  // solo la respuesta más reciente actualice el estado, evitando que una página
+  // vacía (obsoleta) sobrescriba los resultados de la búsqueda.
+  const requestIdRef = useRef(0);
 
   // Fetch orders from API with filters and pagination
   const fetchPedidos = useCallback(async () => {
+    const reqId = ++requestIdRef.current;
     try {
       const params = new URLSearchParams();
 
@@ -155,6 +147,21 @@ export function PedidosView({ role }: Props) {
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       const json = await res.json();
 
+      // Descarta la respuesta si ya se disparó una petición más reciente.
+      if (reqId !== requestIdRef.current) return;
+
+      // La búsqueda/filtros se aplican sobre TODOS los registros en el servidor.
+      // Si la página actual quedó fuera de rango tras filtrar, acota a la última
+      // válida en lugar de saltar a la 1: el cambio de `page` dispara un refetch
+      // que traerá datos. (Este setState ocurre tras el await, no de forma
+      // síncrona en un efecto, así que no infringe la regla de hooks.)
+      const nextTotal = json.total ?? 0;
+      const totalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
+      if (page > totalPages) {
+        setPage(totalPages);
+        return;
+      }
+
       // Map API response into frontend-friendly structure
       const mapped: Pedido[] = (json.data ?? []).map((p: PedidoApi) => ({
         id_pedido: p.id_pedido,
@@ -180,7 +187,7 @@ export function PedidosView({ role }: Props) {
       }));
 
       setPedidos(mapped);
-      setTotal(json.total ?? 0);
+      setTotal(nextTotal);
     } catch {
       console.error("Error loading orders");
     }
