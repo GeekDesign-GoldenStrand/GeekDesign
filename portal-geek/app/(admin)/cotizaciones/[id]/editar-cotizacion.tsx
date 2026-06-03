@@ -6,7 +6,6 @@ import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import {
   DISCOUNT_MAX,
   DISCOUNT_MIN,
-  DISCOUNT_STEP,
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
@@ -430,10 +429,11 @@ export default function EditarCotizacion({
               <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
                 <span className="font-medium">Porcentaje</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="^[0-9]+$"
                   min={DISCOUNT_MIN}
                   max={DISCOUNT_MAX}
-                  step={DISCOUNT_STEP}
                   value={Number.isFinite(discountPercentage) ? discountPercentage : ""}
                   onChange={(e) => {
                     setValidationError(null);
@@ -444,6 +444,7 @@ export default function EditarCotizacion({
                       return;
                     }
 
+                    if (!/^\d+$/.test(raw)) return;
                     const parsed = parseInt(raw, 10);
                     if (Number.isNaN(parsed)) {
                       setDiscountPercentage(Number.NaN);
@@ -506,13 +507,17 @@ export default function EditarCotizacion({
                   </td>
                   <td className="py-3 px-2">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="^[0-9]+$"
                       min={1}
                       max={1000}
-                      step={1}
                       value={item.cantidad}
                       onChange={(e) => {
-                        const parsed = parseInt(e.target.value, 10);
+                        const raw = e.target.value;
+                        if (raw === "") return;
+                        if (!/^\d+$/.test(raw)) return;
+                        const parsed = parseInt(raw, 10);
                         // Clamp to [1, 1000] to match the storefront cap
                         // (CarritoView + SolicitarItemSchema both use 1000).
                         const safe = Number.isFinite(parsed)
@@ -525,13 +530,17 @@ export default function EditarCotizacion({
                   </td>
                   <td className="py-3 px-2">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="^[0-9]*\.?[0-9]+$"
                       min={0}
                       max={99999.99}
-                      step={0.01}
                       value={item.precio_unitario}
                       onChange={(e) => {
-                        const parsed = parseFloat(e.target.value);
+                        const raw = e.target.value;
+                        if (raw === "") return;
+                        if (!/^\d*\.?\d*$/.test(raw)) return;
+                        const parsed = parseFloat(raw);
                         // Clamp to [0, 99,999.99]. The DB stores precio_unitario,
                         // subtotal, and monto_total as Decimal(10,2) (max
                         // 99,999,999.99). With cantidad capped at 1000,

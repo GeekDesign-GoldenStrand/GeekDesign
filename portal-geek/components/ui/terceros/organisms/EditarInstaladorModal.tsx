@@ -226,9 +226,10 @@ export function EditarInstaladorModal({
               $
             </span>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
+              pattern="^[0-9]*\.?[0-9]+$"
               min="0"
-              step="0.01"
               placeholder="0.00"
               value={form.costo_instalacion}
               onChange={(e) => {

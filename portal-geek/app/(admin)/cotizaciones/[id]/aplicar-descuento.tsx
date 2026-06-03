@@ -200,10 +200,11 @@ export default function AplicarDescuento({
               Porcentaje de descuento (%) <span className="text-[#A32D2D]">*</span>
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="^[0-9]+$"
               min={DISCOUNT_MIN}
               max={DISCOUNT_MAX}
-              step={DISCOUNT_STEP}
               value={Number.isFinite(percentage) ? percentage : ""}
               onChange={(e) => {
                 const raw = e.target.value;
@@ -211,6 +212,7 @@ export default function AplicarDescuento({
                   setPercentage(Number.NaN);
                   return;
                 }
+                if (!/^\d+$/.test(raw)) return;
                 const parsed = parseInt(raw, 10);
                 if (Number.isNaN(parsed)) {
                   setPercentage(Number.NaN);

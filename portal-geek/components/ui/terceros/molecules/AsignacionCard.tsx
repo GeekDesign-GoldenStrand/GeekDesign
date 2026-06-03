@@ -82,9 +82,10 @@ export function AsignacionCard({
                   $
                 </span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^[0-9]*\.?[0-9]+$"
                   min="0"
-                  step="0.01"
                   value={price}
                   onChange={(e) => {
                     const raw = e.target.value;
