@@ -9,6 +9,7 @@ import {
   DISCOUNT_STEP,
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
+import { isAllowedNumericKey, isAllowedNumericPaste } from "@/lib/utils/numeric-input";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { UserRole } from "@/types";
 import type { LineItem } from "@/types/cotizacion";
@@ -431,10 +432,18 @@ export default function EditarCotizacion({
                 <span className="font-medium">Porcentaje</span>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min={DISCOUNT_MIN}
                   max={DISCOUNT_MAX}
                   step={DISCOUNT_STEP}
                   value={Number.isFinite(discountPercentage) ? discountPercentage : ""}
+                  onKeyDown={(e) => {
+                    if (!isAllowedNumericKey(e, { allowDecimal: false })) e.preventDefault();
+                  }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text").trim();
+                    if (!isAllowedNumericPaste(text, { allowDecimal: false })) e.preventDefault();
+                  }}
                   onChange={(e) => {
                     setValidationError(null);
 
@@ -507,10 +516,19 @@ export default function EditarCotizacion({
                   <td className="py-3 px-2">
                     <input
                       type="number"
+                      inputMode="numeric"
                       min={1}
                       max={1000}
                       step={1}
                       value={item.cantidad}
+                      onKeyDown={(e) => {
+                        if (!isAllowedNumericKey(e, { allowDecimal: false })) e.preventDefault();
+                      }}
+                      onPaste={(e) => {
+                        const text = e.clipboardData.getData("text").trim();
+                        if (!isAllowedNumericPaste(text, { allowDecimal: false }))
+                          e.preventDefault();
+                      }}
                       onChange={(e) => {
                         const parsed = parseInt(e.target.value, 10);
                         // Clamp to [1, 1000] to match the storefront cap
@@ -526,10 +544,19 @@ export default function EditarCotizacion({
                   <td className="py-3 px-2">
                     <input
                       type="number"
+                      inputMode="decimal"
                       min={0}
                       max={99999.99}
                       step={0.01}
                       value={item.precio_unitario}
+                      onKeyDown={(e) => {
+                        if (!isAllowedNumericKey(e, { allowDecimal: true })) e.preventDefault();
+                      }}
+                      onPaste={(e) => {
+                        const text = e.clipboardData.getData("text").trim();
+                        if (!isAllowedNumericPaste(text, { allowDecimal: true }))
+                          e.preventDefault();
+                      }}
                       onChange={(e) => {
                         const parsed = parseFloat(e.target.value);
                         // Clamp to [0, 99,999.99]. The DB stores precio_unitario,

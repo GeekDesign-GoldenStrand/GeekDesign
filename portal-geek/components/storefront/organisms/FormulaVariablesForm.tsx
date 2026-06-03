@@ -7,6 +7,7 @@ import type { UploadedFile } from "@/components/storefront/molecules/DesignUploa
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { addItem, CANTIDAD_MAX } from "@/lib/cart/storage";
+import { isAllowedNumericKey, isAllowedNumericPaste } from "@/lib/utils/numeric-input";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -260,9 +261,17 @@ export function FormulaVariablesForm({
             <input
               id="cantidad"
               type="number"
+              inputMode="numeric"
               min={1}
               max={CANTIDAD_MAX}
               value={cantidad}
+              onKeyDown={(e) => {
+                if (!isAllowedNumericKey(e, { allowDecimal: false })) e.preventDefault();
+              }}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text").trim();
+                if (!isAllowedNumericPaste(text, { allowDecimal: false })) e.preventDefault();
+              }}
               onChange={(e) => {
                 const raw = e.target.value;
                 if (raw === "") {
@@ -314,9 +323,15 @@ export function FormulaVariablesForm({
                   }
                   onChange={(e) => handleVarChange(v.nombre_variable, e.target.value)}
                   onKeyDown={(e) => {
-                    // Block the minus key outright so the input visually can't
-                    // hold a negative; handleVarChange also rejects programmatically.
-                    if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault();
+                    // Safari < 17 doesn't enforce type="number" at the keystroke
+                    // layer — letters land in the field. The allowlist rejects
+                    // anything that isn't a digit / decimal / navigation key,
+                    // which also covers the legacy "-", "e", "E" blocks.
+                    if (!isAllowedNumericKey(e, { allowDecimal: true })) e.preventDefault();
+                  }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text").trim();
+                    if (!isAllowedNumericPaste(text, { allowDecimal: true })) e.preventDefault();
                   }}
                   className="h-[40px] w-full rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] pr-[44px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
                 />

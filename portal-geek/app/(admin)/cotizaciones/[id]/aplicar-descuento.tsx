@@ -12,6 +12,7 @@ import {
   DISCOUNT_STEP,
   validateDescuentoPercentage,
 } from "@/lib/schemas/cotizaciones";
+import { isAllowedNumericKey, isAllowedNumericPaste } from "@/lib/utils/numeric-input";
 
 function fmt(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -201,10 +202,18 @@ export default function AplicarDescuento({
             </label>
             <input
               type="number"
+              inputMode="numeric"
               min={DISCOUNT_MIN}
               max={DISCOUNT_MAX}
               step={DISCOUNT_STEP}
               value={Number.isFinite(percentage) ? percentage : ""}
+              onKeyDown={(e) => {
+                if (!isAllowedNumericKey(e, { allowDecimal: false })) e.preventDefault();
+              }}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text").trim();
+                if (!isAllowedNumericPaste(text, { allowDecimal: false })) e.preventDefault();
+              }}
               onChange={(e) => {
                 const raw = e.target.value;
                 if (raw === "") {

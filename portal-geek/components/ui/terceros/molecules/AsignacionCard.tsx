@@ -1,3 +1,5 @@
+import { isAllowedNumericKey, isAllowedNumericPaste } from "@/lib/utils/numeric-input";
+
 interface AsignacionCardProps {
   id: number;
   name: string;
@@ -83,9 +85,17 @@ export function AsignacionCard({
                 </span>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.01"
                   value={price}
+                  onKeyDown={(e) => {
+                    if (!isAllowedNumericKey(e, { allowDecimal: true })) e.preventDefault();
+                  }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text").trim();
+                    if (!isAllowedNumericPaste(text, { allowDecimal: true })) e.preventDefault();
+                  }}
                   onChange={(e) => {
                     const raw = e.target.value;
                     if (raw === "" || /^\d{0,6}(\.\d{0,2})?$/.test(raw)) onPriceChange(raw);

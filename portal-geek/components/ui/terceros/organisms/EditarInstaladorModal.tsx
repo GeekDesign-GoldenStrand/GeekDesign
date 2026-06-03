@@ -9,6 +9,7 @@ import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
 import { formatPhoneNumber } from "@/lib/utils/format";
 import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
+import { isAllowedNumericKey, isAllowedNumericPaste } from "@/lib/utils/numeric-input";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -227,10 +228,18 @@ export function EditarInstaladorModal({
             </span>
             <input
               type="number"
+              inputMode="decimal"
               min="0"
               step="0.01"
               placeholder="0.00"
               value={form.costo_instalacion}
+              onKeyDown={(e) => {
+                if (!isAllowedNumericKey(e, { allowDecimal: true })) e.preventDefault();
+              }}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text").trim();
+                if (!isAllowedNumericPaste(text, { allowDecimal: true })) e.preventDefault();
+              }}
               onChange={(e) => {
                 const raw = e.target.value;
                 if (isValidMoneyInput(raw)) setField("costo_instalacion", raw);

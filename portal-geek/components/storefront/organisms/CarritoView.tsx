@@ -13,6 +13,7 @@ import {
   CANTIDAD_MAX,
   type CarritoItem,
 } from "@/lib/cart/storage";
+import { isAllowedNumericKey, isAllowedNumericPaste } from "@/lib/utils/numeric-input";
 interface RelatedService {
   id_servicio: number;
   nombre_servicio: string;
@@ -246,9 +247,19 @@ export function CarritoView({ relatedServices }: Props) {
                           </span>
                           <input
                             type="number"
+                            inputMode="numeric"
                             min={1}
                             max={CANTIDAD_MAX}
                             value={item.cantidad}
+                            onKeyDown={(e) => {
+                              if (!isAllowedNumericKey(e, { allowDecimal: false }))
+                                e.preventDefault();
+                            }}
+                            onPaste={(e) => {
+                              const text = e.clipboardData.getData("text").trim();
+                              if (!isAllowedNumericPaste(text, { allowDecimal: false }))
+                                e.preventDefault();
+                            }}
                             onChange={(e) => {
                               const val = Number(e.target.value);
                               if (!Number.isFinite(val)) return;
