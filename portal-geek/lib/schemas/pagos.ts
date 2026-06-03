@@ -17,5 +17,23 @@ export const PagoIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// ST-17 §0 — Dirección fija el anticipo de un pedido. Permite 0 para "sin
+// anticipo" (el cliente pagará el total de una sola vez).
+export const SetAnticipoSchema = z.object({
+  monto_anticipo: z.number().nonnegative(),
+});
+
+// ST-17 §2 — el storefront solicita crear la preferencia de pago para un folio.
+export const PreferenciaInputSchema = z.object({
+  folio: z.string().trim().min(1).max(50),
+});
+
+// ST-17 §1 — consulta del saldo por folio (query param).
+export const SaldoQuerySchema = z.object({
+  folio: z.string().trim().min(1).max(50),
+});
+
 export type CreatePagoInput = z.infer<typeof CreatePagoSchema>;
 export type UpdatePagoInput = z.infer<typeof UpdatePagoSchema>;
+export type SetAnticipoInput = z.infer<typeof SetAnticipoSchema>;
+export type PreferenciaInput = z.infer<typeof PreferenciaInputSchema>;

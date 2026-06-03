@@ -85,6 +85,24 @@ export async function issueAccessToken(params: {
 }
 
 /**
+ * Mint a single-use magic-link token for a cotización and return the
+ * authenticated access URL — WITHOUT sending an email. Callers that need to
+ * embed the link in their own email (e.g. ST-17 payment-ready notice) use this;
+ * issueAccessToken above is the email-sending variant. Throws on DB failure so
+ * the caller can decide how to handle it.
+ */
+export async function createAccessLink(id_cotizacion: number): Promise<string> {
+  const raw = crypto.randomBytes(32).toString("hex");
+  const token_hash = hashToken(raw);
+  const expira_en = new Date(Date.now() + TOKEN_TTL_MS);
+  await prisma.tokensAccesoCotizacion.create({
+    data: { id_cotizacion, token_hash, expira_en },
+  });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `${appUrl}/api/storefront/cotizaciones/access?token=${raw}`;
+}
+
+/**
  * Consume a raw magic-link token. Returns id_cotizacion on success.
  * Throws NotFoundError on invalid/expired/used token (generic message so we
  * don't disclose which arm failed).
