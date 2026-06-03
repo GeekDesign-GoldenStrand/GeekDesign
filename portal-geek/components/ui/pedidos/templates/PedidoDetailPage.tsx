@@ -6,6 +6,7 @@ import EditarPedido from "@/app/(admin)/pedidos/[id]/editar-pedido";
 import type { UserRole } from "@/types";
 import type { OrdenGenerada, Pedido } from "@/types/pedido";
 
+import { PedidoAnticipoCard } from "../molecules/PedidoAnticipoCard";
 import { PedidoClienteCard } from "../molecules/PedidoClienteCard";
 import { PedidoDetallesTable } from "../molecules/PedidoDetallesTable";
 import { PedidoGeneralCard } from "../molecules/PedidoGeneralCard";
@@ -129,8 +130,15 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
         <PedidoDetallesTable detalle={pedido.detalle} detalleIds={detalleIds} />
       </div>
 
-      <div className="mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <PedidoPagosCard pagos={pedido.pagos} />
+        {(role === "Direccion" || role === "Administrador") && (
+          <PedidoAnticipoCard
+            idPedido={pedido.pedido.id_pedido}
+            montoAnticipo={pedido.pedido.monto_anticipo}
+            onSaved={onRefetch}
+          />
+        )}
       </div>
 
       <div className="mb-4">

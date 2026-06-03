@@ -53,6 +53,7 @@ export interface PedidoInfo {
   numero_factura: string | null;
   notas: string | null;
   nombre_oportunidad?: string | null;
+  monto_anticipo: string | null; // ST-17: anticipo fijado por Dirección (Decimal serializado)
   estatus: { descripcion: string };
   estado_factura: { descripcion: string } | null;
   sucursal: { nombre_sucursal: string | null } | null;

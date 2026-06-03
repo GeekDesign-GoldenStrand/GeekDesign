@@ -6,15 +6,23 @@ import Link from "next/link";
 import { QuotationDetailView } from "@/components/storefront/organisms/QuotationDetailView";
 import { SESSION_COOKIE_NAME, readSessionCotizacionId } from "@/lib/services/cotizacion-access";
 import { getCotizacion, getCotizacionByFolio } from "@/lib/services/cotizaciones";
+import { getSaldoByCotizacion } from "@/lib/services/pagos";
 
 export const metadata: Metadata = { title: "Detalle de cotización" };
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ pago?: string }>;
 }
 
-export default async function CotizacionDetallePage({ params }: Props) {
+export default async function CotizacionDetallePage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { pago: pagoParam } = searchParams ? await searchParams : {};
+  // ST-17: Mercado Pago back_url result (UX only — webhook is authoritative).
+  const pagoResultado =
+    pagoParam === "success" || pagoParam === "pending" || pagoParam === "failure"
+      ? pagoParam
+      : null;
 
   // KIKW12 review #1b/#2: the magic-link consume handler set a signed JWT
   // session cookie; we read it server-side and only render when its
@@ -128,9 +136,20 @@ export default async function CotizacionDetallePage({ params }: Props) {
           }),
   };
 
+  // ST-17: derive payment progress + amount due once the cotización is approved
+  // and a pedido exists. Failure (e.g. no pedido yet) just hides the pay UI.
+  let pago = null;
+  if (quote.pedido) {
+    try {
+      pago = await getSaldoByCotizacion(quote.id_cotizacion);
+    } catch {
+      pago = null;
+    }
+  }
+
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
-      <QuotationDetailView quotation={mappedQuotation} />
+      <QuotationDetailView quotation={mappedQuotation} pago={pago} pagoResultado={pagoResultado} />
     </div>
   );
 }

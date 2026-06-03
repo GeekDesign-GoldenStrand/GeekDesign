@@ -47,6 +47,16 @@ interface Quotation {
   } | null;
 }
 
+// ST-17: derived payment progress + amount due for online payment.
+interface PagoInfo {
+  total: number;
+  pagado: number;
+  saldo: number;
+  montoDue: number;
+  concepto: "anticipo" | "saldo" | "completo";
+  progreso: "Pendiente" | "Anticipo cubierto" | "Pago completo";
+}
+
 // ST-16: map raw EstadoFacturaPedido.descripcion → user-friendly Spanish label.
 // The DB uses snake_case-ish codes (e.g. "Aprobacion_diseno"); cliente sees the label.
 const ESTADO_FACTURA_LABEL: Record<string, string> = {
@@ -80,18 +90,49 @@ function getSiguientePasoFactura(actual: string | null | undefined): string | nu
   return ESTADO_FACTURA_LABEL[FACTURA_FLOW[idx + 1]] ?? FACTURA_FLOW[idx + 1];
 }
 
+// ST-17 — result of the Mercado Pago redirect (back_url ?pago=...). UX only;
+// the authoritative confirmation arrives via webhook (D2).
+type PagoResultado = "success" | "pending" | "failure";
+
 interface Props {
   quotation: Quotation;
+  pago?: PagoInfo | null;
+  pagoResultado?: PagoResultado | null;
 }
 
 const formatPeso = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 
-export function QuotationDetailView({ quotation }: Props) {
+export function QuotationDetailView({ quotation, pago, pagoResultado }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [showPagoBanner, setShowPagoBanner] = useState(true);
+
+  // ST-17 §2 — create the Mercado Pago preference, then redirect to Checkout Pro.
+  const handlePagar = async () => {
+    if (!quotation.folio) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      const res = await fetch("/api/storefront/pagos/preferencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folio: quotation.folio }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.data?.initPoint) {
+        throw new Error(json.error ?? "No se pudo iniciar el pago");
+      }
+      window.location.href = json.data.initPoint;
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "No se pudo iniciar el pago");
+      setPaying(false);
+    }
+  };
 
   // KIKW12 review #1b: no client-side email/cookie reading. The HTTP-only
   // cotizacion_session cookie set by the magic-link consume handler is
@@ -301,6 +342,55 @@ export function QuotationDetailView({ quotation }: Props) {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="max-w-[1240px] mx-auto py-10 px-4 space-y-12"
     >
+      {/* ST-17 — payment redirect result (back_url). Informational only; the
+          definitive status comes from the webhook, so we say "confirmando". */}
+      {pagoResultado && showPagoBanner && (
+        <div
+          role="status"
+          className={`flex items-start gap-4 rounded-[16px] border p-5 ${
+            pagoResultado === "success"
+              ? "bg-[#F0FBF4] border-[#bbe7cb] text-[#13713a]"
+              : pagoResultado === "pending"
+                ? "bg-[#FFFBEB] border-[#f3e2a8] text-[#8a6d12]"
+                : "bg-[#FFF1F1] border-[#f5c2c2] text-[#a01515]"
+          }`}
+        >
+          <div className="shrink-0 mt-0.5">
+            {pagoResultado === "success" ? (
+              <CheckCircle size={24} weight="bold" />
+            ) : pagoResultado === "pending" ? (
+              <Clock size={24} weight="bold" />
+            ) : (
+              <XCircle size={24} weight="bold" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-[16px]">
+              {pagoResultado === "success"
+                ? "Recibimos tu pago"
+                : pagoResultado === "pending"
+                  ? "Tu pago está pendiente"
+                  : "El pago no se completó"}
+            </p>
+            <p className="text-[14px] font-medium opacity-90">
+              {pagoResultado === "success"
+                ? "Estamos confirmando el pago con Mercado Pago. El estado de tu pedido se actualizará en unos momentos."
+                : pagoResultado === "pending"
+                  ? "Si pagaste en OXXO o por transferencia (SPEI), la confirmación puede tardar. Te avisaremos por correo cuando se acredite."
+                  : "No se realizó ningún cargo. Puedes intentar pagar de nuevo cuando quieras."}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Cerrar"
+            onClick={() => setShowPagoBanner(false)}
+            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <XCircle size={20} weight="bold" />
+          </button>
+        </div>
+      )}
+
       {/* Folio and Date */}
       <div>
         <h2 className="text-[24px] font-bold text-[#1e1e1e]">
@@ -400,6 +490,60 @@ export function QuotationDetailView({ quotation }: Props) {
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ST-17 — Pago en línea con Mercado Pago. Barra de progreso financiero
+          (Anticipo cubierto 70% / Pago completo 100%) + botón de pago. */}
+      {quotation.estatus === "Aprobada" && quotation.pedido && pago && (
+        <div className="bg-white rounded-[16px] border border-[#E8E8E8] shadow-[0_8px_30px_rgba(0,0,0,0.02)] p-6 md:p-8">
+          <p className="text-[11px] font-bold text-[#8e908f] uppercase tracking-[1.2px] mb-3">
+            Pago del pedido
+          </p>
+          <div className="flex items-center justify-between text-[14px] text-[#575757] font-medium mb-1">
+            <span>
+              Pagado: <span className="font-bold text-[#1e1e1e]">{formatPeso(pago.pagado)}</span> de{" "}
+              {formatPeso(pago.total)}
+            </span>
+            <span className="font-bold text-[#1e1e1e]">{pago.progreso}</span>
+          </div>
+          <div className="w-full h-3 rounded-full bg-[#F0F0F0] overflow-hidden mb-5">
+            <div
+              className={`h-full rounded-full transition-all ${
+                pago.progreso === "Pago completo"
+                  ? "bg-[#1a8d4c]"
+                  : pago.progreso === "Anticipo cubierto"
+                    ? "bg-[#E8B400]"
+                    : "bg-[#E8E8E8]"
+              }`}
+              style={{
+                width: `${pago.total > 0 ? Math.min(100, Math.round((pago.pagado / pago.total) * 100)) : 0}%`,
+              }}
+            />
+          </div>
+
+          {pago.montoDue > 0 ? (
+            <>
+              <p className="text-[15px] text-[#575757] mb-4">
+                {pago.concepto === "anticipo"
+                  ? "Cubre el anticipo para iniciar tu pedido:"
+                  : pago.concepto === "saldo"
+                    ? "Cubre el saldo restante de tu pedido:"
+                    : "Realiza el pago de tu pedido:"}{" "}
+                <span className="font-bold text-[#1e1e1e]">{formatPeso(pago.montoDue)}</span>
+              </p>
+              <Button section="storefront" size="lg" loading={paying} onClick={handlePagar}>
+                {paying ? "Redirigiendo a Mercado Pago…" : "Pagar con Mercado Pago"}
+              </Button>
+              {payError && (
+                <p className="text-[13px] text-[#DF2646] font-medium mt-3">{payError}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-[15px] text-[#1a8d4c] font-semibold">
+              Este pedido ya está pagado por completo. ¡Gracias!
+            </p>
+          )}
         </div>
       )}
 
