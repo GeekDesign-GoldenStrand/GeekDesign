@@ -247,7 +247,7 @@ export function ConstantesSection({
                   const digitCount = next.replace(/\./g, "").length;
                   if (
                     next === "" ||
-                    (/^\d*\.?\d*$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
+                    (/^\d*\.?\d{0,2}$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
                   ) {
                     setDraft((d) => ({ ...d, valor: next }));
                   }

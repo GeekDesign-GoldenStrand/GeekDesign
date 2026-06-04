@@ -308,7 +308,7 @@ export function FormulaVariablesForm({
                   id={`var-${v.id_variable}`}
                   type="text"
                   inputMode="decimal"
-                  pattern="^[0-9]*\.?[0-9]+$"
+                  pattern="^[0-9]*\.?[0-9]{0,2}$"
                   min={VAR_MIN}
                   max={VAR_MAX}
                   value={
@@ -322,7 +322,7 @@ export function FormulaVariablesForm({
                       return;
                     }
                     // Allow only digits and a single decimal point
-                    if (!/^\d*\.?\d*$/.test(raw)) return;
+                    if (!/^\d*\.?\d{0,2}$/.test(raw)) return;
                     const num = Number(raw);
                     if (!Number.isFinite(num)) return;
                     if (num <= VAR_MIN) return;

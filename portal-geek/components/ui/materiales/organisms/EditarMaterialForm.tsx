@@ -300,7 +300,7 @@ export function EditarMaterialForm({
               <input
                 type="text"
                 inputMode="decimal"
-                pattern="^[0-9]*\.?[0-9]+$"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
                 min="0"
                 placeholder="0.00"
                 value={form.ancho}
@@ -316,7 +316,7 @@ export function EditarMaterialForm({
               <input
                 type="text"
                 inputMode="decimal"
-                pattern="^[0-9]*\.?[0-9]+$"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
                 min="0"
                 placeholder="0.00"
                 value={form.alto}
@@ -332,7 +332,7 @@ export function EditarMaterialForm({
               <input
                 type="text"
                 inputMode="decimal"
-                pattern="^[0-9]*\.?[0-9]+$"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
                 min="0"
                 placeholder="0.00"
                 value={form.grosor}

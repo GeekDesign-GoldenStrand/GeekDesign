@@ -222,7 +222,10 @@ export function VariablesSection({ tiposDisponibles, variables, onChange }: Vari
               // let slip through via paste or "e" key.
               const next = e.target.value;
               const digitCount = next.replace(/\./g, "").length;
-              if (next === "" || (/^\d*\.?\d*$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)) {
+              if (
+                next === "" ||
+                (/^\d*\.?\d{0,2}$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
+              ) {
                 setDraft((d) => ({ ...d, valor_default: next }));
               }
             }}

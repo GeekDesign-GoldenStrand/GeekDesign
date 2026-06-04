@@ -578,14 +578,14 @@ export default function EditarCotizacion({
                       <input
                         type="text"
                         inputMode="decimal"
-                        pattern="^[0-9]*\.?[0-9]+$"
+                        pattern="^[0-9]*\.?[0-9]{0,2}$"
                         min={0}
                         max={99999.99}
                         value={item.precio_unitario}
                         onChange={(e) => {
                           const raw = e.target.value;
                           if (raw === "") return;
-                          if (!/^\d*\.?\d*$/.test(raw)) return;
+                          if (!/^\d*\.?\d{0,2}$/.test(raw)) return;
                           const parsed = parseFloat(raw);
                           // Clamp to [0, 99,999.99]. The DB stores precio_unitario,
                           // subtotal, and monto_total as Decimal(10,2) (max

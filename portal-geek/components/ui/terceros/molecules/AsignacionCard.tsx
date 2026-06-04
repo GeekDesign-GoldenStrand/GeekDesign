@@ -84,7 +84,7 @@ export function AsignacionCard({
                 <input
                   type="text"
                   inputMode="decimal"
-                  pattern="^[0-9]*\.?[0-9]+$"
+                  pattern="^[0-9]*\.?[0-9]{0,2}$"
                   min="0"
                   value={price}
                   onChange={(e) => {
