@@ -222,6 +222,47 @@ export function MaterialesSection({
       .catch(() => {});
   }, [enabled]);
 
+  // Backfill proveedores for materiales loaded from initialData (edit mode).
+  // handleAddLeaf / handleGroupConfirm populate proveedoresByMaterial on insert,
+  // but pre-existing materiales arrive with their id_proveedor_precio set and
+  // no cached list — so the row falls into the `proveedores.length === 0`
+  // branch and shows "Sin proveedor asignado" until we fetch them here.
+  // The early return on `missing.length === 0` keeps the effect from looping
+  // even though proveedoresByMaterial is in the deps.
+  useEffect(() => {
+    if (!enabled) return;
+    const missing = materiales
+      .map((m) => m.id_material)
+      .filter((id) => !(id in proveedoresByMaterial));
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    Promise.all(
+      missing.map(async (id) => {
+        try {
+          const res = await fetch(`/api/proveedor-precios?id_material=${id}`);
+          const json = await res.json();
+          return [id, (json.data ?? []) as ProveedorPrecioOption[]] as const;
+        } catch {
+          return [id, [] as ProveedorPrecioOption[]] as const;
+        }
+      })
+    ).then((results) => {
+      if (cancelled) return;
+      setProveedoresByMaterial((prev) => {
+        const next = { ...prev };
+        for (const [id, list] of results) {
+          next[id] = list;
+        }
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, materiales, proveedoresByMaterial]);
+
   const selectedIds = new Set(materiales.map((m) => m.id_material));
 
   // A leaf is a "variant" only when its parent is a grupo. Anything else — no

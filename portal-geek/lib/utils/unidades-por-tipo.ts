@@ -6,12 +6,12 @@
 // Keys match the seed in prisma/seed.ts. Values match the short symbols stored
 // in FormulaVariables.unidad.
 const UNIDADES_POR_TIPO: Record<string, readonly string[]> = {
-  Dimensión: ["cm", "cm²", "m", "m²"],
+  Dimensión: ["mm", "mm²", "cm", "cm²", "m", "m²"],
   Cantidad: ["pz", "u"],
   "Costo adicional": ["$"],
   "Costo de material": ["$"],
   Descuento: ["%"],
-  Tiempo: ["min", "h"],
+  Tiempo: ["ms", "s", "min", "h"],
 };
 
 // Returns the allowed unit values for a tipo by name, or null when the tipo

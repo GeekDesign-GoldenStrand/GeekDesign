@@ -47,15 +47,41 @@ describe("evaluateFormula — happy path", () => {
     expect(result).toBe(225);
   });
 
-  it("inyecta iva = 0.16 automáticamente", () => {
+  it("`+ iva` agrega 16% del subtotal (two-pass)", () => {
+    // Under the new semantics, iva resolves to (subtotal * 0.16) so
+    // `base + iva` produces `base * 1.16`. Pass 1 evaluates with iva=0
+    // (subtotal=100); pass 2 sets iva=100*0.16=16; final = 100 + 16 = 116.
     const result = evaluateFormula({
-      expresion: "100 * (1 + iva)",
+      expresion: "100 + iva",
       variables: [],
       constantes: [],
       implicits: ZERO_IMPLICITS,
     });
     expect(result).toBeCloseTo(116);
     expect(IVA_MX).toBe(0.16);
+  });
+
+  it("iva escala con el subtotal — no es una tasa fija de 0.16", () => {
+    // 500 + iva = 500 * 1.16 = 580 (no 500.16)
+    const result = evaluateFormula({
+      expresion: "500 + iva",
+      variables: [],
+      constantes: [],
+      implicits: ZERO_IMPLICITS,
+    });
+    expect(result).toBeCloseTo(580);
+  });
+
+  it("fórmulas sin `iva` no se ven afectadas por la doble pasada", () => {
+    // Sanity check: an expression that doesn't reference iva yields the same
+    // number under the two-pass algorithm as it would under a single pass.
+    const result = evaluateFormula({
+      expresion: "ancho * 2 + 10",
+      variables: [variable("ancho", 5)],
+      constantes: [],
+      implicits: ZERO_IMPLICITS,
+    });
+    expect(result).toBe(20);
   });
 
   it("expone costo_instalador y costo_proveedor desde implícitos", () => {
