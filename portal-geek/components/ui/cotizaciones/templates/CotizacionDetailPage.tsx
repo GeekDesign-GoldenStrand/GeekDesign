@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from "react";
 
-import AplicarDescuento from "@/app/(admin)/cotizaciones/[id]/aplicar-descuento";
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
@@ -21,7 +20,7 @@ import { NotasCard } from "../molecules/NotasCard";
 import { CotizacionHeader } from "../organisms/CotizacionHeader";
 import { CotizacionSummary } from "../organisms/CotizacionSummary";
 
-type ActivePanel = "edit" | "discount" | null;
+type ActivePanel = "edit" | null;
 
 interface CotizacionDetailPageProps {
   cotizacion: Cotizacion;
@@ -142,11 +141,6 @@ export function CotizacionDetailPage({
   // — keeps this in lock-step with the backend if the catalog string ever
   // changes.
   const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
-  // PATCH /api/cotizaciones/[id]/descuento requires Direccion. Mirror that
-  // gate here so non-Direccion users don't see discount affordances that
-  // would 403 on save — the discount inputs in the edit modal are also
-  // hidden via userRole there.
-  const canManageDiscount = isMutable && userRole === "Direccion";
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -179,15 +173,6 @@ export function CotizacionDetailPage({
           setShowSuccessModal(true);
         }}
       />
-      <AplicarDescuento
-        idCotizacion={cotizacion.id_cotizacion}
-        baseAmount={baseAmount}
-        isOpen={activePanel === "discount"}
-        initialPercentage={porcentajeDescuento || undefined}
-        initialMotivo={cotizacion.motivo_descuento ?? undefined}
-        onApplied={handleDiscountApplied}
-        onClose={() => setActivePanel(null)}
-      />
 
       <CotizacionSummary
         montoTotal={montoTotalActual}
@@ -196,12 +181,10 @@ export function CotizacionDetailPage({
         fechaCreacion={cotizacion.fecha_creacion}
         fechaEntrega={fields.fecha_fin || cotizacion.fecha_fin}
         servicios={fields.servicios}
-        // Trash icon on the discount ribbon is only wired when the quote
-        // can still be mutated AND the viewer is Direccion — withholding
-        // the callback hides the button in CotizacionSummary (it gates on
-        // the prop being defined). Without the role check, other roles
-        // would see the icon and hit a 403 on click.
-        onDeleteDiscount={canManageDiscount ? () => togglePanel("discount") : undefined}
+        // The standalone discount modal has been removed, so the trash icon
+        // no longer has a dedicated delete flow to trigger. To clear a discount,
+        // users now open the edit modal and clear the discount input.
+        onDeleteDiscount={undefined}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

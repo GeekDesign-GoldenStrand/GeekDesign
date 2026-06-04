@@ -198,9 +198,13 @@ describe("EditarCotizacion discount editing", () => {
     });
   });
 
-  it("shows a validation error and does not submit when discount is empty", async () => {
+  it("clears the discount when the input is empty", async () => {
     const user = userEvent.setup();
-    await setupReady();
+    // Setup with an existing discount so clearing it counts as a change
+    await setupReady({
+      porcentajeDescuento: 10,
+      motivoDescuento: "Motivo inicial",
+    });
 
     fireEvent.change(screen.getByLabelText("Porcentaje"), {
       target: { value: "" },
@@ -208,16 +212,17 @@ describe("EditarCotizacion discount editing", () => {
 
     await user.click(screen.getByRole("button", { name: "Guardar" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Ingresa un número entero");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
-    expect(mockFetch).not.toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       "/api/cotizaciones/123/descuento",
-      expect.anything()
-    );
-
-    expect(mockFetch).not.toHaveBeenCalledWith(
-      "/api/cotizaciones/123",
-      expect.objectContaining({ method: "PUT" })
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          porcentaje_descuento: null,
+          motivo_descuento: null,
+        }),
+      })
     );
   });
 

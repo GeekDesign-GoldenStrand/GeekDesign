@@ -67,9 +67,9 @@ function discountFieldsAreEqual(
   initialPercentage?: number | null,
   initialMotivo?: string | null
 ): boolean {
+  const currentPct = Number.isFinite(currentPercentage) ? currentPercentage : 0;
   return (
-    currentPercentage === (initialPercentage ?? 0) &&
-    currentMotivo.trim() === (initialMotivo ?? "").trim()
+    currentPct === (initialPercentage ?? 0) && currentMotivo.trim() === (initialMotivo ?? "").trim()
   );
 }
 
@@ -260,7 +260,7 @@ export default function EditarCotizacion({
       return;
     }
 
-    if (discountChanged) {
+    if (discountChanged && discountPercentageText !== "") {
       const discountError = validateDescuentoPercentage(discountPercentage);
       if (discountError) {
         setValidationError(discountError);
@@ -317,13 +317,18 @@ export default function EditarCotizacion({
 
       if (discountChanged) {
         const trimmedMotivo = discountMotivo.trim();
+        const isClearing = discountPercentageText === "";
 
         const res = await fetch(`/api/cotizaciones/${idCotizacion}/descuento`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            porcentaje_descuento: discountPercentage,
-            ...(trimmedMotivo ? { motivo_descuento: trimmedMotivo } : {}),
+            porcentaje_descuento: isClearing ? null : discountPercentage,
+            ...(isClearing
+              ? { motivo_descuento: null }
+              : trimmedMotivo
+                ? { motivo_descuento: trimmedMotivo }
+                : {}),
           }),
         });
 
