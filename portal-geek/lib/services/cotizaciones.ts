@@ -470,6 +470,13 @@ export async function aplicarDescuento(
 
   const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
 
+  const MONTO_TOTAL_MAX = 99999999.99;
+  if (montoConDescuento > MONTO_TOTAL_MAX) {
+    throw new ValidationError(
+      `El monto total con interés no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}.`
+    );
+  }
+
   // Trim then normalize "" / null → null so the column never holds whitespace-only.
   const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
 
@@ -827,6 +834,13 @@ export async function createCotizacionFromCart(
   );
 
   const monto_total = Math.round(pricedItems.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+
+  const MONTO_TOTAL_MAX = 99999999.99;
+  if (monto_total > MONTO_TOTAL_MAX) {
+    throw new ValidationError(
+      `El monto total de la cotización no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}. Reduce alguna cantidad o elimina servicios del carrito.`
+    );
+  }
 
   const sistemaUserId = await getSistemaUserId();
   const placeholderArchivoId = await getPlaceholderArchivoId();
