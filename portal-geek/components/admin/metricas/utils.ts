@@ -27,6 +27,7 @@ export const calculateDelta = (current: number, previous: number) => {
 
 // ── Shared chart styling constants ──────────────────────────────────────────
 export const TOOLTIP_ITEM_STYLE = { color: "#111827" };
+export const TOOLTIP_LABEL_STYLE = { color: "#111827", fontWeight: 600 };
 
 export const TOOLTIP_CONTENT_STYLE = {
   borderRadius: "12px",

@@ -38,13 +38,13 @@ export function IngresosMensualesCard({
   }));
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden flex-1 min-w-[300px]">
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-      <div className="flex justify-between items-start sm:items-center mb-4 flex-col sm:flex-row gap-2">
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+        <h2 className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider">
           Ingresos Totales (Mensual)
         </h2>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <SelectField
             label="Mes:"
             value={month}
@@ -64,13 +64,13 @@ export function IngresosMensualesCard({
         </div>
       </div>
       <div className="mt-2">
-        <p className="text-4xl font-extrabold text-gray-900 tracking-tight">
+        <p className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
           {formatCurrency(totalMensual)}
         </p>
         <div className="mt-3">
           <DeltaBadge current={totalMensual} previous={prevTotalMensual} />
         </div>
-        <p className="text-xs text-gray-500 mt-4 font-medium uppercase tracking-wider">
+        <p className="text-xs text-gray-500 mt-3 sm:mt-4 font-medium uppercase tracking-wider">
           vs Mes Pasado ({MONTHS[prevMonth]} {prevYear})
         </p>
       </div>

@@ -16,6 +16,7 @@ import { YearMultiSelect } from "../molecules/YearMultiSelect";
 import {
   formatCurrency,
   TOOLTIP_ITEM_STYLE,
+  TOOLTIP_LABEL_STYLE,
   TOOLTIP_CONTENT_STYLE,
   AXIS_TICK_LARGE,
 } from "../utils";
@@ -42,15 +43,15 @@ export function MetricasGeneralesCard({
   onToggleYear,
 }: Props) {
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[500px] hover:shadow-md transition-shadow">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div className="bg-white p-5 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 sm:mb-8 gap-3 sm:gap-4">
         <div className="flex flex-col gap-2">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Comparativa Histórica</h2>
-            <p className="text-sm text-gray-500 mt-1">Ingresos totales por año</p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Comparativa Histórica</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Ingresos totales por año</p>
           </div>
           {latestYear && previousYear && (
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <DeltaBadge current={card3DeltaCurrent} previous={card3DeltaPrev} />
               <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">
                 {latestYear} vs {previousYear}
@@ -66,9 +67,9 @@ export function MetricasGeneralesCard({
           />
         </div>
       </div>
-      <div className="flex-1 w-full">
+      <div className="w-full h-[280px] sm:h-[380px] xl:h-[420px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={yearlyTotals} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+          <BarChart data={yearlyTotals} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
             <defs>
               <linearGradient id="barBlue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#60a5fa" stopOpacity={1} />
@@ -93,6 +94,7 @@ export function MetricasGeneralesCard({
               tick={AXIS_TICK_LARGE}
               dx={-10}
               tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+              width={50}
             />
             <Tooltip
               cursor={{ fill: "#f9fafb" }}
@@ -101,6 +103,7 @@ export function MetricasGeneralesCard({
               ) => [formatCurrency(Number(value) || 0), "Total"]}
               contentStyle={TOOLTIP_CONTENT_STYLE}
               itemStyle={TOOLTIP_ITEM_STYLE}
+              labelStyle={TOOLTIP_LABEL_STYLE}
             />
             <Bar dataKey="total" radius={[8, 8, 0, 0]} maxBarSize={70}>
               {yearlyTotals.map((entry, index) => (

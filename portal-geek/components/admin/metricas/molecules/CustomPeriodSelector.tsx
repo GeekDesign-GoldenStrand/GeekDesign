@@ -39,7 +39,7 @@ export function CustomPeriodSelector({
     return (
       <button
         onClick={onAdd}
-        className="h-full min-h-[160px] border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 transition-all group"
+        className="h-full min-h-[120px] sm:min-h-[160px] border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 transition-all group"
       >
         <div className="bg-gray-100 p-3 rounded-full group-hover:bg-purple-100 mb-3 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,9 +72,9 @@ export function CustomPeriodSelector({
 
   return (
     <div
-      className={`p-5 rounded-2xl border ${
+      className={`p-4 sm:p-5 rounded-2xl border ${
         isBase ? "bg-purple-50 border-purple-200" : "bg-white border-gray-200"
-      } shadow-sm relative flex flex-col justify-between min-h-[160px]`}
+      } shadow-sm relative flex flex-col justify-between min-h-[120px] sm:min-h-[160px]`}
     >
       {idx > 1 && (
         <button
@@ -113,7 +113,7 @@ export function CustomPeriodSelector({
           />
         </div>
 
-        <p className="text-2xl font-extrabold text-gray-900 tracking-tight">
+        <p className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
           {formatCurrency(val)}
         </p>
       </div>

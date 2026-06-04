@@ -19,6 +19,7 @@ import {
   formatCurrency,
   DASHBOARD_SELECT_CLASS,
   TOOLTIP_ITEM_STYLE,
+  TOOLTIP_LABEL_STYLE,
   TOOLTIP_CONTENT_STYLE,
   AXIS_TICK,
 } from "../utils";
@@ -58,15 +59,15 @@ export function DesgloseMensualChart({
   ];
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[500px] hover:shadow-md transition-shadow">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div className="flex flex-col gap-2">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Desglose Mensual</h2>
-            <p className="text-sm text-gray-500 mt-1">Ingresos por mes en el año seleccionado</p>
-          </div>
+    <div className="bg-white p-5 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 sm:mb-8 gap-3 sm:gap-4">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Desglose Mensual</h2>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            Ingresos por mes en el año seleccionado
+          </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="flex flex-wrap gap-3 items-center">
           <SelectField
             label="Año:"
             value={year}
@@ -75,12 +76,12 @@ export function DesgloseMensualChart({
             inline
             selectClassName={DASHBOARD_SELECT_CLASS}
           />
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {chartButtons.map((btn) => (
               <button
                 key={btn.value}
                 onClick={() => onChartStyleChange(btn.value)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                className={`px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
                   chartStyle === btn.value
                     ? "bg-red-600 text-white shadow-md shadow-red-200"
                     : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
@@ -93,10 +94,10 @@ export function DesgloseMensualChart({
         </div>
       </div>
 
-      <div className="flex-1 w-full">
+      <div className="w-full h-[280px] sm:h-[380px] xl:h-[420px]">
         <ResponsiveContainer width="100%" height="100%">
           {chartStyle === 1 ? (
-            <BarChart data={data} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="barRed" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#f87171" stopOpacity={1} />
@@ -117,6 +118,7 @@ export function DesgloseMensualChart({
                 tickLine={false}
                 tick={AXIS_TICK}
                 tickFormatter={(val) => `$${val / 1000}k`}
+                width={45}
               />
               <Tooltip
                 cursor={{ fill: "#f3f4f6" }}
@@ -125,11 +127,12 @@ export function DesgloseMensualChart({
                 ) => [formatCurrency(Number(value) || 0), "Ingresos"]}
                 contentStyle={TOOLTIP_CONTENT_STYLE}
                 itemStyle={TOOLTIP_ITEM_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
               />
               <Bar dataKey="ingresos" fill="url(#barRed)" radius={[6, 6, 0, 0]} maxBarSize={48} />
             </BarChart>
           ) : chartStyle === 2 ? (
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
@@ -150,6 +153,7 @@ export function DesgloseMensualChart({
                 tickLine={false}
                 tick={AXIS_TICK}
                 tickFormatter={(val) => `$${val / 1000}k`}
+                width={45}
               />
               <Tooltip
                 formatter={(
@@ -157,6 +161,7 @@ export function DesgloseMensualChart({
                 ) => [formatCurrency(Number(value) || 0), "Ingresos"]}
                 contentStyle={TOOLTIP_CONTENT_STYLE}
                 itemStyle={TOOLTIP_ITEM_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
               />
               <Area
                 type="monotone"
@@ -169,7 +174,7 @@ export function DesgloseMensualChart({
               />
             </AreaChart>
           ) : (
-            <ComposedChart data={data} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+            <ComposedChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="barRedLight" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#fca5a5" stopOpacity={1} />
@@ -190,14 +195,27 @@ export function DesgloseMensualChart({
                 tickLine={false}
                 tick={AXIS_TICK}
                 tickFormatter={(val) => `$${val / 1000}k`}
+                width={45}
               />
               <Tooltip
                 cursor={{ fill: "#f3f4f6" }}
-                formatter={(
-                  value: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
-                ) => [formatCurrency(Number(value) || 0), "Ingresos"]}
-                contentStyle={TOOLTIP_CONTENT_STYLE}
-                itemStyle={TOOLTIP_ITEM_STYLE}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || payload.length === 0) return null;
+                  return (
+                    <div
+                      style={{
+                        ...TOOLTIP_CONTENT_STYLE,
+                        background: "#fff",
+                        padding: "10px 14px",
+                      }}
+                    >
+                      <p style={{ ...TOOLTIP_LABEL_STYLE, marginBottom: 4 }}>{label}</p>
+                      <p style={TOOLTIP_ITEM_STYLE}>
+                        Ingresos: {formatCurrency(Number(payload[0]?.value) || 0)}
+                      </p>
+                    </div>
+                  );
+                }}
               />
               <Bar dataKey="ingresos" barSize={36} fill="url(#barRedLight)" radius={[6, 6, 0, 0]} />
               <Line

@@ -6,6 +6,7 @@ import { CustomPeriodSelector } from "../molecules/CustomPeriodSelector";
 import {
   formatCurrency,
   TOOLTIP_ITEM_STYLE,
+  TOOLTIP_LABEL_STYLE,
   TOOLTIP_CONTENT_STYLE,
   AXIS_TICK_LARGE,
   AXIS_TICK,
@@ -48,17 +49,17 @@ export function CustomComparisonChart({
   const baseValue = basePeriod ? getValue(basePeriod) : 0;
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900">Comparativa Personalizada</h2>
-        <p className="text-sm text-gray-500 mt-1">
+    <div className="bg-white p-5 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
+      <div className="mb-5 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Comparativa Personalizada</h2>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1">
           Compara de 2 a 4 periodos específicos de tiempo. Añade nuevos selectores para comparar más
           meses.
         </p>
       </div>
 
       {/* Intuitive Selector Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-8">
         {[0, 1, 2, 3].map((idx) => (
           <CustomPeriodSelector
             key={idx}
@@ -78,7 +79,7 @@ export function CustomComparisonChart({
       </div>
 
       {/* Custom Comparison Chart */}
-      <div className="h-[400px] bg-gray-50 rounded-2xl p-6 border border-gray-100">
+      <div className="h-[250px] sm:h-[340px] md:h-[400px] bg-gray-50 rounded-2xl p-4 sm:p-6 border border-gray-100">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={customData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
@@ -101,6 +102,7 @@ export function CustomComparisonChart({
               axisLine={false}
               tickLine={false}
               tick={AXIS_TICK}
+              width={45}
             />
             <Tooltip
               cursor={{ fill: "#f3f4f6" }}
@@ -109,6 +111,7 @@ export function CustomComparisonChart({
               ) => [formatCurrency(Number(value)), "Ingreso"]}
               contentStyle={TOOLTIP_CONTENT_STYLE}
               itemStyle={TOOLTIP_ITEM_STYLE}
+              labelStyle={TOOLTIP_LABEL_STYLE}
             />
             <Bar dataKey="value" fill="url(#barPurple)" radius={[6, 6, 0, 0]} maxBarSize={100} />
           </BarChart>
