@@ -4,19 +4,25 @@ export async function getIngresosMensualesPorAno(year: number) {
   const startDate = new Date(Date.UTC(year, 0, 1));
   const endDate = new Date(Date.UTC(year + 1, 0, 1));
 
-  const pagos = await prisma.pagos.findMany({
-    where: {
-      estatus_pago: "Pagado",
-      fecha: {
-        gte: startDate,
-        lt: endDate,
+  let pagos;
+  try {
+    pagos = await prisma.pagos.findMany({
+      where: {
+        estatus_pago: "Pagado",
+        fecha: {
+          gte: startDate,
+          lt: endDate,
+        },
       },
-    },
-    select: {
-      fecha: true,
-      monto_pago: true,
-    },
-  });
+      select: {
+        fecha: true,
+        monto_pago: true,
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener pagos para ingresos mensuales:", error);
+    throw new Error("No se pudieron cargar las métricas en este momento.");
+  }
 
   // Initialize all 12 months with 0
   const meses = [
@@ -59,15 +65,21 @@ export type MetricasDashboardData = Record<number, DashboardData[]>;
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
 export async function getMetricasDashboard(): Promise<MetricasDashboardData> {
-  const pagos = await prisma.pagos.findMany({
-    where: {
-      estatus_pago: "Pagado",
-    },
-    select: {
-      fecha: true,
-      monto_pago: true,
-    },
-  });
+  let pagos;
+  try {
+    pagos = await prisma.pagos.findMany({
+      where: {
+        estatus_pago: "Pagado",
+      },
+      select: {
+        fecha: true,
+        monto_pago: true,
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener métricas del dashboard:", error);
+    throw new Error("No se pudieron cargar las métricas en este momento.");
+  }
 
   const rawData: Record<number, Record<number, number>> = {};
 
