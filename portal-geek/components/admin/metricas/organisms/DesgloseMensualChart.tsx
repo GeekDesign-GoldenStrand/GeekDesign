@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -52,6 +53,15 @@ export function DesgloseMensualChart({
     value: y,
   }));
 
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsSmallScreen(window.innerWidth < 640);
+    handleResize(); // Check on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const chartButtons: { value: 1 | 2 | 3; label: string }[] = [
     { value: 1, label: "Barras" },
     { value: 2, label: "Área" },
@@ -94,7 +104,7 @@ export function DesgloseMensualChart({
         </div>
       </div>
 
-      <div className="w-full h-[280px] sm:h-[380px] xl:h-[420px]">
+      <div className="w-full h-[200px] sm:h-[280px] xl:h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           {chartStyle === 1 ? (
             <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
@@ -112,6 +122,9 @@ export function DesgloseMensualChart({
                 tick={AXIS_TICK}
                 dy={10}
                 interval={0}
+                angle={isSmallScreen ? -45 : 0}
+                textAnchor={isSmallScreen ? "end" : "middle"}
+                height={isSmallScreen ? 50 : 30}
               />
               <YAxis
                 axisLine={false}
@@ -147,6 +160,9 @@ export function DesgloseMensualChart({
                 tick={AXIS_TICK}
                 dy={10}
                 interval={0}
+                angle={isSmallScreen ? -45 : 0}
+                textAnchor={isSmallScreen ? "end" : "middle"}
+                height={isSmallScreen ? 50 : 30}
               />
               <YAxis
                 axisLine={false}
@@ -189,6 +205,9 @@ export function DesgloseMensualChart({
                 tick={AXIS_TICK}
                 dy={10}
                 interval={0}
+                angle={isSmallScreen ? -45 : 0}
+                textAnchor={isSmallScreen ? "end" : "middle"}
+                height={isSmallScreen ? 50 : 30}
               />
               <YAxis
                 axisLine={false}

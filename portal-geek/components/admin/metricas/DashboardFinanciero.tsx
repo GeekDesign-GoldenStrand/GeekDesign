@@ -101,7 +101,7 @@ export function DashboardFinanciero({ data }: { data: MetricasDashboardData }) {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto pb-10 pt-4 sm:pt-6 px-4 sm:px-0">
+    <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto pb-12 sm:pb-16 pt-4 sm:pt-6 px-4 sm:px-0">
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <IngresosAnualesCard

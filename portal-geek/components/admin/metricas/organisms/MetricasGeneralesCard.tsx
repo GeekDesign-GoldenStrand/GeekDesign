@@ -67,7 +67,7 @@ export function MetricasGeneralesCard({
           />
         </div>
       </div>
-      <div className="w-full h-[280px] sm:h-[380px] xl:h-[420px]">
+      <div className="w-full h-[200px] sm:h-[280px] xl:h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={yearlyTotals} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
             <defs>
