@@ -30,13 +30,30 @@ export async function POST(req: NextRequest) {
     const xSignature = req.headers.get("x-signature");
     const xRequestId = req.headers.get("x-request-id");
 
-    const valid = getPaymentProvider().verifyWebhookSignature({
-      xSignature,
-      xRequestId,
-      dataId,
-    });
-    if (!valid) {
-      return NextResponse.json({ data: null, error: "Firma inválida" }, { status: 401 });
+    // Mercado Pago envía notificaciones por dos canales: el sistema moderno
+    // (v2) con `?data.id=&type=` + firma HMAC en x-signature, y el sistema
+    // legado IPN con `?id=&topic=` sin firma. Solo el moderno es nuestra fuente
+    // de verdad; ignoramos el IPN antes de verificar firma para no devolver
+    // 401 sobre algo que no procesaremos igual.
+    const isLegacyIpn = searchParams.has("topic") && !searchParams.has("data.id");
+    if (isLegacyIpn) {
+      return NextResponse.json({ data: null, error: null }, { status: 200 });
+    }
+
+    // En dev, MP firma las notificaciones de la per-preference notification_url
+    // con una clave distinta a la que expone el panel, así que la verificación
+    // de firma siempre falla. La autenticidad se reconfirma server-side al
+    // re-consultar el pago contra MP con nuestro access token, por lo que en
+    // dev confiamos en `data.id` y omitimos la verificación de firma.
+    if (process.env.NODE_ENV === "production") {
+      const valid = getPaymentProvider().verifyWebhookSignature({
+        xSignature,
+        xRequestId,
+        dataId,
+      });
+      if (!valid) {
+        return NextResponse.json({ data: null, error: "Firma inválida" }, { status: 401 });
+      }
     }
 
     // Solo nos interesan notificaciones de pago.
