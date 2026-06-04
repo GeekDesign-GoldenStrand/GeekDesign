@@ -142,6 +142,9 @@ describe("storefront recognized-client cookie", () => {
         `/api/storefront/cotizaciones/access?token=${raw}`
       );
 
+      if (res.status !== 307) {
+        console.error("Test failed with 400. Body:", res.text, res.body);
+      }
       expect(res.status).toBe(307);
       expect(cookieValue(res.headers["set-cookie"], CLIENTE_COOKIE_NAME)).toBeNull();
       // No recognized-client JWT was signed.

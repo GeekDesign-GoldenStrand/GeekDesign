@@ -76,6 +76,7 @@ const initialFields: EditableFields = {
 function setup(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
   const onSave = jest.fn();
   const onClose = jest.fn();
+  const onSuccess = jest.fn();
 
   render(
     <EditarCotizacion
@@ -92,11 +93,12 @@ function setup(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
       userRole="Direccion"
       onSave={onSave}
       onClose={onClose}
+      onSuccess={onSuccess}
       {...overrides}
     />
   );
 
-  return { onSave, onClose };
+  return { onSave, onClose, onSuccess };
 }
 
 async function setupReady(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
@@ -134,7 +136,7 @@ describe("EditarCotizacion discount editing", () => {
 
   it("sends only the discount PATCH request when only the discount changes", async () => {
     const user = userEvent.setup();
-    const { onSave, onClose } = await setupReady();
+    const { onSave, onClose, onSuccess } = await setupReady();
 
     fireEvent.change(screen.getByLabelText("Porcentaje"), {
       target: { value: "15" },
@@ -163,6 +165,7 @@ describe("EditarCotizacion discount editing", () => {
 
     expect(onSave).toHaveBeenCalledWith(initialFields);
     expect(onClose).toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalled();
   });
 
   it("sends both quotation PUT and discount PATCH when both sections change", async () => {

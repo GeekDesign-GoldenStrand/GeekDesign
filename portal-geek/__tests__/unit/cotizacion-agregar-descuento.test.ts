@@ -3,7 +3,7 @@
  */
 import { prisma } from "@/lib/db/client";
 import { aplicarDescuento } from "@/lib/services/cotizaciones";
-import { NotFoundError, ConflictError } from "@/lib/utils/errors";
+import { NotFoundError, ConflictError, ValidationError } from "@/lib/utils/errors";
 
 // ── DB mock ───────────────────────────────────────────────────────────────────
 jest.mock("@/lib/db/client", () => ({
@@ -119,6 +119,22 @@ describe("aplicarDescuento", () => {
     );
   });
 
+  it("recalcula monto_total correctamente al aplicar un interés (porcentaje negativo)", async () => {
+    // detalles: 600 + 400 = 1000 base, -15% interés → 1150
+    mockFindUnique.mockResolvedValue(COTIZACION_PENDIENTE);
+    mockUpdate.mockResolvedValue({});
+
+    await aplicarDescuento(1, -15);
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          monto_total: 1150,
+        }),
+      })
+    );
+  });
+
   it("usa monto_total almacenado cuando no hay detalles", async () => {
     // Sin detalles → fallback a monto_total = 1000, 20% → 800
     mockFindUnique.mockResolvedValue({
@@ -154,6 +170,17 @@ describe("aplicarDescuento", () => {
         }),
       })
     );
+  });
+
+  // ── Overflow guard ────────────────────────────────────────────────────────
+  it("lanza ValidationError si el monto total supera MONTO_TOTAL_MAX al aplicar interés", async () => {
+    // 99,000,000 + 20% interés = 118,800,000 (Excede 99,999,999.99)
+    mockFindUnique.mockResolvedValue({
+      ...COTIZACION_PENDIENTE,
+      pedido: { detalles: [{ subtotal: "99000000.00" }] },
+    });
+
+    await expect(aplicarDescuento(1, -20)).rejects.toThrow(ValidationError);
   });
 
   it("redondea monto_total a 2 decimales", async () => {
