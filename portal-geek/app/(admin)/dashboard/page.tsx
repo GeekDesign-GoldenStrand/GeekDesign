@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { DashboardFinanciero } from "@/components/admin/metricas/DashboardFinanciero";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { EnConstruccion } from "@/components/admin/organisms/EnConstruccion";
 import { can, landingPath } from "@/lib/auth/access";
 import type { Role } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
+import { getMetricasDashboard } from "@/lib/services/metricas";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -20,10 +21,12 @@ export default async function DashboardPage() {
   const role = session.role as Role;
   if (!can(role, "metricas", "read")) redirect(landingPath(role));
 
+  const data = await getMetricasDashboard();
+
   return (
-    <>
+    <div className="space-y-6">
       <AdminHeader title="Dashboard" />
-      <EnConstruccion />
-    </>
+      <DashboardFinanciero data={data} />
+    </div>
   );
 }
