@@ -4,7 +4,9 @@ import { useState } from "react";
 
 import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { toE164 } from "@/lib/utils/format";
 
 import type { ColaboradorApiRow } from "./RegistrarColaboradorForm";
 
@@ -65,7 +67,7 @@ function fromApiRow(apiRow: ColaboradorApiRow): FormState {
     correo_electronico: apiRow.correo_electronico,
     edad: String(apiRow.colaborador?.edad ?? ""),
     sexo: apiRow.colaborador?.sexo ?? "",
-    telefono: apiRow.colaborador?.telefono ?? "",
+    telefono: toE164(apiRow.colaborador?.telefono),
     id_rol: String(apiRow.id_rol),
     id_sucursal: String(apiRow.colaborador?.sucursal?.id_sucursal ?? ""),
   };
@@ -85,6 +87,7 @@ function validate(form: FormState): Record<string, string> {
     errors.edad = "La edad debe ser entre 16 y 100 años.";
   if (!form.sexo) errors.sexo = "El sexo es requerido.";
   if (!form.telefono.trim()) errors.telefono = "El teléfono es requerido.";
+  else if (!isValidPhoneNumber(form.telefono)) errors.telefono = "Número de teléfono inválido.";
   if (!form.id_rol) errors.id_rol = "Selecciona un rol.";
   if (!form.id_sucursal) errors.id_sucursal = "Selecciona una sucursal.";
   return errors;
@@ -156,11 +159,12 @@ function EditForm({
         </div>
       )}
 
-      <div className="flex gap-6">
-        {/* Columna izquierda */}
-        <div className="flex-1 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={LABEL}>Nombre *</label>
+            <label className={LABEL}>
+              Nombre <span className="text-[#e42200]">*</span>
+            </label>
             <input
               type="text"
               maxLength={100}
@@ -175,71 +179,9 @@ function EditForm({
           </div>
 
           <div>
-            <label className={LABEL}>Correo electrónico *</label>
-            <input
-              type="email"
-              maxLength={150}
-              placeholder="correo@gmail.com"
-              value={form.correo_electronico}
-              onChange={(e) => setField("correo_electronico", e.target.value)}
-              className={`${FIELD} ${getFieldClass("correo_electronico")}`}
-            />
-            {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
-          </div>
-
-          <div>
-            <label className={LABEL}>Edad *</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={2}
-              placeholder="Edad"
-              value={form.edad}
-              onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
-              className={`${FIELD} ${getFieldClass("edad")}`}
-            />
-            {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
-          </div>
-
-          <div>
-            <label className={LABEL}>Sexo *</label>
-            <Select
-              value={form.sexo}
-              onChange={(v) => setField("sexo", v)}
-              placeholder="Sexo"
-              size="sm"
-              error={errors.sexo || undefined}
-            >
-              <SelectOption value="M">Masculino</SelectOption>
-              <SelectOption value="F">Femenino</SelectOption>
-              <SelectOption value="NA">Prefiero no decir</SelectOption>
-            </Select>
-          </div>
-
-          <div>
-            <label className={LABEL}>Teléfono *</label>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center h-[38px] px-3 border border-[#b9b8b8] rounded-[6px] text-[14px] text-[#575757] bg-[#f5f5f5] shrink-0 select-none">
-                +52
-              </span>
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                placeholder="XXX XXXX XXX"
-                value={form.telefono}
-                onChange={(e) => setField("telefono", e.target.value.replace(/\D/g, ""))}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
-              />
-            </div>
-            {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
-          </div>
-        </div>
-
-        {/* Columna derecha */}
-        <div className="flex-1 flex flex-col gap-4">
-          <div>
-            <label className={LABEL}>Rol *</label>
+            <label className={LABEL}>
+              Rol <span className="text-[#e42200]">*</span>
+            </label>
             <Select
               value={form.id_rol}
               onChange={(v) => setField("id_rol", v)}
@@ -260,9 +202,28 @@ function EditForm({
               </p>
             )}
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Correo electrónico <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="email"
+              maxLength={150}
+              placeholder="correo@gmail.com"
+              value={form.correo_electronico}
+              onChange={(e) => setField("correo_electronico", e.target.value)}
+              className={`${FIELD} ${getFieldClass("correo_electronico")}`}
+            />
+            {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
+          </div>
 
           <div>
-            <label className={LABEL}>Sucursal *</label>
+            <label className={LABEL}>
+              Sucursal <span className="text-[#e42200]">*</span>
+            </label>
             <Select
               value={form.id_sucursal}
               onChange={(v) => setField("id_sucursal", v)}
@@ -278,9 +239,56 @@ function EditForm({
             </Select>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Edad <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="Edad"
+              value={form.edad}
+              onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
+              className={`${FIELD} ${getFieldClass("edad")}`}
+            />
+            {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Sexo <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.sexo}
+              onChange={(v) => setField("sexo", v)}
+              placeholder="Sexo"
+              size="sm"
+              error={errors.sexo || undefined}
+            >
+              <SelectOption value="M">Masculino</SelectOption>
+              <SelectOption value="F">Femenino</SelectOption>
+              <SelectOption value="NA">Prefiero no decir</SelectOption>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <label className={LABEL}>
+            Teléfono <span className="text-[#e42200]">*</span>
+          </label>
+          <PhoneInputMX
+            value={form.telefono}
+            onChange={(e164) => setField("telefono", e164)}
+            hasError={!!errors.telefono}
+          />
+          {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+        </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-2 border-t border-[#e8e8e8]">
+      <div className="flex justify-end gap-3 mt-2">
         <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
         </Button>
@@ -306,7 +314,7 @@ export function EditarColaboradorModal({
   onSubmit,
 }: EditarColaboradorModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="lg">
       {loadingData && (
         <p className="py-10 text-center text-[14px] text-[#8e908f]">Cargando datos...</p>
       )}

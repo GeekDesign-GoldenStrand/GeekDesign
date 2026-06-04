@@ -11,12 +11,32 @@ import {
   ProveedoresModal,
 } from "@/components/ui/materiales";
 import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
-import type { MaterialCardProps, MaterialSortOrder, MaterialTipoFilter, UserRole } from "@/types";
+import type {
+  MaterialCardProps,
+  MaterialSortOrder,
+  MaterialTipoFilter,
+  MaterialesVisibleColumns,
+  UserRole,
+} from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
-type Tipo = "individual" | "grupo" | "sub";
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
+
+function buildDefaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
+  return {
+    name: true,
+    description: true,
+    unit: true,
+    width: true,
+    height: true,
+    thickness: true,
+    color: true,
+    image: true,
+    proveedores: canViewProveedores,
+  };
+}
 
 type FetchState = {
   loading: boolean;
@@ -33,6 +53,40 @@ type FetchAction =
   | { type: "update"; row: MaterialCardProps }
   | { type: "remove"; id: number };
 
+// Recursive tree updaters (max 3 levels: categoría → grupo|individual → variante).
+function insertChild(
+  nodes: MaterialCardProps[],
+  parentId: number,
+  child: MaterialCardProps
+): MaterialCardProps[] {
+  return nodes.map((n) => {
+    if (n.id === parentId) {
+      return { ...n, subMateriales: [...(n.subMateriales ?? []), child] };
+    }
+    if (n.subMateriales?.length) {
+      return { ...n, subMateriales: insertChild(n.subMateriales, parentId, child) };
+    }
+    return n;
+  });
+}
+
+function replaceNode(nodes: MaterialCardProps[], row: MaterialCardProps): MaterialCardProps[] {
+  return nodes.map((n) => {
+    if (n.id === row.id) return { ...row, subMateriales: n.subMateriales };
+    if (n.subMateriales?.length) {
+      return { ...n, subMateriales: replaceNode(n.subMateriales, row) };
+    }
+    return n;
+  });
+}
+
+function removeNode(nodes: MaterialCardProps[], id: number): MaterialCardProps[] {
+  const filtered = nodes.filter((n) => n.id !== id);
+  return filtered.map((n) =>
+    n.subMateriales?.length ? { ...n, subMateriales: removeNode(n.subMateriales, id) } : n
+  );
+}
+
 function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   switch (action.type) {
     case "start":
@@ -43,51 +97,20 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
       return { ...state, loading: false, error: "No se pudieron cargar los materiales" };
 
     case "add": {
-      if (action.row.tipo === "sub" && action.row.id_material_padre !== null) {
+      if (action.row.id_material_padre != null) {
         return {
           ...state,
-          rows: state.rows.map((r) =>
-            r.id === action.row.id_material_padre
-              ? { ...r, subMateriales: [...(r.subMateriales ?? []), action.row] }
-              : r
-          ),
+          rows: insertChild(state.rows, action.row.id_material_padre, action.row),
         };
       }
       return { ...state, rows: [action.row, ...state.rows] };
     }
 
-    case "update": {
-      if (action.row.tipo === "sub" && action.row.id_material_padre !== null) {
-        return {
-          ...state,
-          rows: state.rows.map((r) =>
-            r.id === action.row.id_material_padre
-              ? {
-                  ...r,
-                  subMateriales: (r.subMateriales ?? []).map((s) =>
-                    s.id === action.row.id ? action.row : s
-                  ),
-                }
-              : r
-          ),
-        };
-      }
-      return { ...state, rows: state.rows.map((r) => (r.id === action.row.id ? action.row : r)) };
-    }
+    case "update":
+      return { ...state, rows: replaceNode(state.rows, action.row) };
 
-    case "remove": {
-      const isTopLevel = state.rows.some((r) => r.id === action.id);
-      if (isTopLevel) {
-        return { ...state, rows: state.rows.filter((r) => r.id !== action.id) };
-      }
-      return {
-        ...state,
-        rows: state.rows.map((r) => ({
-          ...r,
-          subMateriales: (r.subMateriales ?? []).filter((s) => s.id !== action.id),
-        })),
-      };
-    }
+    case "remove":
+      return { ...state, rows: removeNode(state.rows, action.id) };
   }
 }
 
@@ -113,13 +136,18 @@ export function MaterialesView({ role }: { role: UserRole }) {
   const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
   const [tipoFilter, setTipoFilter] = useState<MaterialTipoFilter>("all");
+  const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(() =>
+    buildDefaultColumns(canViewProveedores)
+  );
   const [page, setPage] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
   useEffect(() => {
+    // La búsqueda no reinicia la página: se aplica sobre TODOS los registros en
+    // el servidor y el fetch acota la página a la última válida si quedó fuera
+    // de rango (ver clamp más abajo), igual que en sucursales.
     const id = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [search]);
@@ -143,12 +171,22 @@ export function MaterialesView({ role }: { role: UserRole }) {
       })
       .then((payload) => {
         if (abortController.signal.aborted) return;
-        const items = ((payload?.data ?? []) as MaterialApiRow[]).map(mapMaterialRow);
         const total = payload?.total ?? 0;
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+        // Si la página actual quedó fuera de rango tras buscar/filtrar, acota a
+        // la última válida en lugar de saltar a la 1: el cambio de `page`
+        // dispara un refetch que traerá datos (nunca una página vacía).
+        if (page > pages) {
+          setPage(pages);
+          return;
+        }
+
+        const items = ((payload?.data ?? []) as MaterialApiRow[]).map((row) => mapMaterialRow(row));
         dispatch({
           type: "success",
           rows: items,
-          totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+          totalPages: pages,
         });
       })
       .catch(() => {
@@ -169,10 +207,27 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setRetryAttempt((n) => n + 1);
   }
 
+  function handleColumnsChange(columns: MaterialesVisibleColumns) {
+    // Guard against an all-hidden table even if a caller passes one in.
+    if (!Object.values(columns).some(Boolean)) return;
+    setVisibleColumns(columns);
+  }
+
   function handleResetFilters() {
+    setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
     setTipoFilter("all");
     setSearch("");
+  }
+
+  function handleSortChange(order: MaterialSortOrder) {
+    setSortOrder(order);
+    setPage(1);
+  }
+
+  function handleTipoFilterChange(value: MaterialTipoFilter) {
+    setTipoFilter(value);
+    setPage(1);
   }
 
   function handleCreated(row: MaterialCardProps) {
@@ -215,14 +270,10 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setShowAddModal(true);
   }
 
-  function handleSortChange(order: MaterialSortOrder) {
-    setSortOrder(order);
-    setPage(1);
-  }
-
-  function handleTipoFilterChange(value: MaterialTipoFilter) {
-    setTipoFilter(value);
-    setPage(1);
+  function handleAddGrupo(categoriaId: number) {
+    setAddModalTipo("grupo");
+    setAddModalPadreId(categoriaId);
+    setShowAddModal(true);
   }
 
   function handleOpenAddModal() {
@@ -237,39 +288,6 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setAddModalPadreId(undefined);
   }
 
-  const activeFilterChips = [
-    sortOrder !== "az"
-      ? {
-          key: "sort",
-          label: "Orden: Z a A",
-          clear: () => {
-            setSortOrder("az");
-            setPage(1);
-          },
-        }
-      : null,
-    tipoFilter === "grupos"
-      ? {
-          key: "tipo",
-          label: "Solo grupos",
-          clear: () => {
-            setTipoFilter("all");
-            setPage(1);
-          },
-        }
-      : null,
-    tipoFilter === "individuales"
-      ? {
-          key: "tipo",
-          label: "Sin grupo",
-          clear: () => {
-            setTipoFilter("all");
-            setPage(1);
-          },
-        }
-      : null,
-  ].filter((c): c is NonNullable<typeof c> => c !== null);
-
   return (
     <div className="min-h-screen bg-[#f5f5f5] font-ibm-plex">
       <AdminHeader title="Materiales" />
@@ -279,43 +297,18 @@ export function MaterialesView({ role }: { role: UserRole }) {
             search={search}
             onSearchChange={setSearch}
             isFilterOpen={showFilters}
+            visibleColumns={visibleColumns}
             sortOrder={sortOrder}
             tipoFilter={tipoFilter}
+            onColumnsChange={handleColumnsChange}
             onSortChange={handleSortChange}
             onTipoFilterChange={handleTipoFilterChange}
             onResetFilters={handleResetFilters}
             onAddClick={handleOpenAddModal}
-            onFilterClick={() => setShowFilters((s) => !s)}
+            onFilterClick={() => setShowFilters((state) => !state)}
             onCloseFilter={() => setShowFilters(false)}
+            canViewProveedores={canViewProveedores}
           />
-
-          {activeFilterChips.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {activeFilterChips.map((chip) => (
-                <span
-                  key={chip.key}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
-                >
-                  {chip.label}
-                  <button
-                    type="button"
-                    onClick={chip.clear}
-                    aria-label={`Quitar filtro ${chip.label}`}
-                    className="leading-none hover:text-[#b31a00]"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
-              >
-                Limpiar todo
-              </button>
-            </div>
-          )}
 
           {loading && <p className="text-[#8e908f] text-[20px]">Cargando...</p>}
 
@@ -334,10 +327,12 @@ export function MaterialesView({ role }: { role: UserRole }) {
           {!loading && !error && (
             <MaterialesGrid
               items={rows}
-              canViewProveedores={canViewProveedores}
+              visibleColumns={visibleColumns}
               onEditMaterial={handleEditClick}
               onViewProveedores={handleViewProveedores}
               onAddSubMaterial={handleAddSubMaterial}
+              onAddGrupo={handleAddGrupo}
+              groupOrphans={tipoFilter === "all"}
               page={page}
               totalPages={totalPages}
               onPageChange={handlePageChange}

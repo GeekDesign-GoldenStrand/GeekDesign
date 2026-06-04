@@ -4,11 +4,11 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
 import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
-import { formatPhoneNumber, normalizePhone } from "@/lib/utils/format";
 import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
@@ -51,7 +51,7 @@ const proveedorSchema = z.object({
   telefono: z
     .string()
     .min(1, "El teléfono es requerido.")
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+    .refine((v) => isValidPhoneNumber(v), "Número de teléfono inválido."),
   ubicacion: z
     .string()
     .max(100, "Máximo 100 caracteres.")
@@ -85,7 +85,7 @@ const instaladorSchema = z.object({
   telefono: z
     .string()
     .min(1, "El teléfono es requerido.")
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+    .refine((v) => isValidPhoneNumber(v), "Número de teléfono inválido."),
   notas: z.string().max(500, "Máximo 500 caracteres."),
   ubicacion: z
     .string()
@@ -160,7 +160,7 @@ export function RegistrarTerceroForm({
       if (key === "correo" && typeof val === "string")
         return val && EMAIL_REGEX.test(val) ? FIELD_SUCCESS : "";
       if (key === "telefono" && typeof val === "string")
-        return val && /^\d{10}$/.test(val) ? FIELD_SUCCESS : "";
+        return val && isValidPhoneNumber(val) ? FIELD_SUCCESS : "";
       if (typeof val === "string" && val.trim()) return FIELD_SUCCESS;
       if (typeof val === "number" && val > 0) return FIELD_SUCCESS;
     }
@@ -450,15 +450,10 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Teléfono <span className="text-[#e42200]">*</span>
               </label>
-              <input
-                type="tel"
-                placeholder="442 123 4567"
-                inputMode="numeric"
-                value={formatPhoneNumber(form.telefono)}
-                onChange={(e) => {
-                  setField("telefono", normalizePhone(e.target.value));
-                }}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
+              <PhoneInputMX
+                value={form.telefono}
+                onChange={(e164) => setField("telefono", e164)}
+                hasError={!!errors.telefono}
               />
               {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
             </div>
@@ -585,15 +580,10 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Teléfono <span className="text-[#e42200]">*</span>
               </label>
-              <input
-                type="tel"
-                placeholder="442 123 4567"
-                inputMode="numeric"
-                value={formatPhoneNumber(form.telefono)}
-                onChange={(e) => {
-                  setField("telefono", normalizePhone(e.target.value));
-                }}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
+              <PhoneInputMX
+                value={form.telefono}
+                onChange={(e164) => setField("telefono", e164)}
+                hasError={!!errors.telefono}
               />
               {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
             </div>
@@ -628,7 +618,7 @@ export function RegistrarTerceroForm({
         </>
       )}
 
-      <div className="flex justify-end gap-3 mt-4">
+      <div className="flex justify-end gap-3 mt-2">
         <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
         </Button>

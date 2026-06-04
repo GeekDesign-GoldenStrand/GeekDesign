@@ -40,14 +40,12 @@ export function ViewServicios() {
     return () => clearTimeout(id);
   }, [search]);
 
-  // Reset to page 1 whenever the search query changes — otherwise a search
-  // performed on page 3 may show "no results" if the filtered set has only
-  // 1–2 pages.
   useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch]);
+    // El flag `active` descarta la respuesta si el efecto se reejecuta (nueva
+    // búsqueda/página) antes de que termine este fetch, evitando que una
+    // respuesta obsoleta sobrescriba los resultados más recientes.
+    let active = true;
 
-  useEffect(() => {
     async function fetchServicios() {
       setLoading(true);
       setError(null);
@@ -62,16 +60,33 @@ export function ViewServicios() {
         const res = await fetch(`/api/servicios?${params}`);
         if (!res.ok) throw new Error("Error al cargar servicios");
         const json: PaginatedResponse<ServicioListadoItem> = await res.json();
+        if (!active) return;
+
+        // La búsqueda se aplica sobre TODOS los registros en el servidor. Si la
+        // página actual quedó fuera de rango tras filtrar, acota a la última
+        // válida en lugar de saltar a la 1: el cambio de `page` dispara un
+        // refetch que traerá datos.
+        const totalPages = Math.max(1, Math.ceil(json.total / pageSize));
+        if (page > totalPages) {
+          setPage(totalPages);
+          return;
+        }
+
         setServicios(json.data);
         setTotal(json.total);
       } catch (err) {
+        if (!active) return;
         setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     fetchServicios();
+
+    return () => {
+      active = false;
+    };
   }, [page, refreshKey, debouncedSearch]);
 
   const handleEliminar = (id: number) => {

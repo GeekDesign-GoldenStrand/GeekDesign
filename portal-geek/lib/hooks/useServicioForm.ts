@@ -72,6 +72,9 @@ export function useServicioForm({
     key: K,
     value: NuevoServicioFormState[K]
   ) {
+    if (submitError && (key === "variables" || key === "constantes" || key === "formulaChunks")) {
+      setSubmitError(null);
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 

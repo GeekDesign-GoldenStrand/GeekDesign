@@ -6,12 +6,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/atoms/Button";
 import { EditIcon } from "@/components/ui/atoms/icons";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
-import type { MaterialCardProps } from "@/types";
+import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialGroupCardProps {
   group: MaterialCardProps;
+  visibleColumns: MaterialesVisibleColumns;
   gridTemplateColumns: string;
-  canViewProveedores?: boolean;
   onEdit: (material: MaterialCardProps) => void;
   onViewProveedores: (materialId: number, materialName: string) => void;
   onAddSubMaterial: (groupId: number) => void;
@@ -19,8 +19,8 @@ interface MaterialGroupCardProps {
 
 export function MaterialGroupCard({
   group,
+  visibleColumns,
   gridTemplateColumns,
-  canViewProveedores = false,
   onEdit,
   onViewProveedores,
   onAddSubMaterial,
@@ -28,6 +28,9 @@ export function MaterialGroupCard({
   const [expanded, setExpanded] = useState(false);
   const subCount = group.subMateriales?.length ?? 0;
 
+  // Sizing matches CotizacionesTable + ClientesTable: text-sm, rounded shadow.
+  // Group header keeps its accent border + lighter bg so users can still tell
+  // a group apart from an individual material row at a glance.
   return (
     <div className="rounded shadow overflow-hidden">
       {/* Group header */}
@@ -49,29 +52,39 @@ export function MaterialGroupCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-sm font-semibold text-[#1e1e1e] truncate">{group.name}</span>
+          <span
+            className="min-w-0 max-w-[40%] text-sm font-semibold text-[#1e1e1e] truncate"
+            title={group.name}
+          >
+            {group.name}
+          </span>
           <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-[#e42200] text-white text-[11px] font-medium">
             {subCount} variante{subCount !== 1 ? "s" : ""}
           </span>
           {group.description && (
-            <span className="hidden md:block text-sm text-[#575757] truncate">
+            <span
+              className="hidden md:block min-w-0 max-w-[40%] text-sm text-[#575757] truncate"
+              title={group.description}
+            >
               {group.description}
             </span>
           )}
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          {group.imageUrl && (
-            <div className="relative h-15 w-15 rounded-sm overflow-hidden bg-[#d9d9d9] shrink-0">
-              <Image
-                src={group.imageUrl}
-                alt={group.name}
-                fill
-                sizes="3.75rem"
-                unoptimized
-                referrerPolicy="no-referrer"
-                className="object-cover"
-              />
+          {visibleColumns.image && (
+            <div className="relative h-[3.75rem] w-[3.75rem] rounded-[4px] overflow-hidden bg-[#d9d9d9] shrink-0">
+              {group.imageUrl ? (
+                <Image
+                  src={group.imageUrl}
+                  alt={group.name}
+                  fill
+                  sizes="3.75rem"
+                  unoptimized
+                  referrerPolicy="no-referrer"
+                  className="object-cover"
+                />
+              ) : null}
             </div>
           )}
           <Button
@@ -101,13 +114,12 @@ export function MaterialGroupCard({
               Sin variantes aún. Usa &quot;Agregar variante&quot; para crear la primera.
             </p>
           ) : (
-            <div className="divide-y divide-[#ebebeb]">
+            <div className="space-y-[2px] px-2 py-2">
               {group.subMateriales!.map((sub) => (
                 <MaterialCard
                   key={sub.id}
                   {...sub}
-                  variant="sub"
-                  showProveedores={canViewProveedores}
+                  visibleColumns={visibleColumns}
                   gridTemplateColumns={gridTemplateColumns}
                   onEdit={onEdit}
                   onViewProveedores={onViewProveedores}

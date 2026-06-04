@@ -208,7 +208,7 @@ export function EditarSucursalModal({
           </p>
         )}
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <div className="flex justify-end gap-3 mt-2">
           <button
             type="button"
             onClick={onClose}
