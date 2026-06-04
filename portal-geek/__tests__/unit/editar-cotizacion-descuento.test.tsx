@@ -254,15 +254,17 @@ describe("EditarCotizacion discount editing", () => {
     expect(input).toHaveValue("Cliente VIP  ");
   });
 
-  it("does not render discount fields when the quotation has no existing discount", async () => {
+  it("renders discount fields when the quotation has no existing discount and user is Direccion", async () => {
     await setupReady({
       porcentajeDescuento: null,
       motivoDescuento: null,
+      userRole: "Direccion",
     });
 
-    expect(screen.queryByText("Descuento")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Porcentaje")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Motivo")).not.toBeInTheDocument();
+    expect(screen.getByText("Descuento")).toBeInTheDocument();
+    // Use the custom matcher logic or text matchers since the labels are complex
+    expect(screen.getByText("Porcentaje")).toBeInTheDocument();
+    expect(screen.getByText("Motivo")).toBeInTheDocument();
   });
 
   it("hides the discount editor for non-Direccion roles even when a discount exists", async () => {

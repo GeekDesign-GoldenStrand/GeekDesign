@@ -114,8 +114,8 @@ export default function EditarCotizacion({
   // hit a 403 only on save. The totals breakdown below still shows the
   // existing discount as read-only.
   const canEditDiscount = userRole === "Direccion";
-  // Show discount section only if user can edit and a discount exists (or is being edited)
-  const showDiscountSection = canEditDiscount && porcentajeDescuento != null;
+  // Always show discount section for users who can edit it, so they can add new ones
+  const showDiscountSection = canEditDiscount;
 
   // String source of truth for the input — preserves lone "-" mid-typing.
   // Numeric `discountPercentage` is derived below.
