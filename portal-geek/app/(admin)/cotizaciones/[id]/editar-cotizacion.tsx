@@ -85,6 +85,7 @@ interface EditarCotizacionProps {
   onClose: () => void;
   // Called when a discount/interest is successfully applied via this modal
   onDiscountApplied?: () => void;
+  onSuccess?: () => void;
 }
 
 export default function EditarCotizacion({
@@ -98,6 +99,7 @@ export default function EditarCotizacion({
   onSave,
   onClose,
   onDiscountApplied,
+  onSuccess,
 }: EditarCotizacionProps) {
   const [fields, setFields] = useState<EditableFields>({
     ...initial,
@@ -138,6 +140,7 @@ export default function EditarCotizacion({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  // Success modal handling moved to parent
 
   // Step ±1, skip 0 (validator rejects it), clamp to range.
   const bumpDiscount = (delta: number) => {
@@ -359,9 +362,9 @@ export default function EditarCotizacion({
         }
       }
 
-      alert("Cotización actualizada correctamente");
-      onSave(fields);
       onClose();
+      // Notify parent to show success modal after edit modal closes
+      if (onSuccess) onSuccess();
     } catch (err) {
       const baseError = err instanceof Error ? err.message : "Error de red al guardar los cambios";
       if (quotationSaved) {
@@ -381,301 +384,304 @@ export default function EditarCotizacion({
   const displayedError = validationError ?? serverError;
 
   return (
-    <ModalShell title="Editar cotización" onClose={onClose}>
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
-            <span className="font-medium">Nombre de oportunidad</span>
-            <input
-              type="text"
-              value={fields.nombre_oportunidad}
-              onChange={(e) => setField("nombre_oportunidad", e.target.value)}
-              placeholder="Ej. Letrero exterior sucursal Reforma"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
+    <>
+      <ModalShell title="Editar cotización" onClose={onClose}>
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
+              <span className="font-medium">Nombre de oportunidad</span>
+              <input
+                type="text"
+                value={fields.nombre_oportunidad}
+                onChange={(e) => setField("nombre_oportunidad", e.target.value)}
+                placeholder="Ej. Letrero exterior sucursal Reforma"
+                className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
 
-          <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
-            <span className="font-medium">Cliente</span>
-            <Select
-              value={String(fields.id_cliente)}
-              onChange={(v) => setField("id_cliente", Number(v))}
-              size="sm"
-            >
-              {clientes.map((c) => (
-                <SelectOption key={c.id_cliente} value={String(c.id_cliente)}>
-                  {c.nombre_cliente}
-                  {c.empresa ? ` — ${c.empresa}` : ""}
-                </SelectOption>
-              ))}
-            </Select>
-            {clientesError && (
-              <span className="text-[11px] text-red-600 mt-0.5">
-                No se pudo cargar la lista completa de clientes ({clientesError}).
-              </span>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
-            <span className="font-medium">Fecha fin (validez)</span>
-            <input
-              type="date"
-              min={today}
-              value={fields.fecha_fin}
-              onChange={(e) => setField("fecha_fin", e.target.value)}
-              className={`border rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 ${
-                fields.fecha_fin && fields.fecha_fin < today
-                  ? "border-red-300 focus:ring-red-100"
-                  : "border-gray-200 focus:ring-blue-100"
-              }`}
-            />
-            {fields.fecha_fin && fields.fecha_fin < today && (
-              <span className="text-[11px] text-red-600 mt-0.5">
-                La fecha de entrega no puede ser en el pasado.
-              </span>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
-            <span className="font-medium">Notas</span>
-            <textarea
-              rows={3}
-              value={fields.notas}
-              onChange={(e) => setField("notas", e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white resize-y focus:outline-none focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-        </div>
-
-        {showDiscountSection && (
-          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
-            <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
-              {Number(discountPercentageText) < 0 ? "Interés" : "Descuento"}
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
-                <span className="font-medium">Porcentaje</span>
-                <div className="relative w-full border border-gray-200 rounded-lg bg-white focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-100">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="^-?[0-9]+$"
-                    min={DISCOUNT_MIN}
-                    max={DISCOUNT_MAX}
-                    value={discountPercentageText}
-                    onChange={(e) => {
-                      setValidationError(null);
-                      const raw = e.target.value;
-                      // Accept "" and "-" verbatim so the sign survives mid-typing.
-                      if (raw === "" || raw === "-") {
-                        setDiscountPercentageText(raw);
-                        return;
-                      }
-                      if (!/^-?\d+$/.test(raw)) return;
-                      const parsed = parseInt(raw, 10);
-                      if (!Number.isFinite(parsed)) return;
-                      setDiscountPercentageText(
-                        String(Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX))
-                      );
-                    }}
-                    className="w-full pl-3 pr-7 py-2 text-[13px] text-gray-800 bg-transparent focus:outline-none rounded-lg"
-                  />
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
-                    <button
-                      type="button"
-                      onClick={() => bumpDiscount(1)}
-                      aria-label="Incrementar 1%"
-                      className="h-3.5 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
-                    >
-                      <CaretUp size={9} weight="bold" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => bumpDiscount(-1)}
-                      aria-label="Decrementar 1%"
-                      className="h-3.5 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
-                    >
-                      <CaretDown size={9} weight="bold" />
-                    </button>
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
-                <span className="font-medium">Motivo</span>
-                <input
-                  type="text"
-                  maxLength={DISCOUNT_MOTIVO_MAX_LEN}
-                  value={discountMotivo}
-                  onChange={(e) => {
-                    setValidationError(null);
-                    setDiscountMotivo(sanitizeUserText(e.target.value));
-                  }}
-                  placeholder="Ej. Cliente frecuente"
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* Editable line items */}
-        <div className="mb-4">
-          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3">
-            Servicio(s)
-          </p>
-          <table className="w-full text-[13px] border-collapse">
-            <thead>
-              <tr>
-                {["Servicio", "Cantidad", "P. Unitario", "Subtotal"].map((h) => (
-                  <th
-                    key={h}
-                    className="text-[11px] font-medium text-gray-400 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
-                  >
-                    {h}
-                  </th>
+            <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
+              <span className="font-medium">Cliente</span>
+              <Select
+                value={String(fields.id_cliente)}
+                onChange={(v) => setField("id_cliente", Number(v))}
+                size="sm"
+              >
+                {clientes.map((c) => (
+                  <SelectOption key={c.id_cliente} value={String(c.id_cliente)}>
+                    {c.nombre_cliente}
+                    {c.empresa ? ` — ${c.empresa}` : ""}
+                  </SelectOption>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {fields.servicios.map((item, idx) => (
-                <tr key={item.id_detalle} className="border-b border-gray-100 last:border-0">
-                  <td className="py-3 px-2">
-                    <p className="font-medium text-gray-900">{item.nombre_servicio}</p>
-                    <p className="text-[12px] text-gray-400">{item.nombre_material}</p>
-                  </td>
-                  <td className="py-3 px-2">
+              </Select>
+              {clientesError && (
+                <span className="text-[11px] text-red-600 mt-0.5">
+                  No se pudo cargar la lista completa de clientes ({clientesError}).
+                </span>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
+              <span className="font-medium">Fecha fin (validez)</span>
+              <input
+                type="date"
+                min={today}
+                value={fields.fecha_fin}
+                onChange={(e) => setField("fecha_fin", e.target.value)}
+                className={`border rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 ${
+                  fields.fecha_fin && fields.fecha_fin < today
+                    ? "border-red-300 focus:ring-red-100"
+                    : "border-gray-200 focus:ring-blue-100"
+                }`}
+              />
+              {fields.fecha_fin && fields.fecha_fin < today && (
+                <span className="text-[11px] text-red-600 mt-0.5">
+                  La fecha de entrega no puede ser en el pasado.
+                </span>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
+              <span className="font-medium">Notas</span>
+              <textarea
+                rows={3}
+                value={fields.notas}
+                onChange={(e) => setField("notas", e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white resize-y focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+          </div>
+
+          {showDiscountSection && (
+            <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
+              <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
+                {Number(discountPercentageText) < 0 ? "Interés" : "Descuento"}
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
+                  <span className="font-medium">Porcentaje</span>
+                  <div className="relative w-full border border-gray-200 rounded-lg bg-white focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-100">
                     <input
                       type="text"
                       inputMode="numeric"
-                      pattern="^[0-9]+$"
-                      min={1}
-                      max={1000}
-                      value={item.cantidad}
+                      pattern="^-?[0-9]+$"
+                      min={DISCOUNT_MIN}
+                      max={DISCOUNT_MAX}
+                      value={discountPercentageText}
                       onChange={(e) => {
+                        setValidationError(null);
                         const raw = e.target.value;
-                        if (raw === "") return;
-                        if (!/^\d+$/.test(raw)) return;
+                        // Accept "" and "-" verbatim so the sign survives mid-typing.
+                        if (raw === "" || raw === "-") {
+                          setDiscountPercentageText(raw);
+                          return;
+                        }
+                        if (!/^-?\d+$/.test(raw)) return;
                         const parsed = parseInt(raw, 10);
-                        // Clamp to [1, 1000] to match the storefront cap
-                        // (CarritoView + SolicitarItemSchema both use 1000).
-                        const safe = Number.isFinite(parsed)
-                          ? Math.max(1, Math.min(1000, parsed))
-                          : 1;
-                        updateServicio(idx, "cantidad", safe);
+                        if (!Number.isFinite(parsed)) return;
+                        setDiscountPercentageText(
+                          String(Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX))
+                        );
                       }}
-                      className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full pl-3 pr-7 py-2 text-[13px] text-gray-800 bg-transparent focus:outline-none rounded-lg"
                     />
-                  </td>
-                  <td className="py-3 px-2">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="^[0-9]*\.?[0-9]+$"
-                      min={0}
-                      max={99999.99}
-                      value={item.precio_unitario}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (raw === "") return;
-                        if (!/^\d*\.?\d*$/.test(raw)) return;
-                        const parsed = parseFloat(raw);
-                        // Clamp to [0, 99,999.99]. The DB stores precio_unitario,
-                        // subtotal, and monto_total as Decimal(10,2) (max
-                        // 99,999,999.99). With cantidad capped at 1000,
-                        // 99,999.99 keeps subtotal safely inside the column.
-                        const safe = Number.isFinite(parsed)
-                          ? Math.max(0, Math.min(99999.99, parsed))
-                          : 0;
-                        updateServicio(idx, "precio_unitario", safe);
-                      }}
-                      className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </td>
-                  <td className="py-3 px-2 text-right font-medium text-gray-900">
-                    {formatAmount(item.subtotal)}
-                  </td>
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => bumpDiscount(1)}
+                        aria-label="Incrementar 1%"
+                        className="h-3.5 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
+                      >
+                        <CaretUp size={9} weight="bold" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => bumpDiscount(-1)}
+                        aria-label="Decrementar 1%"
+                        className="h-3.5 w-5 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-sm transition-colors"
+                      >
+                        <CaretDown size={9} weight="bold" />
+                      </button>
+                    </div>
+                  </div>
+                </label>
+
+                <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
+                  <span className="font-medium">Motivo</span>
+                  <input
+                    type="text"
+                    maxLength={DISCOUNT_MOTIVO_MAX_LEN}
+                    value={discountMotivo}
+                    onChange={(e) => {
+                      setValidationError(null);
+                      setDiscountMotivo(sanitizeUserText(e.target.value));
+                    }}
+                    placeholder="Ej. Cliente frecuente"
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Editable line items */}
+          <div className="mb-4">
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3">
+              Servicio(s)
+            </p>
+            <table className="w-full text-[13px] border-collapse">
+              <thead>
+                <tr>
+                  {["Servicio", "Cantidad", "P. Unitario", "Subtotal"].map((h) => (
+                    <th
+                      key={h}
+                      className="text-[11px] font-medium text-gray-400 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="mt-3 flex flex-col items-end gap-1 text-[13px] text-gray-500">
-            {hasDiscount ? (
-              <>
-                <div className="flex gap-6">
-                  <span>Subtotal</span>
-                  <span className="min-w-[110px] text-right text-gray-800">
-                    {formatAmount(newSubtotal)}
-                  </span>
-                </div>
-                <div className="flex gap-6">
-                  <span title={discountMotivo.trim() || undefined}>
-                    {discountPct < 0 ? "Interés" : "Descuento"} {Math.abs(Math.round(discountPct))}%
-                    {discountMotivo.trim() ? ` — ${discountMotivo.trim()}` : ""}
-                  </span>
-                  <span
-                    className={`min-w-[110px] text-right ${
-                      discountPct < 0 ? "text-amber-700" : "text-red-600"
-                    }`}
-                  >
-                    {discountPct < 0 ? "+" : "−"} {formatAmount(Math.abs(discountAmount))}
-                  </span>
-                </div>
-                <div className="flex gap-6 mt-1 text-[14px]">
-                  <span className="text-gray-600">
-                    {discountPct < 0 ? "Total con interés" : "Total con descuento"}
-                  </span>
-                  <span
-                    className={`min-w-[110px] text-right text-[16px] font-medium ${
-                      discountPct < 0 ? "text-amber-700" : "text-[#3B6D11]"
-                    }`}
-                  >
+              </thead>
+              <tbody>
+                {fields.servicios.map((item, idx) => (
+                  <tr key={item.id_detalle} className="border-b border-gray-100 last:border-0">
+                    <td className="py-3 px-2">
+                      <p className="font-medium text-gray-900">{item.nombre_servicio}</p>
+                      <p className="text-[12px] text-gray-400">{item.nombre_material}</p>
+                    </td>
+                    <td className="py-3 px-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="^[0-9]+$"
+                        min={1}
+                        max={1000}
+                        value={item.cantidad}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") return;
+                          if (!/^\d+$/.test(raw)) return;
+                          const parsed = parseInt(raw, 10);
+                          // Clamp to [1, 1000] to match the storefront cap
+                          // (CarritoView + SolicitarItemSchema both use 1000).
+                          const safe = Number.isFinite(parsed)
+                            ? Math.max(1, Math.min(1000, parsed))
+                            : 1;
+                          updateServicio(idx, "cantidad", safe);
+                        }}
+                        className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </td>
+                    <td className="py-3 px-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        pattern="^[0-9]*\.?[0-9]+$"
+                        min={0}
+                        max={99999.99}
+                        value={item.precio_unitario}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") return;
+                          if (!/^\d*\.?\d*$/.test(raw)) return;
+                          const parsed = parseFloat(raw);
+                          // Clamp to [0, 99,999.99]. The DB stores precio_unitario,
+                          // subtotal, and monto_total as Decimal(10,2) (max
+                          // 99,999,999.99). With cantidad capped at 1000,
+                          // 99,999.99 keeps subtotal safely inside the column.
+                          const safe = Number.isFinite(parsed)
+                            ? Math.max(0, Math.min(99999.99, parsed))
+                            : 0;
+                          updateServicio(idx, "precio_unitario", safe);
+                        }}
+                        className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-[13px] text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </td>
+                    <td className="py-3 px-2 text-right font-medium text-gray-900">
+                      {formatAmount(item.subtotal)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-3 flex flex-col items-end gap-1 text-[13px] text-gray-500">
+              {hasDiscount ? (
+                <>
+                  <div className="flex gap-6">
+                    <span>Subtotal</span>
+                    <span className="min-w-[110px] text-right text-gray-800">
+                      {formatAmount(newSubtotal)}
+                    </span>
+                  </div>
+                  <div className="flex gap-6">
+                    <span title={discountMotivo.trim() || undefined}>
+                      {discountPct < 0 ? "Interés" : "Descuento"}{" "}
+                      {Math.abs(Math.round(discountPct))}%
+                      {discountMotivo.trim() ? ` — ${discountMotivo.trim()}` : ""}
+                    </span>
+                    <span
+                      className={`min-w-[110px] text-right ${
+                        discountPct < 0 ? "text-amber-700" : "text-red-600"
+                      }`}
+                    >
+                      {discountPct < 0 ? "+" : "−"} {formatAmount(Math.abs(discountAmount))}
+                    </span>
+                  </div>
+                  <div className="flex gap-6 mt-1 text-[14px]">
+                    <span className="text-gray-600">
+                      {discountPct < 0 ? "Total con interés" : "Total con descuento"}
+                    </span>
+                    <span
+                      className={`min-w-[110px] text-right text-[16px] font-medium ${
+                        discountPct < 0 ? "text-amber-700" : "text-[#3B6D11]"
+                      }`}
+                    >
+                      {formatAmount(newTotal)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex gap-6 text-[14px]">
+                  <span>Nuevo total</span>
+                  <span className="min-w-[110px] text-right text-[16px] font-medium text-black">
                     {formatAmount(newTotal)}
                   </span>
                 </div>
-              </>
-            ) : (
-              <div className="flex gap-6 text-[14px]">
-                <span>Nuevo total</span>
-                <span className="min-w-[110px] text-right text-[16px] font-medium text-black">
-                  {formatAmount(newTotal)}
-                </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        {displayedError && (
-          <p
-            role="alert"
-            className="mb-4 text-[13px] text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2"
-          >
-            {displayedError}
-          </p>
-        )}
+          {displayedError && (
+            <p
+              role="alert"
+              className="mb-4 text-[13px] text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2"
+            >
+              {displayedError}
+            </p>
+          )}
 
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            size="sm"
-            disabled={isSubmitting}
-            loading={isSubmitting}
-          >
-            {isSubmitting ? "Guardando…" : "Guardar"}
-          </Button>
-        </div>
-      </form>
-    </ModalShell>
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >
+              {isSubmitting ? "Guardando…" : "Guardar"}
+            </Button>
+          </div>
+        </form>
+      </ModalShell>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import React, { useState, useCallback } from "react";
 import AplicarDescuento from "@/app/(admin)/cotizaciones/[id]/aplicar-descuento";
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UserRole } from "@/types";
 import {
   QUOTATION_STATUS,
@@ -147,6 +148,8 @@ export function CotizacionDetailPage({
   // hidden via userRole there.
   const canManageDiscount = isMutable && userRole === "Direccion";
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
       <CotizacionHeader
@@ -171,6 +174,10 @@ export function CotizacionDetailPage({
         onSave={handleSave}
         onClose={() => setActivePanel(null)}
         onDiscountApplied={handleDiscountApplied}
+        onSuccess={() => {
+          // Success modal triggered
+          setShowSuccessModal(true);
+        }}
       />
       <AplicarDescuento
         idCotizacion={cotizacion.id_cotizacion}
@@ -230,6 +237,13 @@ export function CotizacionDetailPage({
 
       {(fields.notas || cotizacion.notas) && (
         <NotasCard notas={fields.notas || cotizacion.notas!} />
+      )}
+      {showSuccessModal && (
+        <SuccessModal
+          message="¡Cotización actualizada con éxito!"
+          onClose={() => setShowSuccessModal(false)}
+          variant="success"
+        />
       )}
     </div>
   );
