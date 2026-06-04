@@ -28,7 +28,7 @@ const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-const REQUIRED_NUMERIC = ["ancho", "alto", "grosor"] as const;
+const REQUIRED_NUMERIC = ["ancho", "alto", "grosor", "velocidad_avance"] as const;
 
 export function EditarMaterialForm({
   material,
@@ -37,7 +37,10 @@ export function EditarMaterialForm({
   onClose,
 }: EditarMaterialFormProps) {
   const isGrupo = material.tipo === "grupo";
-  const needsDimensions = !isGrupo;
+  const isCategoria = material.tipo === "categoria";
+  // Categorías y grupos comparten formulario "ligero": solo nombre/descripción/imagen.
+  const isLight = isGrupo || isCategoria;
+  const needsDimensions = !isLight;
 
   const [form, setForm] = useState({
     nombre_material: material.name,
@@ -46,6 +49,7 @@ export function EditarMaterialForm({
     ancho: material.width === "-" ? "" : material.width,
     alto: material.height === "-" ? "" : material.height,
     grosor: material.thickness === "-" ? "" : material.thickness,
+    velocidad_avance: material.feedRate === "-" ? "" : material.feedRate,
     color: material.color === "-" ? "" : material.color,
   });
 
@@ -98,7 +102,7 @@ export function EditarMaterialForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (["ancho", "alto", "grosor"].includes(key)) {
+      if (["ancho", "alto", "grosor", "velocidad_avance"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
       }
@@ -108,7 +112,7 @@ export function EditarMaterialForm({
   }
 
   function validate() {
-    if (isGrupo) {
+    if (isLight) {
       const payload: Record<string, unknown> = {
         nombre_material: form.nombre_material.trim(),
         descripcion_material: form.descripcion_material.trim() || undefined,
@@ -142,6 +146,7 @@ export function EditarMaterialForm({
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
+      velocidad_avance: parseOptionalNumber(form.velocidad_avance),
       color: form.color.trim(),
       imagen_url: newImageKey ?? (imageCleared ? "" : "placeholder-for-validation"),
     };
@@ -174,7 +179,7 @@ export function EditarMaterialForm({
 
     // For individual/sub: strip the placeholder imagen_url unless a new image was uploaded
     let bodyPayload: Record<string, unknown>;
-    if (isGrupo) {
+    if (isLight) {
       bodyPayload = validatedPayload;
     } else {
       const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
@@ -240,6 +245,16 @@ export function EditarMaterialForm({
       {serverError && (
         <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
           {serverError}
+        </div>
+      )}
+
+      {isLight && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#fff3e0] border border-[#ffb74d] rounded-[6px]">
+          <span className="text-[13px] text-[#e65100]">
+            {isCategoria
+              ? "Categoría — edita el nombre, descripción e imagen."
+              : "Grupo de materiales — edita el nombre, descripción e imagen del grupo."}
+          </span>
         </div>
       )}
 
@@ -326,9 +341,7 @@ export function EditarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>
-                Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
-              </label>
+              <label className={LABEL}>Grosor (mm) *</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -339,6 +352,21 @@ export function EditarMaterialForm({
               />
               {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
             </div>
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Velocidad de avance (mm/s) <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={form.velocidad_avance}
+              onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
+              className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
+            />
+            {errors.velocidad_avance && <p className={ERROR_MSG}>{errors.velocidad_avance}</p>}
           </div>
 
           <div>
@@ -412,14 +440,25 @@ export function EditarMaterialForm({
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
             <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">
-              {isGrupo ? "¿Eliminar grupo?" : "¿Eliminar material?"}
+              {isCategoria
+                ? "¿Eliminar categoría?"
+                : isGrupo
+                  ? "¿Eliminar grupo?"
+                  : "¿Eliminar material?"}
             </h3>
             <p className="text-[14px] text-[#575757] mb-6">
-              {isGrupo ? (
+              {isCategoria ? (
+                <>
+                  ¿Estás seguro que quieres eliminar la categoría &quot;{material.name}&quot;?{" "}
+                  <strong className="text-[#1e1e1e]">
+                    Esto también eliminará todos los grupos, variantes e individuales que contiene.
+                  </strong>
+                </>
+              ) : isGrupo ? (
                 <>
                   ¿Estás seguro que quieres eliminar el grupo &quot;{material.name}&quot;?{" "}
                   <strong className="text-[#1e1e1e]">
-                    Esto también eliminará todos sus sub-materiales.
+                    Esto también eliminará todas sus variantes.
                   </strong>
                 </>
               ) : (

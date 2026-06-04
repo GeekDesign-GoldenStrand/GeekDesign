@@ -74,6 +74,7 @@ const BASE_MATERIAL = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
+  velocidad_avance: 50,
   color: "#C0C0C0",
   imagen_url: KEY,
   subMateriales: [],
@@ -86,6 +87,7 @@ const VALID_PAYLOAD = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
+  velocidad_avance: 50,
   color: "#C0C0C0",
   imagen_url: KEY,
 };
@@ -157,7 +159,9 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
 
     await createApp({ GET: routes.GET }).get("/api/materiales?sort=desc");
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { nombre_material: "desc" } })
+      expect.objectContaining({
+        orderBy: expect.arrayContaining([{ nombre_material: "desc" }]),
+      })
     );
   });
 
@@ -191,7 +195,7 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { es_grupo: false } })
+      expect.objectContaining({ where: { es_grupo: false, es_categoria: false } })
     );
   });
 
@@ -435,6 +439,13 @@ describe("PUT /api/materiales/[id] — MAT-04 Modificar material", () => {
     jest.clearAllMocks();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+    // updateMaterial ahora lee el material existente dentro de la transacción
+    // antes de hacer update; por defecto devolvemos una fila válida.
+    mockFindUnique.mockResolvedValue({
+      imagen_url: BASE_MATERIAL.imagen_url,
+      es_grupo: false,
+      es_categoria: false,
+    });
   });
 
   it("retorna 401 sin sesión activa", async () => {
@@ -723,6 +734,27 @@ describe("GET /api/materiales/[id]/impacto", () => {
 
     expect(prisma.proveedorPrecios.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id_material: { in: [1, 2, 3] } } })
+    );
+  });
+
+  it("para categorías agrega los ids de los grupos y sus variantes (2 niveles)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    // Categoría (1) → grupo (2) → variantes (4, 5); grupo (3) sin variantes.
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      subMateriales: [
+        { id_material: 2, subMateriales: [{ id_material: 4 }, { id_material: 5 }] },
+        { id_material: 3, subMateriales: [] },
+      ],
+    });
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
+
+    await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+
+    expect(prisma.proveedorPrecios.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_material: { in: [1, 2, 4, 5, 3] } } })
     );
   });
 

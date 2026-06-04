@@ -3,14 +3,17 @@ import { NextResponse } from "next/server";
 
 import { withSection } from "@/lib/auth/guards";
 import {
+  CreateCategoriaMaterialSchema,
   CreateGrupoMaterialSchema,
   CreateMaterialSchema,
   CreateSubMaterialSchema,
 } from "@/lib/schemas/materiales";
 import {
+  createCategoria,
   createGrupo,
   createMaterial,
   createSubMaterial,
+  getCategorias,
   getMaterialesGrupos,
   getMaterialesOptions,
   listMateriales,
@@ -33,12 +36,20 @@ export const GET = withSection("materiales", "read", async (req: NextRequest) =>
       return NextResponse.json({ data });
     }
 
+    if (mode === "categorias") {
+      const data = await getCategorias();
+      return NextResponse.json({ data });
+    }
+
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
     const q = searchParams.get("q")?.trim() || undefined;
     const sort = searchParams.get("sort") === "desc" ? "desc" : "asc";
     const rawTipo = searchParams.get("tipo");
-    const tipo = rawTipo === "grupos" || rawTipo === "individuales" ? rawTipo : undefined;
+    const tipo =
+      rawTipo === "categorias" || rawTipo === "grupos" || rawTipo === "individuales"
+        ? rawTipo
+        : undefined;
     const result = await listMateriales(page, pageSize, q, sort, tipo);
     return paginated(result.items, result.total, page, pageSize);
   } catch (err) {
@@ -50,6 +61,11 @@ export const POST = withSection("materiales", "write", async (req: NextRequest) 
   try {
     const body = await req.json();
     const tipo = body?.tipo;
+
+    if (tipo === "categoria") {
+      const parsed = CreateCategoriaMaterialSchema.parse(body);
+      return created(await createCategoria(parsed));
+    }
 
     if (tipo === "grupo") {
       const parsed = CreateGrupoMaterialSchema.parse(body);

@@ -196,6 +196,7 @@ model Materiales {
   id_material          Int      @id @default(autoincrement())
   id_material_padre    Int?
   es_grupo             Boolean  @default(false)
+  es_categoria         Boolean  @default(false)
   nombre_material      String   @db.VarChar(100)
   descripcion_material String?
   unidad_medida        String?  @db.VarChar(30)
@@ -203,6 +204,7 @@ model Materiales {
   alto                 Decimal? @db.Decimal(10, 2)
   grosor               Decimal? @db.Decimal(10, 2)
   color                String?  @db.VarChar(50)
+  velocidad_avance     Decimal? @db.Decimal(10, 2)
   imagen_url           String?  @db.VarChar(500)
 
   padre              Materiales?  @relation("SubMateriales", fields: [id_material_padre], references: [id_material])

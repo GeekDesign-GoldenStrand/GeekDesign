@@ -4,7 +4,7 @@ import { Modal } from "@/components/ui/atoms";
 import { RegistrarMaterialForm } from "@/components/ui/materiales/organisms/RegistrarMaterialForm";
 import type { MaterialCardProps } from "@/types";
 
-type Tipo = "individual" | "grupo" | "sub";
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
 
 interface AgregarMaterialModalProps {
   isOpen: boolean;
@@ -15,8 +15,9 @@ interface AgregarMaterialModalProps {
 }
 
 const TITLES: Record<Tipo, string> = {
+  categoria: "Crear Categoría",
   individual: "Agregar Material",
-  grupo: "Crear Grupo de Materiales",
+  grupo: "Crear Grupo",
   sub: "Agregar Variante",
 };
 

@@ -80,13 +80,26 @@ export interface MaterialCardProps {
   width: string;
   height: string;
   thickness: string;
+  feedRate: string;
   description: string;
   imageUrl: string;
   id_material_padre: number | null;
-  tipo: "individual" | "grupo" | "sub";
+  tipo: "categoria" | "grupo" | "individual" | "sub";
   subMateriales?: MaterialCardProps[];
 }
 
 export type MaterialSortOrder = "az" | "za";
 
-export type MaterialTipoFilter = "all" | "grupos" | "individuales";
+export type MaterialTipoFilter = "all" | "categorias" | "grupos" | "individuales";
+
+export interface MaterialesVisibleColumns {
+  name: boolean;
+  description: boolean;
+  unit: boolean;
+  width: boolean;
+  height: boolean;
+  thickness: boolean;
+  color: boolean;
+  image: boolean;
+  proveedores: boolean;
+}

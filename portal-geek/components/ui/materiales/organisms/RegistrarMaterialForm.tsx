@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import {
+  CreateCategoriaMaterialSchema,
   CreateGrupoMaterialSchema,
   CreateMaterialSchema,
   CreateSubMaterialSchema,
@@ -19,9 +20,9 @@ import {
 } from "@/lib/utils/materiales";
 import type { MaterialCardProps } from "@/types";
 
-type Tipo = "individual" | "grupo" | "sub";
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
 
-interface GrupoOption {
+interface MaterialOption {
   id_material: number;
   nombre_material: string;
 }
@@ -47,7 +48,8 @@ export function RegistrarMaterialForm({
   initialPadreId,
 }: RegistrarMaterialFormProps) {
   const [tipo, setTipo] = useState<Tipo>(initialTipo);
-  const [grupos, setGrupos] = useState<GrupoOption[]>([]);
+  const [grupos, setGrupos] = useState<MaterialOption[]>([]);
+  const [categorias, setCategorias] = useState<MaterialOption[]>([]);
 
   const [form, setForm] = useState({
     nombre_material: "",
@@ -56,6 +58,7 @@ export function RegistrarMaterialForm({
     ancho: "",
     alto: "",
     grosor: "",
+    velocidad_avance: "",
     color: "",
     imagen_url: "",
     id_material_padre: initialPadreId ? String(initialPadreId) : "",
@@ -72,11 +75,24 @@ export function RegistrarMaterialForm({
     fetch("/api/materiales?mode=grupos")
       .then((r) => r.json())
       .then((payload) => {
-        const data = (payload?.data ?? []) as Array<{
-          id_material: number;
-          nombre_material: string;
-        }>;
+        const data = (payload?.data ?? []) as MaterialOption[];
         setGrupos(data);
+      })
+      .catch(() => {});
+  }, [tipo]);
+
+  // Fetch categorías when tipo is "grupo" or "individual" (para selector opcional).
+  useEffect(() => {
+    if (tipo !== "grupo" && tipo !== "individual") return;
+    fetch("/api/materiales?mode=categorias")
+      .then((r) => r.json())
+      .then((payload) => {
+        const data = (payload?.data ?? []) as MaterialOption[];
+        // "Sin categoría" === no parent (the value="" option below). Never list a
+        // real row by that name so it can't collide with the null option.
+        setCategorias(
+          data.filter((c) => c.nombre_material.trim().toLowerCase() !== "sin categoría")
+        );
       })
       .catch(() => {});
   }, [tipo]);
@@ -91,7 +107,7 @@ export function RegistrarMaterialForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (["ancho", "alto", "grosor"].includes(key)) {
+      if (["ancho", "alto", "grosor", "velocidad_avance"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
       }
@@ -101,9 +117,32 @@ export function RegistrarMaterialForm({
   }
 
   function validate() {
+    if (tipo === "categoria") {
+      const payload = {
+        tipo: "categoria" as const,
+        nombre_material: form.nombre_material.trim(),
+        descripcion_material: form.descripcion_material.trim() || undefined,
+        imagen_url: form.imagen_url.trim() || undefined,
+      };
+      const result = CreateCategoriaMaterialSchema.safeParse(payload);
+      if (result.success) {
+        setErrors({});
+        return payload;
+      }
+      const nextErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string;
+        if (!nextErrors[field]) nextErrors[field] = issue.message;
+      }
+      setErrors(nextErrors);
+      return null;
+    }
+
     if (tipo === "grupo") {
+      const padre = form.id_material_padre ? Number(form.id_material_padre) : null;
       const payload = {
         tipo: "grupo" as const,
+        id_material_padre: padre,
         nombre_material: form.nombre_material.trim(),
         descripcion_material: form.descripcion_material.trim() || undefined,
         imagen_url: form.imagen_url.trim() || undefined,
@@ -132,6 +171,7 @@ export function RegistrarMaterialForm({
         ancho: parseOptionalNumber(form.ancho),
         alto: parseOptionalNumber(form.alto),
         grosor: parseOptionalNumber(form.grosor),
+        velocidad_avance: parseOptionalNumber(form.velocidad_avance),
         color: form.color.trim(),
         imagen_url: form.imagen_url.trim(),
       };
@@ -150,13 +190,16 @@ export function RegistrarMaterialForm({
     }
 
     // individual
+    const padreIndividual = form.id_material_padre ? Number(form.id_material_padre) : null;
     const payload = {
+      id_material_padre: padreIndividual,
       nombre_material: form.nombre_material.trim(),
       descripcion_material: form.descripcion_material.trim() || undefined,
       unidad_medida: form.unidad_medida.trim(),
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
+      velocidad_avance: parseOptionalNumber(form.velocidad_avance),
       color: form.color.trim(),
       imagen_url: form.imagen_url.trim(),
     };
@@ -228,9 +271,30 @@ export function RegistrarMaterialForm({
             }}
             size="sm"
           >
+            <SelectOption value="categoria">Categoría</SelectOption>
+            <SelectOption value="grupo">Grupo</SelectOption>
+            <SelectOption value="sub">Variante</SelectOption>
             <SelectOption value="individual">Material individual</SelectOption>
-            <SelectOption value="grupo">Grupo de materiales</SelectOption>
-            <SelectOption value="sub">Sub-material (variante)</SelectOption>
+          </Select>
+        </div>
+      )}
+
+      {/* Categoría picker — opcional para grupos e individuales */}
+      {(tipo === "grupo" || tipo === "individual") && (
+        <div>
+          <label className={LABEL}>Categoría (opcional)</label>
+          <Select
+            value={form.id_material_padre}
+            onChange={(v) => setField("id_material_padre", v)}
+            placeholder="Sin categoría"
+            size="sm"
+          >
+            <SelectOption value="">Sin categoría</SelectOption>
+            {categorias.map((c) => (
+              <SelectOption key={c.id_material} value={String(c.id_material)}>
+                {c.nombre_material}
+              </SelectOption>
+            ))}
           </Select>
         </div>
       )}
@@ -274,7 +338,15 @@ export function RegistrarMaterialForm({
         <input
           type="text"
           maxLength={100}
-          placeholder={tipo === "grupo" ? "Ej. Acrílicos" : "Ej. Acrílico espejo"}
+          placeholder={
+            tipo === "categoria"
+              ? "Ej. Maderas"
+              : tipo === "grupo"
+                ? "Ej. MDF"
+                : tipo === "sub"
+                  ? "Ej. MDF 3mm"
+                  : "Ej. Acrílico espejo"
+          }
           value={form.nombre_material}
           onChange={(e) => setField("nombre_material", e.target.value)}
           className={`${FIELD} ${getFieldClass("nombre_material")}`}
@@ -350,9 +422,7 @@ export function RegistrarMaterialForm({
               {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
             </div>
             <div>
-              <label className={LABEL}>
-                Grosor{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
-              </label>
+              <label className={LABEL}>Grosor (mm) *</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -363,6 +433,21 @@ export function RegistrarMaterialForm({
               />
               {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
             </div>
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Velocidad de avance (mm/s) <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={form.velocidad_avance}
+              onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
+              className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
+            />
+            {errors.velocidad_avance && <p className={ERROR_MSG}>{errors.velocidad_avance}</p>}
           </div>
 
           <div>
@@ -383,7 +468,9 @@ export function RegistrarMaterialForm({
       )}
 
       <div>
-        <label className={LABEL}>Imagen</label>
+        <label className={LABEL}>
+          Imagen {tipo !== "grupo" && tipo !== "categoria" ? "*" : ""}
+        </label>
         <ImageUploader
           mode="single"
           category="materiales"
