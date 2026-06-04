@@ -257,7 +257,7 @@ export function CarritoView({ relatedServices }: Props) {
                                 // ignore empty input, keep current quantity
                                 return;
                               }
-                              if (!/^\\d+$/.test(raw)) return;
+                              if (!/^\d+$/.test(raw)) return;
                               const val = Number(raw);
                               const next = Math.floor(val);
                               if (next > CANTIDAD_MAX) return;
