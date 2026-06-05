@@ -7,6 +7,18 @@ export interface PedidoVariableCotizacion {
   variable: { nombre_variable: string; etiqueta: string; unidad: string | null };
 }
 
+export interface PedidoMaquinaAsignada {
+  id_maquina: number;
+  nombre_maquina: string;
+  apodo_maquina: string;
+  tipo: string;
+  fecha_asignacion: string;
+  material: {
+    id_material: number;
+    nombre_material: string;
+  };
+}
+
 export interface PedidoLineItem {
   id_detalle: number;
   id_servicio: number;
@@ -24,6 +36,7 @@ export interface PedidoLineItem {
   archivo: { id_archivo: number; nombre_archivo: string; url_archivo: string; formato: string };
   estatus?: { descripcion: string } | null;
   variablesCotizacion?: PedidoVariableCotizacion[];
+  maquinaAsignada: PedidoMaquinaAsignada | null;
 }
 
 export interface PedidoPago {
