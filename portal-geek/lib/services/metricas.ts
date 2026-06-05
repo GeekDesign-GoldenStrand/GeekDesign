@@ -258,3 +258,158 @@ export async function getTopClientes(): Promise<TopClientesResult> {
     availableYears: Array.from(years).sort((a, b) => b - a),
   };
 }
+
+// ── Ingresos por máquina ─────────────────────────────────────────────────────
+
+export interface MaquinaScopeStats {
+  total: number;
+  numPedidos: number;
+}
+
+export interface IngresosMaquinaData {
+  id_maquina: number;
+  nombre: string;
+  apodo: string | null;
+  tipo: string | null;
+  // All-time net income attributed to the machine.
+  total: number;
+  numPedidos: number;
+  porAno: Record<number, MaquinaScopeStats>;
+}
+
+export interface IngresosMaquinasResult {
+  maquinas: IngresosMaquinaData[];
+  availableYears: number[];
+}
+
+/**
+ * Net income "generated" by each machine. Attribution = full: every machine
+ * that participated in an order counts that order's full net income. Machines
+ * are linked through the order's services (DetallePedido → Servicio →
+ * ServicioMaquina), and de-duplicated so each order is counted once per machine.
+ */
+export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
+  let pagos;
+  try {
+    pagos = await prisma.pagos.findMany({
+      where: { estatus_pago: { in: REVENUE_ESTATUS } },
+      select: {
+        fecha: true,
+        monto_pago: true,
+        estatus_pago: true,
+        id_pedido: true,
+        pedido: {
+          select: {
+            detalles: {
+              select: {
+                servicio: {
+                  select: {
+                    maquinas: {
+                      select: {
+                        id_maquina: true,
+                        maquina: {
+                          select: { nombre_maquina: true, apodo_maquina: true, tipo: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener ingresos por máquina:", error);
+    throw new Error("No se pudieron cargar las métricas en este momento.");
+  }
+
+  interface Acc {
+    id_maquina: number;
+    nombre: string;
+    apodo: string | null;
+    tipo: string | null;
+    total: number;
+    pedidos: Set<number>;
+    porAno: Map<number, { total: number; pedidos: Set<number> }>;
+  }
+
+  const byMaquina = new Map<number, Acc>();
+  const years = new Set<number>();
+
+  for (const pago of pagos) {
+    const pedido = pago.pedido;
+    if (!pedido) continue;
+
+    const year = pago.fecha.getUTCFullYear();
+    const monto = montoNeto(pago);
+
+    // Distinct machines that produced this order, gathered across its service
+    // line items (the same machine reached via several services counts once).
+    const maquinasDelPedido = new Map<
+      number,
+      { nombre_maquina: string; apodo_maquina: string | null; tipo: string | null }
+    >();
+    for (const detalle of pedido.detalles) {
+      for (const sm of detalle.servicio.maquinas) {
+        if (!maquinasDelPedido.has(sm.id_maquina)) {
+          maquinasDelPedido.set(sm.id_maquina, sm.maquina);
+        }
+      }
+    }
+    if (maquinasDelPedido.size === 0) continue;
+
+    years.add(year);
+
+    for (const [idMaquina, maq] of maquinasDelPedido) {
+      let acc = byMaquina.get(idMaquina);
+      if (!acc) {
+        acc = {
+          id_maquina: idMaquina,
+          nombre: maq.nombre_maquina,
+          apodo: maq.apodo_maquina,
+          tipo: maq.tipo,
+          total: 0,
+          pedidos: new Set<number>(),
+          porAno: new Map(),
+        };
+        byMaquina.set(idMaquina, acc);
+      }
+
+      acc.total += monto;
+      acc.pedidos.add(pago.id_pedido);
+
+      let yearStats = acc.porAno.get(year);
+      if (!yearStats) {
+        yearStats = { total: 0, pedidos: new Set<number>() };
+        acc.porAno.set(year, yearStats);
+      }
+      yearStats.total += monto;
+      yearStats.pedidos.add(pago.id_pedido);
+    }
+  }
+
+  const maquinas: IngresosMaquinaData[] = Array.from(byMaquina.values())
+    .map((m) => {
+      const porAno: Record<number, MaquinaScopeStats> = {};
+      for (const [year, stats] of m.porAno) {
+        porAno[year] = { total: stats.total, numPedidos: stats.pedidos.size };
+      }
+      return {
+        id_maquina: m.id_maquina,
+        nombre: m.nombre,
+        apodo: m.apodo,
+        tipo: m.tipo,
+        total: m.total,
+        numPedidos: m.pedidos.size,
+        porAno,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    maquinas,
+    availableYears: Array.from(years).sort((a, b) => b - a),
+  };
+}
