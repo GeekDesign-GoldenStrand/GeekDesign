@@ -4,10 +4,11 @@ import { Gear } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { ServiceFilterButton } from "@/components/admin/atoms/ServiceFilterButton";
+import { ClientesTab } from "@/components/admin/dashboard/templates/ClientesTab";
 import { GeneralTab } from "@/components/admin/dashboard/templates/GeneralTab";
 import { DashboardFinanciero } from "@/components/admin/metricas/DashboardFinanciero";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import type { MetricasDashboardData } from "@/lib/services/metricas";
+import type { MetricasDashboardData, TopClientesResult } from "@/lib/services/metricas";
 
 export type DashboardTab = "General" | "Ingresos" | "Máquinas" | "Clientes" | "Gastos";
 
@@ -15,9 +16,10 @@ const TABS: DashboardTab[] = ["General", "Ingresos", "Máquinas", "Clientes", "G
 
 interface Props {
   data: MetricasDashboardData;
+  topClientes: TopClientesResult;
 }
 
-export function DashboardView({ data }: Props) {
+export function DashboardView({ data, topClientes }: Props) {
   const [activeTab, setActiveTab] = useState<DashboardTab>("General");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
 
@@ -60,10 +62,9 @@ export function DashboardView({ data }: Props) {
       <div className="mt-2">
         {activeTab === "General" && <GeneralTab data={data} isEditing={isEditingConfig} />}
         {activeTab === "Ingresos" && <DashboardFinanciero data={data} />}
+        {activeTab === "Clientes" && <ClientesTab data={topClientes} />}
         {/* Blank for the empty tabs */}
-        {["Máquinas", "Clientes", "Gastos"].includes(activeTab) && (
-          <div className="min-h-[400px]" />
-        )}
+        {["Máquinas", "Gastos"].includes(activeTab) && <div className="min-h-[400px]" />}
       </div>
     </div>
   );
