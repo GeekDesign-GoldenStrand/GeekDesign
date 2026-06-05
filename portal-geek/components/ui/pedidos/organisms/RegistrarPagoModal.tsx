@@ -18,9 +18,12 @@ interface Props {
 const METODOS: MetodoPago[] = ["efectivo", "transferencia", "Mercado Pago"];
 const ESTATUS: EstatusPago[] = ["Pagado", "Pendiente", "Reembolsado"];
 
+// the monto_pago Decimal(10,2) column.
+const MAX_MONTO_DIGITOS = 5;
+
 const LABEL = "block text-[13px] font-medium text-[#1e1e1e] mb-1";
 const FIELD =
-  "w-full rounded-lg border border-[#d1d1d1] px-3 py-2 text-[14px] outline-none focus:border-[#e42200] focus:ring-1 focus:ring-[#e42200]";
+  "w-full rounded-lg border border-[#d1d1d1] bg-white px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#e42200] focus:ring-1 focus:ring-[#e42200]";
 
 export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess }: Props) {
   const [monto, setMonto] = useState("");
@@ -46,9 +49,15 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess }: Pro
     onClose();
   }
 
-  // Allow only a positive decimal with up to two places while typing.
+  // Mirror the system-wide numeric-input guard: digits with at most one decimal
+  // point and two decimals, capped at MAX_MONTO_DIGITOS digits (the dot doesn't
+  // count). Rejects letters, signs, scientific notation and pasted junk that a
+  // type="number" field would otherwise let through.
   function handleMontoChange(raw: string) {
-    if (raw === "" || /^\d*\.?\d{0,2}$/.test(raw)) setMonto(raw);
+    const digitCount = raw.replace(/\./g, "").length;
+    if (raw === "" || (/^\d*\.?\d{0,2}$/.test(raw) && digitCount <= MAX_MONTO_DIGITOS)) {
+      setMonto(raw);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -108,7 +117,7 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess }: Pro
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="pago-monto" className={LABEL}>
-            Monto (MXN)
+            Monto (MXN){" "}
           </label>
           <input
             id="pago-monto"
