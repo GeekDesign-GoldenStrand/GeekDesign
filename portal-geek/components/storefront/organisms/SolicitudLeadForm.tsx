@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { noEmoji, textOnly } from "@/lib/schemas/text-validation";
 import { EMAIL_ERROR_MESSAGE, isValidEmail } from "@/lib/utils/email";
+import { normalizeNumericInput } from "@/lib/utils/materiales";
 
 export type LeadTipo = "idea_nula" | "idea_vaga" | "personalizada";
 
@@ -453,14 +454,30 @@ export function SolicitudLeadForm({ tipo, titulo, intro, fields, idServicio }: P
                   ) : (
                     <input
                       id={id}
-                      type={field.kind === "number" ? "number" : "text"}
+                      // Numeric fields use type=text + inputMode/pattern instead
+                      // of type=number so they reject letters, "e", and signs
+                      // outright (same enforcement as PR #138 / CarritoView).
+                      type="text"
+                      inputMode={field.kind === "number" ? "numeric" : undefined}
+                      pattern={field.kind === "number" ? "^[0-9]+$" : undefined}
                       required={field.required}
                       maxLength={field.kind === "text" ? (field.maxLength ?? 200) : undefined}
-                      min={field.kind === "number" ? field.min : undefined}
-                      max={field.kind === "number" ? field.max : undefined}
                       placeholder={field.placeholder}
                       value={value}
-                      onChange={(e) => setFieldValue(field.name, e.target.value)}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        // Integer-only: ignore any keystroke that isn't digits
+                        // (empty stays allowed so the field can be cleared).
+                        if (field.kind === "number" && raw !== "" && !/^\d+$/.test(raw)) return;
+                        setFieldValue(field.name, raw);
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          field.kind === "number" &&
+                          (e.key === "-" || e.key === "e" || e.key === "E")
+                        )
+                          e.preventDefault();
+                      }}
                       onBlur={() =>
                         setFieldErrors((prev) => ({
                           ...prev,
@@ -492,16 +509,20 @@ export function SolicitudLeadForm({ tipo, titulo, intro, fields, idServicio }: P
                 </span>
                 <input
                   id="presupuesto"
-                  type="number"
-                  min={0}
-                  max={PRESUPUESTO_MAX}
-                  step="0.01"
+                  // Money field: text + inputMode/pattern + normalizeNumericInput
+                  // so it only accepts digits and a single decimal point (≤2),
+                  // rejecting letters/"e"/signs — same enforcement as PR #138.
+                  type="text"
                   inputMode="decimal"
+                  pattern="^[0-9]*\.?[0-9]+$"
                   placeholder="0.00"
                   value={presupuesto}
                   onChange={(e) => {
-                    setPresupuesto(e.target.value);
+                    setPresupuesto(normalizeNumericInput(e.target.value));
                     if (presupuestoError) setPresupuestoError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault();
                   }}
                   onBlur={() => setPresupuestoError(parsePresupuesto(presupuesto).error)}
                   aria-invalid={presupuestoError !== null}

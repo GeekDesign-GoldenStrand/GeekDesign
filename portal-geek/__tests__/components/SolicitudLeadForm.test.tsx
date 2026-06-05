@@ -41,6 +41,31 @@ describe("SolicitudLeadForm", () => {
     jest.restoreAllMocks();
   });
 
+  it("ST11-C2: el campo numérico (cantidad) rechaza caracteres no numéricos", async () => {
+    const user = userEvent.setup();
+    render(
+      <SolicitudLeadForm
+        tipo="idea_vaga"
+        titulo="Tengo una idea"
+        intro="i"
+        fields={[{ name: "cantidad", kind: "number", label: "Cantidad", required: true, min: 1 }]}
+      />
+    );
+    const input = screen.getByLabelText(/Cantidad/);
+    await user.type(input, "abc");
+    expect(input).toHaveValue(""); // letters rejected outright
+    await user.type(input, "12");
+    expect(input).toHaveValue("12");
+  });
+
+  it("ST10-C7: presupuesto solo acepta números con máximo 2 decimales", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    const input = screen.getByLabelText(/Presupuesto aproximado/);
+    await user.type(input, "abc12.999");
+    expect(input).toHaveValue("12.99"); // non-numeric stripped, decimals capped at 2
+  });
+
   it("ST10-C4: renderiza el título y los campos requeridos", () => {
     renderForm();
     expect(screen.getByRole("heading", { name: "No sé lo que quiero" })).toBeInTheDocument();
