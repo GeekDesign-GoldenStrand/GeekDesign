@@ -255,16 +255,21 @@ export function CarritoView({ relatedServices }: Props) {
                             Cantidad:
                           </span>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="^[0-9]+$"
                             min={1}
                             max={CANTIDAD_MAX}
                             value={item.cantidad}
                             onChange={(e) => {
-                              const val = Number(e.target.value);
-                              if (!Number.isFinite(val)) return;
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                // ignore empty input, keep current quantity
+                                return;
+                              }
+                              if (!/^\d+$/.test(raw)) return;
+                              const val = Number(raw);
                               const next = Math.floor(val);
-                              // Reject the keystroke above the cap instead of
-                              // snapping — typing "1234" stays at "123".
                               if (next > CANTIDAD_MAX) return;
                               handleCantidad(item.id, next);
                             }}
