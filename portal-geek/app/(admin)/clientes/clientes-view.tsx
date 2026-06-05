@@ -1,11 +1,11 @@
 "use client";
 
 import type { Clientes } from "@prisma/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import { ClientesTable, type ClientCategory } from "@/components/ui/clientes";
+import { ClientesGrid, type ClientCategory } from "@/components/ui/clientes";
 
 export function ClientesView() {
   // State for data management, loading, errors, and search
@@ -18,11 +18,16 @@ export function ClientesView() {
   const [total, setTotal] = useState(0);
   const pageSize = 10;
 
+  // Buscar mientras estás en la página N dispara dos fetches casi a la vez (uno
+  // con la página vieja, otro tras acotarla). Este contador asegura que solo la
+  // respuesta más reciente actualice el estado, evitando que una página vacía
+  // (obsoleta) sobrescriba los resultados de la búsqueda.
+  const requestIdRef = useRef(0);
+
   // Debounce search input
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1);
     }, 500);
 
     return () => clearTimeout(handler);
@@ -30,6 +35,7 @@ export function ClientesView() {
 
   // Data loading from the API
   const fetchClientes = useCallback(async () => {
+    const reqId = ++requestIdRef.current;
     try {
       setLoading(true);
       const query = new URLSearchParams({
@@ -40,8 +46,23 @@ export function ClientesView() {
       const res = await fetch(`/api/clientes?${query.toString()}`);
       if (!res.ok) throw new Error("Failed to load clients");
       const json = await res.json();
+
+      // Descarta la respuesta si ya se disparó una petición más reciente.
+      if (reqId !== requestIdRef.current) return;
+
+      // La búsqueda se aplica sobre TODOS los registros en el servidor. Si la
+      // página actual quedó fuera de rango tras filtrar, acota a la última válida
+      // en lugar de saltar a la 1: el cambio de `page` dispara un refetch que
+      // traerá datos.
+      const nextTotal = json.total || 0;
+      const totalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
+      if (page > totalPages) {
+        setPage(totalPages);
+        return;
+      }
+
       setClientes(json.data || []);
-      setTotal(json.total || 0);
+      setTotal(nextTotal);
     } catch (err) {
       console.error(err);
       setError("Error al cargar la lista de clientes. Por favor, intente de nuevo.");
@@ -54,8 +75,9 @@ export function ClientesView() {
     fetchClientes();
   }, [fetchClientes]);
 
-  // Update client category
-  const handleUpdateCategory = async (id: number, category: ClientCategory) => {
+  // Update client category. `category` may be `null` when the admin picks
+  // "Sin categoría" — the server schema accepts null and clears the column.
+  const handleUpdateCategory = async (id: number, category: ClientCategory | null) => {
     try {
       const res = await fetch(`/api/clientes/${id}`, {
         method: "PUT",
@@ -87,7 +109,7 @@ export function ClientesView() {
             {error}
           </div>
         ) : (
-          <ClientesTable
+          <ClientesGrid
             items={clientes}
             loading={loading}
             total={total}

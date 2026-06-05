@@ -1,14 +1,15 @@
 "use client";
 
-import { CheckCircleIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, WarningCircle } from "@phosphor-icons/react";
 import { useEffect } from "react";
 
 interface SuccessModalProps {
   message: string;
   onClose: () => void;
+  variant?: "success" | "error";
 }
 
-export function SuccessModal({ message, onClose }: SuccessModalProps) {
+export function SuccessModal({ message, onClose, variant = "success" }: SuccessModalProps) {
   useEffect(() => {
     const timer = setTimeout(onClose, 1500);
     return () => clearTimeout(timer);
@@ -23,7 +24,11 @@ export function SuccessModal({ message, onClose }: SuccessModalProps) {
           </h2>
         </div>
         <div className="flex items-center justify-center p-8">
-          <CheckCircleIcon size={72} weight="regular" className="text-[#166534]" />
+          {variant === "error" ? (
+            <WarningCircle size={72} weight="regular" className="text-[#e42200]" />
+          ) : (
+            <CheckCircleIcon size={72} weight="regular" className="text-[#166534]" />
+          )}
         </div>
       </div>
     </div>

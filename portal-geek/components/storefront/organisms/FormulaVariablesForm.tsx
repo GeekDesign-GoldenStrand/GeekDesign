@@ -58,7 +58,7 @@ export function FormulaVariablesForm({
 
   const [idMaterial, setIdMaterial] = useState<number | null>(materiales[0]?.id_material ?? null);
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidad, setCantidad] = useState<string>("1");
   const [notas, setNotas] = useState("");
   const [precioUnitario, setPrecioUnitario] = useState<number | null>(null);
   const [calcError, setCalcError] = useState<string | null>(null);
@@ -136,7 +136,7 @@ export function FormulaVariablesForm({
   function handleReset() {
     setIdMaterial(materiales[0]?.id_material ?? null);
     setValues({ ...defaultValues });
-    setCantidad(1);
+    setCantidad("1");
     setNotas("");
     // Clear the stale price so the "Agregar al carrito" button stays disabled
     // until the post-reset recalc lands. Without this, the button briefly
@@ -164,6 +164,17 @@ export function FormulaVariablesForm({
       setCalcError("El precio aún no se ha calculado");
       return;
     }
+    // Quantity validation
+    if (cantidad.trim() === "") {
+      setCalcError("Completa todos los campos para ver el precio");
+      return;
+    }
+    const qty = Number(cantidad);
+    if (!Number.isInteger(qty) || qty <= 0) {
+      setCalcError("El valor debe ser mayor que 0");
+      return;
+    }
+
     const material = materiales.find((m) => m.id_material === idMaterial);
     if (!material) return;
 
@@ -182,7 +193,7 @@ export function FormulaVariablesForm({
         })),
         notas: notas.trim() || undefined,
       },
-      cantidad,
+      cantidad: qty,
       precioCalculado: precioUnitario,
       imagenUrls,
       ...(disenioFile ? { disenioKey: disenioFile.key, disenioNombre: disenioFile.filename } : {}),
@@ -199,7 +210,7 @@ export function FormulaVariablesForm({
     );
   }
 
-  const subtotal = precioUnitario !== null ? precioUnitario * cantidad : null;
+  const subtotal = precioUnitario !== null ? precioUnitario * Number(cantidad) : null;
 
   return (
     <div className="flex flex-col gap-[20px]">
@@ -248,19 +259,36 @@ export function FormulaVariablesForm({
             </label>
             <input
               id="cantidad"
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="^[0-9]+$"
               min={1}
               max={CANTIDAD_MAX}
               value={cantidad}
               onChange={(e) => {
-                const val = Number(e.target.value);
-                if (!Number.isFinite(val)) return;
-                const next = Math.floor(val);
-                // Reject the keystroke when it would exceed the cap instead of
-                // snapping to it — typing "1234" leaves the field at "123"
-                // rather than jumping to 1000.
-                if (next > CANTIDAD_MAX) return;
-                setCantidad(Math.max(1, next));
+                const raw = e.target.value;
+                if (raw === "") {
+                  setCantidad("");
+                  return;
+                }
+                if (!/^\d+$/.test(raw)) return;
+                const val = Number(raw);
+                if (val > CANTIDAD_MAX) return;
+                setCantidad(String(Math.max(1, Math.floor(val))));
+              }}
+              onBlur={(e) => {
+                const val = e.target.value.trim();
+                if (val === "") {
+                  setCalcError("Completa todos los campos para ver el precio");
+                } else {
+                  const num = Number(val);
+                  if (!Number.isInteger(num) || num <= 0) {
+                    setCalcError("El valor debe ser mayor que 0");
+                  } else {
+                    setCalcError(null);
+                    setCantidad(String(num));
+                  }
+                }
               }}
               className="h-[40px] rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
             />
@@ -278,18 +306,31 @@ export function FormulaVariablesForm({
               <div className="relative">
                 <input
                   id={`var-${v.id_variable}`}
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="any"
+                  pattern="^[0-9]*\.?[0-9]{0,2}$"
                   min={VAR_MIN}
                   max={VAR_MAX}
                   value={
                     Number.isFinite(values[v.nombre_variable]) ? values[v.nombre_variable] : ""
                   }
-                  onChange={(e) => handleVarChange(v.nombre_variable, e.target.value)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      // allow empty as sentinel
+                      handleVarChange(v.nombre_variable, "");
+                      return;
+                    }
+                    // Allow only digits and a single decimal point
+                    if (!/^\d*\.?\d{0,2}$/.test(raw)) return;
+                    const num = Number(raw);
+                    if (!Number.isFinite(num)) return;
+                    if (num <= VAR_MIN) return;
+                    if (num > VAR_MAX) return;
+                    handleVarChange(v.nombre_variable, raw);
+                  }}
                   onKeyDown={(e) => {
-                    // Block the minus key outright so the input visually can't
-                    // hold a negative; handleVarChange also rejects programmatically.
+                    // Block the minus and exponent keys
                     if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault();
                   }}
                   className="h-[40px] w-full rounded-[8px] border border-[#c2c0c0] bg-white px-[12px] pr-[44px] text-[13px] text-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#8b434a]"
@@ -334,10 +375,6 @@ export function FormulaVariablesForm({
               {subtotal !== null ? formatPeso(subtotal) : "—"}
             </span>
           </div>
-          <div className="flex justify-between text-[13px] text-[#1e1e1e]">
-            <span>Tiempo estimado</span>
-            <span className="font-medium text-[#666]">—</span>
-          </div>
         </div>
 
         {calculating && precioUnitario === null && (
@@ -351,7 +388,11 @@ export function FormulaVariablesForm({
             variant="primary"
             section="storefront"
             size="md"
-            disabled={precioUnitario === null || calculating}
+            disabled={
+              precioUnitario === null ||
+              calculating ||
+              !(Number.isInteger(Number(cantidad)) && Number(cantidad) > 0)
+            }
             className="flex-1"
           >
             Agregar al carrito

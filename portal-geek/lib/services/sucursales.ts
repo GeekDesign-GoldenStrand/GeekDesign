@@ -24,6 +24,12 @@ export type SucursalWithRelations = Prisma.SucursalesGetPayload<{
   };
 }>;
 
+// Sentinel status used only by `deleteSucursal` — distinct from "Inactivo" so
+// users can still flip a branch to inactive without it disappearing from the
+// table. The user-facing status toggle is locked to "Activo" / "Inactivo" by
+// the zod schema, so this value can only be written via deleteSucursal.
+const ESTATUS_ELIMINADA = "Eliminada";
+
 function handlePrismaNotFoundError(err: unknown): never {
   if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
     throw new NotFoundError("Sucursal not found");
@@ -44,7 +50,11 @@ export async function listSucursales(
 ): Promise<{ items: Sucursales[]; total: number }> {
   const skip = (page - 1) * pageSize;
 
-  const where: Prisma.SucursalesWhereInput = {};
+  // Soft-deleted branches are never returned by the listing. Their estatus
+  // sentinel is set by deleteSucursal and is unreachable from the UI.
+  const where: Prisma.SucursalesWhereInput = {
+    NOT: { estatus: ESTATUS_ELIMINADA },
+  };
 
   // Conditions are collected dynamically so optional filters can be combined safely.
   const andConditions: Prisma.SucursalesWhereInput[] = [];
@@ -189,14 +199,14 @@ export async function updateSucursal(id: number, data: UpdateSucursalInput): Pro
 
 export async function deleteSucursal(id: number): Promise<void> {
   try {
-    // Soft delete keeps historical relations intact.
-    // The branch disappears from the default table because listSucursales filters active records.
+    // Soft delete keeps historical relations (pedidos / colaboradores / maquinas
+    // referencing this sucursal) intact. listSucursales filters this status out.
     await prisma.sucursales.update({
       where: {
         id_sucursal: id,
       },
       data: {
-        estatus: "Inactivo",
+        estatus: ESTATUS_ELIMINADA,
       },
     });
   } catch (err) {

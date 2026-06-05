@@ -238,24 +238,36 @@ describe("POST /api/instaladores", () => {
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando telefono no tiene exactamente 10 dígitos", async () => {
+  it("retorna 422 cuando telefono es cadena vacía", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, telefono: "12345" });
+      .send({ ...VALID_PAYLOAD, telefono: "" });
 
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando telefono contiene letras", async () => {
+  it("retorna 422 cuando telefono supera 20 caracteres", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, telefono: "555abc4567" });
+      .send({ ...VALID_PAYLOAD, telefono: "1".repeat(21) });
 
     expect(res.status).toBe(422);
+  });
+
+  it("acepta telefono en formato E.164 internacional", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockCreate.mockResolvedValue({ ...CREATED_INSTALADOR, telefono: "+524421234567" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, telefono: "+524421234567" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.telefono).toBe("+524421234567");
   });
 
   it("retorna 422 cuando correo no tiene formato válido", async () => {
@@ -294,16 +306,6 @@ describe("POST /api/instaladores", () => {
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
       .send({ ...VALID_PAYLOAD, estatus: "Suspendido" });
-
-    expect(res.status).toBe(422);
-  });
-
-  it("retorna 422 cuando telefono tiene 11 dígitos", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, telefono: "55512345678" });
 
     expect(res.status).toBe(422);
   });

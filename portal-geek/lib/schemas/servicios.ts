@@ -24,7 +24,19 @@ const VariableSchema = z.object({
     .refine(textOnly, {
       message: "La etiqueta solo debe contener caracteres en inglés o español y signos comunes",
     }),
-  valor_default: z.coerce.number().nonnegative().max(99999999).optional(),
+  // DB column: Decimal(10, 4) → max 6 integer digits → 999999.99
+  valor_default: z.coerce
+    .number()
+    .nonnegative()
+    .max(999999.99, "El valor no puede superar 999,999.99")
+    .refine(
+      (v) => {
+        const dot = v.toString().indexOf(".");
+        return dot === -1 || v.toString().length - dot - 1 <= 2;
+      },
+      { message: "Máximo 2 decimales permitidos" }
+    )
+    .optional(),
   editable_por_cliente: z.boolean().default(false),
   // unidad may include special characters like cm²; only block emojis here
   unidad: z
@@ -47,7 +59,19 @@ const ConstanteSchema = z
     origen: z.enum(["instalador", "proveedor", "global", "manual"]),
     id_instalador: z.number().int().positive().optional(),
     id_proveedor: z.number().int().positive().optional(),
-    valor: z.number().nonnegative().max(99999999).optional(),
+    // DB column: Decimal(10, 2) → max 8 integer digits → 99999999.99
+    valor: z
+      .number()
+      .nonnegative()
+      .max(99999999.99, "El valor no puede superar 99,999,999.99")
+      .refine(
+        (v) => {
+          const dot = v.toString().indexOf(".");
+          return dot === -1 || v.toString().length - dot - 1 <= 2;
+        },
+        { message: "Máximo 2 decimales permitidos" }
+      )
+      .optional(),
     // Future-proof: when ConstantesGlobales is wired, add id_constante_global here.
   })
   .refine(

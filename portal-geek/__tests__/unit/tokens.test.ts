@@ -39,7 +39,11 @@ describe("tokens (AU-01)", () => {
   });
 
   afterAll(() => {
-    process.env.AUTH_SECRET = originalSecret;
+    if (originalSecret === undefined) {
+      delete process.env.AUTH_SECRET;
+    } else {
+      process.env.AUTH_SECRET = originalSecret;
+    }
   });
 
   it("AU01-T1: generateToken firma con los claims y devuelve el JWT", async () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle, WarningCircle, StopCircle, Info } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -68,7 +69,7 @@ type Props = {
   services: PedidoServiceOption[];
   selectedServiceId: number | null;
   onServiceSelect: (id: number | null) => void;
-  onDetalleStatusChange: (detalleId: number, status: string) => void;
+  onDetalleStatusChange: (detalleIds: number[], status: string) => void;
 
   title?: string;
   historyButtonHref?: string;
@@ -314,6 +315,82 @@ export function PedidosTemplate({
             >
               {">"}
             </button>
+          </div>
+        </div>
+
+        {/* Leyenda / Index */}
+        <div
+          id="pedidos-index"
+          className="flex flex-col md:flex-row justify-between gap-8 pt-8 pb-12 border-t border-[#e8e8e8] text-base"
+        >
+          {/* Semáforo de Servicios */}
+          <div className="space-y-4">
+            <h4 className="font-bold uppercase tracking-[0.5px] text-[14px] text-[#575757]">
+              Semáforo de Servicios{" "}
+              <button
+                type="button"
+                aria-label="Ver leyenda del semáforo"
+                className="inline-flex ml-2 cursor-pointer bg-transparent border-0 p-0 leading-none align-middle"
+                onClick={() =>
+                  document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                <Info size={16} className="text-[#6f6f6f]" />
+              </button>
+            </h4>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#F7B9FF] text-[#700188] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Pendiente</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#FFE4A5] text-[#8A6F02] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">En producción</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#CCFFA5] text-[#2A940D] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Finalizado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#B9EEFF] text-[#043B66] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Entregado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#B1B1B1] text-black flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Cancelado</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Estatus de Facturación */}
+          <div className="space-y-4">
+            <h4 className="font-bold uppercase tracking-[0.5px] text-[14px] text-[#575757]">
+              Estatus de Factura
+            </h4>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-3">
+                <CheckCircle size={24} className="text-[#6ACE0D]" weight="fill" />
+                <span className="text-[#1e1e1e] font-medium">Facturado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <WarningCircle size={24} className="text-[#E42200]" weight="fill" />
+                <span className="text-[#1e1e1e] font-medium">En proceso / Pendiente</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <StopCircle size={24} className="text-gray-400" weight="fill" />
+                <span className="text-[#1e1e1e] font-medium">No se requiere factura</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

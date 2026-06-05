@@ -22,9 +22,9 @@ export function ClientCard({ cliente, empresaCotizacion }: ClientCardProps) {
 
   return (
     <SectionCard title="Cliente" icon={<User size={15} />}>
-      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
-        <div>
-          <p className="font-medium text-[15px] text-gray-900 leading-tight">
+      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100 min-w-0">
+        <div className="min-w-0">
+          <p className="font-medium text-[15px] text-gray-900 leading-tight break-words">
             {headline}
             {cliente.categoria && <ClientBadge categoria={cliente.categoria} />}
           </p>
@@ -37,7 +37,7 @@ export function ClientCard({ cliente, empresaCotizacion }: ClientCardProps) {
         value={
           <a
             href={`mailto:${cliente.correo_electronico}`}
-            className="font-normal text-gray-500 text-[13px] hover:text-gray-900"
+            className="font-normal text-gray-500 text-[13px] hover:text-gray-900 break-all"
           >
             {cliente.correo_electronico}
           </a>
@@ -48,7 +48,7 @@ export function ClientCard({ cliente, empresaCotizacion }: ClientCardProps) {
         value={
           <a
             href={cliente.numero_telefono ? `tel:${cliente.numero_telefono}` : undefined}
-            className="font-normal text-gray-500 hover:text-gray-900"
+            className="font-normal text-gray-700 hover:text-gray-900"
           >
             {phoneNumber || cliente.numero_telefono}
           </a>

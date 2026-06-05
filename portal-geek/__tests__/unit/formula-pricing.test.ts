@@ -23,6 +23,12 @@ const mockServiciosFindUnique = prisma.servicios.findUnique as jest.Mock;
 const mockInstaladorServiciosFindUnique = prisma.instaladorServicios.findUnique as jest.Mock;
 const mockEvaluateFormula = evaluateFormula as jest.Mock;
 
+// Profit margin applied to every quoted price (see formula-pricing.ts).
+// Tests use this so the expected price reflects the markup automatically when
+// MARGEN_GANANCIA is tuned in production code.
+const MARGEN_GANANCIA = 0.3;
+const withMargen = (costo: number) => Math.round((costo / (1 - MARGEN_GANANCIA)) * 100) / 100;
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 /** Minimal active formula with no variables or constantes. */
@@ -141,7 +147,7 @@ describe("calcularPrecioServicio — costo_instalador fallback", () => {
 
     const result = await calcularPrecioServicio(BASE_INPUT);
 
-    expect(result).toBe(175);
+    expect(result).toBe(withMargen(175));
     expect(mockEvaluateFormula).toHaveBeenCalledWith(
       expect.objectContaining({
         implicits: expect.objectContaining({ costo_instalador: 175 }),
@@ -176,7 +182,7 @@ describe("calcularPrecioServicio — costo_instalador fallback", () => {
 
     const result = await calcularPrecioServicio(BASE_INPUT);
 
-    expect(result).toBe(250);
+    expect(result).toBe(withMargen(250));
     expect(mockEvaluateFormula).toHaveBeenCalledWith(
       expect.objectContaining({
         implicits: expect.objectContaining({ costo_instalador: 250 }),
@@ -192,7 +198,7 @@ describe("calcularPrecioServicio — costo_instalador fallback", () => {
 
     const result = await calcularPrecioServicio(BASE_INPUT);
 
-    expect(result).toBe(300);
+    expect(result).toBe(withMargen(300));
     expect(mockEvaluateFormula).toHaveBeenCalledWith(
       expect.objectContaining({
         implicits: expect.objectContaining({ costo_instalador: 300 }),
@@ -209,7 +215,7 @@ describe("calcularPrecioServicio — costo_instalador fallback", () => {
 
     const result = await calcularPrecioServicio(BASE_INPUT);
 
-    expect(result).toBe(0);
+    expect(result).toBe(withMargen(0));
     expect(mockInstaladorServiciosFindUnique).not.toHaveBeenCalled();
     expect(mockEvaluateFormula).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -256,13 +262,26 @@ describe("calcularPrecioServicio — resultado", () => {
     );
   });
 
-  it("redondea el resultado a dos decimales", async () => {
+  it("redondea el resultado a dos decimales (después de aplicar el margen)", async () => {
     mockServiciosFindUnique.mockResolvedValue(makeServicio());
     mockInstaladorServiciosFindUnique.mockResolvedValue(null);
     mockEvaluateFormula.mockReturnValue(123.456789);
 
     const result = await calcularPrecioServicio(BASE_INPUT);
 
-    expect(result).toBe(123.46);
+    // 123.456789 / 0.7 = 176.3668414... → 176.37
+    expect(result).toBe(withMargen(123.456789));
+  });
+
+  it("aplica el margen de ganancia 30% al resultado del evaluador", async () => {
+    // Sanity check that markup is wired: costo $700 → precio $1000 (margen
+    // bruto $300, que es el 30% del precio de venta).
+    mockServiciosFindUnique.mockResolvedValue(makeServicio());
+    mockInstaladorServiciosFindUnique.mockResolvedValue(null);
+    mockEvaluateFormula.mockReturnValue(700);
+
+    const result = await calcularPrecioServicio(BASE_INPUT);
+
+    expect(result).toBe(1000);
   });
 });

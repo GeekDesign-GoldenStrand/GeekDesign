@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import { SucursalesTemplate } from "@/components/admin/templates/SucursalesTemplate";
 
 type RelationColaborador = {
   usuario?: {
-    nombre?: string | null;
+    nombre_completo?: string | null;
   } | null;
 };
 
@@ -40,7 +40,14 @@ export default function SucursalesPage() {
   const [filterDireccion, setFilterDireccion] = useState("");
   const [filterEstatus, setFilterEstatus] = useState<string[]>([]);
 
+  // Buscar/filtrar mientras estás en la página N dispara dos fetches casi a la
+  // vez (uno con la página vieja, otro tras acotarla). Este contador asegura que
+  // solo la respuesta más reciente actualice el estado, evitando que una página
+  // vacía (obsoleta) sobrescriba los resultados de la búsqueda.
+  const requestIdRef = useRef(0);
+
   const fetchSucursales = useCallback(async () => {
+    const reqId = ++requestIdRef.current;
     try {
       const params = new URLSearchParams();
 
@@ -58,8 +65,23 @@ export default function SucursalesPage() {
       const res = await fetch(`/api/sucursales?${params.toString()}`);
       const json = await res.json();
 
+      // Descarta la respuesta si ya se disparó una petición más reciente.
+      if (reqId !== requestIdRef.current) return;
+
+      // La búsqueda/filtros se aplican sobre TODOS los registros en el servidor.
+      // Si la página actual quedó fuera de rango tras filtrar, acota a la última
+      // válida en lugar de saltar a la 1: el cambio de `page` dispara un refetch
+      // que traerá datos. (Este setState ocurre tras el await, no de forma
+      // síncrona en un efecto, así que no infringe la regla de hooks.)
+      const nextTotal = json.total ?? 0;
+      const totalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
+      if (page > totalPages) {
+        setPage(totalPages);
+        return;
+      }
+
       setSucursales(json.data ?? []);
-      setTotal(json.total ?? 0);
+      setTotal(nextTotal);
     } catch {
       console.error("Error cargando sucursales");
     }

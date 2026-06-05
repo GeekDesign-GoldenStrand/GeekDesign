@@ -17,7 +17,101 @@ import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import type { UseServicioFormOptions } from "@/lib/hooks/useServicioForm";
 import { useServicioForm } from "@/lib/hooks/useServicioForm";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
+import { stripUiOnlyConstants } from "@/lib/utils/servicio-mappers";
 import type { NuevoServicioFormState } from "@/types/servicios";
+
+// ── Error parsing ──────────────────────────────────────────────────────────────
+// handleError serialises Zod issues as "path.to.field: message, path2: message2".
+// We split only on ", " boundaries followed by another dotted path so commas
+// inside message text (e.g. "No puede usarse: precio_material, costo_instalador")
+// are not treated as issue separators.
+
+type SectionErrors = {
+  general: string | null;
+  formula: string[];
+  variables: string[];
+  constantes: string[];
+};
+
+const ZOD_BOUNDARY = /, (?=[a-z_][\w]*(?:\.[\w]+)*: )/;
+
+const ZOD_HUMAN: Record<string, string> = {
+  "String must contain at least 1 character(s)": "Este campo es requerido",
+  Required: "Este campo es requerido",
+  "Number must be greater than or equal to 0": "El valor debe ser cero o mayor",
+  "Expected number, received nan": "Ingresa un número válido",
+};
+
+function humanizeMessage(msg: string): string {
+  return ZOD_HUMAN[msg] ?? msg;
+}
+
+function parseSubmitError(
+  raw: string | null,
+  varDrafts: Array<{ nombre_variable: string }>,
+  constDrafts: Array<{ nombre_constante: string }>
+): SectionErrors {
+  const empty: SectionErrors = { general: null, formula: [], variables: [], constantes: [] };
+  if (!raw) return empty;
+
+  // Pre-flight formula errors are plain sentences (no Zod path prefix).
+  if (/fórmula/i.test(raw) && !/^formula\./.test(raw)) {
+    return { ...empty, formula: [raw] };
+  }
+
+  const parts = raw.split(ZOD_BOUNDARY);
+  const generalBucket: string[] = [];
+  const formulaBucket: string[] = [];
+  const variablesBucket: string[] = [];
+  const constantesBucket: string[] = [];
+
+  for (const part of parts) {
+    const colonIdx = part.indexOf(": ");
+    if (colonIdx === -1 || !/^[a-z_][\w]*(?:\.[\w]+)*$/.test(part.slice(0, colonIdx))) {
+      generalBucket.push(part);
+      continue;
+    }
+    const path = part.slice(0, colonIdx);
+    const human = humanizeMessage(part.slice(colonIdx + 2).trim());
+
+    const varMatch = path.match(/^formula\.variables\.(\d+)\./);
+    const constMatch = path.match(/^formula\.constantes\.(\d+)\./);
+
+    if (varMatch) {
+      const name = varDrafts[parseInt(varMatch[1], 10)]?.nombre_variable;
+      variablesBucket.push(name ? `Variable "${name}": ${human}` : human);
+    } else if (constMatch) {
+      const name = constDrafts[parseInt(constMatch[1], 10)]?.nombre_constante;
+      constantesBucket.push(name ? `Constante "${name}": ${human}` : human);
+    } else if (/^formula/.test(path)) {
+      formulaBucket.push(human);
+    } else {
+      generalBucket.push(part);
+    }
+  }
+
+  const dedup = (arr: string[]) => [...new Set(arr)];
+  return {
+    general: generalBucket.join("; ") || null,
+    formula: dedup(formulaBucket),
+    variables: dedup(variablesBucket),
+    constantes: dedup(constantesBucket),
+  };
+}
+
+function SectionError({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-md text-sm"
+    >
+      {message}
+    </div>
+  );
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
 
 type ServicioFormProps =
   | {
@@ -66,14 +160,20 @@ export function ServicioForm(props: ServicioFormProps) {
     actions,
   } = useServicioForm(hookOptions);
 
-  // Scroll the top-of-form error banner into view when it appears, so users
-  // who clicked submit at the bottom of a long form actually see what failed.
-  const errorRef = useRef<HTMLDivElement>(null);
+  const errors = parseSubmitError(
+    submitError,
+    form.variables,
+    stripUiOnlyConstants(form.constantes)
+  );
+
+  // Scroll the general error banner into view when it appears — section-level
+  // errors (formula / variables / constantes) are inline so no scroll needed.
+  const generalErrorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (submitError) {
-      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (errors.general) {
+      generalErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [submitError]);
+  }, [errors.general]);
 
   if (initialLoading) {
     return <div className="text-center py-12 text-gray-500">Cargando datos del formulario...</div>;
@@ -88,9 +188,7 @@ export function ServicioForm(props: ServicioFormProps) {
   }
 
   const submitLabel = submitting
-    ? mode === "edit"
-      ? "Guardando..."
-      : "Guardando..."
+    ? "Guardando..."
     : mode === "edit"
       ? "Guardar Cambios"
       : "Guardar servicio";
@@ -100,14 +198,9 @@ export function ServicioForm(props: ServicioFormProps) {
       onSubmit={actions.handleSubmit}
       className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-8 space-y-6"
     >
-      {submitError && (
-        <div
-          ref={errorRef}
-          role="alert"
-          aria-live="polite"
-          className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm"
-        >
-          {submitError}
+      {errors.general && (
+        <div ref={generalErrorRef}>
+          <SectionError message={errors.general} />
         </div>
       )}
 
@@ -222,27 +315,44 @@ export function ServicioForm(props: ServicioFormProps) {
       </div>
 
       {/* Row 5: Fórmula | Variables | Constantes */}
-      <div className="grid grid-cols-3 gap-6 pt-4 border-t border-gray-200">
-        <FormulaSection
-          chunks={form.formulaChunks}
-          onChunksChange={(chunks) => actions.updateField("formulaChunks", chunks)}
-          variables={form.variables}
-          constantes={form.constantes}
-          idInstalador={form.id_instalador}
-          idProveedor={form.id_proveedor}
-          materiales={form.materiales}
-          opcionesMateriales={options.materiales}
-        />
-        <VariablesSection
-          tiposDisponibles={options.tiposVariable}
-          variables={form.variables}
-          onChange={(v) => actions.updateField("variables", v)}
-        />
-        <ConstantesSection
-          tiposDisponibles={options.tiposVariable}
-          constantes={form.constantes}
-          onChange={(c) => actions.updateField("constantes", c)}
-        />
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-200">
+        {(errors.formula.length > 0 ||
+          errors.variables.length > 0 ||
+          errors.constantes.length > 0) && (
+          <div className="flex flex-col gap-2">
+            {errors.formula.map((msg, i) => (
+              <SectionError key={i} message={msg} />
+            ))}
+            {errors.variables.map((msg, i) => (
+              <SectionError key={i} message={msg} />
+            ))}
+            {errors.constantes.map((msg, i) => (
+              <SectionError key={i} message={msg} />
+            ))}
+          </div>
+        )}
+        <div className="grid grid-cols-3 gap-6">
+          <FormulaSection
+            chunks={form.formulaChunks}
+            onChunksChange={(chunks) => actions.updateField("formulaChunks", chunks)}
+            variables={form.variables}
+            constantes={form.constantes}
+            idInstalador={form.id_instalador}
+            idProveedor={form.id_proveedor}
+            materiales={form.materiales}
+            opcionesMateriales={options.materiales}
+          />
+          <VariablesSection
+            tiposDisponibles={options.tiposVariable}
+            variables={form.variables}
+            onChange={(v) => actions.updateField("variables", v)}
+          />
+          <ConstantesSection
+            tiposDisponibles={options.tiposVariable}
+            constantes={form.constantes}
+            onChange={(c) => actions.updateField("constantes", c)}
+          />
+        </div>
       </div>
 
       {submitSuccess && (

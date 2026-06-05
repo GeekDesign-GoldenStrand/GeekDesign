@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { type KeyboardEvent } from "react";
-
 import { ActionButton, ActionLink } from "@/components/ui/atoms";
 import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
+import { formatDate } from "@/lib/utils/date";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
@@ -13,35 +11,12 @@ type ServicioCardProps = {
 };
 
 export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
-  const router = useRouter();
-
-  const fechaFormateada = new Date(servicio.fecha_modificacion).toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const fechaFormateada = formatDate(servicio.fecha_modificacion);
 
   const maquinas = servicio.maquinas.map((m) => m.maquina.apodo_maquina);
 
-  const goToEdit = () => router.push(`/servicios/${servicio.id_servicio}/editar`);
-
-  // Keyboard parity: Enter/Space on a focused card should mirror the click.
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      goToEdit();
-    }
-  };
-
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={goToEdit}
-      onKeyDown={onKeyDown}
-      aria-label={`Editar ${servicio.apodo_servicio} (${servicio.nombre_servicio})`}
-      className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif] cursor-pointer transition-shadow hover:shadow-[0px_0px_24px_0px_rgba(228,34,0,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e42200] focus-visible:ring-offset-2"
-    >
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
       {/* Header */}
       <div>
         <h3 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
@@ -51,6 +26,8 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
           {servicio.nombre_servicio}
         </p>
       </div>
+
+      <p className="text-[14px] text-gray-500">Modificado: {fechaFormateada}</p>
 
       {/* Descripción */}
       <div>
@@ -101,20 +78,17 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
         </p>
       </div>
 
-      {/* Footer / Actions — stop click bubbling so these don't trigger the card-wide edit navigation */}
-      <div
-        className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 gap-2 flex-wrap"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* Footer / Actions */}
+      <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 gap-2 flex-wrap">
         <ActionLink
           href={`/servicios/${servicio.id_servicio}/editar`}
-          aria-label="Editar"
+          aria-label={`Editar ${servicio.apodo_servicio} (${servicio.nombre_servicio})`}
           icon={<EditIcon size={16} />}
         />
         <ActionButton
           tone="danger"
           onClick={() => onEliminar?.(servicio.id_servicio)}
-          aria-label="Eliminar"
+          aria-label={`Eliminar ${servicio.apodo_servicio}`}
           icon={<TrashIcon size={16} />}
         />
       </div>

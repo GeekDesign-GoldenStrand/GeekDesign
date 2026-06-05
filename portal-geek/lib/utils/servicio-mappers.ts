@@ -1,5 +1,6 @@
 import type { ConstanteDraft } from "@/components/admin/servicios/molecules/ConstantesSection";
 import type { VariableDraft } from "@/components/admin/servicios/molecules/VariablesSection";
+import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { FormulaChunk, NuevoServicioFormState, ServicioAdminDetalle } from "@/types/servicios";
 import { initialNuevoServicioState } from "@/types/servicios";
 
@@ -92,6 +93,18 @@ export function mapServicioDetalladoToFormState(
     constantes.unshift({ nombre_constante: "iva", origen: "global", valor: 0.16 });
   }
 
+  // Material tokens — same shape as FormulaSection's materialTokens, so the
+  // saved expression's "costo_material_<slug>" identifiers can be matched back
+  // to chips on re-edit. Without these the expression's material references
+  // fall into text chunks and the formula visually breaks on reload.
+  // We do NOT filter by id_proveedor_precio here: the saved expression is the
+  // source of truth — if a token was used, we want to reconstruct it.
+  const materialTokens = servicio.materiales.map((m) => ({
+    value: `costo_material_${toSnakeIdentifier(
+      m.material.nombre_material ?? `material_${m.id_material}`
+    )}`,
+  }));
+
   // Build all token identifiers so we can reconstruct chunks from the expression.
   const tokenList: Array<{ value: string; immutable?: boolean }> = [
     ...variables.map((v) => ({ value: v.nombre_variable })),
@@ -101,6 +114,7 @@ export function mapServicioDetalladoToFormState(
     })),
     ...(servicio.id_instalador !== null ? [{ value: "costo_instalador" }] : []),
     ...(servicio.id_proveedor !== null ? [{ value: "costo_proveedor" }] : []),
+    ...materialTokens,
   ];
 
   const formulaChunks: FormulaChunk[] =

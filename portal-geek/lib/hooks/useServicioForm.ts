@@ -72,6 +72,9 @@ export function useServicioForm({
     key: K,
     value: NuevoServicioFormState[K]
   ) {
+    if (submitError && (key === "variables" || key === "constantes" || key === "formulaChunks")) {
+      setSubmitError(null);
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -141,6 +144,24 @@ export function useServicioForm({
       }
       if (repeatedWords(form.descripcion_servicio)) {
         setSubmitError("La descripción repite la misma palabra varias veces.");
+        return;
+      }
+    }
+
+    // Reject adjacent tokens with no binary operator between them. Without this
+    // the chunks "ancho" + "" + "iva" serialize as "anchoiva" which the parser
+    // either rejects or evaluates against the wrong identifier. Tokens at odd
+    // indices, text chunks at even — for every neighboring token pair we
+    // require at least one of + - * / in the text chunk between them.
+    for (let i = 1; i < form.formulaChunks.length - 2; i += 2) {
+      const current = form.formulaChunks[i];
+      const between = form.formulaChunks[i + 1];
+      const next = form.formulaChunks[i + 2];
+      if (current.type !== "token" || next.type !== "token") continue;
+      if (!/[+\-*/]/.test(between.value)) {
+        setSubmitError(
+          `Falta un operador (+, -, * o /) entre "${current.value}" y "${next.value}" en la fórmula.`
+        );
         return;
       }
     }

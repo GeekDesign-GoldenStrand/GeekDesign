@@ -1,9 +1,20 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+
 /**
- * Formats a 10-digit phone number string into "xxx xxx xxxx" format.
- * If the input is not 10 digits, it returns the input as is or partially formatted.
+ * Formats a phone number for display. Accepts both:
+ *  - E.164 international ("+524421234567") — formatted via libphonenumber-js
+ *    to match the storefront PhoneInput presentation ("+52 442 123 4567")
+ *  - Legacy 10-digit MX-only ("4421234567") — formatted with the old MX rules,
+ *    so historical rows in the DB keep displaying correctly until they're edited.
  */
 export function formatPhoneNumber(phone: string | null | undefined): string {
   if (!phone) return "";
+
+  if (phone.startsWith("+")) {
+    const parsed = parsePhoneNumberFromString(phone);
+    if (parsed) return parsed.formatInternational();
+    return phone;
+  }
 
   const digits = normalizePhone(phone);
 
@@ -34,6 +45,23 @@ export function normalizePhone(raw: string): string {
     }
   }
   return digits.slice(0, 10);
+}
+
+/**
+ * Upgrades a stored phone value to E.164 for the international PhoneInput.
+ *  - Empty input → empty.
+ *  - Already starts with "+" → returned as-is (already E.164).
+ *  - Legacy 10-digit MX value ("4421234567") → "+524421234567".
+ *
+ * Lets dashboard modals load historical rows into the international picker
+ * without a separate DB backfill.
+ */
+export function toE164(value: string | null | undefined): string {
+  if (!value) return "";
+  if (value.startsWith("+")) return value;
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  return `+52${digits}`;
 }
 
 /**

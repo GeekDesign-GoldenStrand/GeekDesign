@@ -76,6 +76,7 @@ const initialFields: EditableFields = {
 function setup(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
   const onSave = jest.fn();
   const onClose = jest.fn();
+  const onSuccess = jest.fn();
 
   render(
     <EditarCotizacion
@@ -92,11 +93,12 @@ function setup(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
       userRole="Direccion"
       onSave={onSave}
       onClose={onClose}
+      onSuccess={onSuccess}
       {...overrides}
     />
   );
 
-  return { onSave, onClose };
+  return { onSave, onClose, onSuccess };
 }
 
 async function setupReady(overrides?: Partial<ComponentProps<typeof EditarCotizacion>>) {
@@ -128,13 +130,13 @@ describe("EditarCotizacion discount editing", () => {
     await setupReady();
 
     expect(screen.getByText("Descuento")).toBeInTheDocument();
-    expect(screen.getByLabelText("Porcentaje")).toHaveValue(10);
+    expect(screen.getByLabelText("Porcentaje")).toHaveValue("10");
     expect(screen.getByLabelText("Motivo")).toHaveValue("Cliente frecuente");
   });
 
   it("sends only the discount PATCH request when only the discount changes", async () => {
     const user = userEvent.setup();
-    const { onSave, onClose } = await setupReady();
+    const { onSave, onClose, onSuccess } = await setupReady();
 
     fireEvent.change(screen.getByLabelText("Porcentaje"), {
       target: { value: "15" },
@@ -163,6 +165,7 @@ describe("EditarCotizacion discount editing", () => {
 
     expect(onSave).toHaveBeenCalledWith(initialFields);
     expect(onClose).toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalled();
   });
 
   it("sends both quotation PUT and discount PATCH when both sections change", async () => {
@@ -195,9 +198,13 @@ describe("EditarCotizacion discount editing", () => {
     });
   });
 
-  it("shows a validation error and does not submit when discount is empty", async () => {
+  it("clears the discount when the input is empty", async () => {
     const user = userEvent.setup();
-    await setupReady();
+    // Setup with an existing discount so clearing it counts as a change
+    await setupReady({
+      porcentajeDescuento: 10,
+      motivoDescuento: "Motivo inicial",
+    });
 
     fireEvent.change(screen.getByLabelText("Porcentaje"), {
       target: { value: "" },
@@ -205,16 +212,17 @@ describe("EditarCotizacion discount editing", () => {
 
     await user.click(screen.getByRole("button", { name: "Guardar" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Ingresa un número entero");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
-    expect(mockFetch).not.toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       "/api/cotizaciones/123/descuento",
-      expect.anything()
-    );
-
-    expect(mockFetch).not.toHaveBeenCalledWith(
-      "/api/cotizaciones/123",
-      expect.objectContaining({ method: "PUT" })
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          porcentaje_descuento: null,
+          motivo_descuento: null,
+        }),
+      })
     );
   });
 
@@ -224,10 +232,10 @@ describe("EditarCotizacion discount editing", () => {
     const input = screen.getByLabelText("Porcentaje");
 
     fireEvent.change(input, { target: { value: "1" } });
-    expect(input).toHaveValue(1);
+    expect(input).toHaveValue("1");
 
     fireEvent.change(input, { target: { value: "10" } });
-    expect(input).toHaveValue(10);
+    expect(input).toHaveValue("10");
   });
 
   it("clamps the discount input to the upper bound when a higher value is typed", async () => {
@@ -236,7 +244,7 @@ describe("EditarCotizacion discount editing", () => {
     const input = screen.getByLabelText("Porcentaje");
 
     fireEvent.change(input, { target: { value: "50" } });
-    expect(input).toHaveValue(20);
+    expect(input).toHaveValue("20");
   });
 
   it("strips emojis and decorative characters from the discount reason", async () => {
@@ -251,15 +259,17 @@ describe("EditarCotizacion discount editing", () => {
     expect(input).toHaveValue("Cliente VIP  ");
   });
 
-  it("does not render discount fields when the quotation has no existing discount", async () => {
+  it("renders discount fields when the quotation has no existing discount and user is Direccion", async () => {
     await setupReady({
       porcentajeDescuento: null,
       motivoDescuento: null,
+      userRole: "Direccion",
     });
 
-    expect(screen.queryByText("Descuento")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Porcentaje")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Motivo")).not.toBeInTheDocument();
+    expect(screen.getByText("Descuento")).toBeInTheDocument();
+    // Use the custom matcher logic or text matchers since the labels are complex
+    expect(screen.getByText("Porcentaje")).toBeInTheDocument();
+    expect(screen.getByText("Motivo")).toBeInTheDocument();
   });
 
   it("hides the discount editor for non-Direccion roles even when a discount exists", async () => {

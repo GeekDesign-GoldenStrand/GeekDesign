@@ -1,7 +1,9 @@
 import { MaterialesEmptyState } from "@/components/ui/materiales/molecules/MaterialesEmptyState";
 import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
+import { CategoriaCard } from "@/components/ui/materiales/organisms/CategoriaCard";
 import { MaterialCard } from "@/components/ui/materiales/organisms/MaterialCard";
 import { MaterialGroupCard } from "@/components/ui/materiales/organisms/MaterialGroupCard";
+import { SinCategoriaCard } from "@/components/ui/materiales/organisms/SinCategoriaCard";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialesGridProps {
@@ -10,6 +12,12 @@ interface MaterialesGridProps {
   onEditMaterial: (material: MaterialCardProps) => void;
   onViewProveedores: (materialId: number, materialName: string) => void;
   onAddSubMaterial: (groupId: number) => void;
+  onAddGrupo: (categoriaId: number) => void;
+  // In the unfiltered hierarchical view, orphan grupos/individuales (no parent)
+  // are grouped under a synthetic "Sin categoría" header. In filtered listings
+  // (grupos/individuales/categorias) the result is a flat list, so we render it
+  // flat without that wrapper.
+  groupOrphans: boolean;
   // Server-side pagination state.
   page: number;
   totalPages: number;
@@ -41,6 +49,8 @@ export function MaterialesGrid({
   onEditMaterial,
   onViewProveedores,
   onAddSubMaterial,
+  onAddGrupo,
+  groupOrphans,
   page,
   totalPages,
   onPageChange,
@@ -50,8 +60,9 @@ export function MaterialesGrid({
   const enabledColumns = COLUMN_META.filter((column) => visibleColumns[column.key]);
   const templateColumns = `${enabledColumns.map((column) => column.width).join(" ")} auto`;
 
+  const categorias = items.filter((item) => item.tipo === "categoria");
   const groups = items.filter((item) => item.tipo === "grupo");
-  const individuals = items.filter((item) => item.tipo !== "grupo");
+  const individuals = items.filter((item) => item.tipo === "individual");
   const hasItems = items.length > 0;
 
   return (
@@ -78,30 +89,60 @@ export function MaterialesGrid({
         <MaterialesEmptyState hasSearch={hasSearch} onClearFilters={onClearFilters} />
       ) : (
         <div className="space-y-2">
-          {/* Groups first */}
-          {groups.map((group) => (
-            <MaterialGroupCard
-              key={group.id}
-              group={group}
+          {/* Categorías first (cada una envuelve sus grupos + individuales) */}
+          {categorias.map((cat) => (
+            <CategoriaCard
+              key={cat.id}
+              categoria={cat}
               visibleColumns={visibleColumns}
               gridTemplateColumns={templateColumns}
               onEdit={onEditMaterial}
               onViewProveedores={onViewProveedores}
               onAddSubMaterial={onAddSubMaterial}
+              onAddGrupo={onAddGrupo}
             />
           ))}
 
-          {/* Individual materials after groups */}
-          {individuals.map((item) => (
-            <MaterialCard
-              key={item.id}
-              {...item}
-              visibleColumns={visibleColumns}
-              gridTemplateColumns={templateColumns}
-              onEdit={onEditMaterial}
-              onViewProveedores={onViewProveedores}
-            />
-          ))}
+          {/* Grupos/individuales sin categoría (id_material_padre = null).
+              En la vista jerárquica se agrupan bajo "Sin categoría"; en listados
+              filtrados se muestran planos. */}
+          {groupOrphans ? (
+            (groups.length > 0 || individuals.length > 0) && (
+              <SinCategoriaCard
+                grupos={groups}
+                individuales={individuals}
+                visibleColumns={visibleColumns}
+                gridTemplateColumns={templateColumns}
+                onEdit={onEditMaterial}
+                onViewProveedores={onViewProveedores}
+                onAddSubMaterial={onAddSubMaterial}
+              />
+            )
+          ) : (
+            <>
+              {groups.map((group) => (
+                <MaterialGroupCard
+                  key={group.id}
+                  group={group}
+                  visibleColumns={visibleColumns}
+                  gridTemplateColumns={templateColumns}
+                  onEdit={onEditMaterial}
+                  onViewProveedores={onViewProveedores}
+                  onAddSubMaterial={onAddSubMaterial}
+                />
+              ))}
+              {individuals.map((item) => (
+                <MaterialCard
+                  key={item.id}
+                  {...item}
+                  visibleColumns={visibleColumns}
+                  gridTemplateColumns={templateColumns}
+                  onEdit={onEditMaterial}
+                  onViewProveedores={onViewProveedores}
+                />
+              ))}
+            </>
+          )}
         </div>
       )}
 

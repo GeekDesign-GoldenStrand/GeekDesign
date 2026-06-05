@@ -208,7 +208,7 @@ export function EditarSucursalModal({
           </p>
         )}
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <div className="flex justify-end gap-3 mt-2">
           <button
             type="button"
             onClick={onClose}
@@ -219,7 +219,7 @@ export function EditarSucursalModal({
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60 cursor-pointer"
+            className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c41e00] transition-colors disabled:opacity-60 cursor-pointer"
           >
             {isLoading ? "Guardando..." : "Guardar"}
           </button>

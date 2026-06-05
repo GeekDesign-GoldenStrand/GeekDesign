@@ -2,6 +2,7 @@ import { User } from "@phosphor-icons/react";
 
 import { FieldRow } from "@/components/ui/cotizaciones/atoms/FieldRow";
 import { SectionCard } from "@/components/ui/cotizaciones/atoms/SectionCard";
+import { formatPhoneNumber } from "@/lib/utils/format";
 import type { PedidoInfo } from "@/types/pedido";
 
 interface Props {
@@ -15,20 +16,24 @@ export function PedidoClienteCard({ cliente }: Props) {
       {cliente.empresa && (
         <FieldRow
           label="Empresa"
-          value={<span className="font-normal text-gray-500">{cliente.empresa}</span>}
+          value={<span className="font-normal text-gray-700">{cliente.empresa}</span>}
         />
       )}
       <FieldRow
         label="Correo"
-        value={<span className="font-normal text-gray-500">{cliente.correo_electronico}</span>}
+        value={<span className="font-normal text-gray-700">{cliente.correo_electronico}</span>}
       />
       <FieldRow
         label="Teléfono"
-        value={<span className="font-normal text-gray-500">{cliente.numero_telefono}</span>}
+        value={
+          <span className="font-normal text-gray-700">
+            {formatPhoneNumber(cliente.numero_telefono)}
+          </span>
+        }
       />
       <FieldRow
         label="RFC"
-        value={<span className="font-normal text-gray-500">{cliente.rfc ?? "—"}</span>}
+        value={<span className="font-normal text-gray-700">{cliente.rfc ?? "—"}</span>}
         last
       />
     </SectionCard>

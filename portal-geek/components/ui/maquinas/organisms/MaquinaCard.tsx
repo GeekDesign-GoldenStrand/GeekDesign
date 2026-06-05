@@ -8,7 +8,6 @@ import MaquinaAssignButton from "../atoms/MaquinaAssignButton";
 import MaquinaCreationDate from "../atoms/MaquinaCreationDate";
 import MaquinaServiceBadge from "../atoms/MaquinaServiceBadge";
 import MaquinaSubtitle from "../atoms/MaquinaSubtitle";
-import MaquinaText from "../atoms/MaquinaText";
 import MaquinaSection from "../molecules/MaquinaSection";
 import MaquinaStatusDropdown from "../molecules/MaquinaStatusDropdown";
 
@@ -35,19 +34,14 @@ export function MaquinaCard({
         <EntityCard.Subtitle>{model}</EntityCard.Subtitle>
       </div>
 
+      <MaquinaCreationDate creationDate={creation_date} />
+
       {store ? (
         <div>
-          <div className="flex items-center gap-1">
-            <MaquinaSubtitle subtitle="Sucursal" />
-            <button
-              onClick={onAssignStore}
-              aria-label="Asignar sucursal"
-              className="flex items-center justify-center w-[30px] h-[30px] rounded-[7px] text-gray-500 hover:text-[#c30000]"
-            >
-              <EditIcon size={15} />
-            </button>
-          </div>
-          <MaquinaText text={store} />
+          <MaquinaSubtitle subtitle="Sucursal" />
+          <p className="border border-gray-400 bg-gray-100 text-xs text-gray-800 w-fit font-regular px-2 py-1 rounded-lg">
+            {store}
+          </p>
         </div>
       ) : (
         <div>
@@ -79,22 +73,19 @@ export function MaquinaCard({
 
       <MaquinaSection heading="Descripción" text={description || "Sin descripción"} />
 
-      <div className="flex items-center justify-between mt-auto pt-2 flex-wrap gap-2">
-        <MaquinaCreationDate creationDate={creation_date} />
-        <div className="flex items-center gap-2">
-          <MaquinaStatusDropdown
-            status={status}
-            options={MACHINE_STATUS_OPTIONS}
-            onChange={onChangeStatus ?? (() => {})}
-          />
-          <ActionButton onClick={onEdit} aria-label="Editar" icon={<EditIcon size={16} />} />
-          <ActionButton
-            tone="danger"
-            onClick={onDelete}
-            aria-label="Eliminar"
-            icon={<TrashIcon size={16} />}
-          />
-        </div>
+      <div className="flex items-center justify-end mt-auto pt-2 flex-wrap gap-2">
+        <MaquinaStatusDropdown
+          status={status}
+          options={MACHINE_STATUS_OPTIONS}
+          onChange={onChangeStatus ?? (() => {})}
+        />
+        <ActionButton onClick={onEdit} aria-label="Editar" icon={<EditIcon size={16} />} />
+        <ActionButton
+          tone="danger"
+          onClick={onDelete}
+          aria-label="Eliminar"
+          icon={<TrashIcon size={16} />}
+        />
       </div>
     </EntityCard>
   );

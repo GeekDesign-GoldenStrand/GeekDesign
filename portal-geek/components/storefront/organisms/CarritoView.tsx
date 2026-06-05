@@ -1,6 +1,6 @@
 "use client";
 
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -72,6 +72,7 @@ export function CarritoView({ relatedServices }: Props) {
   const [items, setItems] = useState<CarritoItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [openSpecs, setOpenSpecs] = useState<Set<string>>(new Set());
+  const [openNotes, setOpenNotes] = useState<Set<string>>(new Set());
   const [carouselStart, setCarouselStart] = useState(0);
   const [activeIndexes, setActiveIndexes] = useState<Record<string, number>>({});
 
@@ -122,6 +123,15 @@ export function CarritoView({ relatedServices }: Props) {
     });
   }
 
+  function toggleNotes(itemId: string) {
+    setOpenNotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
   if (!mounted) return null;
 
   if (items.length === 0) {
@@ -144,7 +154,7 @@ export function CarritoView({ relatedServices }: Props) {
       <div className="bg-black min-h-[48px] flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-[42px] py-2">
         <p className="text-[#fffcfc] text-[16.742px] font-medium text-center">
           Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el
-          10 de abril | <span className="underline cursor-pointer">Comprar ahora</span>
+          10 de abril
         </p>
       </div>
 
@@ -240,28 +250,65 @@ export function CarritoView({ relatedServices }: Props) {
                       <p className="font-bold text-[18px] text-[#1e1e1e]">{item.nombreServicio}</p>
 
                       <div className="flex items-center gap-[16px] flex-wrap">
-                        <div className="flex items-center border border-[#8e908f] rounded-[10px] h-[49px] w-[167px] px-[12px] gap-[4px]">
+                        <div className="flex items-center border border-[#8e908f] rounded-[10px] h-[49px] min-w-41.75 px-3 gap-1">
                           <span className="text-[18px] text-[#1e1e1e] whitespace-nowrap">
                             Cantidad:
                           </span>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="^[0-9]+$"
                             min={1}
                             max={CANTIDAD_MAX}
                             value={item.cantidad}
                             onChange={(e) => {
-                              const val = Number(e.target.value);
-                              if (!Number.isFinite(val)) return;
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                // ignore empty input, keep current quantity
+                                return;
+                              }
+                              if (!/^\d+$/.test(raw)) return;
+                              const val = Number(raw);
                               const next = Math.floor(val);
-                              // Reject the keystroke above the cap instead of
-                              // snapping — typing "1234" stays at "123".
                               if (next > CANTIDAD_MAX) return;
                               handleCantidad(item.id, next);
                             }}
-                            className="w-[36px] text-[18px] text-[#1e1e1e] bg-transparent border-none outline-none text-right"
+                            className="flex-1 min-w-0 text-[18px] text-[#1e1e1e] bg-transparent border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          <CaretDown size={16} className="text-[#1e1e1e] shrink-0" />
+                          <div className="flex flex-col shrink-0">
+                            <button
+                              type="button"
+                              aria-label="Aumentar cantidad"
+                              disabled={item.cantidad >= CANTIDAD_MAX}
+                              onClick={() =>
+                                handleCantidad(item.id, Math.min(CANTIDAD_MAX, item.cantidad + 1))
+                              }
+                              className="text-[#1e1e1e] disabled:opacity-30 leading-none"
+                            >
+                              <CaretUpIcon size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Disminuir cantidad"
+                              disabled={item.cantidad <= 1}
+                              onClick={() =>
+                                handleCantidad(item.id, Math.max(1, item.cantidad - 1))
+                              }
+                              className="text-[#1e1e1e] disabled:opacity-30 leading-none"
+                            >
+                              <CaretDownIcon size={14} />
+                            </button>
+                          </div>
                         </div>
+
+                        {item.configuracion.notas && (
+                          <button
+                            onClick={() => toggleNotes(item.id)}
+                            className="text-[18px] font-medium text-[#1e1e1e] underline"
+                          >
+                            {openNotes.has(item.id) ? "Ocultar notas" : "Ver notas"}
+                          </button>
+                        )}
 
                         <button
                           onClick={() => handleEliminar(item.id)}
@@ -270,6 +317,12 @@ export function CarritoView({ relatedServices }: Props) {
                           Eliminar
                         </button>
                       </div>
+
+                      {openNotes.has(item.id) && item.configuracion.notas && (
+                        <p className="text-[16px] text-[#1e1e1e] bg-[#f5f5f5] rounded-lg px-3 py-2.5 whitespace-pre-wrap">
+                          {item.configuracion.notas}
+                        </p>
+                      )}
 
                       <div className="h-px bg-[#c2c0c0]" />
 
@@ -282,9 +335,9 @@ export function CarritoView({ relatedServices }: Props) {
                           Especificaciones
                         </span>
                         {specsOpen ? (
-                          <CaretUp size={20} className="text-[#1e1e1e]" />
+                          <CaretUpIcon size={20} className="text-[#1e1e1e]" />
                         ) : (
-                          <CaretDown size={20} className="text-[#1e1e1e]" />
+                          <CaretDownIcon size={20} className="text-[#1e1e1e]" />
                         )}
                       </button>
 

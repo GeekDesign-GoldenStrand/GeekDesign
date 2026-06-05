@@ -222,14 +222,59 @@ export function MaterialesSection({
       .catch(() => {});
   }, [enabled]);
 
+  // Backfill proveedores for materiales loaded from initialData (edit mode).
+  // handleAddLeaf / handleGroupConfirm populate proveedoresByMaterial on insert,
+  // but pre-existing materiales arrive with their id_proveedor_precio set and
+  // no cached list — so the row falls into the `proveedores.length === 0`
+  // branch and shows "Sin proveedor asignado" until we fetch them here.
+  // The early return on `missing.length === 0` keeps the effect from looping
+  // even though proveedoresByMaterial is in the deps.
+  useEffect(() => {
+    if (!enabled) return;
+    const missing = materiales
+      .map((m) => m.id_material)
+      .filter((id) => !(id in proveedoresByMaterial));
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    Promise.all(
+      missing.map(async (id) => {
+        try {
+          const res = await fetch(`/api/proveedor-precios?id_material=${id}`);
+          const json = await res.json();
+          return [id, (json.data ?? []) as ProveedorPrecioOption[]] as const;
+        } catch {
+          return [id, [] as ProveedorPrecioOption[]] as const;
+        }
+      })
+    ).then((results) => {
+      if (cancelled) return;
+      setProveedoresByMaterial((prev) => {
+        const next = { ...prev };
+        for (const [id, list] of results) {
+          next[id] = list;
+        }
+        return next;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, materiales, proveedoresByMaterial]);
+
   const selectedIds = new Set(materiales.map((m) => m.id_material));
 
-  // Individual leaf materials (no parent group) not yet added.
-  // Sub-materials (id_material_padre !== null) are only accessible via the group picker.
+  // A leaf is a "variant" only when its parent is a grupo. Anything else — no
+  // parent, or a categoría parent — is an individual added directly. Variants
+  // are reached through the group picker, never the leaf list.
+  const variantIds = new Set(grupos.flatMap((g) => g.subMateriales.map((s) => s.id_material)));
+
+  // Individual materials (no parent, or a categoría parent) not yet added.
   const filteredLeaves = opcionesMateriales.filter(
     (m) =>
       !m.es_grupo &&
-      m.id_material_padre === null &&
+      !variantIds.has(m.id_material) &&
       !selectedIds.has(m.id_material) &&
       (searchQuery === "" ||
         m.nombre_material.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -313,24 +358,29 @@ export function MaterialesSection({
       if (seen.has(draft.id_material)) continue;
       seen.add(draft.id_material);
 
-      // Find if this is a sub-material (look up in opcionesMateriales which now has id_material_padre)
+      // A material belongs under a group header only when its parent is an
+      // actual grupo. A null or categoría parent means it's an individual and
+      // renders as a flat leaf row.
       const info = opcionesMateriales.find((m) => m.id_material === draft.id_material);
       const parentId = info?.id_material_padre ?? null;
+      const parentGroup =
+        parentId !== null ? grupos.find((g) => g.id_material === parentId) : undefined;
 
-      if (parentId !== null) {
+      if (parentGroup) {
         // Find if we already started a group-header for this parent
-        const existing = result.find((r) => r.type === "group-header" && r.groupId === parentId) as
+        const existing = result.find(
+          (r) => r.type === "group-header" && r.groupId === parentGroup.id_material
+        ) as
           | { type: "group-header"; groupId: number; groupName: string; subs: MaterialDraft[] }
           | undefined;
 
         if (existing) {
           existing.subs.push(draft);
         } else {
-          const grupo = grupos.find((g) => g.id_material === parentId);
           result.push({
             type: "group-header",
-            groupId: parentId,
-            groupName: grupo?.nombre_material ?? `Grupo #${parentId}`,
+            groupId: parentGroup.id_material,
+            groupName: parentGroup.nombre_material,
             subs: [draft],
           });
         }

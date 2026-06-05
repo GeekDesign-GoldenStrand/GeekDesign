@@ -52,12 +52,20 @@ export function MaterialGroupCard({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-sm font-semibold text-[#1e1e1e] truncate">{group.name}</span>
+          <span
+            className="min-w-0 max-w-[40%] text-sm font-semibold text-[#1e1e1e] truncate"
+            title={group.name}
+          >
+            {group.name}
+          </span>
           <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-[#e42200] text-white text-[11px] font-medium">
             {subCount} variante{subCount !== 1 ? "s" : ""}
           </span>
           {group.description && (
-            <span className="hidden md:block text-sm text-[#575757] truncate">
+            <span
+              className="hidden md:block min-w-0 max-w-[40%] text-sm text-[#575757] truncate"
+              title={group.description}
+            >
               {group.description}
             </span>
           )}

@@ -12,6 +12,8 @@ export function HeroBanner({
       <img
         src="/storefront/hero-bg.jpg"
         alt=""
+        fetchPriority="high"
+        loading="eager"
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
       />
 

@@ -24,6 +24,11 @@ type PedidoWithRelations = Prisma.PedidosGetPayload<{
         material: true;
         archivo: true;
         estatus: true;
+        variablesCotizacion: {
+          include: {
+            variable: true;
+          };
+        };
       };
     };
   };
@@ -215,6 +220,14 @@ export async function listPedidos(
             material: true,
             archivo: true,
             estatus: true,
+            variablesCotizacion: {
+              include: {
+                variable: true,
+              },
+            },
+          },
+          orderBy: {
+            id_detalle: "asc",
           },
         },
       },
@@ -244,13 +257,22 @@ export type PedidoDetalleResponse = {
       estatus: true;
       estado_factura: true;
       sucursal: true;
+      cotizaciones: { select: { folio: true } };
     };
   }>;
   detalle: Prisma.DetallePedidoGetPayload<{
     include: {
       servicio: { select: { nombre_servicio: true } };
       material: { select: { nombre_material: true } };
-      archivo: { select: { nombre_archivo: true; url_archivo: true; formato: true } };
+      archivo: {
+        select: { id_archivo: true; nombre_archivo: true; url_archivo: true; formato: true };
+      };
+      estatus: true;
+      variablesCotizacion: {
+        include: {
+          variable: true;
+        };
+      };
     };
   }>[];
   pagos: Prisma.PagosGetPayload<true>[];
@@ -275,11 +297,24 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
         estatus: true,
         estado_factura: true,
         sucursal: true,
+        cotizaciones: {
+          select: { folio: true },
+          orderBy: { fecha_creacion: "desc" },
+          take: 1,
+        },
         detalles: {
           include: {
             servicio: { select: { nombre_servicio: true } },
             material: { select: { nombre_material: true } },
-            archivo: { select: { nombre_archivo: true, url_archivo: true, formato: true } },
+            archivo: {
+              select: { id_archivo: true, nombre_archivo: true, url_archivo: true, formato: true },
+            },
+            estatus: true,
+            variablesCotizacion: {
+              include: {
+                variable: true,
+              },
+            },
           },
           orderBy: { id_detalle: "asc" },
         },
@@ -348,9 +383,21 @@ export async function createPedido(data: CreatePedidoInput): Promise<Pedidos> {
 }
 
 export async function updatePedido(id: number, data: UpdatePedidoInput): Promise<Pedidos> {
-  void id;
-  void data;
-  throw new Error("Not implemented");
+  // Solo se actualizan los campos provistos: Prisma ignora los `undefined`, así
+  // que un PUT parcial (p. ej. solo notas) no pisa el resto de columnas. El
+  // cambio de estatus tiene su propio endpoint (PATCH /api/pedidos/:id/estatus).
+  return prisma.pedidos.update({
+    where: { id_pedido: id },
+    data: {
+      id_estatus: data.id_estatus,
+      id_sucursal: data.id_sucursal,
+      fecha_estimada: data.fecha_estimada,
+      fecha_fin: data.fecha_fin,
+      facturado: data.facturado,
+      numero_factura: data.numero_factura,
+      notas: data.notas,
+    },
+  });
 }
 
 export async function deletePedido(id: number): Promise<void> {

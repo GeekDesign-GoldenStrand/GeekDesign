@@ -51,20 +51,21 @@ export const UpdateCotizacionSchema = z.object({
     .array(
       z.object({
         id_detalle: z.number().int().positive(),
-        // Mirror SolicitarItemSchema's cap (storefront uses .max(9999) on the
+        // Mirror SolicitarItemSchema's cap (storefront uses .max(1000) on the
         // same field). Safe to apply on the edit path too because cantidad
         // has always been enforced at creation, so no legacy line item can
         // exceed it.
-        cantidad: z.number().int().positive().max(9999, "La cantidad no puede superar 9999"),
-        // Safety-net cap to catch typo overflows on edit. Set high enough
-        // (10M MXN) to accommodate any historical line item — precio_unitario
-        // has never been bounded at creation, so we can't assume legacy data
-        // fits a tighter range. Matches the money cap used for cost fields
-        // (EditarMaterialForm, InstaladorToggle/ProveedorToggle).
+        cantidad: z.number().int().positive().max(1000, "La cantidad no puede superar 1000"),
+        // Tight upper bound so cantidad * precio_unitario always fits in the
+        // DB column type. monto_total / precio_unitario / subtotal are all
+        // Decimal(10,2) → max 99,999,999.99. With cantidad capped at 1000,
+        // a precio cap of 99,999.99 keeps subtotal at 99,999,990.00 — safely
+        // inside the column. Without this guard a large precio would surface
+        // as a Postgres "numeric field overflow" → 500.
         precio_unitario: z
           .number()
           .nonnegative()
-          .max(9999999.99, "El precio unitario no puede superar 9,999,999.99"),
+          .max(99999.99, "El precio unitario no puede superar 99,999.99"),
       })
     )
     .optional(),
@@ -75,30 +76,29 @@ export const CotizacionIdParams = z.object({
 });
 
 // ─────────────────────────────────────────────
-// Discount rules — single source of truth shared by the API (this Zod
-// schema) and the front-end modal (AplicarDescuento). Edit one place
-// and both the client-side validation messages and the server-side
-// guard move in lockstep.
+// Discount / surcharge rules — single source of truth shared by the API
+// (this Zod schema) and the front-end modal (AplicarDescuento).
+//
+// Range is symmetric around zero: positive values are discounts (reduce
+// the total), negative values are surcharges/interest applied when the
+// client opts to pay en plazos. Any integer in [DISCOUNT_MIN, DISCOUNT_MAX]
+// is valid — there is no step constraint.
 // ─────────────────────────────────────────────
-export const DISCOUNT_MIN = 5;
+export const DISCOUNT_MIN = -20;
 export const DISCOUNT_MAX = 20;
-export const DISCOUNT_STEP = 5;
 
-// Validation message catalog — kept here so the front-end can show the
-// exact same copy the server would reject with. Keys match the alts in
-// the COT-06 sequence diagram.
 export const DISCOUNT_ERROR = {
   NOT_INTEGER: "Ingresa un número entero",
-  ZERO: "El descuento debe ser mayor o igual a 5%",
-  TOO_LOW: `El descuento debe ser de al menos ${DISCOUNT_MIN}%`,
-  TOO_HIGH: `El descuento no puede superar el ${DISCOUNT_MAX}%`,
-  NOT_MULTIPLE: `El descuento debe ser múltiplo de ${DISCOUNT_STEP}, mínimo ${DISCOUNT_MIN}%`,
+  ZERO: "Para no aplicar ajuste, elimina el actual en lugar de usar 0%",
+  TOO_LOW: `El valor no puede ser menor a ${DISCOUNT_MIN}%`,
+  TOO_HIGH: `El valor no puede superar ${DISCOUNT_MAX}%`,
 } as const;
 
 // Returns the first applicable error string for a percentage, or null
 // when the value is acceptable. Used directly by the modal and mirrored
 // by the Zod schema below so both layers reject the same set of inputs
-// with the same messaging.
+// with the same messaging. 0 is rejected because the null path (remove
+// adjustment) covers the "no change" intent unambiguously.
 export function validateDescuentoPercentage(value: number): string | null {
   if (!Number.isFinite(value) || !Number.isInteger(value)) {
     return DISCOUNT_ERROR.NOT_INTEGER;
@@ -106,11 +106,11 @@ export function validateDescuentoPercentage(value: number): string | null {
   if (value === 0) {
     return DISCOUNT_ERROR.ZERO;
   }
+  if (value < DISCOUNT_MIN) {
+    return DISCOUNT_ERROR.TOO_LOW;
+  }
   if (value > DISCOUNT_MAX) {
     return DISCOUNT_ERROR.TOO_HIGH;
-  }
-  if (value < DISCOUNT_MIN || value % DISCOUNT_STEP !== 0) {
-    return DISCOUNT_ERROR.NOT_MULTIPLE;
   }
   return null;
 }
@@ -121,7 +121,7 @@ export const AplicarDescuentoSchema = z.object({
     .int(DISCOUNT_ERROR.NOT_INTEGER)
     .min(DISCOUNT_MIN, DISCOUNT_ERROR.TOO_LOW)
     .max(DISCOUNT_MAX, DISCOUNT_ERROR.TOO_HIGH)
-    .refine((v) => v % DISCOUNT_STEP === 0, DISCOUNT_ERROR.NOT_MULTIPLE)
+    .refine((v) => v !== 0, DISCOUNT_ERROR.ZERO)
     .nullable(),
   motivo_descuento: z.string().max(255).nullable().optional(),
 });
@@ -133,7 +133,7 @@ export const AplicarDescuentoSchema = z.object({
 const SolicitarItemSchema = z.object({
   id_servicio: z.number().int().positive(),
   id_material: z.number().int().positive(),
-  cantidad: z.number().int().positive().max(9999),
+  cantidad: z.number().int().positive().max(1000),
   notas: z.string().max(500).optional(),
   // Storage key of the design file the client uploaded before adding to cart.
   // Presence is optional — items without a design file fall back to the

@@ -4,12 +4,14 @@ export type MaterialApiRow = {
   id_material: number;
   id_material_padre: number | null;
   es_grupo: boolean;
+  es_categoria?: boolean;
   nombre_material: string;
   descripcion_material: string | null;
   unidad_medida: string | null;
   ancho: string | number | null;
   alto: string | number | null;
   grosor: string | number | null;
+  velocidad_avance: string | number | null;
   color: string | null;
   imagen_url: string | null;
   subMateriales?: MaterialApiRow[];
@@ -20,12 +22,14 @@ export function normalizeDecimal(value: string | number | null | undefined): str
   return String(value);
 }
 
-export function mapMaterialRow(item: MaterialApiRow): MaterialCardProps {
-  const tipo: MaterialCardProps["tipo"] = item.id_material_padre
-    ? "sub"
-    : item.es_grupo
-      ? "grupo"
-      : "individual";
+// `parentIsGroup` flag lets us discriminate a leaf inside a grupo (variante)
+// from one inside a categoría (individual) — both have id_material_padre != null.
+export function mapMaterialRow(item: MaterialApiRow, parentIsGroup = false): MaterialCardProps {
+  let tipo: MaterialCardProps["tipo"];
+  if (item.es_categoria) tipo = "categoria";
+  else if (item.es_grupo) tipo = "grupo";
+  else if (parentIsGroup) tipo = "sub";
+  else tipo = "individual";
 
   return {
     id: item.id_material,
@@ -35,11 +39,12 @@ export function mapMaterialRow(item: MaterialApiRow): MaterialCardProps {
     width: normalizeDecimal(item.ancho),
     height: normalizeDecimal(item.alto),
     thickness: normalizeDecimal(item.grosor),
+    feedRate: normalizeDecimal(item.velocidad_avance),
     description: item.descripcion_material ?? "",
     imageUrl: item.imagen_url ?? "",
     id_material_padre: item.id_material_padre,
     tipo,
-    subMateriales: item.subMateriales?.map(mapMaterialRow),
+    subMateriales: item.subMateriales?.map((s) => mapMaterialRow(s, !!item.es_grupo)),
   };
 }
 

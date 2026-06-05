@@ -47,7 +47,7 @@ export function PedidosFilterSidebar({
   detalleEstatuses,
   setDetalleEstatuses,
 }: Props) {
-  const showEstatusFilter = selectedServiceId !== null;
+  const serviceSelected = selectedServiceId !== null;
 
   const [draftClienteEmpresa, setDraftClienteEmpresa] = useState<string | null>(clienteEmpresa);
   const [draftEstatuses, setDraftEstatuses] = useState<string[]>(estatuses);
@@ -110,7 +110,7 @@ export function PedidosFilterSidebar({
         />
       </div>
 
-      {showEstatusFilter && (
+      {!serviceSelected && (
         <div>
           <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del pedido</p>
           <div className="space-y-2">
@@ -131,7 +131,7 @@ export function PedidosFilterSidebar({
         </div>
       )}
 
-      {showEstatusFilter && (
+      {serviceSelected && (
         <div>
           <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus del servicio</p>
           <div className="space-y-2">

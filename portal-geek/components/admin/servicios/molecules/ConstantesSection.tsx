@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { hasCharRun, repeatedWords, sanitizeUserText } from "@/lib/utils/safe-text";
+import { hasCharRun, repeatedWords } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
 import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
@@ -33,11 +33,15 @@ const MAX_VALOR_DIGITOS = 8;
 // Stored value = short symbol. Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
   { value: "$", label: "$ - pesos" },
+  { value: "mm", label: "mm - milímetros" },
+  { value: "mm²", label: "mm² - milímetros cuadrados" },
   { value: "cm", label: "cm - centímetros" },
   { value: "cm²", label: "cm² - centímetros cuadrados" },
   { value: "m", label: "m - metros" },
   { value: "m²", label: "m² - metros cuadrados" },
   { value: "pz", label: "pz - piezas" },
+  { value: "ms", label: "ms - milisegundos" },
+  { value: "s", label: "s - segundos" },
   { value: "min", label: "min - minutos" },
   { value: "h", label: "h - horas" },
   { value: "%", label: "% - porcentaje" },
@@ -76,6 +80,10 @@ export function ConstantesSection({
       setError("Escribe el nombre de la constante");
       return;
     }
+    if (!/^[A-Za-záéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(draft.etiqueta.trim())) {
+      setError("El nombre solo puede contener letras");
+      return;
+    }
     if (hasCharRun(draft.etiqueta)) {
       setError("El nombre tiene letras repetidas sin coherencia.");
       return;
@@ -110,6 +118,15 @@ export function ConstantesSection({
       setError("El valor de la constante debe ser un número");
       return;
     }
+    if (valorParsed > 999999.99) {
+      setError("El valor no puede superar 999,999.99");
+      return;
+    }
+    const dotIdx = draft.valor.indexOf(".");
+    if (dotIdx !== -1 && draft.valor.length - dotIdx - 1 > 2) {
+      setError("Máximo 2 decimales permitidos");
+      return;
+    }
 
     onChange([
       ...constantes,
@@ -139,7 +156,7 @@ export function ConstantesSection({
 
   const chipDescripcion = (c: ConstanteDraft): string => {
     if (c.origen === "global") {
-      return c.nombre_constante === "iva" ? "16% — fijo" : "Constante del sistema";
+      return c.nombre_constante === "iva" ? "16% del subtotal" : "Constante del sistema";
     }
     const partes = [
       c.id_tipo_variable ? tipoNombre(c.id_tipo_variable) : null,
@@ -209,9 +226,12 @@ export function ConstantesSection({
                 type="text"
                 placeholder="Ej. Markup de mostrador"
                 value={draft.etiqueta}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, etiqueta: sanitizeUserText(e.target.value) }))
-                }
+                onChange={(e) => {
+                  const next = e.target.value
+                    .normalize("NFC")
+                    .replace(/[^A-Za-záéíóúÁÉÍÓÚñÑüÜ ]/gu, "");
+                  setDraft((d) => ({ ...d, etiqueta: next }));
+                }}
                 className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
                 maxLength={MAX_NOMBRE_LEN}
               />
@@ -247,7 +267,7 @@ export function ConstantesSection({
                   const digitCount = next.replace(/\./g, "").length;
                   if (
                     next === "" ||
-                    (/^\d*\.?\d*$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
+                    (/^\d*\.?\d{0,2}$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
                   ) {
                     setDraft((d) => ({ ...d, valor: next }));
                   }

@@ -157,10 +157,6 @@ export async function listCotizaciones(
     };
   }
 
-  if (filters?.cliente) {
-    where.cliente = { nombre_cliente: { contains: filters.cliente, mode: "insensitive" } };
-  }
-
   if (filters?.estatus && filters.estatus.length > 0) {
     where.estatus = { descripcion: { in: filters.estatus } };
   }
@@ -177,24 +173,29 @@ export async function listCotizaciones(
     where.fecha_fin = range;
   }
 
-  const orConditions: Prisma.CotizacionesWhereInput[] = [];
+  const andConditions: Prisma.CotizacionesWhereInput[] = [];
 
-  if (filters?.empresa) {
-    orConditions.push(
-      { empresa_cliente: { contains: filters.empresa, mode: "insensitive" } },
-      { cliente: { empresa: { contains: filters.empresa, mode: "insensitive" } } }
-    );
+  if (filters?.cliente) {
+    andConditions.push({
+      OR: [
+        { cliente: { nombre_cliente: { contains: filters.cliente, mode: "insensitive" } } },
+        { empresa_cliente: { contains: filters.cliente, mode: "insensitive" } },
+        { cliente: { empresa: { contains: filters.cliente, mode: "insensitive" } } },
+      ],
+    });
   }
 
   if (filters?.search) {
-    orConditions.push(
-      { folio: { contains: filters.search, mode: "insensitive" } },
-      { nombre_oportunidad: { contains: filters.search, mode: "insensitive" } }
-    );
+    andConditions.push({
+      OR: [
+        { folio: { contains: filters.search, mode: "insensitive" } },
+        { nombre_oportunidad: { contains: filters.search, mode: "insensitive" } },
+      ],
+    });
   }
 
-  if (orConditions.length > 0) {
-    where.OR = orConditions;
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
   }
 
   const [items, total] = await Promise.all([
@@ -344,11 +345,25 @@ export async function updateCotizacion(
       });
       const baseSum = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
 
-      // Re-apply the stored discount so monto_total stays consistent with
-      // porcentaje_descuento. Without this the row would drift to an
-      // un-discounted total while still advertising a discount %.
+      // Re-apply the stored discount/surcharge so monto_total stays consistent
+      // with porcentaje_descuento. Positive pct = discount (reduces total),
+      // negative pct = surcharge/interest (increases total). Without this the
+      // row would drift to an unadjusted total while still advertising a %.
       const pct = existing.porcentaje_descuento ? Number(existing.porcentaje_descuento) : 0;
-      computedMontoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+      computedMontoTotal = pct !== 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+
+      // monto_total is Decimal(10,2) — values above 99,999,999.99 trigger a
+      // Postgres "numeric field overflow" that surfaces to the client as a
+      // 500. Catch it here and return 422 with an actionable message so the
+      // user can adjust line items instead of seeing "Error interno".
+      // Per-item subtotal is already bounded by the Zod cap on
+      // precio_unitario * cantidad — this catches the sum across many lines.
+      const MONTO_TOTAL_MAX = 99999999.99;
+      if (baseSum > MONTO_TOTAL_MAX || computedMontoTotal > MONTO_TOTAL_MAX) {
+        throw new ValidationError(
+          `El monto total de la cotización no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}. Reduce alguna cantidad o precio unitario.`
+        );
+      }
     }
 
     // Use Prisma's checked update type so each field write is validated
@@ -454,6 +469,13 @@ export async function aplicarDescuento(
   }
 
   const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
+
+  const MONTO_TOTAL_MAX = 99999999.99;
+  if (montoConDescuento > MONTO_TOTAL_MAX) {
+    throw new ValidationError(
+      `El monto total con interés no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}.`
+    );
+  }
 
   // Trim then normalize "" / null → null so the column never holds whitespace-only.
   const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
@@ -813,6 +835,13 @@ export async function createCotizacionFromCart(
 
   const monto_total = Math.round(pricedItems.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
 
+  const MONTO_TOTAL_MAX = 99999999.99;
+  if (monto_total > MONTO_TOTAL_MAX) {
+    throw new ValidationError(
+      `El monto total de la cotización no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}. Reduce alguna cantidad o elimina servicios del carrito.`
+    );
+  }
+
   const sistemaUserId = await getSistemaUserId();
   const placeholderArchivoId = await getPlaceholderArchivoId();
 
@@ -851,7 +880,10 @@ export async function createCotizacionFromCart(
         correo_electronico: correo,
         numero_telefono: input.cliente.numero_telefono,
         empresa: input.cliente.empresa ?? null,
-        categoria: "Emprendedor",
+        // Leave `categoria` unset (→ null / "Sin categoría") for storefront
+        // signups. Admins assign a tier (Black / Silver / Gold / Emprendedor /
+        // Baneado) from the Clientes page once they've reviewed the customer;
+        // we don't want every first-time submitter pre-classified as a tier.
       },
     });
 

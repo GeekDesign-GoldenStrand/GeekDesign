@@ -9,7 +9,7 @@ interface MaterialesToolbarProps {
   visibleColumns: MaterialesVisibleColumns;
   sortOrder: MaterialSortOrder;
   tipoFilter: MaterialTipoFilter;
-  onToggleColumn: (key: keyof MaterialesVisibleColumns) => void;
+  onColumnsChange: (columns: MaterialesVisibleColumns) => void;
   onSortChange: (order: MaterialSortOrder) => void;
   onTipoFilterChange: (value: MaterialTipoFilter) => void;
   onResetFilters: () => void;
@@ -26,7 +26,7 @@ export function MaterialesToolbar({
   visibleColumns,
   sortOrder,
   tipoFilter,
-  onToggleColumn,
+  onColumnsChange,
   onSortChange,
   onTipoFilterChange,
   onResetFilters,
@@ -76,7 +76,7 @@ export function MaterialesToolbar({
         visibleColumns={visibleColumns}
         sortOrder={sortOrder}
         tipoFilter={tipoFilter}
-        onToggleColumn={onToggleColumn}
+        onColumnsChange={onColumnsChange}
         onSortChange={onSortChange}
         onTipoFilterChange={onTipoFilterChange}
         onReset={onResetFilters}
