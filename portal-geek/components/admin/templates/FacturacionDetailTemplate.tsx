@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
+import FormInput from "@/components/ui/atoms/FormInput";
+import { Modal } from "@/components/ui/atoms/Modal";
 import type { PedidoFacturacionDetalle } from "@/lib/services/finanzas";
 
 const fmt = (d: Date) =>
@@ -44,6 +46,9 @@ interface Props {
 
 export function FacturacionDetailTemplate({ pedido }: Props) {
   const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [numeroFactura, setNumeroFactura] = useState("");
+  const [numeroFacturaError, setNumeroFacturaError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,17 +59,38 @@ export function FacturacionDetailTemplate({ pedido }: Props) {
   const df = pedido.datos_facturacion;
   const yaFacturado = pedido.facturado;
 
-  async function handleMarcarFacturado() {
+  function openModal() {
+    setNumeroFactura("");
+    setNumeroFacturaError(null);
+    setError(null);
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    if (loading) return;
+    setModalOpen(false);
+  }
+
+  async function handleConfirmar() {
+    const trimmed = numeroFactura.trim();
+    if (!trimmed) {
+      setNumeroFacturaError("El número de factura es requerido.");
+      return;
+    }
+    setNumeroFacturaError(null);
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`/api/finanzas/pedidos/${pedido.id_pedido}/facturar`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numero_factura: trimmed }),
       });
-      if (!res.ok) throw new Error("No se pudo actualizar el estatus");
+      if (!res.ok) throw new Error();
+      setModalOpen(false);
       router.refresh();
     } catch {
-      setError("Ocurrió un error al marcar como facturado. Intenta de nuevo.");
+      setError("Ocurrió un error al guardar. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -142,13 +168,7 @@ export function FacturacionDetailTemplate({ pedido }: Props) {
       {!yaFacturado && (
         <div className="flex flex-col gap-2">
           {error && <p className="text-[13px] font-medium text-[#c14a4a]">{error}</p>}
-          <Button
-            variant="primary"
-            size="md"
-            loading={loading}
-            onClick={handleMarcarFacturado}
-            className="self-start"
-          >
+          <Button variant="primary" size="md" onClick={openModal} className="self-start">
             Marcar como facturado
           </Button>
         </div>
@@ -159,6 +179,47 @@ export function FacturacionDetailTemplate({ pedido }: Props) {
           Este pedido ya fue marcado como facturado.
         </p>
       )}
+
+      {/* Modal número de factura */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        dismissable={!loading}
+        title="Número de factura"
+        size="sm"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-[13px] text-[#575757]">
+            Ingresa el número de factura generado para completar el proceso.
+          </p>
+          <FormInput
+            label="Número de factura"
+            name="numero_factura"
+            required
+            maxInputLength={100}
+            placeholder="Ej. FAC-2024-001"
+            value={numeroFactura}
+            error={numeroFacturaError}
+            onChange={(e) => {
+              setNumeroFactura(e.target.value);
+              if (numeroFacturaError) setNumeroFacturaError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleConfirmar();
+            }}
+            autoFocus
+          />
+          {error && <p className="text-[13px] font-medium text-[#c14a4a]">{error}</p>}
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" size="sm" onClick={closeModal} disabled={loading}>
+              Cancelar
+            </Button>
+            <Button variant="primary" size="sm" loading={loading} onClick={handleConfirmar}>
+              Confirmar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

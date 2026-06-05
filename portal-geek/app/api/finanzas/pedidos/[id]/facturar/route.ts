@@ -5,10 +5,16 @@ import { handleError, NotFoundError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const PATCH = withSectionParams<Params>("finanzas", "write", async (_req, ctx) => {
+export const PATCH = withSectionParams<Params>("finanzas", "write", async (req, ctx) => {
   try {
     const { id } = await ctx.params;
     const idPedido = Number(id);
+
+    const body = await req.json().catch(() => ({}));
+    const numeroFactura: string | undefined =
+      typeof body?.numero_factura === "string" && body.numero_factura.trim()
+        ? body.numero_factura.trim()
+        : undefined;
 
     const estadoFacturado = await prisma.estadoFacturaPedido.findUnique({
       where: { descripcion: "Facturado" },
@@ -20,8 +26,9 @@ export const PATCH = withSectionParams<Params>("finanzas", "write", async (_req,
       data: {
         facturado: true,
         id_estado_factura: estadoFacturado.id_estado_factura,
+        ...(numeroFactura ? { numero_factura: numeroFactura } : {}),
       },
-      select: { id_pedido: true, facturado: true },
+      select: { id_pedido: true, facturado: true, numero_factura: true },
     });
 
     return ok(pedido);
