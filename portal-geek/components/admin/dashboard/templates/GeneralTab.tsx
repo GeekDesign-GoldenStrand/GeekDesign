@@ -81,7 +81,7 @@ export function GeneralTab({
   if (!isMounted) return <div className="min-h-screen" />;
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto pb-12 sm:pb-16 px-4 sm:px-0 relative">
+    <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto pb-12 sm:pb-16 px-4 md:px-6 lg:px-8 relative">
       {isEditing && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 mt-4">
           <h3 className="text-xl font-bold text-[#1e1e1e] mb-4">Configuración de Vista General</h3>

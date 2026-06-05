@@ -26,9 +26,9 @@ export function DashboardView({ data }: Props) {
       <AdminHeader title="Dashboard" />
 
       {/* Navigation Tabs */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-0 pt-4 md:pt-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
-          <div className="w-full overflow-x-auto">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 pt-4 md:pt-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-start gap-4 pb-2">
+          <div className="min-w-0 overflow-x-auto">
             <div className="flex items-center gap-3 min-w-max">
               {TABS.map((tab) => (
                 <ServiceFilterButton
