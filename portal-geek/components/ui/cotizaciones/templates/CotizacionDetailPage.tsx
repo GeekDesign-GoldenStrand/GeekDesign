@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
+import { ConfirmDialog } from "@/components/ui/atoms/ConfirmDialog";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UserRole } from "@/types";
 import {
@@ -142,7 +143,42 @@ export function CotizacionDetailPage({
   // changes.
   const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
 
+  const canEditDiscount = userRole === "Direccion";
+  const canManageDiscount = isMutable && canEditDiscount;
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDeleteDiscountModal, setShowDeleteDiscountModal] = useState(false);
+  const [isDeletingDiscount, setIsDeletingDiscount] = useState(false);
+  const [deleteDiscountError, setDeleteDiscountError] = useState<string | null>(null);
+
+  const handleConfirmDeleteDiscount = async () => {
+    setIsDeletingDiscount(true);
+    setDeleteDiscountError(null);
+    try {
+      const res = await fetch(`/api/cotizaciones/${cotizacion.id_cotizacion}/descuento`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          porcentaje_descuento: null,
+          motivo_descuento: null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteDiscountError(data.error ?? "No se pudo eliminar el ajuste.");
+        return;
+      }
+
+      setShowDeleteDiscountModal(false);
+      await onRefetch?.();
+      setShowSuccessModal(true);
+    } catch (err) {
+      setDeleteDiscountError(err instanceof Error ? err.message : "Error de red al eliminar.");
+    } finally {
+      setIsDeletingDiscount(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
@@ -181,10 +217,9 @@ export function CotizacionDetailPage({
         fechaCreacion={cotizacion.fecha_creacion}
         fechaEntrega={fields.fecha_fin || cotizacion.fecha_fin}
         servicios={fields.servicios}
-        // The standalone discount modal has been removed, so the trash icon
-        // no longer has a dedicated delete flow to trigger. To clear a discount,
-        // users now open the edit modal and clear the discount input.
-        onDeleteDiscount={undefined}
+        // Trash icon on the discount ribbon is only wired when the quote
+        // can still be mutated AND the viewer is Direccion.
+        onDeleteDiscount={canManageDiscount ? () => setShowDeleteDiscountModal(true) : undefined}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -221,6 +256,20 @@ export function CotizacionDetailPage({
       {(fields.notas || cotizacion.notas) && (
         <NotasCard notas={fields.notas || cotizacion.notas!} />
       )}
+
+      {showDeleteDiscountModal && (
+        <ConfirmDialog
+          isOpen={true}
+          title={`Eliminar ${porcentajeDescuento < 0 ? "interés" : "descuento"}`}
+          description={`¿Estás seguro de que deseas eliminar este ${porcentajeDescuento < 0 ? "interés" : "descuento"}?`}
+          confirmLabel="Eliminar"
+          loading={isDeletingDiscount}
+          error={deleteDiscountError}
+          onConfirm={handleConfirmDeleteDiscount}
+          onClose={() => setShowDeleteDiscountModal(false)}
+        />
+      )}
+
       {showSuccessModal && (
         <SuccessModal
           message="¡Cotización actualizada con éxito!"

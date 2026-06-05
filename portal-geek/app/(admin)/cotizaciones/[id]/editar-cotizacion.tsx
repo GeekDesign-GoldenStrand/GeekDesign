@@ -4,11 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
-import {
-  DISCOUNT_MAX,
-  DISCOUNT_MIN,
-  validateDescuentoPercentage,
-} from "@/lib/schemas/cotizaciones";
+import { DISCOUNT_MAX, validateDescuentoPercentage } from "@/lib/schemas/cotizaciones";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { UserRole } from "@/types";
 import type { LineItem } from "@/types/cotizacion";
@@ -108,6 +104,10 @@ export default function EditarCotizacion({
 
   const initialDiscountPercentage = porcentajeDescuento ?? 0;
 
+  const [ajusteType, setAjusteType] = useState<"Descuento" | "Interés">(
+    initialDiscountPercentage < 0 ? "Interés" : "Descuento"
+  );
+
   // Mirror the server-side gate on PATCH /api/cotizaciones/[id]/descuento,
   // which requires Direccion. Without this check, non-Direccion users would
   // still see the discount inputs on a quotation that already has one and
@@ -117,15 +117,17 @@ export default function EditarCotizacion({
   // Always show discount section for users who can edit it, so they can add new ones
   const showDiscountSection = canEditDiscount;
 
-  // String source of truth for the input — preserves lone "-" mid-typing.
-  // Numeric `discountPercentage` is derived below.
+  // String source of truth for the input.
+  // Numeric `discountPercentage` is derived below, using absolute value and toggle sign.
   const [discountPercentageText, setDiscountPercentageText] = useState<string>(
-    String(initialDiscountPercentage)
+    String(Math.abs(initialDiscountPercentage))
   );
   const discountPercentage = (() => {
-    if (discountPercentageText === "" || discountPercentageText === "-") return Number.NaN;
+    if (discountPercentageText === "") return Number.NaN;
     const parsed = parseInt(discountPercentageText, 10);
-    return Number.isFinite(parsed) ? parsed : Number.NaN;
+    const absVal = Number.isFinite(parsed) ? Math.abs(parsed) : Number.NaN;
+    if (Number.isNaN(absVal)) return Number.NaN;
+    return ajusteType === "Interés" ? -absVal : absVal;
   })();
   const [discountMotivo, setDiscountMotivo] = useState<string>(motivoDescuento ?? "");
   const [discountSnapshot, setDiscountSnapshot] = useState<{
@@ -143,13 +145,14 @@ export default function EditarCotizacion({
   const [validationError, setValidationError] = useState<string | null>(null);
   // Success modal handling moved to parent
 
-  // Step ±1, skip 0 (validator rejects it), clamp to range.
+  // Step ±1, clamp to positive range up to max.
   const bumpDiscount = (delta: number) => {
     setValidationError(null);
-    const current = Number.isFinite(discountPercentage) ? discountPercentage : 0;
+    let current = discountPercentageText === "" ? 0 : parseInt(discountPercentageText, 10);
+    if (!Number.isFinite(current)) current = 0;
+
     let next = current + delta;
-    if (next === 0) next = delta > 0 ? 1 : -1;
-    next = Math.max(DISCOUNT_MIN, Math.min(DISCOUNT_MAX, next));
+    next = Math.max(0, Math.min(DISCOUNT_MAX, next));
     setDiscountPercentageText(String(next));
   };
 
@@ -170,7 +173,8 @@ export default function EditarCotizacion({
     const freshDiscountPercentage = porcentajeDescuento ?? 0;
     const freshDiscountMotivo = motivoDescuento ?? "";
 
-    setDiscountPercentageText(String(freshDiscountPercentage));
+    setAjusteType(freshDiscountPercentage < 0 ? "Interés" : "Descuento");
+    setDiscountPercentageText(String(Math.abs(freshDiscountPercentage)));
     setDiscountMotivo(freshDiscountMotivo);
     setDiscountSnapshot({
       percentage: freshDiscountPercentage,
@@ -260,7 +264,9 @@ export default function EditarCotizacion({
       return;
     }
 
-    if (discountChanged && discountPercentageText !== "") {
+    const isClearing = discountPercentageText === "" || discountPercentage === 0;
+
+    if (discountChanged && !isClearing) {
       const discountError = validateDescuentoPercentage(discountPercentage);
       if (discountError) {
         setValidationError(discountError);
@@ -317,7 +323,7 @@ export default function EditarCotizacion({
 
       if (discountChanged) {
         const trimmedMotivo = discountMotivo.trim();
-        const isClearing = discountPercentageText === "";
+        const isClearing = discountPercentageText === "" || discountPercentage === 0;
 
         const res = await fetch(`/api/cotizaciones/${idCotizacion}/descuento`, {
           method: "PATCH",
@@ -460,9 +466,56 @@ export default function EditarCotizacion({
 
           {showDiscountSection && (
             <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
-              <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-3">
-                {Number(discountPercentageText) < 0 ? "Interés" : "Descuento"}
-              </p>
+              <div className="flex bg-amber-500/10 p-1 rounded-full mb-3 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAjusteType("Descuento");
+                    setValidationError(null);
+                  }}
+                  className={`flex-1 py-1.5 text-[12px] font-medium rounded-full transition-all duration-300 ${
+                    ajusteType === "Descuento"
+                      ? "bg-white shadow-sm text-amber-700 scale-100"
+                      : "text-amber-700/60 hover:text-amber-900 hover:bg-amber-500/10 scale-[0.98]"
+                  }`}
+                >
+                  Descuento
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAjusteType("Interés");
+                    setValidationError(null);
+                  }}
+                  className={`flex-1 py-1.5 text-[12px] font-medium rounded-full transition-all duration-300 ${
+                    ajusteType === "Interés"
+                      ? "bg-white shadow-sm text-amber-700 scale-100"
+                      : "text-amber-700/60 hover:text-amber-900 hover:bg-amber-500/10 scale-[0.98]"
+                  }`}
+                >
+                  Interés
+                </button>
+              </div>
+
+              <div className="flex gap-2 mb-3">
+                {[5, 10, 15, 20].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => {
+                      setDiscountPercentageText(String(pct));
+                      setValidationError(null);
+                    }}
+                    className={`flex-1 py-1 text-[12px] font-medium rounded-lg border transition-colors ${
+                      ajusteType === "Interés"
+                        ? "bg-green-100 text-green-800 border-green-300 hover:bg-green-200"
+                        : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200"
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1 text-[13px] text-[#575757]">
@@ -471,24 +524,21 @@ export default function EditarCotizacion({
                     <input
                       type="text"
                       inputMode="numeric"
-                      pattern="^-?[0-9]+$"
-                      min={DISCOUNT_MIN}
+                      pattern="^[0-9]+$"
+                      min={0}
                       max={DISCOUNT_MAX}
                       value={discountPercentageText}
                       onChange={(e) => {
                         setValidationError(null);
                         const raw = e.target.value;
-                        // Accept "" and "-" verbatim so the sign survives mid-typing.
-                        if (raw === "" || raw === "-") {
+                        if (raw === "") {
                           setDiscountPercentageText(raw);
                           return;
                         }
-                        if (!/^-?\d+$/.test(raw)) return;
+                        if (!/^\d+$/.test(raw)) return;
                         const parsed = parseInt(raw, 10);
                         if (!Number.isFinite(parsed)) return;
-                        setDiscountPercentageText(
-                          String(Math.min(Math.max(parsed, DISCOUNT_MIN), DISCOUNT_MAX))
-                        );
+                        setDiscountPercentageText(String(Math.min(parsed, DISCOUNT_MAX)));
                       }}
                       className="w-full pl-3 pr-7 py-2 text-[13px] text-gray-800 bg-transparent focus:outline-none rounded-lg"
                     />
@@ -628,7 +678,7 @@ export default function EditarCotizacion({
                     </span>
                     <span
                       className={`min-w-[110px] text-right ${
-                        discountPct < 0 ? "text-amber-700" : "text-red-600"
+                        discountPct < 0 ? "text-green-600" : "text-red-600"
                       }`}
                     >
                       {discountPct < 0 ? "+" : "−"} {formatAmount(Math.abs(discountAmount))}
@@ -638,11 +688,7 @@ export default function EditarCotizacion({
                     <span className="text-gray-600">
                       {discountPct < 0 ? "Total con interés" : "Total con descuento"}
                     </span>
-                    <span
-                      className={`min-w-[110px] text-right text-[16px] font-medium ${
-                        discountPct < 0 ? "text-amber-700" : "text-[#3B6D11]"
-                      }`}
-                    >
+                    <span className="min-w-[110px] text-right text-[16px] font-medium text-black">
                       {formatAmount(newTotal)}
                     </span>
                   </div>

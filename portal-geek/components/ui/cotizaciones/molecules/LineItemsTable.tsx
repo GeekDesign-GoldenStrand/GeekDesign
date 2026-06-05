@@ -58,9 +58,9 @@ function TotalsBlock({ subtotal, discountAmount, discountLabel, iva }: TotalsPro
         <div className="flex gap-8 text-[15px] text-gray-700">
           <span>{displayLabel}</span>
           <span
-            className={`min-w-[100px] text-right ${isDiscount ? "text-green-600" : "text-red-600"}`}
+            className={`min-w-[100px] text-right ${isDiscount ? "text-red-600" : "text-green-600"}`}
           >
-            {formatAmount(displayAmount)}
+            {isDiscount ? "−" : "+"} {formatAmount(displayAmount)}
           </span>
         </div>
       )}
