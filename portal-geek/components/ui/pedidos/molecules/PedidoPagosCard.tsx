@@ -1,4 +1,4 @@
-import { CurrencyCircleDollar } from "@phosphor-icons/react";
+import { CurrencyCircleDollar, Plus } from "@phosphor-icons/react";
 
 import { SectionCard } from "@/components/ui/cotizaciones/atoms/SectionCard";
 import { formatDate } from "@/lib/utils/date";
@@ -10,13 +10,31 @@ function money(value: string) {
 
 interface Props {
   pagos: PedidoPago[];
+  /** When provided, renders a "Registrar pago" action in the section. */
+  onRegister?: () => void;
 }
 
-export function PedidoPagosCard({ pagos }: Props) {
+function RegisterButton({ onRegister }: { onRegister: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRegister}
+      className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#e42200] hover:text-[#b81b00] transition-colors"
+    >
+      <Plus size={15} weight="bold" />
+      Registrar pago
+    </button>
+  );
+}
+
+export function PedidoPagosCard({ pagos, onRegister }: Props) {
   if (pagos.length === 0) {
     return (
       <SectionCard title="Pagos" icon={<CurrencyCircleDollar size={15} />}>
-        <p className="text-[14px] text-gray-600">Sin pagos registrados.</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[14px] text-gray-600">Sin pagos registrados.</p>
+          {onRegister && <RegisterButton onRegister={onRegister} />}
+        </div>
       </SectionCard>
     );
   }
@@ -47,6 +65,11 @@ export function PedidoPagosCard({ pagos }: Props) {
           ))}
         </tbody>
       </table>
+      {onRegister && (
+        <div className="mt-4 flex justify-end">
+          <RegisterButton onRegister={onRegister} />
+        </div>
+      )}
     </SectionCard>
   );
 }

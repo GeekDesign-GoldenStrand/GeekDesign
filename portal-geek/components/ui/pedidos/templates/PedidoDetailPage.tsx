@@ -13,6 +13,7 @@ import { PedidoHistorialCard } from "../molecules/PedidoHistorialCard";
 import { PedidoOCResultCard, triggerBlobDownload } from "../molecules/PedidoOCResultCard";
 import { PedidoPagosCard } from "../molecules/PedidoPagosCard";
 import { PedidoHeader } from "../organisms/PedidoHeader";
+import { RegistrarPagoModal } from "../organisms/RegistrarPagoModal";
 
 type ActivePanel = "edit" | null;
 
@@ -33,10 +34,15 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
   const [ocLoading, setOcLoading] = useState(false);
   const [ocError, setOcError] = useState<string | null>(null);
   const [ordenes, setOrdenes] = useState<OrdenGenerada[]>([]);
+  const [showPagoModal, setShowPagoModal] = useState(false);
 
   const canGenerateOC =
     (role === "Direccion" || role === "Administrador" || role === "Colaborador") &&
     pedido.hasTerceros;
+
+  // Mirrors the API guard `withSection("finanzas", "write")` (Direccion / Finanzas;
+  // Administrador is a legacy alias of Direccion).
+  const canRegisterPago = role === "Direccion" || role === "Administrador" || role === "Finanzas";
 
   const handleSave = useCallback(async () => {
     await onRefetch();
@@ -130,8 +136,21 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
       </div>
 
       <div className="mb-4">
-        <PedidoPagosCard pagos={pedido.pagos} />
+        <PedidoPagosCard
+          pagos={pedido.pagos}
+          onRegister={canRegisterPago ? () => setShowPagoModal(true) : undefined}
+        />
       </div>
+
+      <RegistrarPagoModal
+        idPedido={pedido.pedido.id_pedido}
+        isOpen={showPagoModal}
+        onClose={() => setShowPagoModal(false)}
+        onSuccess={async () => {
+          await onRefetch();
+          setShowPagoModal(false);
+        }}
+      />
 
       <div className="mb-4">
         {detalleIds && (

@@ -2,6 +2,7 @@ import type { Pagos } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreatePagoInput, UpdatePagoInput } from "@/lib/schemas/pagos";
+import { NotFoundError } from "@/lib/utils/errors";
 
 export async function listPagosByPedido(
   idPedido: number,
@@ -23,9 +24,23 @@ export async function getPago(id: number): Promise<Pagos> {
 }
 
 export async function createPago(data: CreatePagoInput): Promise<Pagos> {
-  // TODO: implement
-  void data;
-  throw new Error("Not implemented");
+  // Validate the FK up front so a missing pedido surfaces as a clean 404 instead
+  // of a raw Prisma foreign-key violation.
+  const pedido = await prisma.pedidos.findUnique({
+    where: { id_pedido: data.id_pedido },
+    select: { id_pedido: true },
+  });
+  if (!pedido) throw new NotFoundError("Pedido no encontrado");
+
+  return prisma.pagos.create({
+    data: {
+      id_pedido: data.id_pedido,
+      monto_pago: data.monto_pago,
+      metodo_pago: data.metodo_pago,
+      estatus_pago: data.estatus_pago,
+      referencia_mercadopago: data.referencia_mercadopago ?? null,
+    },
+  });
 }
 
 export async function updatePago(id: number, data: UpdatePagoInput): Promise<Pagos> {
