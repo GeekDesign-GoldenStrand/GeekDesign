@@ -275,6 +275,8 @@ export interface IngresosMaquinaData {
   total: number;
   numPedidos: number;
   porAno: Record<number, MaquinaScopeStats>;
+  // Monthly breakdown keyed `${year}-${month}` with month 0-11.
+  porMes: Record<string, MaquinaScopeStats>;
 }
 
 export interface IngresosMaquinasResult {
@@ -333,6 +335,7 @@ export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
     total: number;
     pedidos: Set<number>;
     porAno: Map<number, { total: number; pedidos: Set<number> }>;
+    porMes: Map<string, { total: number; pedidos: Set<number> }>;
   }
 
   const byMaquina = new Map<number, Acc>();
@@ -343,6 +346,8 @@ export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
     if (!pedido) continue;
 
     const year = pago.fecha.getUTCFullYear();
+    const month = pago.fecha.getUTCMonth();
+    const monthKey = `${year}-${month}`;
     const monto = montoNeto(pago);
 
     // Distinct machines that produced this order, gathered across its service
@@ -373,6 +378,7 @@ export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
           total: 0,
           pedidos: new Set<number>(),
           porAno: new Map(),
+          porMes: new Map(),
         };
         byMaquina.set(idMaquina, acc);
       }
@@ -387,6 +393,14 @@ export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
       }
       yearStats.total += monto;
       yearStats.pedidos.add(pago.id_pedido);
+
+      let monthStats = acc.porMes.get(monthKey);
+      if (!monthStats) {
+        monthStats = { total: 0, pedidos: new Set<number>() };
+        acc.porMes.set(monthKey, monthStats);
+      }
+      monthStats.total += monto;
+      monthStats.pedidos.add(pago.id_pedido);
     }
   }
 
@@ -396,6 +410,10 @@ export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
       for (const [year, stats] of m.porAno) {
         porAno[year] = { total: stats.total, numPedidos: stats.pedidos.size };
       }
+      const porMes: Record<string, MaquinaScopeStats> = {};
+      for (const [key, stats] of m.porMes) {
+        porMes[key] = { total: stats.total, numPedidos: stats.pedidos.size };
+      }
       return {
         id_maquina: m.id_maquina,
         nombre: m.nombre,
@@ -404,6 +422,7 @@ export async function getIngresosPorMaquina(): Promise<IngresosMaquinasResult> {
         total: m.total,
         numPedidos: m.pedidos.size,
         porAno,
+        porMes,
       };
     })
     .sort((a, b) => b.total - a.total);

@@ -1,9 +1,9 @@
 "use client";
 
 import { Wrench } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 
-import { SelectField } from "../../atoms/SelectField";
-import { formatCurrency, DASHBOARD_SELECT_CLASS } from "../utils";
+import { formatCurrency } from "../utils";
 
 export interface IngresosMaquinaRow {
   id_maquina: number;
@@ -17,9 +17,8 @@ export interface IngresosMaquinaRow {
 interface Props {
   rows: IngresosMaquinaRow[];
   totalScope: number;
-  year: number | "all";
-  availableYears: number[];
-  onYearChange: (year: number | "all") => void;
+  subtitle: string;
+  controls: ReactNode;
 }
 
 // Podium colors for the first three positions; the rest fall back to neutral.
@@ -29,18 +28,7 @@ const RANK_STYLES: Record<number, string> = {
   2: "bg-orange-100 text-orange-700 border-orange-300",
 };
 
-export function IngresosMaquinasCard({
-  rows,
-  totalScope,
-  year,
-  availableYears,
-  onYearChange,
-}: Props) {
-  const yearOptions = [
-    { label: "Todos los años", value: "all" },
-    ...availableYears.map((y) => ({ label: String(y), value: y })),
-  ];
-
+export function IngresosMaquinasCard({ rows, totalScope, subtitle, controls }: Props) {
   // Bars are sized relative to the leader so #1 always fills the track.
   const maxMonto = rows.length > 0 ? rows[0].monto : 0;
 
@@ -53,19 +41,10 @@ export function IngresosMaquinasCard({
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">Ingresos por Máquina</h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Dinero generado por cada máquina {year === "all" ? "(histórico)" : `en ${year}`}
-            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">{subtitle}</p>
           </div>
         </div>
-        <SelectField
-          label="Periodo:"
-          value={year}
-          options={yearOptions}
-          onChange={(v) => onYearChange(v === "all" ? "all" : Number(v))}
-          inline
-          selectClassName={DASHBOARD_SELECT_CLASS}
-        />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">{controls}</div>
       </div>
 
       {rows.length === 0 ? (

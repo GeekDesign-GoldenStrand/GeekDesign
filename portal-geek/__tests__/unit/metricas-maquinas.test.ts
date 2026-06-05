@@ -99,6 +99,9 @@ describe("getIngresosPorMaquina", () => {
     expect(maquinas[0].total).toBe(6000); // 10000 − 4000
     expect(maquinas[0].porAno[2025]).toEqual({ total: 10000, numPedidos: 1 });
     expect(maquinas[0].porAno[2026]).toEqual({ total: -4000, numPedidos: 1 });
+    // Monthly breakdown keyed `${year}-${month}` (month 0-11): May 2025, Feb 2026.
+    expect(maquinas[0].porMes["2025-4"]).toEqual({ total: 10000, numPedidos: 1 });
+    expect(maquinas[0].porMes["2026-1"]).toEqual({ total: -4000, numPedidos: 1 });
   });
 
   it("ignores payments whose order has no machine in any of its services", async () => {
