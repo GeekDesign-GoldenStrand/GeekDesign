@@ -62,6 +62,8 @@ const initialFields: EditableFields = {
   servicios: [
     {
       id_detalle: 10,
+      id_servicio: 1,
+      id_material: 1,
       nombre_servicio: "Impresión",
       nombre_material: "Vinil",
       cantidad: 2,
