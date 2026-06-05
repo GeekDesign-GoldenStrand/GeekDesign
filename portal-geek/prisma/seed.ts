@@ -733,82 +733,64 @@ async function main() {
     where: { id_proveedor_id_material: { id_proveedor: 1, id_material: material.id_material } },
   });
 
-  // ── ServicioMaterial: link Corte Láser to MDF 3mm at MDF supplier price ──
-  if (proveedorPrecioMDF) {
-    await prisma.servicioMaterial.upsert({
+  // ── ServicioMaterial relations for demo PE-03 services ──
+  async function upsertServicioMaterial({
+    id_servicio,
+    id_material,
+    id_proveedor_precio,
+  }: {
+    id_servicio: number;
+    id_material: number;
+    id_proveedor_precio?: number;
+  }) {
+    return prisma.servicioMaterial.upsert({
       where: {
         id_servicio_id_material: {
-          id_servicio: servicioCorte.id_servicio,
-          id_material: material.id_material,
+          id_servicio,
+          id_material,
         },
       },
-      update: {},
+      update: {
+        ...(id_proveedor_precio !== undefined ? { id_proveedor_precio } : {}),
+      },
       create: {
-        id_servicio: servicioCorte.id_servicio,
-        id_material: material.id_material,
-        id_proveedor_precio: proveedorPrecioMDF.id_proveedor_precio,
+        id_servicio,
+        id_material,
+        ...(id_proveedor_precio !== undefined ? { id_proveedor_precio } : {}),
       },
     });
+  }
+
+  // ── ServicioMaterial: link Corte Láser to MDF 3mm at MDF supplier price ──
+  if (proveedorPrecioMDF) {
+    await upsertServicioMaterial({
+      id_servicio: servicioCorte.id_servicio,
+      id_material: material.id_material,
+      id_proveedor_precio: proveedorPrecioMDF.id_proveedor_precio,
+    });
+
     console.log("Seeded ServicioMaterial: Corte Láser ↔ MDF 3mm");
   }
 
-  await Promise.all([
-    prisma.servicioMaterial.upsert({
-      where: {
-        id_servicio_id_material: {
-          id_servicio: servicioGrabado.id_servicio,
-          id_material: material.id_material,
-        },
-      },
-      update: {},
-      create: {
-        id_servicio: servicioGrabado.id_servicio,
-        id_material: material.id_material,
-      },
-    }),
+  await upsertServicioMaterial({
+    id_servicio: servicioGrabado.id_servicio,
+    id_material: material.id_material,
+  });
 
-    prisma.servicioMaterial.upsert({
-      where: {
-        id_servicio_id_material: {
-          id_servicio: servicioGrabado.id_servicio,
-          id_material: materialAcrilico.id_material,
-        },
-      },
-      update: {},
-      create: {
-        id_servicio: servicioGrabado.id_servicio,
-        id_material: materialAcrilico.id_material,
-      },
-    }),
+  await upsertServicioMaterial({
+    id_servicio: servicioGrabado.id_servicio,
+    id_material: materialAcrilico.id_material,
+  });
 
-    prisma.servicioMaterial.upsert({
-      where: {
-        id_servicio_id_material: {
-          id_servicio: servicioBordado.id_servicio,
-          id_material: materialTela.id_material,
-        },
-      },
-      update: {},
-      create: {
-        id_servicio: servicioBordado.id_servicio,
-        id_material: materialTela.id_material,
-      },
-    }),
+  await upsertServicioMaterial({
+    id_servicio: servicioBordado.id_servicio,
+    id_material: materialTela.id_material,
+  });
 
-    prisma.servicioMaterial.upsert({
-      where: {
-        id_servicio_id_material: {
-          id_servicio: servicioRotulacion.id_servicio,
-          id_material: materialVinil.id_material,
-        },
-      },
-      update: {},
-      create: {
-        id_servicio: servicioRotulacion.id_servicio,
-        id_material: materialVinil.id_material,
-      },
-    }),
-  ]);
+  await upsertServicioMaterial({
+    id_servicio: servicioRotulacion.id_servicio,
+    id_material: materialVinil.id_material,
+  });
 
   console.log("Seeded ServicioMaterial relations for demo PE-03 services");
 
@@ -1165,8 +1147,8 @@ async function main() {
           // Pedido COT-001 (Pendiente): Corte Láser + Grabado Láser
           {
             id_pedido: pids[0],
-            id_servicio: 1,
-            id_material: 1,
+            id_servicio: servicioCorte.id_servicio,
+            id_material: material.id_material,
             id_archivo: 1,
             cantidad: 5,
             responsable_recoleccion: "Grupo Empresarial NL",
@@ -1175,19 +1157,20 @@ async function main() {
           },
           {
             id_pedido: pids[0],
-            id_servicio: 2,
-            id_material: 2,
+            id_servicio: servicioGrabado.id_servicio,
+            id_material: materialAcrilico.id_material,
             id_archivo: 1,
             cantidad: 3,
             responsable_recoleccion: "Grupo Empresarial NL",
             precio_unitario: 30.0,
             subtotal: 90.0,
           },
+
           // Pedido COT-002 (En producción): Corte Láser + Bordado
           {
             id_pedido: pids[1],
-            id_servicio: 1,
-            id_material: 1,
+            id_servicio: servicioCorte.id_servicio,
+            id_material: material.id_material,
             id_archivo: 1,
             id_estatus: smLocal["En producción"],
             cantidad: 10,
@@ -1197,19 +1180,20 @@ async function main() {
           },
           {
             id_pedido: pids[1],
-            id_servicio: 3,
-            id_material: 3,
+            id_servicio: servicioBordado.id_servicio,
+            id_material: materialTela.id_material,
             id_archivo: 1,
             cantidad: 6,
             responsable_recoleccion: "Laura Rodríguez Vega",
             precio_unitario: 45.0,
             subtotal: 270.0,
           },
+
           // Pedido COT-003 (Finalizado): Grabado Láser acrílico
           {
             id_pedido: pids[2],
-            id_servicio: 2,
-            id_material: 2,
+            id_servicio: servicioGrabado.id_servicio,
+            id_material: materialAcrilico.id_material,
             id_archivo: 1,
             id_estatus: smLocal["Finalizado"],
             cantidad: 4,
@@ -1217,11 +1201,12 @@ async function main() {
             precio_unitario: 55.0,
             subtotal: 220.0,
           },
+
           // Pedido COT-004 (Entregado): Rotulación de vinil + Bordado
           {
             id_pedido: pids[3],
-            id_servicio: 4,
-            id_material: 4,
+            id_servicio: servicioRotulacion.id_servicio,
+            id_material: materialVinil.id_material,
             id_archivo: 1,
             id_estatus: smLocal["Entregado"],
             cantidad: 8,
@@ -1231,8 +1216,8 @@ async function main() {
           },
           {
             id_pedido: pids[3],
-            id_servicio: 3,
-            id_material: 3,
+            id_servicio: servicioBordado.id_servicio,
+            id_material: materialTela.id_material,
             id_archivo: 1,
             id_estatus: smLocal["Entregado"],
             cantidad: 12,
@@ -1240,11 +1225,12 @@ async function main() {
             precio_unitario: 45.0,
             subtotal: 540.0,
           },
+
           // Pedido COT-005 (Cancelado): Corte Láser
           {
             id_pedido: pids[4],
-            id_servicio: 1,
-            id_material: 1,
+            id_servicio: servicioCorte.id_servicio,
+            id_material: material.id_material,
             id_archivo: 1,
             id_estatus: smLocal["Cancelado"],
             cantidad: 2,
@@ -1252,11 +1238,12 @@ async function main() {
             precio_unitario: 25.0,
             subtotal: 50.0,
           },
+
           // Pedido COT-006 (Pendiente): Corte Láser + Rotulación de vinil
           {
             id_pedido: pids[5],
-            id_servicio: 1,
-            id_material: 1,
+            id_servicio: servicioCorte.id_servicio,
+            id_material: material.id_material,
             id_archivo: 1,
             cantidad: 7,
             responsable_recoleccion: "Laura Rodríguez Vega",
@@ -1265,30 +1252,32 @@ async function main() {
           },
           {
             id_pedido: pids[5],
-            id_servicio: 4,
-            id_material: 4,
+            id_servicio: servicioRotulacion.id_servicio,
+            id_material: materialVinil.id_material,
             id_archivo: 1,
             cantidad: 3,
             responsable_recoleccion: "Laura Rodríguez Vega",
             precio_unitario: 80.0,
             subtotal: 240.0,
           },
+
           // Pedido COT-007 (Pendiente): Bordado gorras
           {
             id_pedido: pids[6],
-            id_servicio: 3,
-            id_material: 3,
+            id_servicio: servicioBordado.id_servicio,
+            id_material: materialTela.id_material,
             id_archivo: 1,
             cantidad: 20,
             responsable_recoleccion: "Publicidad Del Valle",
             precio_unitario: 40.0,
             subtotal: 800.0,
           },
+
           // Pedido COT-008 (Pendiente): Grabado Láser + Rotulación de vinil
           {
             id_pedido: pids[7],
-            id_servicio: 2,
-            id_material: 1,
+            id_servicio: servicioGrabado.id_servicio,
+            id_material: material.id_material,
             id_archivo: 1,
             cantidad: 2,
             responsable_recoleccion: "Cliente Demo",
@@ -1297,8 +1286,8 @@ async function main() {
           },
           {
             id_pedido: pids[7],
-            id_servicio: 4,
-            id_material: 4,
+            id_servicio: servicioRotulacion.id_servicio,
+            id_material: materialVinil.id_material,
             id_archivo: 1,
             cantidad: 5,
             responsable_recoleccion: "Cliente Demo",
@@ -1306,11 +1295,56 @@ async function main() {
             subtotal: 400.0,
           },
         ];
-
-        await prisma.detallePedido.createMany({ data: detallesDemo });
         console.log(`Seeded ${detallesDemo.length} demo detalles de pedido`);
       } else {
         console.log("Demo detalles already seeded, skipping");
+      }
+
+      const existingPedidoMaquinasCount = await prisma.pedidoMaquina.count({
+        where: {
+          id_pedido: {
+            in: pids,
+          },
+        },
+      });
+
+      if (existingPedidoMaquinasCount === 0) {
+        await prisma.pedidoMaquina.createMany({
+          data: [
+            {
+              id_pedido: pids[0],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-13"),
+            },
+            {
+              id_pedido: pids[1],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-15"),
+            },
+            {
+              id_pedido: pids[5],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-22"),
+            },
+            {
+              id_pedido: pids[7],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-24"),
+            },
+          ],
+        });
+
+        console.log("Seeded demo PedidoMaquina assignments");
+      } else {
+        console.log("Demo PedidoMaquina assignments already seeded, skipping");
       }
     }
   }
@@ -1386,7 +1420,12 @@ async function main() {
 
   // 3. ProveedorPrecios: Mi Marca Vende → Corte Láser @ $2.10 (path B)
   await prisma.proveedorPrecios.upsert({
-    where: { id_proveedor_id_servicio: { id_proveedor: 6, id_servicio: 1 } },
+    where: {
+      id_proveedor_id_servicio: {
+        id_proveedor: proveedorMiMarca.id_proveedor,
+        id_servicio: servicioCorte.id_servicio,
+      },
+    },
     update: {},
     create: {
       id_proveedor: proveedorMiMarca.id_proveedor,
@@ -1398,7 +1437,12 @@ async function main() {
 
   // 4. InstaladorServicios: Rotulaciones Flores → Instalación de Señalética @ $320 (path B)
   await prisma.instaladorServicios.upsert({
-    where: { id_instalador_id_servicio: { id_instalador: 5, id_servicio: 5 } },
+    where: {
+      id_instalador_id_servicio: {
+        id_instalador: instaladorPE01.id_instalador,
+        id_servicio: servicioSenaletica.id_servicio,
+      },
+    },
     update: {},
     create: {
       id_instalador: instaladorPE01.id_instalador,
@@ -1501,8 +1545,19 @@ async function main() {
     orderStatusRowsForDetalle.forEach((s) => (statusByName[s.descripcion] = s.id_estatus));
 
     const statusCycle = ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
-    const servicioCycle = [1, 2, 3, 4]; // Corte Láser, Grabado Láser, Bordado, Rotulación
-    const materialCycle = [1, 2, 3, 4];
+    const servicioCycle = [
+      servicioCorte.id_servicio,
+      servicioGrabado.id_servicio,
+      servicioBordado.id_servicio,
+      servicioRotulacion.id_servicio,
+    ];
+
+    const materialCycle = [
+      material.id_material,
+      materialAcrilico.id_material,
+      materialTela.id_material,
+      materialVinil.id_material,
+    ];
 
     let detallesCreated = 0;
 
