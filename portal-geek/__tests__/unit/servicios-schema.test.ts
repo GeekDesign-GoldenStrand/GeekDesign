@@ -31,6 +31,7 @@ function makeVariablePayload(valor_default: unknown) {
   return {
     id_sucursal: 1,
     nombre_servicio: "Servicio Test",
+    apodo_servicio: "Corte CO2",
     formula: {
       expresion: "ancho * 2",
       variables: [
@@ -39,7 +40,7 @@ function makeVariablePayload(valor_default: unknown) {
           nombre_variable: "ancho",
           etiqueta: "Ancho",
           editable_por_cliente: false,
-          valor_default,
+          ...(valor_default !== undefined ? { valor_default } : {}),
         },
       ],
       constantes: [],
@@ -51,6 +52,7 @@ function makeConstantePayload(valor: unknown) {
   return {
     id_sucursal: 1,
     nombre_servicio: "Servicio Test",
+    apodo_servicio: "Corte CO2",
     formula: {
       expresion: "k * 2",
       variables: [],
@@ -58,7 +60,7 @@ function makeConstantePayload(valor: unknown) {
         {
           nombre_constante: "k",
           origen: "manual",
-          valor,
+          ...(valor !== undefined ? { valor } : {}),
         },
       ],
     },
@@ -179,6 +181,7 @@ describe("CreateServicioSchema — constante valor bounds (Decimal 10,2)", () =>
     const result = CreateServicioSchema.safeParse({
       id_sucursal: 1,
       nombre_servicio: "Test",
+      apodo_servicio: "Corte CO2",
       formula: {
         expresion: "k",
         variables: [],

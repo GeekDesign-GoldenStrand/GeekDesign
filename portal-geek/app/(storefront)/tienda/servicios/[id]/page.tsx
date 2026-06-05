@@ -54,7 +54,6 @@ export default async function ServicioDetallePage({ params }: Props) {
         <ServicioDetalleClient
           servicioId={servicio.id_servicio}
           nombreServicio={servicio.nombre_servicio}
-          apodoServicio={servicio.apodo_servicio}
           descripcionServicio={servicio.descripcion_servicio}
           materialesText={materialesText}
           materiales={materiales}

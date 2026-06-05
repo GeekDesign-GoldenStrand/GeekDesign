@@ -322,11 +322,32 @@ export function toServicioAdminDetalle(s: ServicioParaAdmin): ServicioAdminDetal
   };
 }
 
+async function assertServicioApodoDisponible(apodo_servicio: string, currentId?: number) {
+  const apodo = apodo_servicio.trim();
+
+  const existing = await prisma.servicios.findFirst({
+    where: {
+      apodo_servicio: {
+        equals: apodo,
+        mode: "insensitive",
+      },
+      ...(currentId !== undefined ? { id_servicio: { not: currentId } } : {}),
+    },
+    select: { id_servicio: true },
+  });
+
+  if (existing) {
+    throw new ValidationError(`Ya existe un servicio con el apodo "${apodo}".`);
+  }
+}
+
 export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
 ): Promise<ServicioSimple> {
   const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
+
+  await assertServicioApodoDisponible(data.apodo_servicio);
 
   return prisma.$transaction(async (tx) => {
     // 1. Resolve the "Activo" EstatusServicio — frontend does not send id_estatus.
@@ -463,6 +484,10 @@ export async function updateServicio(
   if (!existing) throw new NotFoundError(`Servicio con id ${id} no encontrado`);
 
   const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
+
+  if (data.apodo_servicio !== undefined) {
+    await assertServicioApodoDisponible(data.apodo_servicio, id);
+  }
 
   await prisma.$transaction(async (tx) => {
     await validateServicioFKs(tx, data);

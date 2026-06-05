@@ -592,6 +592,8 @@ describe("createServicio", () => {
   });
 
   it("serializa el arreglo de imagenes como JSON string en imagen_url al crear", async () => {
+    (prisma.servicios.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
     await createServicio(
       {
         nombre_servicio: "Nuevo Servicio",
@@ -622,6 +624,8 @@ describe("createServicio", () => {
   });
 
   it("asigna imagen_url como null si no hay imagenes", async () => {
+    (prisma.servicios.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
     await createServicio(
       {
         nombre_servicio: "Nuevo Servicio",
