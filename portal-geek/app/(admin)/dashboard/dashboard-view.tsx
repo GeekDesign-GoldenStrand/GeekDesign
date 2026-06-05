@@ -47,7 +47,7 @@ export function DashboardView({ data }: Props) {
             <button
               type="button"
               onClick={() => setIsEditingConfig(!isEditingConfig)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-[#1e1e1e] border border-[#d1d1d1] hover:bg-[#f4f4f4] rounded-full text-sm font-semibold transition whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 border border-neutral-300 hover:bg-neutral-100 rounded-full text-sm font-semibold transition whitespace-nowrap"
             >
               <Gear size={18} weight="bold" />
               {isEditingConfig ? "Cerrar Configuración" : "Configurar Vista"}
