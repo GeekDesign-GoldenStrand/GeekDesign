@@ -879,13 +879,23 @@ export async function createCotizacionFromCart(
     const estadoFacturaCotizacion = await tx.estadoFacturaPedido.findUnique({
       where: { descripcion: "Cotizacion" },
     });
+    const estadoFacturaNoAplica = await tx.estadoFacturaPedido.findUnique({
+      where: { descripcion: "No_aplica" },
+    });
     const cotizacionStatusPendiente = await tx.estatusCotizacion.findUnique({
       where: { descripcion: QUOTATION_STATUS.PENDIENTE },
     });
 
-    if (!pedidoStatusPendiente || !estadoFacturaCotizacion || !cotizacionStatusPendiente) {
+    if (
+      !pedidoStatusPendiente ||
+      !estadoFacturaCotizacion ||
+      !estadoFacturaNoAplica ||
+      !cotizacionStatusPendiente
+    ) {
       throw new ConfigurationError("Catálogos de estatus incompletos — ejecuta npm run db:seed");
     }
+
+    const estadoFacturaInicial = input.factura ? estadoFacturaCotizacion : estadoFacturaNoAplica;
 
     // 4. Create draft Pedido (no detalles yet — we need their IDs to attach variables).
     const pedido = await tx.pedidos.create({
@@ -893,11 +903,28 @@ export async function createCotizacionFromCart(
         id_cliente: cliente.id_cliente,
         id_sucursal: input.id_sucursal,
         id_estatus: pedidoStatusPendiente.id_estatus,
-        id_estado_factura: estadoFacturaCotizacion.id_estado_factura,
+        id_estado_factura: estadoFacturaInicial.id_estado_factura,
+        factura: input.factura ?? false,
         notas: input.notas ?? null,
         fecha_estimada: input.fecha_estimada ?? null,
       },
     });
+
+    // 4b. Persist billing data when the client requested an invoice.
+    if (input.factura && input.datos_facturacion) {
+      await tx.datosFacturacion.create({
+        data: {
+          id_pedido: pedido.id_pedido,
+          rfc: input.datos_facturacion.rfc,
+          razon_social: input.datos_facturacion.razon_social,
+          tipo_persona: input.datos_facturacion.tipo_persona,
+          regimen_fiscal: input.datos_facturacion.regimen_fiscal,
+          uso_cfdi: input.datos_facturacion.uso_cfdi,
+          codigo_postal_fiscal: input.datos_facturacion.codigo_postal_fiscal,
+          correo_facturacion: input.datos_facturacion.correo_facturacion ?? null,
+        },
+      });
+    }
 
     // 5. Allocate folio via Postgres sequence (atomic, concurrent-safe).
     const seqRow = await tx.$queryRaw<Array<{ nextval: bigint }>>`
