@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  CheckCircle,
-  WarningCircle,
-  StopCircle,
-  CurrencyDollar,
-  CaretDown,
-  Info,
+  CheckCircleIcon,
+  WarningCircleIcon,
+  StopCircleIcon,
+  CurrencyDollarIcon,
+  CaretDownIcon,
+  InfoIcon,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 
@@ -96,7 +96,7 @@ function PedidoStatusPill({
           className={`rounded-full cursor-pointer flex items-center gap-2 ${triggerClass} ${getStatusStyle(status)}`}
         >
           <span className="whitespace-nowrap">{status}</span>
-          <CaretDown size={iconSize} weight="bold" />
+          <CaretDownIcon size={iconSize} weight="bold" />
         </button>
       }
     >
@@ -142,11 +142,12 @@ function getInvoiceProgressColor(status?: string | null) {
 }
 
 function renderInvoiceStatusIcon(status?: string | null) {
-  const label = status || "No se requiere factura";
-  if (!status) {
+  const noRequiere = !status || status === "No se requiere factura";
+  const label = noRequiere ? "No se requiere factura" : status;
+  if (noRequiere) {
     return (
       <span title={label}>
-        <StopCircle size={18} className="text-gray-400" weight="fill" />
+        <StopCircleIcon size={18} className="text-gray-400" weight="fill" />
       </span>
     );
   }
@@ -154,14 +155,14 @@ function renderInvoiceStatusIcon(status?: string | null) {
   if (status === "Facturado") {
     return (
       <span title={label}>
-        <CheckCircle size={18} className="text-[#6ACE0D]" weight="fill" />
+        <CheckCircleIcon size={18} className="text-[#6ACE0D]" weight="fill" />
       </span>
     );
   }
 
   return (
     <span title={label}>
-      <WarningCircle size={18} className="text-[#E42200]" weight="fill" />
+      <WarningCircleIcon size={18} className="text-[#E42200]" weight="fill" />
     </span>
   );
 }
@@ -352,7 +353,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                 document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
               }
             >
-              <Info
+              <InfoIcon
                 size={24}
                 weight="fill"
                 className="text-black border-2 border-black rounded-full p-0.5"
@@ -415,7 +416,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                     </div>
                     <div className="flex flex-col items-center px-2 min-w-[180px]">
                       <div className="flex items-center gap-2 w-full">
-                        <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
+                        <CurrencyDollarIcon size={16} className="text-[#1e1e1e] flex-shrink-0" />
                         <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all duration-300"
@@ -600,7 +601,7 @@ export function PedidosTable({ pedidos, selectedServiceId, onDetalleStatusChange
                   </div>
                   <div className="flex flex-col items-center px-2 min-w-[180px]">
                     <div className="flex items-center gap-2 w-full">
-                      <CurrencyDollar size={16} className="text-[#1e1e1e] flex-shrink-0" />
+                      <CurrencyDollarIcon size={16} className="text-[#1e1e1e] flex-shrink-0" />
                       <div className="w-full h-2 bg-[#ececec] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-300"
