@@ -7,7 +7,9 @@ import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import { DISCOUNT_MAX, validateDescuentoPercentage } from "@/lib/schemas/cotizaciones";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { UserRole } from "@/types";
-import type { LineItem } from "@/types/cotizacion";
+import type { FormulaVariable, LineItem } from "@/types/cotizacion";
+
+import EditarVariablesDetalle from "./editar-variables-detalle";
 
 const DISCOUNT_MOTIVO_MAX_LEN = 80;
 
@@ -160,6 +162,11 @@ export default function EditarCotizacion({
   // whether anything actually changed before firing the PATCH.
   const [snapshot, setSnapshot] = useState<EditableFields>(initial);
 
+  // Index of the row whose formula-variable editor is currently open. null =
+  // no child modal. Tracked by id_detalle so renumbering the rows can't shift
+  // the wrong child into view.
+  const [editingDetalleId, setEditingDetalleId] = useState<number | null>(null);
+
   // Reset fields every time the modal opens
   useEffect(() => {
     if (!isOpen) return;
@@ -231,6 +238,30 @@ export default function EditarCotizacion({
       });
       return { ...prev, servicios };
     });
+  };
+
+  // Child modal already persisted the variable edits and the new precio_unitario
+  // server-side. Reflect the returned values in the parent table + snapshot so
+  // (a) the displayed totals refresh and (b) the parent's "no changes" guard
+  // doesn't fire spuriously on the variables-only edit. Snapshot is bumped
+  // too so a subsequent parent submit doesn't try to roll the precio back.
+  const applyDetalleVariablesSaved = (saved: {
+    id_detalle: number;
+    precio_unitario: number;
+    subtotal: number;
+    variables: FormulaVariable[];
+  }) => {
+    const merge = (s: LineItem): LineItem =>
+      s.id_detalle === saved.id_detalle
+        ? {
+            ...s,
+            precio_unitario: saved.precio_unitario,
+            subtotal: saved.subtotal,
+            variables: saved.variables,
+          }
+        : s;
+    setFields((prev) => ({ ...prev, servicios: prev.servicios.map(merge) }));
+    setSnapshot((prev) => ({ ...prev, servicios: prev.servicios.map(merge) }));
   };
 
   const newSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
@@ -395,6 +426,11 @@ export default function EditarCotizacion({
   }
 
   const displayedError = validationError ?? serverError;
+
+  const editingDetalle =
+    editingDetalleId !== null
+      ? (fields.servicios.find((s) => s.id_detalle === editingDetalleId) ?? null)
+      : null;
 
   return (
     <>
@@ -589,9 +625,9 @@ export default function EditarCotizacion({
             <table className="w-full text-[13px] border-collapse">
               <thead>
                 <tr>
-                  {["Servicio", "Cantidad", "P. Unitario", "Subtotal"].map((h) => (
+                  {["Servicio", "Cantidad", "P. Unitario", "Subtotal", ""].map((h, i) => (
                     <th
-                      key={h}
+                      key={h || `actions-${i}`}
                       className="text-[11px] font-medium text-gray-400 uppercase tracking-wider pb-2 text-left border-b border-gray-100 px-2 last:text-right"
                     >
                       {h}
@@ -656,6 +692,18 @@ export default function EditarCotizacion({
                     </td>
                     <td className="py-3 px-2 text-right font-medium text-gray-900">
                       {formatAmount(item.subtotal)}
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      {item.variables.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingDetalleId(item.id_detalle)}
+                          className="text-[12px] text-blue-600 hover:text-blue-800 underline-offset-2 hover:underline"
+                          title="Editar variables de la fórmula"
+                        >
+                          Editar fórmula
+                        </button>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -735,6 +783,14 @@ export default function EditarCotizacion({
           </div>
         </form>
       </ModalShell>
+
+      <EditarVariablesDetalle
+        idCotizacion={idCotizacion}
+        isOpen={editingDetalle !== null}
+        servicio={editingDetalle}
+        onSaved={applyDetalleVariablesSaved}
+        onClose={() => setEditingDetalleId(null)}
+      />
     </>
   );
 }

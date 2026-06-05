@@ -92,6 +92,11 @@ export interface FormulaVariable {
 
 export interface LineItem {
   id_detalle: number;
+  // id_servicio + id_material are required by the per-detalle variable editor:
+  // POST /api/servicios/[id]/calcular-precio needs the servicio in the URL
+  // and the material in the body to recompute the price as the admin types.
+  id_servicio: number;
+  id_material: number;
   nombre_servicio: string;
   nombre_material: string;
   cantidad: number;
@@ -101,6 +106,11 @@ export interface LineItem {
   // VariablesCotizacion entries linked to this detalle, resolved to the
   // FormulaVariable shape so the table can render their pills inline.
   variables: FormulaVariable[];
+  // Active formula expression for this servicio — shown read-only at the top
+  // of the per-detalle variable editor so the admin can see what the values
+  // are feeding. Optional because a detalle's servicio may have lost its
+  // active formula by the time we render (rare but defensible).
+  formula_expresion?: string;
   // ArchivosDisenio attached to this detalle. Optional because legacy
   // detalles created before the placeholder upload existed could be null
   // (Prisma model guarantees the relation, but defensive on the client).
@@ -180,6 +190,10 @@ export interface Cotizacion {
       etiqueta: string;
       unidad: string | null;
       editable_por_cliente: boolean;
+      // Formula relation comes from DETAIL_INCLUDE on the admin GET — used by
+      // the per-detalle variable editor to show the active formula expression.
+      // Storefront callers that use a narrower include can leave this absent.
+      formula?: { expresion: string };
     };
     usuario: { nombre_completo: string } | null;
   }[];

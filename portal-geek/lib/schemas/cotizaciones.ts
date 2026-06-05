@@ -75,6 +75,30 @@ export const CotizacionIdParams = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// PATCH /api/cotizaciones/[id]/detalles/[id_detalle]/variables — admin edits
+// the per-detalle FormulaVariable values, server recomputes precio_unitario.
+// Mirrors SolicitarItemSchema's valor bounds (must stay in lock-step with
+// CalcularPrecioSchema in lib/schemas/servicios.ts so the live-preview path
+// and the commit path validate identically).
+export const UpdateDetalleVariablesParams = z.object({
+  id: z.coerce.number().int().positive(),
+  id_detalle: z.coerce.number().int().positive(),
+});
+
+export const UpdateDetalleVariablesSchema = z.object({
+  variables: z
+    .array(
+      z.object({
+        id_variable: z.number().int().positive(),
+        valor: z
+          .number()
+          .positive("El valor debe ser mayor que 0")
+          .lte(100000, "Valor demasiado grande"),
+      })
+    )
+    .min(1, "Debes enviar al menos una variable"),
+});
+
 // ─────────────────────────────────────────────
 // Discount / surcharge rules — single source of truth shared by the API
 // (this Zod schema) and the front-end modal (AplicarDescuento).
@@ -210,3 +234,4 @@ export type CreateCotizacionInput = z.infer<typeof CreateCotizacionSchema>;
 export type UpdateCotizacionInput = z.infer<typeof UpdateCotizacionSchema>;
 export type SolicitarCotizacionInput = z.infer<typeof SolicitarCotizacionSchema>;
 export type AplicarDescuentoInput = z.infer<typeof AplicarDescuentoSchema>;
+export type UpdateDetalleVariablesInput = z.infer<typeof UpdateDetalleVariablesSchema>;

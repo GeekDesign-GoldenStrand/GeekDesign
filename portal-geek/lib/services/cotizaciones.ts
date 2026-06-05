@@ -10,6 +10,7 @@ import type {
   CreateCotizacionInput,
   SolicitarCotizacionInput,
   UpdateCotizacionInput,
+  UpdateDetalleVariablesInput,
 } from "@/lib/schemas/cotizaciones";
 import { calcularPrecioServicio } from "@/lib/services/formula-pricing";
 import { getPlaceholderArchivoId, getSistemaUserId } from "@/lib/services/sistema";
@@ -401,6 +402,164 @@ export async function updateCotizacion(
       where: { id_cotizacion: id },
       data: updateData,
     });
+  });
+}
+
+// Admin edits the FormulaVariable values for a single line item. Mirrors the
+// Pendiente-only + IDOR + monto_total recompute rules of updateCotizacion so
+// the two write paths can't drift. Price is recomputed server-side via
+// calcularPrecioServicio — never trust whatever the client may have rendered
+// in its live preview.
+export async function updateDetalleVariables(
+  id_cotizacion: number,
+  id_detalle: number,
+  input: UpdateDetalleVariablesInput,
+  userId: number
+) {
+  return prisma.$transaction(async (tx) => {
+    const cotizacion = await tx.cotizaciones.findUnique({
+      where: { id_cotizacion },
+      select: {
+        id_cotizacion: true,
+        id_pedido: true,
+        porcentaje_descuento: true,
+        estatus: { select: { descripcion: true } },
+      },
+    });
+
+    if (!cotizacion) {
+      throw new NotFoundError(`Cotización ${id_cotizacion} no encontrada`);
+    }
+    if (cotizacion.estatus.descripcion !== QUOTATION_STATUS.PENDIENTE) {
+      throw new ConflictError(
+        `Solo se pueden modificar cotizaciones en estatus 'Pendiente' (actual: '${cotizacion.estatus.descripcion}')`
+      );
+    }
+    if (!cotizacion.id_pedido) {
+      throw new ConflictError("La cotización no tiene un pedido vinculado");
+    }
+
+    // IDOR guard — same pattern as updateCotizacion: the id_detalle comes from
+    // the URL and must belong to this cotización's pedido or a caller could
+    // poke at lines of a completely unrelated quote.
+    const detalle = await tx.detallePedido.findUnique({
+      where: { id_detalle },
+      select: {
+        id_detalle: true,
+        id_pedido: true,
+        id_servicio: true,
+        id_material: true,
+        cantidad: true,
+      },
+    });
+    if (!detalle || detalle.id_pedido !== cotizacion.id_pedido) {
+      throw new NotFoundError(
+        `Detalle ${id_detalle} no pertenece a la cotización ${id_cotizacion}`
+      );
+    }
+
+    // Resolve the active formula for the detalle's servicio and validate that
+    // every submitted id_variable belongs to it. Without this, a caller could
+    // upsert VariablesCotizacion rows pointing at variables from a different
+    // formula — which would corrupt the audit trail and confuse calcularPrecio.
+    const formula = await tx.formulas.findFirst({
+      where: { id_servicio: detalle.id_servicio, estatus: "Activa" },
+      include: { variables: true },
+    });
+    if (!formula) {
+      throw new ConflictError(`El servicio ${detalle.id_servicio} no tiene una fórmula activa`);
+    }
+
+    const variablesById = new Map(formula.variables.map((v) => [v.id_variable, v]));
+    for (const submitted of input.variables) {
+      if (!variablesById.has(submitted.id_variable)) {
+        throw new ValidationError(
+          `Variable ${submitted.id_variable} no pertenece a la fórmula del servicio`
+        );
+      }
+    }
+
+    // Build the full variable set the price calc expects (every formula
+    // variable, not just the edited ones). Submitted values override; the rest
+    // come from the existing VariablesCotizacion rows or the variable's
+    // valor_default as a last resort.
+    const existing = await tx.variablesCotizacion.findMany({
+      where: { id_cotizacion, id_detalle },
+      select: { id_variable: true, valor: true },
+    });
+    const existingByVariable = new Map(existing.map((e) => [e.id_variable, Number(e.valor)]));
+    const submittedByVariable = new Map(input.variables.map((v) => [v.id_variable, v.valor]));
+
+    const priceVariables = formula.variables.map((fv) => {
+      const valor =
+        submittedByVariable.get(fv.id_variable) ??
+        existingByVariable.get(fv.id_variable) ??
+        (fv.valor_default !== null ? Number(fv.valor_default) : null);
+      if (valor === null) {
+        throw new ValidationError(`La variable "${fv.nombre_variable}" requiere un valor`);
+      }
+      return { nombre_variable: fv.nombre_variable, valor };
+    });
+
+    const nuevoPrecioUnitario = await calcularPrecioServicio({
+      id_servicio: detalle.id_servicio,
+      id_material: detalle.id_material,
+      variables: priceVariables,
+    });
+
+    const nuevoSubtotal = Math.round(nuevoPrecioUnitario * detalle.cantidad * 100) / 100;
+
+    // Replace only the rows for the variables actually being edited; other
+    // variables on this detalle keep their existing fecha_asignacion / actor
+    // so the audit trail isn't blown away on every save.
+    const editedIds = input.variables.map((v) => v.id_variable);
+    await tx.variablesCotizacion.deleteMany({
+      where: { id_cotizacion, id_detalle, id_variable: { in: editedIds } },
+    });
+    await tx.variablesCotizacion.createMany({
+      data: input.variables.map((v) => ({
+        id_cotizacion,
+        id_detalle,
+        id_variable: v.id_variable,
+        valor: v.valor,
+        id_usuario_asigno: userId,
+      })),
+    });
+
+    const updatedDetalle = await tx.detallePedido.update({
+      where: { id_detalle },
+      data: {
+        precio_unitario: nuevoPrecioUnitario,
+        subtotal: nuevoSubtotal,
+      },
+    });
+
+    // Recompute monto_total honoring the existing discount. Same overflow
+    // guard as updateCotizacion — Decimal(10,2) tops out at 99,999,999.99.
+    const detalles = await tx.detallePedido.findMany({
+      where: { id_pedido: cotizacion.id_pedido },
+      select: { subtotal: true },
+    });
+    const baseSum = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
+    const pct = cotizacion.porcentaje_descuento ? Number(cotizacion.porcentaje_descuento) : 0;
+    const montoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+
+    const MONTO_TOTAL_MAX = 99999999.99;
+    if (baseSum > MONTO_TOTAL_MAX || montoTotal > MONTO_TOTAL_MAX) {
+      throw new ValidationError(
+        `El monto total de la cotización no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}. Reduce alguna cantidad o precio unitario.`
+      );
+    }
+
+    await tx.cotizaciones.update({
+      where: { id_cotizacion },
+      data: { monto_total: montoTotal },
+    });
+
+    return {
+      detalle: updatedDetalle,
+      monto_total: montoTotal,
+    };
   });
 }
 

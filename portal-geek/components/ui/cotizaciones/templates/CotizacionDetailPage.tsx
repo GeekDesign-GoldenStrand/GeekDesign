@@ -40,25 +40,31 @@ export function CotizacionDetailPage({
     setActivePanel((prev) => (prev === panel ? null : panel));
 
   // ── Map API detalles → servicios ───────────
-  const variablesByDetalle = cotizacion.variablesCotizacion.reduce(
-    (acc: Record<number, FormulaVariable[]>, v) => {
-      if (v.id_detalle == null) return acc;
-      const fv: FormulaVariable = {
-        id_variable: v.variable.id_variable,
-        nombre_variable: v.variable.nombre_variable,
-        etiqueta: v.variable.etiqueta,
-        unidad: v.variable.unidad ?? undefined,
-        editable_por_cliente: v.variable.editable_por_cliente,
-        valor: parseFloat(v.valor),
-      };
-      acc[v.id_detalle] = [...(acc[v.id_detalle] ?? []), fv];
-      return acc;
-    },
-    {} as Record<number, FormulaVariable[]>
-  );
+  // Track the formula expression alongside variables — each detalle's servicio
+  // has exactly one active formula, so the expresion is the same for every
+  // variable row of the same detalle; we capture the first one we see.
+  const variablesByDetalle: Record<number, FormulaVariable[]> = {};
+  const formulaExprByDetalle: Record<number, string> = {};
+  for (const v of cotizacion.variablesCotizacion) {
+    if (v.id_detalle == null) continue;
+    const fv: FormulaVariable = {
+      id_variable: v.variable.id_variable,
+      nombre_variable: v.variable.nombre_variable,
+      etiqueta: v.variable.etiqueta,
+      unidad: v.variable.unidad ?? undefined,
+      editable_por_cliente: v.variable.editable_por_cliente,
+      valor: parseFloat(v.valor),
+    };
+    variablesByDetalle[v.id_detalle] = [...(variablesByDetalle[v.id_detalle] ?? []), fv];
+    if (v.variable.formula?.expresion && !formulaExprByDetalle[v.id_detalle]) {
+      formulaExprByDetalle[v.id_detalle] = v.variable.formula.expresion;
+    }
+  }
 
   const servicios: LineItem[] = (cotizacion.pedido?.detalles ?? []).map((d) => ({
     id_detalle: d.id_detalle,
+    id_servicio: d.id_servicio,
+    id_material: d.id_material,
     nombre_servicio: d.servicio.nombre_servicio,
     nombre_material: d.material.nombre_material,
     cantidad: d.cantidad,
@@ -66,6 +72,7 @@ export function CotizacionDetailPage({
     subtotal: parseFloat(d.subtotal),
     notas: d.notas ?? undefined,
     variables: variablesByDetalle[d.id_detalle] ?? [],
+    formula_expresion: formulaExprByDetalle[d.id_detalle],
     archivo_url: d.archivo?.url_archivo,
     archivo_nombre: d.archivo?.nombre_archivo,
     archivo_id: d.archivo?.id_archivo,
