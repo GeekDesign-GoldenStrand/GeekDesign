@@ -7,6 +7,7 @@
  *   - fallback to fixed dimensions (ancho/alto/grosor + color)
  *   - service name label shown only when filtering is active
  *   - total reflects filtered items only
+ *   - assigned machine display for PR-08
  */
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
@@ -19,6 +20,8 @@ import type { PedidoLineItem } from "@/types/pedido";
 function makeItem(
   overrides: Partial<PedidoLineItem> & Pick<PedidoLineItem, "id_detalle" | "id_servicio">
 ): PedidoLineItem {
+  const { maquinaAsignada = null, ...restOverrides } = overrides;
+
   return {
     cantidad: 1,
     ancho_cm: null,
@@ -39,7 +42,8 @@ function makeItem(
     },
     estatus: null,
     variablesCotizacion: [],
-    ...overrides,
+    maquinaAsignada,
+    ...restOverrides,
   };
 }
 
@@ -135,6 +139,47 @@ describe("PedidoDetallesTable — service label", () => {
   it("does not show the service label when no filter is active", () => {
     render(<PedidoDetallesTable detalle={ALL_ITEMS} />);
     expect(screen.queryByText(/Servicio:/)).not.toBeInTheDocument();
+  });
+});
+
+// ─── Assigned machine — PR-08 ─────────────────────────────────────────────────
+
+describe("PedidoDetallesTable — assigned machine", () => {
+  it("renders assigned machine nickname and type when maquinaAsignada exists", () => {
+    const item = makeItem({
+      id_detalle: 1,
+      id_servicio: 10,
+      maquinaAsignada: {
+        id_maquina: 1,
+        nombre_maquina: "Láser CO2 100W",
+        apodo_maquina: "Láser Grande",
+        tipo: "Láser CO2",
+        fecha_asignacion: "2026-04-24T00:00:00.000Z",
+        material: {
+          id_material: 1,
+          nombre_material: "MDF 3mm",
+        },
+      },
+    });
+
+    render(<PedidoDetallesTable detalle={[item]} />);
+
+    expect(screen.getByText("Máquina")).toBeInTheDocument();
+    expect(screen.getByText("Láser Grande")).toBeInTheDocument();
+    expect(screen.getByText("Láser CO2")).toBeInTheDocument();
+  });
+
+  it("renders fallback text when maquinaAsignada is null", () => {
+    const item = makeItem({
+      id_detalle: 1,
+      id_servicio: 10,
+      maquinaAsignada: null,
+    });
+
+    render(<PedidoDetallesTable detalle={[item]} />);
+
+    expect(screen.getByText("Máquina")).toBeInTheDocument();
+    expect(screen.getByText("Sin máquina asignada")).toBeInTheDocument();
   });
 });
 

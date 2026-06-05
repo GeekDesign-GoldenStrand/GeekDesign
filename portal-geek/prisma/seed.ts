@@ -737,79 +737,63 @@ async function main() {
     where: { id_proveedor_id_material: { id_proveedor: 1, id_material: material.id_material } },
   });
 
-  // ── ServicioMaterial: link Corte Láser to MDF 3mm at MDF supplier price ──
-  if (proveedorPrecioMDF) {
-    await prisma.servicioMaterial.upsert({
+  // ── ServicioMaterial relations for demo PE-03 services ──
+  async function upsertServicioMaterial({
+    id_servicio,
+    id_material,
+    id_proveedor_precio,
+  }: {
+    id_servicio: number;
+    id_material: number;
+    id_proveedor_precio?: number;
+  }) {
+    return prisma.servicioMaterial.upsert({
       where: {
         id_servicio_id_material: {
-          id_servicio: servicioCorte.id_servicio,
-          id_material: material.id_material,
+          id_servicio,
+          id_material,
         },
       },
-      update: {},
+      update: {
+        ...(id_proveedor_precio !== undefined ? { id_proveedor_precio } : {}),
+      },
       create: {
-        id_servicio: servicioCorte.id_servicio,
-        id_material: material.id_material,
-        id_proveedor_precio: proveedorPrecioMDF.id_proveedor_precio,
+        id_servicio,
+        id_material,
+        ...(id_proveedor_precio !== undefined ? { id_proveedor_precio } : {}),
       },
     });
+  }
+
+  // ── ServicioMaterial: link Corte Láser to MDF 3mm at MDF supplier price ──
+  if (proveedorPrecioMDF) {
+    await upsertServicioMaterial({
+      id_servicio: servicioCorte.id_servicio,
+      id_material: material.id_material,
+      id_proveedor_precio: proveedorPrecioMDF.id_proveedor_precio,
+    });
+
     console.log("Seeded ServicioMaterial: Corte Láser ↔ MDF 3mm");
   }
 
-  await prisma.servicioMaterial.upsert({
-    where: {
-      id_servicio_id_material: {
-        id_servicio: servicioGrabado.id_servicio,
-        id_material: material.id_material,
-      },
-    },
-    update: {},
-    create: {
-      id_servicio: servicioGrabado.id_servicio,
-      id_material: material.id_material,
-    },
+  await upsertServicioMaterial({
+    id_servicio: servicioGrabado.id_servicio,
+    id_material: material.id_material,
   });
 
-  await prisma.servicioMaterial.upsert({
-    where: {
-      id_servicio_id_material: {
-        id_servicio: servicioGrabado.id_servicio,
-        id_material: materialAcrilico.id_material,
-      },
-    },
-    update: {},
-    create: {
-      id_servicio: servicioGrabado.id_servicio,
-      id_material: materialAcrilico.id_material,
-    },
+  await upsertServicioMaterial({
+    id_servicio: servicioGrabado.id_servicio,
+    id_material: materialAcrilico.id_material,
   });
 
-  await prisma.servicioMaterial.upsert({
-    where: {
-      id_servicio_id_material: {
-        id_servicio: servicioBordado.id_servicio,
-        id_material: materialTela.id_material,
-      },
-    },
-    update: {},
-    create: {
-      id_servicio: servicioBordado.id_servicio,
-      id_material: materialTela.id_material,
-    },
+  await upsertServicioMaterial({
+    id_servicio: servicioBordado.id_servicio,
+    id_material: materialTela.id_material,
   });
 
-  await prisma.servicioMaterial.upsert({
-    where: {
-      id_servicio_id_material: {
-        id_servicio: servicioRotulacion.id_servicio,
-        id_material: materialVinil.id_material,
-      },
-    },
-    update: {},
-    create: {
-      id_servicio: servicioRotulacion.id_servicio,
-      id_material: materialVinil.id_material,
-    },
+  await upsertServicioMaterial({
+    id_servicio: servicioRotulacion.id_servicio,
+    id_material: materialVinil.id_material,
   });
 
   console.log("Seeded ServicioMaterial relations for demo PE-03 services");
@@ -973,6 +957,46 @@ async function main() {
         id_cliente: clienteDemo.id_cliente,
         id_estatus_cotizacion: statusMap["Pendiente"],
       },
+      {
+        id_pedido: 9,
+        folio: "COT-009",
+        monto_total: 5400,
+        nombre_oportunidad: "Campañas 2024",
+        notas: "Cotización aprobada 2024",
+        fecha_creacion: new Date("2024-05-10"),
+        id_cliente: 2,
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        id_pedido: 10,
+        folio: "COT-010",
+        monto_total: 8200,
+        nombre_oportunidad: "Campañas 2025 Q1",
+        notas: "Cotización aprobada 2025",
+        fecha_creacion: new Date("2025-02-15"),
+        id_cliente: 3,
+        id_estatus_cotizacion: statusMap["Aprobada"],
+      },
+      {
+        id_pedido: 11,
+        folio: "COT-011",
+        monto_total: 4500,
+        nombre_oportunidad: "Campañas 2025 Q3",
+        notas: "Cotización pendiente 2025",
+        fecha_creacion: new Date("2025-08-20"),
+        id_cliente: 4,
+        id_estatus_cotizacion: statusMap["Pendiente"],
+      },
+      {
+        id_pedido: 12,
+        folio: "COT-012",
+        monto_total: 9100,
+        nombre_oportunidad: "Proyecto de fin de año",
+        notas: "Cotización entregada",
+        fecha_creacion: new Date("2025-11-05"),
+        id_cliente: 1,
+        id_estatus_cotizacion: statusMap["Validada"],
+      },
     ];
 
     // ── Invoice status map ─────────────────────────────────────────
@@ -1065,6 +1089,42 @@ async function main() {
         notas: "Pedido demo pendiente 8",
         nombre_oportunidad: "Señalética exterior",
       },
+      {
+        id_cliente: 2,
+        status: "Finalizado",
+        estado_factura: "Facturado",
+        fecha_creacion: new Date("2024-05-10"),
+        fecha_estimada: new Date("2024-05-20"),
+        notas: "Pedido demo 2024",
+        nombre_oportunidad: "Campañas 2024",
+      },
+      {
+        id_cliente: 3,
+        status: "Entregado",
+        estado_factura: "Facturado",
+        fecha_creacion: new Date("2025-02-15"),
+        fecha_estimada: new Date("2025-02-28"),
+        notas: "Pedido demo 2025 Q1",
+        nombre_oportunidad: "Campañas 2025 Q1",
+      },
+      {
+        id_cliente: 4,
+        status: "Pendiente",
+        estado_factura: "Cotizacion",
+        fecha_creacion: new Date("2025-08-20"),
+        fecha_estimada: new Date("2025-08-30"),
+        notas: "Pedido demo 2025 Q3",
+        nombre_oportunidad: "Campañas 2025 Q3",
+      },
+      {
+        id_cliente: 1,
+        status: "En producción",
+        estado_factura: "En_cola",
+        fecha_creacion: new Date("2025-11-05"),
+        fecha_estimada: new Date("2025-11-15"),
+        notas: "Pedido demo 2025 fin de año",
+        nombre_oportunidad: "Proyecto de fin de año",
+      },
     ];
 
     // Idempotency guard: demo cotizaciones use fixed folios (COT-001…) which
@@ -1140,6 +1200,10 @@ async function main() {
       "COT-006",
       "COT-007",
       "COT-008",
+      "COT-009",
+      "COT-010",
+      "COT-011",
+      "COT-012",
     ];
 
     const demoCotizRows = await prisma.cotizaciones.findMany({
@@ -1148,7 +1212,7 @@ async function main() {
       orderBy: { folio: "asc" }, // COT-001 → index 0, COT-008 → index 7
     });
 
-    if (demoCotizRows.length === 8 && demoCotizRows.every((c) => c.id_pedido !== null)) {
+    if (demoCotizRows.length === 12 && demoCotizRows.every((c) => c.id_pedido !== null)) {
       const pids = demoCotizRows.map((c) => c.id_pedido!);
 
       const existingDetallesCount = await prisma.detallePedido.count({
@@ -1185,6 +1249,7 @@ async function main() {
             precio_unitario: 30.0,
             subtotal: 90.0,
           },
+
           // Pedido COT-002 (En producción): Corte Láser + Bordado
           {
             id_pedido: pids[1],
@@ -1207,6 +1272,7 @@ async function main() {
             precio_unitario: 45.0,
             subtotal: 270.0,
           },
+
           // Pedido COT-003 (Finalizado): Grabado Láser acrílico
           {
             id_pedido: pids[2],
@@ -1219,6 +1285,7 @@ async function main() {
             precio_unitario: 55.0,
             subtotal: 220.0,
           },
+
           // Pedido COT-004 (Entregado): Rotulación de vinil + Bordado
           {
             id_pedido: pids[3],
@@ -1242,6 +1309,7 @@ async function main() {
             precio_unitario: 45.0,
             subtotal: 540.0,
           },
+
           // Pedido COT-005 (Cancelado): Corte Láser
           {
             id_pedido: pids[4],
@@ -1254,6 +1322,7 @@ async function main() {
             precio_unitario: 25.0,
             subtotal: 50.0,
           },
+
           // Pedido COT-006 (Pendiente): Corte Láser + Rotulación de vinil
           {
             id_pedido: pids[5],
@@ -1275,6 +1344,7 @@ async function main() {
             precio_unitario: 80.0,
             subtotal: 240.0,
           },
+
           // Pedido COT-007 (Pendiente): Bordado gorras
           {
             id_pedido: pids[6],
@@ -1286,6 +1356,7 @@ async function main() {
             precio_unitario: 40.0,
             subtotal: 800.0,
           },
+
           // Pedido COT-008 (Pendiente): Grabado Láser + Rotulación de vinil
           {
             id_pedido: pids[7],
@@ -1307,12 +1378,158 @@ async function main() {
             precio_unitario: 80.0,
             subtotal: 400.0,
           },
+          // Pedido COT-009 (Finalizado)
+          {
+            id_pedido: pids[8],
+            id_servicio: 1,
+            id_material: 1,
+            id_archivo: 1,
+            id_estatus: smLocal["Finalizado"],
+            cantidad: 15,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 360.0,
+            subtotal: 5400.0,
+          },
+          // Pedido COT-010 (Entregado)
+          {
+            id_pedido: pids[9],
+            id_servicio: 3,
+            id_material: 3,
+            id_archivo: 1,
+            id_estatus: smLocal["Entregado"],
+            cantidad: 200,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 41.0,
+            subtotal: 8200.0,
+          },
+          // Pedido COT-011 (Pendiente)
+          {
+            id_pedido: pids[10],
+            id_servicio: 4,
+            id_material: 4,
+            id_archivo: 1,
+            cantidad: 50,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 90.0,
+            subtotal: 4500.0,
+          },
+          // Pedido COT-012 (En producción)
+          {
+            id_pedido: pids[11],
+            id_servicio: 2,
+            id_material: 2,
+            id_archivo: 1,
+            id_estatus: smLocal["En producción"],
+            cantidad: 100,
+            responsable_recoleccion: "Cliente Demo",
+            precio_unitario: 91.0,
+            subtotal: 9100.0,
+          },
+        ];
+        console.log(`Seeded ${detallesDemo.length} demo detalles de pedido`);
+
+        // Seed some Pagos so the dashboard charts show revenue
+        const pagosDemo = [
+          // 2024
+          {
+            id_pedido: pids[8], // COT-009
+            fecha: new Date("2024-05-15"),
+            monto_pago: 5400.0,
+            metodo_pago: "transferencia",
+            estatus_pago: "Pagado",
+          },
+          // 2025 Q1
+          {
+            id_pedido: pids[9], // COT-010
+            fecha: new Date("2025-02-20"),
+            monto_pago: 8200.0,
+            metodo_pago: "efectivo",
+            estatus_pago: "Pagado",
+          },
+          // 2025 Q3
+          {
+            id_pedido: pids[10], // COT-011
+            fecha: new Date("2025-08-25"),
+            monto_pago: 4500.0,
+            metodo_pago: "transferencia",
+            estatus_pago: "Pagado",
+          },
+          // 2025 Fin de año
+          {
+            id_pedido: pids[11], // COT-012
+            fecha: new Date("2025-11-10"),
+            monto_pago: 9100.0,
+            metodo_pago: "Mercado Pago",
+            estatus_pago: "Pagado",
+          },
+          // Current year 2026 (COT-002 and COT-004)
+          {
+            id_pedido: pids[1], // COT-002
+            fecha: new Date("2026-04-18"),
+            monto_pago: 2500.0,
+            metodo_pago: "efectivo",
+            estatus_pago: "Pagado",
+          },
+          {
+            id_pedido: pids[3], // COT-004
+            fecha: new Date("2026-04-22"),
+            monto_pago: 2200.0,
+            metodo_pago: "transferencia",
+            estatus_pago: "Pagado",
+          },
         ];
 
-        await prisma.detallePedido.createMany({ data: detallesDemo });
-        console.log(`Seeded ${detallesDemo.length} demo detalles de pedido`);
+        await prisma.pagos.createMany({ data: pagosDemo });
+        console.log(`Seeded ${pagosDemo.length} demo pagos`);
       } else {
         console.log("Demo detalles already seeded, skipping");
+      }
+
+      const existingPedidoMaquinasCount = await prisma.pedidoMaquina.count({
+        where: {
+          id_pedido: {
+            in: pids,
+          },
+        },
+      });
+
+      if (existingPedidoMaquinasCount === 0) {
+        await prisma.pedidoMaquina.createMany({
+          data: [
+            {
+              id_pedido: pids[0],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-13"),
+            },
+            {
+              id_pedido: pids[1],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-15"),
+            },
+            {
+              id_pedido: pids[5],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-22"),
+            },
+            {
+              id_pedido: pids[7],
+              id_maquina: maquina.id_maquina,
+              id_material: material.id_material,
+              id_usuario_asigno: adminUser.id_usuario,
+              fecha_asignacion: new Date("2026-04-24"),
+            },
+          ],
+        });
+
+        console.log("Seeded demo PedidoMaquina assignments");
+      } else {
+        console.log("Demo PedidoMaquina assignments already seeded, skipping");
       }
     }
   }
@@ -1388,7 +1605,12 @@ async function main() {
 
   // 3. ProveedorPrecios: Mi Marca Vende → Corte Láser @ $2.10 (path B)
   await prisma.proveedorPrecios.upsert({
-    where: { id_proveedor_id_servicio: { id_proveedor: 6, id_servicio: 1 } },
+    where: {
+      id_proveedor_id_servicio: {
+        id_proveedor: proveedorMiMarca.id_proveedor,
+        id_servicio: servicioCorte.id_servicio,
+      },
+    },
     update: {},
     create: {
       id_proveedor: proveedorMiMarca.id_proveedor,
@@ -1400,7 +1622,12 @@ async function main() {
 
   // 4. InstaladorServicios: Rotulaciones Flores → Instalación de Señalética @ $320 (path B)
   await prisma.instaladorServicios.upsert({
-    where: { id_instalador_id_servicio: { id_instalador: 5, id_servicio: 5 } },
+    where: {
+      id_instalador_id_servicio: {
+        id_instalador: instaladorPE01.id_instalador,
+        id_servicio: servicioSenaletica.id_servicio,
+      },
+    },
     update: {},
     create: {
       id_instalador: instaladorPE01.id_instalador,
@@ -1503,8 +1730,19 @@ async function main() {
     orderStatusRowsForDetalle.forEach((s) => (statusByName[s.descripcion] = s.id_estatus));
 
     const statusCycle = ["Pendiente", "En producción", "Finalizado", "Entregado", "Cancelado"];
-    const servicioCycle = [1, 2, 3, 4]; // Corte Láser, Grabado Láser, Bordado, Rotulación
-    const materialCycle = [1, 2, 3, 4];
+    const servicioCycle = [
+      servicioCorte.id_servicio,
+      servicioGrabado.id_servicio,
+      servicioBordado.id_servicio,
+      servicioRotulacion.id_servicio,
+    ];
+
+    const materialCycle = [
+      material.id_material,
+      materialAcrilico.id_material,
+      materialTela.id_material,
+      materialVinil.id_material,
+    ];
 
     let detallesCreated = 0;
 

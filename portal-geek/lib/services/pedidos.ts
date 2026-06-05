@@ -248,6 +248,36 @@ export async function listPedidos(
   return { items: mappedItems, total };
 }
 
+type PedidoMaquinaAsignada = {
+  id_maquina: number;
+  nombre_maquina: string;
+  apodo_maquina: string;
+  tipo: string;
+  fecha_asignacion: Date;
+  material: {
+    id_material: number;
+    nombre_material: string;
+  };
+};
+
+type PedidoDetalleWithMaquina = Prisma.DetallePedidoGetPayload<{
+  include: {
+    servicio: { select: { nombre_servicio: true } };
+    material: { select: { nombre_material: true } };
+    archivo: {
+      select: { id_archivo: true; nombre_archivo: true; url_archivo: true; formato: true };
+    };
+    estatus: true;
+    variablesCotizacion: {
+      include: {
+        variable: true;
+      };
+    };
+  };
+}> & {
+  maquinaAsignada: PedidoMaquinaAsignada | null;
+};
+
 // Shape returned by getPedido — mirrors the PE-05 sequence diagram:
 // { pedido, detalle[], pagos[], historial[] }
 export type PedidoDetalleResponse = {
@@ -260,21 +290,7 @@ export type PedidoDetalleResponse = {
       cotizaciones: { select: { folio: true } };
     };
   }>;
-  detalle: Prisma.DetallePedidoGetPayload<{
-    include: {
-      servicio: { select: { nombre_servicio: true } };
-      material: { select: { nombre_material: true } };
-      archivo: {
-        select: { id_archivo: true; nombre_archivo: true; url_archivo: true; formato: true };
-      };
-      estatus: true;
-      variablesCotizacion: {
-        include: {
-          variable: true;
-        };
-      };
-    };
-  }>[];
+  detalle: PedidoDetalleWithMaquina[];
   pagos: Prisma.PagosGetPayload<true>[];
   historial: {
     fecha_cambio: Date;
@@ -301,6 +317,27 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
           select: { folio: true },
           orderBy: { fecha_creacion: "desc" },
           take: 1,
+        },
+        pedidoMaquinas: {
+          include: {
+            maquina: {
+              select: {
+                id_maquina: true,
+                nombre_maquina: true,
+                apodo_maquina: true,
+                tipo: true,
+              },
+            },
+            material: {
+              select: {
+                id_material: true,
+                nombre_material: true,
+              },
+            },
+          },
+          orderBy: {
+            fecha_asignacion: "desc",
+          },
         },
         detalles: {
           include: {
@@ -341,7 +378,7 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
     throw new NotFoundError("Pedido no encontrado");
   }
 
-  const { detalles, pagos, historial, ...header } = pedido;
+  const { detalles, pagos, historial, pedidoMaquinas, ...header } = pedido;
 
   // HistorialEstadosPedidos stores plain status IDs (no relations), so resolve
   // their descriptions from the catalog in a single lookup.
@@ -362,9 +399,26 @@ export async function getPedido(id: number): Promise<PedidoDetalleResponse> {
 
   const statusById = new Map(statuses.map((s) => [s.id_estatus, s.descripcion]));
 
+  const maquinaByMaterialId = new Map(
+    pedidoMaquinas.map((pm) => [
+      pm.id_material,
+      {
+        id_maquina: pm.maquina.id_maquina,
+        nombre_maquina: pm.maquina.nombre_maquina,
+        apodo_maquina: pm.maquina.apodo_maquina,
+        tipo: pm.maquina.tipo,
+        fecha_asignacion: pm.fecha_asignacion,
+        material: pm.material,
+      },
+    ])
+  );
+
   return {
     pedido: header,
-    detalle: detalles,
+    detalle: detalles.map((detalle) => ({
+      ...detalle,
+      maquinaAsignada: maquinaByMaterialId.get(detalle.id_material) ?? null,
+    })),
     pagos,
     historial: historial.map((h) => ({
       fecha_cambio: h.fecha_cambio,
