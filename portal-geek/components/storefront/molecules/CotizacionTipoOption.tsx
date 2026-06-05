@@ -49,9 +49,9 @@ export function CotizacionTipoOption({
           imageRight ? "md:order-1" : ""
         }`}
       >
-        <h2 className="font-bold text-[26px] md:text-[30px] text-[#1e1e1e] leading-tight">
+        <h3 className="font-bold text-[26px] md:text-[30px] text-[#1e1e1e] leading-tight">
           {titulo}
-        </h2>
+        </h3>
         <p className="text-[15px] md:text-[17px] text-[#575757]">{descripcion}</p>
         <Button
           asChild

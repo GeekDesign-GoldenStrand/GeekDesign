@@ -394,6 +394,7 @@ export function SolicitudLeadForm({ tipo, titulo, intro, fields, idServicio }: P
 
             {fields.map((field) => {
               const id = `field-${field.name}`;
+              const errId = `${id}-error`;
               const err = fieldErrors[field.name] ?? null;
               const value = values[field.name] ?? "";
               const borderCls = err ? "border-[#c14a4a]" : "border-[#c2c0c0]";
@@ -446,6 +447,7 @@ export function SolicitudLeadForm({ tipo, titulo, intro, fields, idServicio }: P
                         }))
                       }
                       aria-invalid={err !== null}
+                      aria-describedby={err ? errId : undefined}
                       className={`rounded-[8px] border bg-white px-[12px] py-[8px] text-[14px] text-[#1e1e1e] ${borderCls}`}
                     />
                   ) : (
@@ -466,11 +468,16 @@ export function SolicitudLeadForm({ tipo, titulo, intro, fields, idServicio }: P
                         }))
                       }
                       aria-invalid={err !== null}
+                      aria-describedby={err ? errId : undefined}
                       className={`h-[44px] rounded-[8px] border bg-white px-[12px] text-[14px] text-[#1e1e1e] ${borderCls}`}
                     />
                   )}
 
-                  {err && <p className="text-[12px] font-medium text-[#c14a4a]">{err}</p>}
+                  {err && (
+                    <p id={errId} className="text-[12px] font-medium text-[#c14a4a]">
+                      {err}
+                    </p>
+                  )}
                 </div>
               );
             })}
