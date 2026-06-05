@@ -285,3 +285,109 @@ describe("calcularPrecioServicio — resultado", () => {
     expect(result).toBe(1000);
   });
 });
+
+// ─── Polymorphic material tokens ──────────────────────────────────────────────
+//
+// Tests cover the reviewer-requested behavior: precio_material and
+// velocidad_avance both adopt the value of the customer-selected material,
+// legacy costo_material_<slug> tokens keep resolving for back-compat, and the
+// missing-data fallbacks (0) match the documented BYO semantics in
+// formula-pricing.ts (a missing field is NOT a quotation failure — the admin
+// is expected to structure formulas that handle a 0 contribution gracefully).
+
+describe("calcularPrecioServicio — polymorphic material tokens", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("pasa velocidad_avance desde el material elegido al evaluador", async () => {
+    mockServiciosFindUnique.mockResolvedValue(
+      makeServicio({
+        servicioMateriales: [
+          {
+            proveedorPrecio: { precio: 50 },
+            material: { nombre_material: "MDF 3mm", velocidad_avance: 15 },
+          },
+        ],
+      })
+    );
+    mockInstaladorServiciosFindUnique.mockResolvedValue(null);
+    mockEvaluateFormula.mockReturnValue(0);
+
+    await calcularPrecioServicio(BASE_INPUT);
+
+    expect(mockEvaluateFormula).toHaveBeenCalledWith(
+      expect.objectContaining({
+        implicits: expect.objectContaining({ velocidad_avance: 15 }),
+      })
+    );
+  });
+
+  it("velocidad_avance = 0 cuando el material no tiene el campo (BYO fallback)", async () => {
+    mockServiciosFindUnique.mockResolvedValue(
+      makeServicio({
+        servicioMateriales: [
+          {
+            proveedorPrecio: { precio: 50 },
+            material: { nombre_material: "Tela algodón", velocidad_avance: null },
+          },
+        ],
+      })
+    );
+    mockInstaladorServiciosFindUnique.mockResolvedValue(null);
+    mockEvaluateFormula.mockReturnValue(0);
+
+    await calcularPrecioServicio(BASE_INPUT);
+
+    expect(mockEvaluateFormula).toHaveBeenCalledWith(
+      expect.objectContaining({
+        implicits: expect.objectContaining({ velocidad_avance: 0 }),
+      })
+    );
+  });
+
+  it("inyecta legacy costo_material_<slug> con el precio del material elegido", async () => {
+    // Servicios saved before the polymorphic refactor still reference per-material
+    // slug tokens in their saved expresion. The pricing layer keeps injecting
+    // them so those formulas don't break — slug is derived from nombre_material.
+    mockServiciosFindUnique.mockResolvedValue(
+      makeServicio({
+        servicioMateriales: [
+          {
+            proveedorPrecio: { precio: 200 },
+            material: { nombre_material: "MDF 3mm", velocidad_avance: null },
+          },
+        ],
+      })
+    );
+    mockInstaladorServiciosFindUnique.mockResolvedValue(null);
+    mockEvaluateFormula.mockReturnValue(0);
+
+    await calcularPrecioServicio(BASE_INPUT);
+
+    expect(mockEvaluateFormula).toHaveBeenCalledWith(
+      expect.objectContaining({
+        implicits: expect.objectContaining({ costo_material_mdf_3mm: 200 }),
+      })
+    );
+  });
+
+  it("legacy slug cae al fallback `material_<id>` si el material no expone nombre", async () => {
+    // Defensive branch: when the prisma include of `material` is missing
+    // (older callers / tests), the slug is built from the id so the implicit
+    // key remains deterministic instead of crashing.
+    mockServiciosFindUnique.mockResolvedValue(
+      makeServicio({
+        servicioMateriales: [{ proveedorPrecio: { precio: 75 } }],
+      })
+    );
+    mockInstaladorServiciosFindUnique.mockResolvedValue(null);
+    mockEvaluateFormula.mockReturnValue(0);
+
+    await calcularPrecioServicio({ ...BASE_INPUT, id_material: 42 });
+
+    expect(mockEvaluateFormula).toHaveBeenCalledWith(
+      expect.objectContaining({
+        implicits: expect.objectContaining({ costo_material_material_42: 75 }),
+      })
+    );
+  });
+});
