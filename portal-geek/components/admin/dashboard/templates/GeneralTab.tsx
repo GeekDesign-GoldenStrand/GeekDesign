@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
+import { Toast } from "@/components/admin/atoms/Toast";
 import { useDashboardFinanciero } from "@/components/admin/metricas/hooks/useDashboardFinanciero";
 import { CustomComparisonChart } from "@/components/admin/metricas/organisms/CustomComparisonChart";
 import { DesgloseMensualChart } from "@/components/admin/metricas/organisms/DesgloseMensualChart";
@@ -36,6 +37,14 @@ export function GeneralTab({
 }) {
   const [config, setConfig] = useState<GeneralConfig>(DEFAULT_CONFIG);
   const [isMounted, setIsMounted] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Hook with all the state
   const dashboardState = useDashboardFinanciero(data);
@@ -73,11 +82,11 @@ export function GeneralTab({
     } else {
       // Validate limits (3 cards, 5 charts)
       if (type === "cards" && current.length >= 3) {
-        alert("El límite es de 3 métricas tipo 'Card'.");
+        showToast("El límite es de 3 métricas tipo 'Card'.");
         return;
       }
       if (type === "charts" && current.length >= 5) {
-        alert("El límite es de 5 gráficas.");
+        showToast("El límite es de 5 gráficas.");
         return;
       }
       saveConfig({ ...config, [type]: [...current, id] });
@@ -245,6 +254,9 @@ export function GeneralTab({
           </p>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <Toast message={toastMessage} />
     </div>
   );
 }
