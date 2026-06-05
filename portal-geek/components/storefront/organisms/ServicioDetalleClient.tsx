@@ -117,7 +117,7 @@ export function ServicioDetalleClient({
               una propuesta para tu proyecto.
             </p>
             <Button asChild variant="primary" section="storefront" size="md" className="self-start">
-              <Link href="/tienda/cotizacion/personalizada">
+              <Link href={`/tienda/cotizacion/personalizada?servicio=${servicioId}`}>
                 Solicitar cotización personalizada
               </Link>
             </Button>
