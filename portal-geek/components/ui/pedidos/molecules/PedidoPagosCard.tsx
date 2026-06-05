@@ -1,4 +1,4 @@
-import { CurrencyCircleDollar, Plus } from "@phosphor-icons/react";
+import { ArrowUUpLeft, CurrencyCircleDollar, Plus } from "@phosphor-icons/react";
 
 import { SectionCard } from "@/components/ui/cotizaciones/atoms/SectionCard";
 import { formatDate } from "@/lib/utils/date";
@@ -12,6 +12,8 @@ interface Props {
   pagos: PedidoPago[];
   /** When provided, renders a "Registrar pago" action in the section. */
   onRegister?: () => void;
+  /** When provided (order fully paid), renders a "Solicitar reembolso" action. */
+  onRefund?: () => void;
   /** When set, registering is blocked: show this reason instead of the button. */
   disabledReason?: string | null;
 }
@@ -29,14 +31,31 @@ function RegisterButton({ onRegister }: { onRegister: () => void }) {
   );
 }
 
-// Decides whether to show the register button, the blocked-reason note, or nothing.
-function RegisterAction({
+function RefundButton({ onRefund }: { onRefund: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRefund}
+      className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-gray-600 hover:text-[#e42200] transition-colors"
+    >
+      <ArrowUUpLeft size={15} weight="bold" />
+      Solicitar reembolso
+    </button>
+  );
+}
+
+// Picks the action shown next to the payments: refund (fully paid), the
+// blocked-reason note, the register button, or nothing.
+function PagoAction({
   onRegister,
+  onRefund,
   disabledReason,
 }: {
   onRegister?: () => void;
+  onRefund?: () => void;
   disabledReason?: string | null;
 }) {
+  if (onRefund) return <RefundButton onRefund={onRefund} />;
   if (!onRegister) return null;
   if (disabledReason) {
     return <p className="text-[12px] font-medium text-gray-400">{disabledReason}</p>;
@@ -44,13 +63,13 @@ function RegisterAction({
   return <RegisterButton onRegister={onRegister} />;
 }
 
-export function PedidoPagosCard({ pagos, onRegister, disabledReason }: Props) {
+export function PedidoPagosCard({ pagos, onRegister, onRefund, disabledReason }: Props) {
   if (pagos.length === 0) {
     return (
       <SectionCard title="Pagos" icon={<CurrencyCircleDollar size={15} />}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-[14px] text-gray-600">Sin pagos registrados.</p>
-          <RegisterAction onRegister={onRegister} disabledReason={disabledReason} />
+          <PagoAction onRegister={onRegister} onRefund={onRefund} disabledReason={disabledReason} />
         </div>
       </SectionCard>
     );
@@ -82,9 +101,9 @@ export function PedidoPagosCard({ pagos, onRegister, disabledReason }: Props) {
           ))}
         </tbody>
       </table>
-      {onRegister && (
+      {(onRegister || onRefund) && (
         <div className="mt-4 flex justify-end">
-          <RegisterAction onRegister={onRegister} disabledReason={disabledReason} />
+          <PagoAction onRegister={onRegister} onRefund={onRefund} disabledReason={disabledReason} />
         </div>
       )}
     </SectionCard>

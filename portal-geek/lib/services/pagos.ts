@@ -33,17 +33,22 @@ export async function createPago(data: CreatePagoInput): Promise<Pagos> {
   });
   if (!pedido) throw new NotFoundError("Pedido no encontrado");
 
-  // Enforce the per-order payment cap server-side so the API can't be bypassed.
-  const pagosCount = await prisma.pagos.count({ where: { id_pedido: data.id_pedido } });
-  if (pagosCount >= MAX_PAGOS_POR_PEDIDO) {
-    throw new ValidationError(
-      `No se pueden registrar más de ${MAX_PAGOS_POR_PEDIDO} pagos para un pedido.`
-    );
+  const isRefund = data.estatus_pago === "Reembolsado";
+
+  // The per-order payment cap applies to regular payments. Refunds are corrective
+  // entries and skip it so a fully-paid (or maxed-out) order can still be reversed.
+  if (!isRefund) {
+    const pagosCount = await prisma.pagos.count({ where: { id_pedido: data.id_pedido } });
+    if (pagosCount >= MAX_PAGOS_POR_PEDIDO) {
+      throw new ValidationError(
+        `No se pueden registrar más de ${MAX_PAGOS_POR_PEDIDO} pagos para un pedido.`
+      );
+    }
   }
 
-  // Block new payments once the order is fully covered: total cost = sum of its
-  // line-item subtotals; amount paid = sum of "Pagado" payments.
-  const [detalleAgg, pagadoAgg] = await Promise.all([
+  // Net collected = sum of "Pagado" minus sum of "Reembolsado". Total cost = sum
+  // of the order's line-item subtotals.
+  const [detalleAgg, pagadoAgg, reembolsadoAgg] = await Promise.all([
     prisma.detallePedido.aggregate({
       _sum: { subtotal: true },
       where: { id_pedido: data.id_pedido },
@@ -52,10 +57,24 @@ export async function createPago(data: CreatePagoInput): Promise<Pagos> {
       _sum: { monto_pago: true },
       where: { id_pedido: data.id_pedido, estatus_pago: "Pagado" },
     }),
+    prisma.pagos.aggregate({
+      _sum: { monto_pago: true },
+      where: { id_pedido: data.id_pedido, estatus_pago: "Reembolsado" },
+    }),
   ]);
   const totalPedido = Number(detalleAgg._sum.subtotal ?? 0);
-  const totalPagado = Number(pagadoAgg._sum.monto_pago ?? 0);
-  if (totalPedido > 0 && totalPagado >= totalPedido) {
+  const netoPagado =
+    Number(pagadoAgg._sum.monto_pago ?? 0) - Number(reembolsadoAgg._sum.monto_pago ?? 0);
+
+  if (isRefund) {
+    // A refund needs something to reverse and can't exceed what's still collected.
+    if (netoPagado <= 0) {
+      throw new ValidationError("No hay pagos disponibles para reembolsar.");
+    }
+    if (data.monto_pago > netoPagado) {
+      throw new ValidationError("El reembolso no puede superar lo pagado del pedido.");
+    }
+  } else if (totalPedido > 0 && netoPagado >= totalPedido) {
     throw new ValidationError(
       "El pedido ya está totalmente pagado. No se pueden registrar más pagos."
     );

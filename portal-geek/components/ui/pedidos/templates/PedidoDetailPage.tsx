@@ -15,6 +15,7 @@ import { PedidoOCResultCard, triggerBlobDownload } from "../molecules/PedidoOCRe
 import { PedidoPagosCard } from "../molecules/PedidoPagosCard";
 import { PedidoHeader } from "../organisms/PedidoHeader";
 import { RegistrarPagoModal } from "../organisms/RegistrarPagoModal";
+import { SolicitarReembolsoModal } from "../organisms/SolicitarReembolsoModal";
 
 type ActivePanel = "edit" | null;
 
@@ -36,6 +37,7 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
   const [ocError, setOcError] = useState<string | null>(null);
   const [ordenes, setOrdenes] = useState<OrdenGenerada[]>([]);
   const [showPagoModal, setShowPagoModal] = useState(false);
+  const [showReembolsoModal, setShowReembolsoModal] = useState(false);
 
   const canGenerateOC =
     (role === "Direccion" || role === "Administrador" || role === "Colaborador") &&
@@ -49,18 +51,21 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
   // PedidoDetallesTable). Pre-fills the modal so the common case is one click.
   const totalDetalle = pedido.detalle.reduce((acc, d) => acc + Number(d.subtotal), 0);
 
-  // Amount already collected = sum of "Pagado" payments. Mirrors the server-side
-  // guards in createPago so the UI and API stay in sync.
-  const totalPagado = pedido.pagos
-    .filter((p) => p.estatus_pago === "Pagado")
-    .reduce((acc, p) => acc + Number(p.monto_pago), 0);
+  // Net collected = sum of "Pagado" minus sum of "Reembolsado". Mirrors the
+  // server-side guards in createPago so the UI and API stay in sync.
+  const sumarPagos = (estatus: string) =>
+    pedido.pagos
+      .filter((p) => p.estatus_pago === estatus)
+      .reduce((acc, p) => acc + Number(p.monto_pago), 0);
+  const netoPagado = sumarPagos("Pagado") - sumarPagos("Reembolsado");
 
+  const totalmentePagado = totalDetalle > 0 && netoPagado >= totalDetalle;
+
+  // A fully-paid order offers a refund instead of registering more payments.
   const registroBloqueado =
-    pedido.pagos.length >= MAX_PAGOS_POR_PEDIDO
+    !totalmentePagado && pedido.pagos.length >= MAX_PAGOS_POR_PEDIDO
       ? `Límite de ${MAX_PAGOS_POR_PEDIDO} pagos alcanzado.`
-      : totalDetalle > 0 && totalPagado >= totalDetalle
-        ? "El pedido ya está totalmente pagado."
-        : null;
+      : null;
 
   const handleSave = useCallback(async () => {
     await onRefetch();
@@ -156,7 +161,12 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
       <div className="mb-4">
         <PedidoPagosCard
           pagos={pedido.pagos}
-          onRegister={canRegisterPago ? () => setShowPagoModal(true) : undefined}
+          onRegister={
+            canRegisterPago && !totalmentePagado ? () => setShowPagoModal(true) : undefined
+          }
+          onRefund={
+            canRegisterPago && totalmentePagado ? () => setShowReembolsoModal(true) : undefined
+          }
           disabledReason={registroBloqueado}
         />
       </div>
@@ -169,6 +179,17 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
         onSuccess={async () => {
           await onRefetch();
           setShowPagoModal(false);
+        }}
+      />
+
+      <SolicitarReembolsoModal
+        idPedido={pedido.pedido.id_pedido}
+        montoReembolso={netoPagado}
+        isOpen={showReembolsoModal}
+        onClose={() => setShowReembolsoModal(false)}
+        onSuccess={async () => {
+          await onRefetch();
+          setShowReembolsoModal(false);
         }}
       />
 

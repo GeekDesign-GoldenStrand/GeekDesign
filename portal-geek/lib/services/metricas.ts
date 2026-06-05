@@ -1,5 +1,13 @@
 import { prisma } from "@/lib/db/client";
 
+// Revenue is net: a "Pagado" payment adds, a "Reembolsado" refund subtracts.
+const REVENUE_ESTATUS = ["Pagado", "Reembolsado"];
+
+function montoNeto(pago: { estatus_pago: string; monto_pago: unknown }): number {
+  const sign = pago.estatus_pago === "Reembolsado" ? -1 : 1;
+  return sign * Number(pago.monto_pago);
+}
+
 export async function getIngresosMensualesPorAno(year: number) {
   const startDate = new Date(Date.UTC(year, 0, 1));
   const endDate = new Date(Date.UTC(year + 1, 0, 1));
@@ -8,7 +16,7 @@ export async function getIngresosMensualesPorAno(year: number) {
   try {
     pagos = await prisma.pagos.findMany({
       where: {
-        estatus_pago: "Pagado",
+        estatus_pago: { in: REVENUE_ESTATUS },
         fecha: {
           gte: startDate,
           lt: endDate,
@@ -17,6 +25,7 @@ export async function getIngresosMensualesPorAno(year: number) {
       select: {
         fecha: true,
         monto_pago: true,
+        estatus_pago: true,
       },
     });
   } catch (error) {
@@ -48,7 +57,7 @@ export async function getIngresosMensualesPorAno(year: number) {
 
   for (const pago of pagos) {
     const monthIndex = pago.fecha.getUTCMonth();
-    monthlyData[monthIndex].ingresos += Number(pago.monto_pago);
+    monthlyData[monthIndex].ingresos += montoNeto(pago);
   }
 
   return monthlyData;
@@ -69,11 +78,12 @@ export async function getMetricasDashboard(): Promise<MetricasDashboardData> {
   try {
     pagos = await prisma.pagos.findMany({
       where: {
-        estatus_pago: "Pagado",
+        estatus_pago: { in: REVENUE_ESTATUS },
       },
       select: {
         fecha: true,
         monto_pago: true,
+        estatus_pago: true,
       },
     });
   } catch (error) {
@@ -95,7 +105,7 @@ export async function getMetricasDashboard(): Promise<MetricasDashboardData> {
     if (!rawData[year][month]) {
       rawData[year][month] = 0;
     }
-    rawData[year][month] += Number(pago.monto_pago);
+    rawData[year][month] += montoNeto(pago);
   }
 
   if (Object.keys(rawData).length === 0) {
@@ -157,10 +167,11 @@ export async function getTopClientes(): Promise<TopClientesResult> {
   let pagos;
   try {
     pagos = await prisma.pagos.findMany({
-      where: { estatus_pago: "Pagado" },
+      where: { estatus_pago: { in: REVENUE_ESTATUS } },
       select: {
         fecha: true,
         monto_pago: true,
+        estatus_pago: true,
         id_pedido: true,
         pedido: {
           select: {
@@ -195,7 +206,7 @@ export async function getTopClientes(): Promise<TopClientesResult> {
     if (!pedido) continue; // defensive: a payment with no parent order can't be attributed
     const id = pedido.id_cliente;
     const year = pago.fecha.getUTCFullYear();
-    const monto = Number(pago.monto_pago);
+    const monto = montoNeto(pago);
     years.add(year);
 
     let acc = byCliente.get(id);

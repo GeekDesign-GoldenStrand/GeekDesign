@@ -50,6 +50,26 @@ describe("metricas service", () => {
       expect(result[2025][0].ingresos).toBe(2000); // Enero (índice 0)
     });
 
+    it("should subtract refunds from monthly revenue", async () => {
+      (prisma.pagos.findMany as jest.Mock).mockResolvedValue([
+        {
+          fecha: new Date("2024-05-10T12:00:00Z"),
+          monto_pago: 1000,
+          estatus_pago: "Pagado",
+        },
+        {
+          fecha: new Date("2024-05-20T12:00:00Z"),
+          monto_pago: 300,
+          estatus_pago: "Reembolsado",
+        },
+      ]);
+
+      const result = await getMetricasDashboard();
+
+      // Mayo: 1000 paid − 300 refunded = 700
+      expect(result[2024][4].ingresos).toBe(700);
+    });
+
     it("should return empty current year array if no data exists", async () => {
       (prisma.pagos.findMany as jest.Mock).mockResolvedValue([]);
 
