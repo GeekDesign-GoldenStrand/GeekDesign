@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import EditarPedido from "@/app/(admin)/pedidos/[id]/editar-pedido";
+import { MAX_PAGOS_POR_PEDIDO } from "@/lib/schemas/pagos";
 import type { UserRole } from "@/types";
 import type { OrdenGenerada, Pedido } from "@/types/pedido";
 
@@ -143,6 +144,7 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
         <PedidoPagosCard
           pagos={pedido.pagos}
           onRegister={canRegisterPago ? () => setShowPagoModal(true) : undefined}
+          limitReached={pedido.pagos.length >= MAX_PAGOS_POR_PEDIDO}
         />
       </div>
 

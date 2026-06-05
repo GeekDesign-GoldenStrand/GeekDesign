@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/atoms/Button";
 import { Modal } from "@/components/ui/atoms/Modal";
 
-type MetodoPago = "efectivo" | "transferencia" | "Mercado Pago";
+type MetodoPago = "efectivo" | "transferencia";
 type EstatusPago = "Pendiente" | "Pagado" | "Reembolsado";
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   montoSugerido?: number;
 }
 
-const METODOS: MetodoPago[] = ["efectivo", "transferencia", "Mercado Pago"];
+const METODOS: MetodoPago[] = ["efectivo", "transferencia"];
 const ESTATUS: EstatusPago[] = ["Pagado", "Pendiente", "Reembolsado"];
 
 // Cap the integer part at 7 digits (the decimal point doesn't count), well within
@@ -41,7 +41,6 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess, monto
   // Default to "Pagado" — registering a payment usually means it was collected,
   // and only "Pagado" payments count toward revenue metrics.
   const [estatus, setEstatus] = useState<EstatusPago>("Pagado");
-  const [referencia, setReferencia] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +48,6 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess, monto
     setMonto("");
     setMetodo("efectivo");
     setEstatus("Pagado");
-    setReferencia("");
     setError(null);
   }
 
@@ -96,9 +94,6 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess, monto
           monto_pago: montoNum,
           metodo_pago: metodo,
           estatus_pago: estatus,
-          ...(metodo === "Mercado Pago" && referencia.trim()
-            ? { referencia_mercadopago: referencia.trim() }
-            : {}),
         }),
       });
 
@@ -183,23 +178,6 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess, monto
             ))}
           </select>
         </div>
-
-        {metodo === "Mercado Pago" && (
-          <div>
-            <label htmlFor="pago-referencia" className={LABEL}>
-              Referencia Mercado Pago <span className="text-gray-400">(opcional)</span>
-            </label>
-            <input
-              id="pago-referencia"
-              type="text"
-              autoComplete="off"
-              value={referencia}
-              onChange={(e) => setReferencia(e.target.value)}
-              maxLength={255}
-              className={FIELD}
-            />
-          </div>
-        )}
 
         {error && (
           <p

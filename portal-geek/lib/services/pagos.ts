@@ -1,8 +1,9 @@
 import type { Pagos } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
+import { MAX_PAGOS_POR_PEDIDO } from "@/lib/schemas/pagos";
 import type { CreatePagoInput, UpdatePagoInput } from "@/lib/schemas/pagos";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 export async function listPagosByPedido(
   idPedido: number,
@@ -31,6 +32,14 @@ export async function createPago(data: CreatePagoInput): Promise<Pagos> {
     select: { id_pedido: true },
   });
   if (!pedido) throw new NotFoundError("Pedido no encontrado");
+
+  // Enforce the per-order payment cap server-side so the API can't be bypassed.
+  const pagosCount = await prisma.pagos.count({ where: { id_pedido: data.id_pedido } });
+  if (pagosCount >= MAX_PAGOS_POR_PEDIDO) {
+    throw new ValidationError(
+      `No se pueden registrar más de ${MAX_PAGOS_POR_PEDIDO} pagos para un pedido.`
+    );
+  }
 
   return prisma.pagos.create({
     data: {
