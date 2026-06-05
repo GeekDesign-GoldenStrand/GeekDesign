@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Legend, Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from "recharts";
 
 import type { MaquinaMetric } from "@/lib/services/metricas";
 
 import { SelectField } from "../../atoms/SelectField";
-import { TOOLTIP_CONTENT_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "../utils";
+
+import { MaquinasCustomTooltip } from "./MaquinasCustomTooltip";
 
 interface Props {
   availableYears: number[];
@@ -29,19 +30,6 @@ const PIE_COLORS_ANUAL = [
   "var(--color-cyan-500, #06b6d4)",
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const maquinasTooltipFormatter = (value: any, name: any, props: any) => {
-  const machineName = props.payload?.nombre_maquina || name;
-  return [
-    <span key="val" className="font-bold text-gray-900">
-      {value} veces usada
-    </span>,
-    <span key="name" className="text-gray-500 ml-1">
-      ({machineName})
-    </span>,
-  ];
-};
-
 export function MaquinasMasUsadasAnualCard({
   availableYears,
   selectedYear,
@@ -51,7 +39,6 @@ export function MaquinasMasUsadasAnualCard({
   onLimitChange,
 }: Props) {
   const chartId = useId();
-  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col h-full hover:shadow-md transition-shadow">
@@ -113,13 +100,7 @@ export function MaquinasMasUsadasAnualCard({
                   </filter>
                 ))}
               </defs>
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                contentStyle={TOOLTIP_CONTENT_STYLE}
-                itemStyle={TOOLTIP_ITEM_STYLE}
-                labelStyle={TOOLTIP_LABEL_STYLE}
-                formatter={maquinasTooltipFormatter}
-              />
+              <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
               <Legend
                 verticalAlign="bottom"
                 height={36}
@@ -139,26 +120,15 @@ export function MaquinasMasUsadasAnualCard({
                 animationEasing="ease-out"
                 stroke="none"
               >
-                {chartData.map((entry, index) => {
-                  const isHovered = activeIndex === index;
-                  const isOtherHovered = activeIndex !== undefined && !isHovered;
-
-                  return (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={PIE_COLORS_ANUAL[index % PIE_COLORS_ANUAL.length]}
-                      opacity={isOtherHovered ? 0.4 : 1}
-                      filter={isHovered ? `url(#shadow-${chartId}-${index})` : "none"}
-                      style={{
-                        transition: "all 0.3s ease",
-                        outline: "none",
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onMouseLeave={() => setActiveIndex(undefined)}
-                    />
-                  );
-                })}
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={PIE_COLORS_ANUAL[index % PIE_COLORS_ANUAL.length]}
+                    style={{
+                      outline: "none",
+                    }}
+                  />
+                ))}
               </Pie>
             </PieChart>
           </ResponsiveContainer>

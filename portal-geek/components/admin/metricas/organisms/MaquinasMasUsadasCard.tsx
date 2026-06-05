@@ -3,9 +3,8 @@
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 
 import { SelectField } from "../../atoms/SelectField";
-import { TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE, TOOLTIP_CONTENT_STYLE } from "../utils";
 
-import { maquinasTooltipFormatter } from "./MaquinasMasUsadasAnualCard";
+import { MaquinasCustomTooltip } from "./MaquinasCustomTooltip";
 
 interface Props {
   availableYears: number[];
@@ -62,7 +61,7 @@ export function MaquinasMasUsadasCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-          {/* Toggle de Top 5 / Top 10 */}
+          {/* Top 5 / Top 10 Toggle */}
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50/50 p-1">
             <button
               onClick={() => onLimitChange(5)}
@@ -127,13 +126,7 @@ export function MaquinasMasUsadasCard({
                   <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                formatter={maquinasTooltipFormatter}
-                contentStyle={TOOLTIP_CONTENT_STYLE}
-                itemStyle={TOOLTIP_ITEM_STYLE}
-                labelStyle={TOOLTIP_LABEL_STYLE}
-              />
+              <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
               <Legend
                 verticalAlign="bottom"
                 height={36}

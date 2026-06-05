@@ -6,12 +6,14 @@ import { Toast } from "@/components/admin/atoms/Toast";
 import { useDashboardFinanciero } from "@/components/admin/metricas/hooks/useDashboardFinanciero";
 import { useMaquinasMetrics } from "@/components/admin/metricas/hooks/useMaquinasMetrics";
 import { useMaquinasMetricsAnual } from "@/components/admin/metricas/hooks/useMaquinasMetricsAnual";
+import { useMaquinasMetricsHistorico } from "@/components/admin/metricas/hooks/useMaquinasMetricsHistorico";
 import { CustomComparisonChart } from "@/components/admin/metricas/organisms/CustomComparisonChart";
 import { DesgloseMensualChart } from "@/components/admin/metricas/organisms/DesgloseMensualChart";
 import { IngresosAnualesCard } from "@/components/admin/metricas/organisms/IngresosAnualesCard";
 import { IngresosMensualesCard } from "@/components/admin/metricas/organisms/IngresosMensualesCard";
 import { MaquinasMasUsadasAnualCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasAnualCard";
 import { MaquinasMasUsadasCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasCard";
+import { MaquinasMasUsadasHistoricoCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasHistoricoCard";
 import { MetricasGeneralesCard } from "@/components/admin/metricas/organisms/MetricasGeneralesCard";
 import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
 
@@ -22,7 +24,8 @@ type WidgetId =
   | "desglose_mensual"
   | "comparativa_personalizada"
   | "maquinas_mas_usadas"
-  | "maquinas_mas_usadas_anual";
+  | "maquinas_mas_usadas_anual"
+  | "maquinas_mas_usadas_historico";
 
 interface GeneralConfig {
   cards: WidgetId[];
@@ -36,6 +39,7 @@ const DEFAULT_CONFIG: GeneralConfig = {
     "desglose_mensual",
     "maquinas_mas_usadas",
     "maquinas_mas_usadas_anual",
+    "maquinas_mas_usadas_historico",
   ],
 };
 
@@ -59,10 +63,10 @@ export function GeneralTab({
     toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Hook with all the state
   const dashboardState = useDashboardFinanciero(data);
   const maquinasState = useMaquinasMetrics(maquinasData);
   const maquinasAnualState = useMaquinasMetricsAnual(maquinasData);
+  const maquinasHistoricoState = useMaquinasMetricsHistorico(maquinasData);
 
   // Load from localStorage
   useEffect(() => {
@@ -196,6 +200,15 @@ export function GeneralTab({
                   <input
                     type="checkbox"
                     className="w-5 h-5 accent-red-600"
+                    checked={config.charts.includes("maquinas_mas_usadas_historico")}
+                    onChange={() => handleToggleWidget("charts", "maquinas_mas_usadas_historico")}
+                  />
+                  <span className="font-medium text-black">Máquinas Más Usadas (Histórico)</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-red-600"
                     checked={config.charts.includes("comparativa_personalizada")}
                     onChange={() => handleToggleWidget("charts", "comparativa_personalizada")}
                   />
@@ -282,6 +295,15 @@ export function GeneralTab({
               onYearChange={maquinasAnualState.setSelectedYear}
               onLimitChange={maquinasAnualState.setTopLimit}
             />
+          )}
+          {config.charts.includes("maquinas_mas_usadas_historico") && (
+            <div className="xl:col-span-2">
+              <MaquinasMasUsadasHistoricoCard
+                topLimit={maquinasHistoricoState.topLimit}
+                chartData={maquinasHistoricoState.chartData}
+                onLimitChange={maquinasHistoricoState.setTopLimit}
+              />
+            </div>
           )}
         </div>
       )}
