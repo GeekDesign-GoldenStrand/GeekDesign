@@ -4,19 +4,22 @@ import { useState, useEffect, useRef } from "react";
 
 import { Toast } from "@/components/admin/atoms/Toast";
 import { useDashboardFinanciero } from "@/components/admin/metricas/hooks/useDashboardFinanciero";
+import { useMaquinasMetrics } from "@/components/admin/metricas/hooks/useMaquinasMetrics";
 import { CustomComparisonChart } from "@/components/admin/metricas/organisms/CustomComparisonChart";
 import { DesgloseMensualChart } from "@/components/admin/metricas/organisms/DesgloseMensualChart";
 import { IngresosAnualesCard } from "@/components/admin/metricas/organisms/IngresosAnualesCard";
 import { IngresosMensualesCard } from "@/components/admin/metricas/organisms/IngresosMensualesCard";
+import { MaquinasMasUsadasCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasCard";
 import { MetricasGeneralesCard } from "@/components/admin/metricas/organisms/MetricasGeneralesCard";
-import type { MetricasDashboardData } from "@/lib/services/metricas";
+import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
 
 type WidgetId =
   | "ingresos_anuales"
   | "ingresos_mensuales"
   | "comparativa_historica"
   | "desglose_mensual"
-  | "comparativa_personalizada";
+  | "comparativa_personalizada"
+  | "maquinas_mas_usadas";
 
 interface GeneralConfig {
   cards: WidgetId[];
@@ -30,9 +33,11 @@ const DEFAULT_CONFIG: GeneralConfig = {
 
 export function GeneralTab({
   data,
+  maquinasData,
   isEditing,
 }: {
   data: MetricasDashboardData;
+  maquinasData: MetricasMaquinasData;
   isEditing: boolean;
 }) {
   const [config, setConfig] = useState<GeneralConfig>(DEFAULT_CONFIG);
@@ -48,6 +53,7 @@ export function GeneralTab({
 
   // Hook with all the state
   const dashboardState = useDashboardFinanciero(data);
+  const maquinasState = useMaquinasMetrics(maquinasData);
 
   // Load from localStorage
   useEffect(() => {
@@ -99,8 +105,8 @@ export function GeneralTab({
     <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto pb-12 sm:pb-16 px-4 md:px-6 lg:px-8 relative">
       {isEditing && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 mt-4">
-          <h3 className="text-xl font-bold text-[#1e1e1e] mb-4">Configuración de Vista General</h3>
-          <p className="text-[#8e908f] text-sm mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Configuración de Vista General</h3>
+          <p className="text-gray-500 text-sm mb-6">
             Selecciona los componentes que deseas ver en tu panel principal. Puedes elegir hasta 3
             Tarjetas de Resumen (Cards) y hasta 5 Gráficas (Charts).
           </p>
@@ -116,7 +122,7 @@ export function GeneralTab({
                 <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
                   <input
                     type="checkbox"
-                    className="w-5 h-5 accent-[#e42200]"
+                    className="w-5 h-5 accent-red-600"
                     checked={config.cards.includes("ingresos_anuales")}
                     onChange={() => handleToggleWidget("cards", "ingresos_anuales")}
                   />
@@ -125,7 +131,7 @@ export function GeneralTab({
                 <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
                   <input
                     type="checkbox"
-                    className="w-5 h-5 accent-[#e42200]"
+                    className="w-5 h-5 accent-red-600"
                     checked={config.cards.includes("ingresos_mensuales")}
                     onChange={() => handleToggleWidget("cards", "ingresos_mensuales")}
                   />
@@ -144,7 +150,7 @@ export function GeneralTab({
                 <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
                   <input
                     type="checkbox"
-                    className="w-5 h-5 accent-[#e42200]"
+                    className="w-5 h-5 accent-red-600"
                     checked={config.charts.includes("comparativa_historica")}
                     onChange={() => handleToggleWidget("charts", "comparativa_historica")}
                   />
@@ -153,7 +159,7 @@ export function GeneralTab({
                 <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
                   <input
                     type="checkbox"
-                    className="w-5 h-5 accent-[#e42200]"
+                    className="w-5 h-5 accent-red-600"
                     checked={config.charts.includes("desglose_mensual")}
                     onChange={() => handleToggleWidget("charts", "desglose_mensual")}
                   />
@@ -162,7 +168,16 @@ export function GeneralTab({
                 <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
                   <input
                     type="checkbox"
-                    className="w-5 h-5 accent-[#e42200]"
+                    className="w-5 h-5 accent-red-600"
+                    checked={config.charts.includes("maquinas_mas_usadas")}
+                    onChange={() => handleToggleWidget("charts", "maquinas_mas_usadas")}
+                  />
+                  <span className="font-medium text-black">Máquinas Más Usadas</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-red-600"
                     checked={config.charts.includes("comparativa_personalizada")}
                     onChange={() => handleToggleWidget("charts", "comparativa_personalizada")}
                   />
@@ -225,6 +240,19 @@ export function GeneralTab({
               chartStyle={dashboardState.chartStyle}
               onChartStyleChange={dashboardState.setChartStyle}
               data={dashboardState.card4Data}
+            />
+          )}
+          {config.charts.includes("maquinas_mas_usadas") && (
+            <MaquinasMasUsadasCard
+              availableYears={maquinasState.availableYears}
+              availableMonths={maquinasState.availableMonths}
+              selectedYear={maquinasState.selectedYear}
+              selectedMonth={maquinasState.selectedMonth}
+              topLimit={maquinasState.topLimit}
+              chartData={maquinasState.chartData}
+              onYearChange={maquinasState.setSelectedYear}
+              onMonthChange={maquinasState.setSelectedMonth}
+              onLimitChange={maquinasState.setTopLimit}
             />
           )}
         </div>

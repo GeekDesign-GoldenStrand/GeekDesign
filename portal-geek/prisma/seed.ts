@@ -1719,6 +1719,25 @@ async function main() {
     console.log(`Seeded ${detallesCreated} demo DetallePedido rows`);
   }
 
+  // ── Backfill PedidoMaquina for MET-07 ──────────────────────────────────────
+  const countPM = await prisma.pedidoMaquina.count();
+  if (countPM === 0) {
+    const allDetalles = await prisma.detallePedido.findMany();
+    const allMaquinas = await prisma.maquinas.findMany();
+    const adminUserL = await prisma.usuarios.findFirst();
+
+    if (allMaquinas.length > 0 && adminUserL) {
+      const pmsToCreate = allDetalles.map((d, index) => ({
+        id_pedido: d.id_pedido,
+        id_maquina: allMaquinas[index % allMaquinas.length].id_maquina,
+        id_material: d.id_material,
+        id_usuario_asigno: adminUserL.id_usuario,
+      }));
+      await prisma.pedidoMaquina.createMany({ data: pmsToCreate });
+      console.log(`Seeded ${pmsToCreate.length} demo PedidoMaquina rows for MET-07`);
+    }
+  }
+
   await resyncSequences();
 }
 

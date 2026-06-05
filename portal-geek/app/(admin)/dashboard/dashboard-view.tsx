@@ -5,9 +5,10 @@ import { useState } from "react";
 
 import { ServiceFilterButton } from "@/components/admin/atoms/ServiceFilterButton";
 import { GeneralTab } from "@/components/admin/dashboard/templates/GeneralTab";
+import { MaquinasTab } from "@/components/admin/dashboard/templates/MaquinasTab";
 import { DashboardFinanciero } from "@/components/admin/metricas/DashboardFinanciero";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import type { MetricasDashboardData } from "@/lib/services/metricas";
+import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
 
 export type DashboardTab = "General" | "Ingresos" | "Máquinas" | "Clientes" | "Gastos";
 
@@ -15,9 +16,10 @@ const TABS: DashboardTab[] = ["General", "Ingresos", "Máquinas", "Clientes", "G
 
 interface Props {
   data: MetricasDashboardData;
+  maquinasData: MetricasMaquinasData;
 }
 
-export function DashboardView({ data }: Props) {
+export function DashboardView({ data, maquinasData }: Props) {
   const [activeTab, setActiveTab] = useState<DashboardTab>("General");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
 
@@ -58,12 +60,13 @@ export function DashboardView({ data }: Props) {
 
       {/* Tab Content */}
       <div className="mt-2">
-        {activeTab === "General" && <GeneralTab data={data} isEditing={isEditingConfig} />}
-        {activeTab === "Ingresos" && <DashboardFinanciero data={data} />}
-        {/* Blank for the empty tabs */}
-        {["Máquinas", "Clientes", "Gastos"].includes(activeTab) && (
-          <div className="min-h-[400px]" />
+        {activeTab === "General" && (
+          <GeneralTab data={data} maquinasData={maquinasData} isEditing={isEditingConfig} />
         )}
+        {activeTab === "Ingresos" && <DashboardFinanciero data={data} />}
+        {activeTab === "Máquinas" && <MaquinasTab data={maquinasData} />}
+        {/* Blank for the empty tabs */}
+        {["Clientes", "Gastos"].includes(activeTab) && <div className="min-h-[400px]" />}
       </div>
     </div>
   );

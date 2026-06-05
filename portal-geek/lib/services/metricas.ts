@@ -127,3 +127,88 @@ export async function getMetricasDashboard(): Promise<MetricasDashboardData> {
 
   return result;
 }
+
+export interface MaquinaMetric {
+  id_maquina: number;
+  nombre_maquina: string;
+  apodo_maquina: string;
+  veces_usada: number;
+}
+
+export type MetricasMaquinasData = Record<number, Record<number, MaquinaMetric[]>>;
+
+export async function getMetricasMaquinas(): Promise<MetricasMaquinasData> {
+  let detalles;
+  try {
+    detalles = await prisma.detallePedido.findMany({
+      where: {
+        estatus: {
+          descripcion: { in: ["Entregado", "Finalizado"] },
+        },
+      },
+      include: {
+        pedido: {
+          include: {
+            pedidoMaquinas: {
+              include: {
+                maquina: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener métricas de máquinas:", error);
+    throw new Error("No se pudieron cargar las métricas de máquinas en este momento.");
+  }
+
+  const rawData: Record<number, Record<number, Record<number, MaquinaMetric>>> = {};
+
+  for (const detalle of detalles) {
+    const dateToUse =
+      detalle.fecha_modificacion || detalle.pedido.fecha_fin || detalle.pedido.fecha_creacion;
+    const year = dateToUse.getUTCFullYear();
+    const month = dateToUse.getUTCMonth();
+
+    if (!rawData[year]) rawData[year] = {};
+    if (!rawData[year][month]) rawData[year][month] = {};
+
+    const maquinasAsignadas = detalle.pedido.pedidoMaquinas.filter(
+      (pm) => pm.id_material === detalle.id_material
+    );
+
+    for (const pm of maquinasAsignadas) {
+      const maqId = pm.id_maquina;
+      if (!rawData[year][month][maqId]) {
+        rawData[year][month][maqId] = {
+          id_maquina: maqId,
+          nombre_maquina: pm.maquina.nombre_maquina,
+          apodo_maquina: pm.maquina.apodo_maquina,
+          veces_usada: 0,
+        };
+      }
+      rawData[year][month][maqId].veces_usada += 1;
+    }
+  }
+
+  const result: MetricasMaquinasData = {};
+  for (const yearStr of Object.keys(rawData)) {
+    const year = Number(yearStr);
+    result[year] = {};
+    for (let i = 0; i < 12; i++) {
+      const maquinasDict = rawData[year][i] || {};
+      result[year][i] = Object.values(maquinasDict).sort((a, b) => b.veces_usada - a.veces_usada);
+    }
+  }
+
+  if (Object.keys(result).length === 0) {
+    const currentYear = new Date().getUTCFullYear();
+    result[currentYear] = {};
+    for (let i = 0; i < 12; i++) {
+      result[currentYear][i] = [];
+    }
+  }
+
+  return result;
+}
