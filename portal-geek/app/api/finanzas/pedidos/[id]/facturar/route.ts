@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 import { withSectionParams } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/client";
 import { ok } from "@/lib/utils/api";
@@ -9,6 +11,9 @@ export const PATCH = withSectionParams<Params>("finanzas", "write", async (req, 
   try {
     const { id } = await ctx.params;
     const idPedido = Number(id);
+    if (Number.isNaN(idPedido)) {
+      return NextResponse.json({ data: null, error: "ID inválido" }, { status: 422 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const numeroFactura: string | undefined =
