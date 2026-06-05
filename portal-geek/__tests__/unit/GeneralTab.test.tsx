@@ -86,9 +86,6 @@ describe("GeneralTab Configurar Vista", () => {
       })
     );
 
-    // Mock alert
-    const alertMock = jest.spyOn(window, "alert").mockImplementation(() => {});
-
     render(<GeneralTab data={mockData} isEditing={true} />);
 
     // Try to toggle another card? Actually we only have 2 cards available in the UI check,
@@ -118,8 +115,8 @@ describe("GeneralTab Configurar Vista", () => {
 
     fireEvent.click(checkboxHist);
 
-    // Alert should be called because it exceeded 5
-    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining("límite es de 5 gráficas"));
+    // Toast should be rendered because it exceeded 5
+    expect(screen.getByText(/límite es de 5 gráficas/i)).toBeInTheDocument();
     // Still shouldn't be added
     const saved = JSON.parse(window.localStorage.getItem("dashboard_general_config") || "{}");
     expect(saved.charts).not.toContain("comparativa_historica");
