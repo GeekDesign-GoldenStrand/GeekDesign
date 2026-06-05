@@ -47,7 +47,13 @@ export function GeneralTab({
     const saved = localStorage.getItem("dashboard_general_config");
     if (saved) {
       try {
-        setConfig(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setConfig({
+          ...DEFAULT_CONFIG,
+          ...parsed,
+          cards: Array.isArray(parsed?.cards) ? parsed.cards : DEFAULT_CONFIG.cards,
+          charts: Array.isArray(parsed?.charts) ? parsed.charts : DEFAULT_CONFIG.charts,
+        });
       } catch (e) {
         console.error("Error parsing dashboard config", e);
       }
