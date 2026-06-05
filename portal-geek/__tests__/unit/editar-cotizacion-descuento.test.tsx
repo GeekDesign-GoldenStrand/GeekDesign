@@ -9,8 +9,8 @@ import type { ComponentProps, ReactNode } from "react";
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 
-jest.mock("@/components/ui/terceros/molecules/ModalShell", () => ({
-  ModalShell: ({ title, children }: { title: string; children: ReactNode }) => (
+jest.mock("@/components/ui/atoms", () => ({
+  Modal: ({ title, children }: { title?: string; children: ReactNode }) => (
     <section aria-label={title}>{children}</section>
   ),
 }));
@@ -319,5 +319,102 @@ describe("EditarCotizacion discount editing", () => {
 
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ notas: "Notas actualizadas" }));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  // Regression: when only the cotización fields change (no discount), the PUT
+  // success path must still call onSave so CotizacionDetailPage runs handleSave
+  // → setFields + onRefetch + setActivePanel(null). Without that hook the
+  // outer page (AdminHeader) keeps rendering the stale nombre_oportunidad.
+  it("fires onSave with the new EditableFields after a PUT-only success so the outer page refetches", async () => {
+    const user = userEvent.setup();
+    const { onSave } = await setupReady();
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { id_cotizacion: 123 } }),
+    });
+
+    const nombreInput = screen.getByLabelText("Nombre de oportunidad");
+    await user.clear(nombreInput);
+    await user.type(nombreInput, "Letrero exterior — V2");
+
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cotizaciones/123",
+        expect.objectContaining({ method: "PUT" })
+      );
+    });
+
+    // Discount PATCH must NOT be fired — nothing to discount.
+    expect(mockFetch).not.toHaveBeenCalledWith(
+      "/api/cotizaciones/123/descuento",
+      expect.anything()
+    );
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ nombre_oportunidad: "Letrero exterior — V2" })
+    );
+  });
+
+  // Regression: clearing the input must send nombre_oportunidad: null in the
+  // PUT body so the server can persist NULL. The historical bug used `|| undefined`
+  // which stripped the field, and the server then preserved the old value.
+  it("sends nombre_oportunidad: null when the admin clears the input", async () => {
+    const user = userEvent.setup();
+    await setupReady();
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { id_cotizacion: 123 } }),
+    });
+
+    await user.clear(screen.getByLabelText("Nombre de oportunidad"));
+
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cotizaciones/123",
+        expect.objectContaining({ method: "PUT" })
+      );
+    });
+
+    const putCall = mockFetch.mock.calls.find(
+      ([url, init]) => url === "/api/cotizaciones/123" && (init as RequestInit).method === "PUT"
+    )!;
+    const body = JSON.parse((putCall[1] as RequestInit).body as string);
+    expect(body.nombre_oportunidad).toBeNull();
+  });
+
+  it("sends nombre_oportunidad: null when the input is whitespace-only", async () => {
+    const user = userEvent.setup();
+    await setupReady();
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { id_cotizacion: 123 } }),
+    });
+
+    const nombreInput = screen.getByLabelText("Nombre de oportunidad");
+    await user.clear(nombreInput);
+    await user.type(nombreInput, "   ");
+    // Force a state change so the dirty check fires (typing whitespace alone
+    // wouldn't trip the original "Letrero exterior" → "" comparison if React
+    // hasn't flushed yet).
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cotizaciones/123",
+        expect.objectContaining({ method: "PUT" })
+      );
+    });
+    const putCall = mockFetch.mock.calls.find(
+      ([url, init]) => url === "/api/cotizaciones/123" && (init as RequestInit).method === "PUT"
+    )!;
+    const body = JSON.parse((putCall[1] as RequestInit).body as string);
+    expect(body.nombre_oportunidad).toBeNull();
   });
 });
