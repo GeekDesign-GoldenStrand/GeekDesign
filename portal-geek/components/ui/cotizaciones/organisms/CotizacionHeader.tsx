@@ -1,32 +1,24 @@
-import { ArrowLeft, PencilSimple, Tag } from "@phosphor-icons/react";
+import { ArrowLeft, PencilSimple } from "@phosphor-icons/react";
 import Link from "next/link";
 import React from "react";
 
 interface CotizacionHeaderProps {
   folio?: string | null;
   nombreOportunidad?: string | null;
-  discountApplied?: boolean;
   // When false, the "Editar" CTA is hidden. The server only accepts edits
   // while the cotización is in 'Pendiente'; once the cliente has validated
   // (or beyond), showing the button just leads to a 409 on save.
   canEdit?: boolean;
-  // When false, the "Agregar descuento" CTA is hidden. Same Pendiente-only
-  // rule as `canEdit` (see aplicarDescuento in lib/services/cotizaciones.ts).
-  canAddDiscount?: boolean;
   backHref?: string;
   onEdit: () => void;
-  onDiscount: () => void;
 }
 
 export function CotizacionHeader({
   folio,
   nombreOportunidad,
-  discountApplied = false,
   canEdit = true,
-  canAddDiscount = true,
   backHref = "/cotizaciones",
   onEdit,
-  onDiscount,
 }: CotizacionHeaderProps) {
   return (
     <div className="flex justify-between items-start gap-4 flex-wrap mb-6">
@@ -50,16 +42,6 @@ export function CotizacionHeader({
 
       <div className="flex flex-col items-end gap-2">
         <div className="flex flex-wrap gap-2">
-          {!discountApplied && canAddDiscount && (
-            <button
-              type="button"
-              onClick={onDiscount}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-medium border border-gray-200 bg-white shadow-sm text-gray-800 hover:bg-gray-50 active:scale-[0.98] transition-all"
-            >
-              <Tag size={15} />
-              Agregar descuento
-            </button>
-          )}
           {canEdit && (
             <button
               type="button"

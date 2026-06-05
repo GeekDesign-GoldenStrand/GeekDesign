@@ -372,6 +372,7 @@ async function main() {
     where: { id_material: 1 },
     update: {},
     create: {
+      id_material: 1,
       nombre_material: "MDF 3mm",
       descripcion_material: "MDF de 3mm de espesor",
       unidad_medida: "hoja",
@@ -383,6 +384,7 @@ async function main() {
     where: { id_material: 2 },
     update: {},
     create: {
+      id_material: 2,
       nombre_material: "Acrílico transparente 3mm",
       descripcion_material: "Acrílico transparente para corte y grabado láser",
       unidad_medida: "hoja",
@@ -394,6 +396,7 @@ async function main() {
     where: { id_material: 3 },
     update: {},
     create: {
+      id_material: 3,
       nombre_material: "Tela algodón",
       descripcion_material: "Tela base para bordado personalizado",
       unidad_medida: "pieza",
@@ -404,6 +407,7 @@ async function main() {
     where: { id_material: 4 },
     update: {},
     create: {
+      id_material: 4,
       nombre_material: "Vinil adhesivo",
       descripcion_material: "Vinil para rotulación y señalética",
       unidad_medida: "metro",
