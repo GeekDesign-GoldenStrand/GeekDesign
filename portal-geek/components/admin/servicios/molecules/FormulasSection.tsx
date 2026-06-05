@@ -3,7 +3,7 @@
 import { LockKeyIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 
-import type { FormulaChunk, MaterialDraft } from "@/types/servicios";
+import type { FormulaChunk, MaterialDraft, MaterialOption } from "@/types/servicios";
 
 import { Icon } from "../atoms/Icon";
 
@@ -20,6 +20,10 @@ type FormulaSectionProps = {
   idInstalador: number | null;
   idProveedor: number | null;
   materiales: MaterialDraft[];
+  // Catalog of all materiales. Used to check polymorphic properties
+  // (e.g. velocidad_avance) of the selected materials to decide which
+  // chips to expose in the formula panel.
+  opcionesMateriales: MaterialOption[];
 };
 
 // ── Invariant ─────────────────────────────────────────────────────────────
@@ -49,6 +53,7 @@ export function FormulaSection({
   idInstalador,
   idProveedor,
   materiales,
+  opcionesMateriales,
 }: FormulaSectionProps) {
   const activeTextIdx = useRef<number>(0);
   const activeCursor = useRef<number>(0);
@@ -125,9 +130,11 @@ export function FormulaSection({
   // ── Derived ─────────────────────────────────────────────────────────────
 
   // Polymorphic material tokens — single chips that adopt the value of whatever
-  // material the customer picks at quotation time. precio_material requires at
-  // least one material with a proveedor (that's where the price comes from);
-  // velocidad_avance is a property of the material itself, so any material works.
+  // material the customer picks at quotation time. Each chip only appears when
+  // at least one selected material actually exposes that property: precio_material
+  // when some material has a proveedor (otherwise the chip would have no value
+  // to inject), velocidad_avance when some material has the field populated
+  // (typical for láser/grabado services, absent for bordado/rotulación).
   //
   // Per-material tokens (`costo_material_<slug>`) were intentionally removed
   // from the panel: with polymorphic chips covering the same functionality,
@@ -136,12 +143,15 @@ export function FormulaSection({
   // legacy slug tokens in saved expressions (for backward compatibility), but
   // new formulas should only use the polymorphic chips below.
   const hasMaterialWithProveedor = materiales.some((m) => m.id_proveedor_precio !== null);
-  const hasAnyMaterial = materiales.length > 0;
+  const hasMaterialWithVelocidadAvance = materiales.some((m) => {
+    const info = opcionesMateriales.find((o) => o.id_material === m.id_material);
+    return info?.velocidad_avance != null;
+  });
   const polymorphicMaterialTokens = [
     ...(hasMaterialWithProveedor
       ? [{ value: "precio_material", label: "Precio del material seleccionado" }]
       : []),
-    ...(hasAnyMaterial
+    ...(hasMaterialWithVelocidadAvance
       ? [{ value: "velocidad_avance", label: "Velocidad de avance del material" }]
       : []),
   ];

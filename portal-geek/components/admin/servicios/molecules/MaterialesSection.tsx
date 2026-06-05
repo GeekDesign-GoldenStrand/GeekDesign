@@ -583,6 +583,30 @@ export function MaterialesSection({
               Ningún material agregado aún. Usa el buscador para agregar.
             </p>
           )}
+
+          {/* Warnings for materials without a proveedorPrecio. With the
+              polymorphic `precio_material` semantics, materials missing a
+              provider quote silently as $0 for their material cost — that's
+              the intended BYO behavior, but the admin needs to know so they
+              don't accidentally underprice services. */}
+          {(() => {
+            const sinProveedor = materiales
+              .filter((m) => m.id_proveedor_precio == null)
+              .map((m) => getMaterialInfo(m.id_material)?.nombre_material ?? `#${m.id_material}`);
+            if (sinProveedor.length === 0) return null;
+            return (
+              <div className="rounded-[6px] border border-amber-300 bg-amber-50 p-3 space-y-1">
+                {sinProveedor.map((nombre) => (
+                  <p key={nombre} className="text-[13px] text-amber-900">
+                    <span className="font-semibold">⚠ El material “{nombre}”</span> no tiene precio
+                    de proveedor, esto puede afectar directamente en las cotizaciones con este
+                    material. Ve al apartado de Terceros en el apartado de Proveedores para agregar
+                    un precio a este material
+                  </p>
+                ))}
+              </div>
+            );
+          })()}
         </>
       )}
     </div>

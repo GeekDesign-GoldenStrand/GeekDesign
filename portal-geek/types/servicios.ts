@@ -81,6 +81,7 @@ export type MaterialOption = {
   alto: string | null;
   grosor: string | null;
   color: string | null;
+  velocidad_avance: string | null;
   subMateriales?: Array<{
     id_material: number;
     nombre_material: string;
