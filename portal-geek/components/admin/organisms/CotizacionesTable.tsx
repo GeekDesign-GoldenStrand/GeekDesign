@@ -56,7 +56,7 @@ function getAllowedQuotationStatuses(currentStatus: string): string[] {
 
 // Inline status pill. Colored trigger (per-status at-a-glance recognition) +
 // canonical PopoverItem panel (uniform with every other dropdown in the app).
-function StatusPill({
+export function StatusPill({
   status,
   triggerClass,
   iconSize,
@@ -84,7 +84,15 @@ function StatusPill({
         </button>
       }
     >
-      <div className="flex flex-col gap-1">
+      {/* StatusPill is rendered inside a clickable row that navigates to the
+          cotización detail on click. The Popover panel is a DOM descendant of
+          that row, so a click on a PopoverItem bubbles up and triggers the
+          row's onClick alongside the parent's confirm dialog — the dialog
+          opens and is immediately torn down by the route change. Stopping
+          propagation at the panel wrapper isolates picker clicks from the
+          row's navigation handler (same pattern as the DesignFileLink wrap
+          below the card). */}
+      <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
         {allowed.map((opt) => (
           <PopoverItem key={opt} selected={opt === status} onSelect={() => onChange(opt)}>
             {opt}

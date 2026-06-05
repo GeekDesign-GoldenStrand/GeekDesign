@@ -1,9 +1,9 @@
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
-import React, { useEffect, useState } from "react";
+import { CaretDown, CaretUp, PencilSimple } from "@phosphor-icons/react";
+import React, { useEffect, useRef, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
 import { Button } from "@/components/ui/atoms/Button";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
-import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import { DISCOUNT_MAX, validateDescuentoPercentage } from "@/lib/schemas/cotizaciones";
 import { sanitizeUserText } from "@/lib/utils/safe-text";
 import type { UserRole } from "@/types";
@@ -83,6 +83,12 @@ interface EditarCotizacionProps {
   onClose: () => void;
   // Called when a discount/interest is successfully applied via this modal
   onDiscountApplied?: () => void;
+  // Fires after the per-detalle variable editor (child modal) successfully
+  // PATCHes. The child has already persisted precio_unitario / subtotal /
+  // monto_total server-side, but the parent template's fields + cotizacion
+  // state needs to refresh so cards outside this modal (LineItemsTable,
+  // CotizacionSummary) reflect the new totals.
+  onDetalleVariablesSaved?: (data: EditableFields) => void | Promise<void>;
   onSuccess?: () => void;
 }
 
@@ -97,6 +103,7 @@ export default function EditarCotizacion({
   onSave,
   onClose,
   onDiscountApplied,
+  onDetalleVariablesSaved,
   onSuccess,
 }: EditarCotizacionProps) {
   const [fields, setFields] = useState<EditableFields>({
@@ -167,9 +174,30 @@ export default function EditarCotizacion({
   // the wrong child into view.
   const [editingDetalleId, setEditingDetalleId] = useState<number | null>(null);
 
+  // Sticky flag for this modal session: did the child variables editor save
+  // at least once? Used to suppress the "No has realizado ningún cambio" error
+  // on Guardar (those changes ARE already persisted server-side) and to know
+  // whether closing without further edits still needs to push fresh state to
+  // the parent template.
+  const [childSavedAtLeastOnce, setChildSavedAtLeastOnce] = useState(false);
+
+  // Tracks the previous `isOpen` so we can distinguish "modal just opened"
+  // (need a fresh session — reset session-only UI state) from "initial /
+  // discount props changed while open" (just re-derive fields / snapshot,
+  // and DO NOT clobber session flags). Without this, any external setFields
+  // by the parent template while the modal is open would zero out
+  // `childSavedAtLeastOnce` and re-arm the "no changes" guard.
+  const wasOpenRef = useRef(false);
+
   // Reset fields every time the modal opens
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
+    }
+    const justOpened = !wasOpenRef.current;
+    wasOpenRef.current = true;
+
     const fresh = {
       ...initial,
       servicios: initial.servicios.map((p) => ({ ...p })),
@@ -188,9 +216,15 @@ export default function EditarCotizacion({
       motivo: freshDiscountMotivo,
     });
 
-    setClientesError(null);
-    setServerError(null);
-    setValidationError(null);
+    // Session-only UI state — reset only on a genuine closed→open transition,
+    // not on every re-render where `initial` happened to change (e.g. because
+    // the parent template refetched mid-session).
+    if (justOpened) {
+      setClientesError(null);
+      setServerError(null);
+      setValidationError(null);
+      setChildSavedAtLeastOnce(false);
+    }
   }, [isOpen, initial, porcentajeDescuento, motivoDescuento]);
 
   // Fetch clientes when the modal opens
@@ -245,6 +279,11 @@ export default function EditarCotizacion({
   // (a) the displayed totals refresh and (b) the parent's "no changes" guard
   // doesn't fire spuriously on the variables-only edit. Snapshot is bumped
   // too so a subsequent parent submit doesn't try to roll the precio back.
+  //
+  // The parent template notification (onDetalleVariablesSaved) is DEFERRED to
+  // modal close — see handleClose / handleSubmit. Firing it here would update
+  // CotizacionDetailPage's fields prop mid-session, which re-runs this modal's
+  // open-effect and wipes `childSavedAtLeastOnce`.
   const applyDetalleVariablesSaved = (saved: {
     id_detalle: number;
     precio_unitario: number;
@@ -262,6 +301,19 @@ export default function EditarCotizacion({
         : s;
     setFields((prev) => ({ ...prev, servicios: prev.servicios.map(merge) }));
     setSnapshot((prev) => ({ ...prev, servicios: prev.servicios.map(merge) }));
+    setChildSavedAtLeastOnce(true);
+  };
+
+  // Single close path used by Modal's onClose (X / backdrop / Escape) AND the
+  // Cancelar button. If the child variables editor saved during this session,
+  // notify the parent template so LineItemsTable / CotizacionSummary refresh
+  // BEFORE we tear down the modal — otherwise the detail view stays stuck on
+  // the pre-edit monto_total.
+  const handleClose = () => {
+    if (childSavedAtLeastOnce) {
+      void onDetalleVariablesSaved?.(fields);
+    }
+    onClose();
   };
 
   const newSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
@@ -291,6 +343,17 @@ export default function EditarCotizacion({
     const quotationChanged = !fieldsAreEqual(fields, snapshot);
 
     if (!quotationChanged && !discountChanged) {
+      // If the child variables editor already PATCHed during this session,
+      // the cotización IS dirty from the user's perspective — those edits
+      // are persisted server-side, just not via this modal's PUT. Close
+      // gracefully (handleClose fires the deferred refetch so the detail
+      // view picks up the new monto_total) instead of complaining about
+      // "no changes".
+      if (childSavedAtLeastOnce) {
+        if (onSuccess) onSuccess();
+        handleClose();
+        return;
+      }
       setValidationError("No has realizado ningún cambio.");
       return;
     }
@@ -321,7 +384,11 @@ export default function EditarCotizacion({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id_cliente: fields.id_cliente,
-            nombre_oportunidad: fields.nombre_oportunidad || undefined,
+            // Trim then explicit null so clearing the field persists as NULL
+            // in the DB (column is String?). Sending undefined here would
+            // strip the key from the JSON body, which the server reads as
+            // "don't touch" and the old value would stick.
+            nombre_oportunidad: fields.nombre_oportunidad.trim() || null,
             fecha_fin: fields.fecha_fin || undefined,
             notas: fields.notas || undefined,
             servicios: fields.servicios.map((s) => ({
@@ -350,6 +417,13 @@ export default function EditarCotizacion({
           return;
         }
         quotationSaved = true;
+        // Sync the persisted field state to the parent template AND trigger
+        // its onRefetch — without this, anything outside the modal that reads
+        // from the cotización prop (notably AdminHeader's title, which reads
+        // cotizacion.nombre_oportunidad one level above CotizacionDetailPage)
+        // keeps showing the pre-edit value. The discount-success branch below
+        // already does the same for the same reason.
+        onSave(fields);
       }
 
       if (discountChanged) {
@@ -406,7 +480,11 @@ export default function EditarCotizacion({
         onSave(fields);
       }
 
-      onClose();
+      // handleClose (not onClose) so a child-variables save during this
+      // session also triggers the parent refetch on the way out — without it,
+      // the PUT-only success path would close without surfacing the
+      // child-persisted precio_unitario in the detail view.
+      handleClose();
       // Notify parent to show success modal after edit modal closes
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -434,7 +512,7 @@ export default function EditarCotizacion({
 
   return (
     <>
-      <ModalShell title="Editar cotización" onClose={onClose}>
+      <Modal isOpen onClose={handleClose} title="Editar cotización" size="2xl">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <label className="flex flex-col gap-1 col-span-2 text-[13px] text-[#575757]">
@@ -698,9 +776,13 @@ export default function EditarCotizacion({
                         <button
                           type="button"
                           onClick={() => setEditingDetalleId(item.id_detalle)}
-                          className="text-[12px] text-blue-600 hover:text-blue-800 underline-offset-2 hover:underline"
+                          // Same styling as the page-level "Editar" CTA in
+                          // CotizacionHeader so the two edit affordances read
+                          // as siblings of the same family.
+                          className="inline-flex items-center gap-1 h-8 px-4 rounded-lg text-[12px] font-medium border border-gray-200 bg-white shadow-sm text-gray-800 hover:bg-gray-50 active:scale-[0.98] transition-all"
                           title="Editar variables de la fórmula"
                         >
+                          <PencilSimple size={20} />
                           Editar fórmula
                         </button>
                       ) : null}
@@ -766,7 +848,7 @@ export default function EditarCotizacion({
               type="button"
               variant="secondary"
               size="sm"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isSubmitting}
             >
               Cancelar
@@ -782,7 +864,7 @@ export default function EditarCotizacion({
             </Button>
           </div>
         </form>
-      </ModalShell>
+      </Modal>
 
       <EditarVariablesDetalle
         idCotizacion={idCotizacion}

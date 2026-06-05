@@ -43,7 +43,10 @@ export const UpdateCotizacionSchema = z.object({
 
   // Added for EditarCotizacion
   id_cliente: z.number().int().positive().optional(),
-  nombre_oportunidad: z.string().max(255).optional(),
+  // Nullable: the admin can clear the field in the modal, which must persist
+  // as null in the DB (the column is String?). Omitted (undefined) → don't
+  // touch; explicit null → set to null.
+  nombre_oportunidad: z.string().max(255).nullable().optional(),
 
   // Inline DetallePedido edits — cantidad + precio_unitario per line item.
   // subtotal is recomputed server-side; the client never sends it.

@@ -53,6 +53,26 @@ export function toEstatusCotizacion(value: unknown): EstatusCotizacion | null {
   return isEstatusCotizacion(value) ? value : null;
 }
 
+// Legal status transitions — single source of truth shared by the backend
+// (changeQuotationStatus enforces this) and the front-end (StatusDropdown
+// only offers these as next-state options). Terminal states have an empty
+// array; the dropdown collapses to a read-only badge in that case.
+export const ALLOWED_QUOTATION_TRANSITIONS: Record<EstatusCotizacion, EstatusCotizacion[]> = {
+  [QUOTATION_STATUS.PENDIENTE]: [
+    QUOTATION_STATUS.VALIDADA,
+    QUOTATION_STATUS.CANCELADA,
+    QUOTATION_STATUS.RECHAZADA,
+  ],
+  [QUOTATION_STATUS.VALIDADA]: [
+    QUOTATION_STATUS.APROBADA,
+    QUOTATION_STATUS.CANCELADA,
+    QUOTATION_STATUS.RECHAZADA,
+  ],
+  [QUOTATION_STATUS.APROBADA]: [],
+  [QUOTATION_STATUS.CANCELADA]: [],
+  [QUOTATION_STATUS.RECHAZADA]: [],
+};
+
 export type CategoriaCliente = "Black" | "Silver" | "Gold" | "Emprendedor" | "Baneado";
 
 export type ActorTipo = "Direccion" | "Cliente";

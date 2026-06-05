@@ -25,7 +25,12 @@ import {
 // server (this file) and the client (CotizacionDetailPage, etc.) read from
 // the same source. Re-exported further down so existing service consumers
 // don't have to update their imports.
-import { QUOTATION_STATUS, toEstatusCotizacion, type QuotationStatus } from "@/types/cotizacion";
+import {
+  ALLOWED_QUOTATION_TRANSITIONS,
+  QUOTATION_STATUS,
+  toEstatusCotizacion,
+  type QuotationStatus,
+} from "@/types/cotizacion";
 
 /**
  * Common include configuration for quotations to ensure consistent typing.
@@ -689,27 +694,8 @@ export async function changeQuotationStatus(
     );
   }
 
-  // Valid workflow transitions.
-  const ALLOWED_QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
-    [QUOTATION_STATUS.PENDIENTE]: [
-      QUOTATION_STATUS.VALIDADA,
-      QUOTATION_STATUS.CANCELADA,
-      QUOTATION_STATUS.RECHAZADA,
-    ],
-
-    [QUOTATION_STATUS.VALIDADA]: [
-      QUOTATION_STATUS.APROBADA,
-      QUOTATION_STATUS.CANCELADA,
-      QUOTATION_STATUS.RECHAZADA,
-    ],
-
-    [QUOTATION_STATUS.APROBADA]: [],
-
-    [QUOTATION_STATUS.CANCELADA]: [],
-
-    [QUOTATION_STATUS.RECHAZADA]: [],
-  };
-
+  // Valid workflow transitions — definition lives in @/types/cotizacion so
+  // the front-end (StatusDropdown) reads the same rules without duplicating.
   const allowedTransitions = ALLOWED_QUOTATION_TRANSITIONS[currentStatus];
 
   // Prevent illegal workflow jumps.

@@ -6,11 +6,14 @@ import { ConfirmDialog } from "@/components/ui/atoms/ConfirmDialog";
 import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UserRole } from "@/types";
 import {
+  ALLOWED_QUOTATION_TRANSITIONS,
   QUOTATION_STATUS,
   type Cotizacion,
+  type EstatusCotizacion,
   type FormulaVariable,
   type HistorialEstado,
   type LineItem,
+  isEstatusCotizacion,
 } from "@/types/cotizacion";
 
 import { ClientCard } from "../molecules/ClientCard";
@@ -27,6 +30,7 @@ interface CotizacionDetailPageProps {
   cotizacion: Cotizacion;
   userRole?: UserRole;
   onRefetch?: () => Promise<void> | void;
+  onStatusChange?: (id: number, status: string) => Promise<void> | void;
 }
 
 export function CotizacionDetailPage({
@@ -108,6 +112,19 @@ export function CotizacionDetailPage({
     [onRefetch]
   );
 
+  // Variant of handleSave that DOESN'T close the panel. Fired by the per-detalle
+  // variables editor inside EditarCotizacion: the child modal already PATCHed
+  // server-side, but the parent template's fields + cotizacion need refreshing
+  // so LineItemsTable and CotizacionSummary stop showing the stale monto_total
+  // while the parent modal is still open.
+  const handleDetalleVariablesSaved = useCallback(
+    async (updated: EditableFields) => {
+      setFields(updated);
+      await onRefetch?.();
+    },
+    [onRefetch]
+  );
+
   // ── Discount/surcharge (COT-06) ───────────
   // porcentajeDescuento is signed: positive = discount (reduces total),
   // negative = interest/surcharge (raises total). Labels flip on the sign.
@@ -157,6 +174,76 @@ export function CotizacionDetailPage({
   const [showDeleteDiscountModal, setShowDeleteDiscountModal] = useState(false);
   const [isDeletingDiscount, setIsDeletingDiscount] = useState(false);
   const [deleteDiscountError, setDeleteDiscountError] = useState<string | null>(null);
+
+  // ── Status transition (PATCH /estatus) ────
+  // Product rule: the admin status dropdown only appears while the cotización
+  // is Pendiente, and the only two transitions surfaced there are Validada
+  // and Rechazada. Cancelada (cliente-initiated) and Aprobada (post-cliente-
+  // validation) are intentionally NOT pickable from this control even though
+  // ALLOWED_QUOTATION_TRANSITIONS allows them server-side.
+  const canChangeStatus =
+    userRole === "Direccion" && cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
+  const currentEstatus = isEstatusCotizacion(cotizacion.estatus.descripcion)
+    ? (cotizacion.estatus.descripcion as EstatusCotizacion)
+    : null;
+  const adminStatusOptions: EstatusCotizacion[] = canChangeStatus
+    ? [QUOTATION_STATUS.VALIDADA, QUOTATION_STATUS.RECHAZADA]
+    : [];
+  // Sanity check that our UI subset stays a subset of the server-side rules —
+  // if the backend ever revoked Pendiente→Validada/Rechazada we'd surface
+  // options that 409 on confirm. Referencing the map keeps that contract
+  // visible at the call site and prevents tree-shaking from dropping it.
+  void ALLOWED_QUOTATION_TRANSITIONS;
+
+  // Pending picked status — drives the confirm dialog. null = closed.
+  const [pendingStatus, setPendingStatus] = useState<EstatusCotizacion | null>(null);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+
+  // Called from StatusDropdown — capture the user's pick and open the confirm.
+  // The actual PATCH waits until the user explicitly confirms in the dialog.
+  const handleStatusPicked = useCallback((next: EstatusCotizacion) => {
+    setStatusError(null);
+    setPendingStatus(next);
+  }, []);
+
+  const handleConfirmStatus = useCallback(async () => {
+    if (!pendingStatus) return;
+    setIsChangingStatus(true);
+    setStatusError(null);
+    try {
+      const res = await fetch(`/api/cotizaciones/${cotizacion.id_cotizacion}/estatus`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estatus: pendingStatus }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        const fallback =
+          res.status === 404
+            ? "Cotización no encontrada"
+            : res.status === 403
+              ? "Sin permisos para cambiar el estatus"
+              : res.status === 409
+                ? "Transición de estatus no permitida"
+                : "No se pudo cambiar el estatus";
+        setStatusError(payload.error ?? fallback);
+        return;
+      }
+      await onRefetch?.();
+      setPendingStatus(null);
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : "Error de red al cambiar estatus");
+    } finally {
+      setIsChangingStatus(false);
+    }
+  }, [cotizacion.id_cotizacion, onRefetch, pendingStatus]);
+
+  const handleCancelStatus = useCallback(() => {
+    if (isChangingStatus) return; // don't close mid-PATCH
+    setPendingStatus(null);
+    setStatusError(null);
+  }, [isChangingStatus]);
 
   const handleConfirmDeleteDiscount = async () => {
     setIsDeletingDiscount(true);
@@ -211,6 +298,7 @@ export function CotizacionDetailPage({
         onSave={handleSave}
         onClose={() => setActivePanel(null)}
         onDiscountApplied={handleDiscountApplied}
+        onDetalleVariablesSaved={handleDetalleVariablesSaved}
         onSuccess={() => {
           // Success modal triggered
           setShowSuccessModal(true);
@@ -245,6 +333,11 @@ export function CotizacionDetailPage({
             fecha_aprobacion: cotizacion.fecha_aprobacion,
             pdf_url: cotizacion.pdf_url,
           }}
+          // Pass plumbing only when the dropdown should actually show:
+          // canChangeStatus already bakes in Direccion role + Pendiente status,
+          // and the GeneralDataCard further gates on a non-empty options list.
+          statusOptions={canChangeStatus ? adminStatusOptions : undefined}
+          onStatusChange={canChangeStatus ? handleStatusPicked : undefined}
         />
       </div>
 
@@ -274,6 +367,29 @@ export function CotizacionDetailPage({
           error={deleteDiscountError}
           onConfirm={handleConfirmDeleteDiscount}
           onClose={() => setShowDeleteDiscountModal(false)}
+        />
+      )}
+
+      {pendingStatus && currentEstatus && (
+        <ConfirmDialog
+          isOpen={true}
+          // Rechazada is destructive (the cotización exits the active funnel
+          // and lands in the rechazadas list); use the danger variant so the
+          // visual matches the consequence. Validada is a routine forward
+          // step → primary variant.
+          variant={pendingStatus === QUOTATION_STATUS.RECHAZADA ? "danger" : "primary"}
+          title={`Cambiar estatus a ${pendingStatus}`}
+          description={
+            <>
+              Esta cotización pasará de <strong>{currentEstatus}</strong> a{" "}
+              <strong>{pendingStatus}</strong>. ¿Continuar?
+            </>
+          }
+          confirmLabel="Confirmar"
+          loading={isChangingStatus}
+          error={statusError}
+          onConfirm={handleConfirmStatus}
+          onClose={handleCancelStatus}
         />
       )}
 

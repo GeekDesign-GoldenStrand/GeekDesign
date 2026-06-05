@@ -14,6 +14,15 @@ async function getCotizacion(id: string): Promise<Cotizacion> {
   return json.data;
 }
 
+// Update quotation status and refresh list
+async function handleStatusChange(id: number, status: string) {
+  await fetch(`/api/cotizaciones/${id}/estatus`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ estatus: status }),
+  });
+}
+
 export default function CotizacionDetail({ id, userRole }: { id: string; userRole?: UserRole }) {
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +62,12 @@ export default function CotizacionDetail({ id, userRole }: { id: string; userRol
   return (
     <div>
       <AdminHeader title={`Cotización — ${cotizacion.nombre_oportunidad || "Sin nombre"}`} />
-      <CotizacionDetailPage cotizacion={cotizacion} userRole={userRole} onRefetch={refetch} />
+      <CotizacionDetailPage
+        cotizacion={cotizacion}
+        userRole={userRole}
+        onRefetch={refetch}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   );
 }

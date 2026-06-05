@@ -40,8 +40,14 @@ const VARIANT = {
   },
   primary: {
     icon: <Question size={24} weight="fill" aria-hidden />,
-    iconWrap: "bg-[#e6f0ff] text-[#006aff]",
-    confirm: "bg-[#006aff] hover:bg-[#0056ce] focus-visible:ring-[#006aff] text-white",
+    // Brand red (#df2646) — matches the admin Button's `admin` variant and the
+    // Select focus ring / selected option styling. Earlier this variant used
+    // blue (#006aff) which was visually inconsistent with the rest of the
+    // admin UI; switched so non-destructive forward-action confirms (e.g.
+    // "Cambiar estatus a Validada") read in the same brand color as every
+    // other primary CTA in the section.
+    iconWrap: "bg-[#fff0f2] text-[#df2646]",
+    confirm: "bg-[#df2646] hover:bg-[#c41e3a] focus-visible:ring-[#df2646] text-white",
     defaultLabel: "Confirmar",
     defaultLoading: "Procesando...",
   },

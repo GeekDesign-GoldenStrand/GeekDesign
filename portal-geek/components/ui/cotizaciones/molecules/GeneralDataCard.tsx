@@ -1,6 +1,7 @@
 import { ArrowSquareOut, FileText } from "@phosphor-icons/react";
 
 import { formatDate } from "@/lib/utils/date";
+import { type EstatusCotizacion, isEstatusCotizacion } from "@/types/cotizacion";
 // estatus_label is the free-form catalog string (see StatusBadge). We
 // keep the import out of this file to discourage callers from re-adding
 // `as EstatusCotizacion` casts at the call site — the badge already
@@ -9,6 +10,7 @@ import { formatDate } from "@/lib/utils/date";
 import { FieldRow } from "../atoms/FieldRow";
 import { SectionCard } from "../atoms/SectionCard";
 import { StatusBadge } from "../atoms/StatusBadge";
+import { StatusDropdown } from "../atoms/StatusDropdown";
 
 export interface GeneralDataCardData {
   folio: string | null;
@@ -23,9 +25,31 @@ export interface GeneralDataCardData {
 
 interface GeneralDataCardProps {
   cotizacion: GeneralDataCardData;
+  /**
+   * When BOTH are provided AND the current estatus is in the catalog, the
+   * status field renders as an interactive dropdown. The parent owns the
+   * confirm + PATCH flow — this card just surfaces the picker. Omit either
+   * (or pass an empty options list) to keep the historical read-only badge.
+   */
+  statusOptions?: EstatusCotizacion[];
+  onStatusChange?: (next: EstatusCotizacion) => void;
 }
 
-export function GeneralDataCard({ cotizacion }: GeneralDataCardProps) {
+export function GeneralDataCard({
+  cotizacion,
+  statusOptions,
+  onStatusChange,
+}: GeneralDataCardProps) {
+  // Only swap to the dropdown when (a) callers opted in by passing a handler,
+  // (b) the current value is a recognised catalog entry, AND (c) there's at
+  // least one legal next state to offer — otherwise fall back to the badge,
+  // which already tolerates off-catalog strings.
+  const currentEstatus = isEstatusCotizacion(cotizacion.estatus_label)
+    ? cotizacion.estatus_label
+    : null;
+  const renderInteractive =
+    onStatusChange !== undefined && currentEstatus !== null && (statusOptions?.length ?? 0) > 0;
+
   return (
     <SectionCard title="Datos generales" icon={<FileText size={15} />}>
       <FieldRow label="Folio" value={cotizacion.folio ?? "—"} />
@@ -37,7 +61,17 @@ export function GeneralDataCard({ cotizacion }: GeneralDataCardProps) {
       />
       <FieldRow
         label="Estatus"
-        value={<StatusBadge estatus={cotizacion.estatus_label} size="sm" />}
+        value={
+          renderInteractive && currentEstatus && onStatusChange ? (
+            <StatusDropdown
+              current={currentEstatus}
+              options={statusOptions ?? []}
+              onChange={onStatusChange}
+            />
+          ) : (
+            <StatusBadge estatus={cotizacion.estatus_label} size="sm" />
+          )
+        }
       />
       <FieldRow
         label="Creada por"
