@@ -74,10 +74,21 @@ export async function createPago(data: CreatePagoInput): Promise<Pagos> {
     if (data.monto_pago > netoPagado) {
       throw new ValidationError("El reembolso no puede superar lo pagado del pedido.");
     }
-  } else if (totalPedido > 0 && netoPagado >= totalPedido) {
-    throw new ValidationError(
-      "El pedido ya está totalmente pagado. No se pueden registrar más pagos."
-    );
+  } else if (totalPedido > 0) {
+    if (netoPagado >= totalPedido) {
+      throw new ValidationError(
+        "El pedido ya está totalmente pagado. No se pueden registrar más pagos."
+      );
+    }
+    // Reject overpayments: a new payment can't exceed the order's remaining balance.
+    const saldoRestante = totalPedido - netoPagado;
+    if (data.monto_pago > saldoRestante) {
+      throw new ValidationError(
+        `El pago excede el saldo restante del pedido ($${saldoRestante.toLocaleString("es-MX", {
+          minimumFractionDigits: 2,
+        })}).`
+      );
+    }
   }
 
   return prisma.pagos.create({

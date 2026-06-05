@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/atoms/Button";
 import { Modal } from "@/components/ui/atoms/Modal";
 
 type MetodoPago = "efectivo" | "transferencia";
-type EstatusPago = "Pendiente" | "Pagado" | "Reembolsado";
+// Refunds have their own flow (SolicitarReembolsoModal); this modal only records
+// regular payments.
+type EstatusPago = "Pendiente" | "Pagado";
 
 interface Props {
   idPedido: number;
@@ -18,7 +20,7 @@ interface Props {
 }
 
 const METODOS: MetodoPago[] = ["efectivo", "transferencia"];
-const ESTATUS: EstatusPago[] = ["Pagado", "Pendiente", "Reembolsado"];
+const ESTATUS: EstatusPago[] = ["Pagado", "Pendiente"];
 
 // Cap the integer part at 7 digits (the decimal point doesn't count), well within
 // the monto_pago Decimal(10,2) column.

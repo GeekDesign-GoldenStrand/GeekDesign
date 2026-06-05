@@ -78,6 +78,20 @@ describe("createPago", () => {
     expect(prisma.pagos.create).not.toHaveBeenCalled();
   });
 
+  it("rejects a payment that exceeds the remaining balance", async () => {
+    sumPagado = 9000; // remaining = 1000, baseInput pays 1500
+
+    await expect(createPago(baseInput)).rejects.toBeInstanceOf(ValidationError);
+    expect(prisma.pagos.create).not.toHaveBeenCalled();
+  });
+
+  it("allows a payment that exactly covers the remaining balance", async () => {
+    sumPagado = 8500; // remaining = 1500, baseInput pays exactly 1500
+
+    await expect(createPago(baseInput)).resolves.toMatchObject({ id_pago: 9 });
+    expect(prisma.pagos.create).toHaveBeenCalled();
+  });
+
   describe("refunds", () => {
     const refundInput: CreatePagoInput = {
       ...baseInput,
