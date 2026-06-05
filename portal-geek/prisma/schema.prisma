@@ -188,6 +188,7 @@ model Servicios {
   proveedorPrecios     ProveedorPrecios[]
   instaladorServicios  InstaladorServicios[]
   servicioMateriales   ServicioMaterial[]
+  cotizaciones         Cotizaciones[]
 
   @@map("SERVICIOS")
 }
@@ -586,9 +587,20 @@ model Cotizaciones {
   pdf_url               String?   @db.VarChar(500)
   notas                 String?
 
-  pedido  Pedidos?          @relation(fields: [id_pedido], references: [id_pedido])
-  cliente Clientes          @relation(fields: [id_cliente], references: [id_cliente])
-  estatus EstatusCotizacion @relation(fields: [id_estatus_cotizacion], references: [id_estatus])
+  // ST-10/11/12 (Option A): lead-shaped cotizaciones submitted from the
+  // storefront hub. These rows have id_pedido = null and monto_total = 0 until
+  // Dirección turns the lead into a real quote. tipo_solicitud = null means a
+  // normal cart cotización.
+  tipo_solicitud        String?   @db.VarChar(20) // "idea_nula" | "idea_vaga" | "personalizada"
+  descripcion_solicitud String?                   // texto libre del cliente (objetivo / parámetros / especificaciones)
+  presupuesto_aprox     Decimal?  @db.Decimal(10, 2) // presupuesto aproximado/estimado del cliente
+  fecha_requerida       DateTime?                 // fecha deseada por el cliente
+  id_servicio           Int?                      // solo personalización, si parte de un servicio del catálogo
+
+  pedido   Pedidos?          @relation(fields: [id_pedido], references: [id_pedido])
+  cliente  Clientes          @relation(fields: [id_cliente], references: [id_cliente])
+  estatus  EstatusCotizacion @relation(fields: [id_estatus_cotizacion], references: [id_estatus])
+  servicio Servicios?        @relation(fields: [id_servicio], references: [id_servicio])
 
   historial           HistorialEstadosCotizacion[]
   variablesCotizacion VariablesCotizacion[]
