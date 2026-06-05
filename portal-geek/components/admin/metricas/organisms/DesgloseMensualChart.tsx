@@ -73,13 +73,23 @@ export function DesgloseMensualChart({
   return (
     <div className="bg-white p-5 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 sm:mb-8 gap-3 sm:gap-4">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Desglose Mensual</h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Ingresos por mes en el año seleccionado
-          </p>
+        <div className="flex flex-col gap-2">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Desglose Mensual</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              Ingresos por mes en el año seleccionado
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 mt-1">
+            <SegmentedControl
+              options={chartButtons}
+              value={chartStyle}
+              onChange={onChartStyleChange}
+            />
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto mt-2 sm:mt-0">
           <SelectField
             label="Año:"
             value={year}
@@ -88,13 +98,6 @@ export function DesgloseMensualChart({
             inline
             selectClassName={DASHBOARD_SELECT_CLASS}
           />
-          <div className="flex gap-2">
-            <SegmentedControl
-              options={chartButtons}
-              value={chartStyle}
-              onChange={onChartStyleChange}
-            />
-          </div>
         </div>
       </div>
 

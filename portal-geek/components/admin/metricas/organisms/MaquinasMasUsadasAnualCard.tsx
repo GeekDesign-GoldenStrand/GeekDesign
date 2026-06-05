@@ -7,6 +7,7 @@ import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl";
 import type { MaquinaMetric } from "@/lib/services/metricas";
 
 import { SelectField } from "../../atoms/SelectField";
+import { DASHBOARD_SELECT_CLASS } from "../utils";
 
 import { MaquinasCustomTooltip } from "./MaquinasCustomTooltip";
 
@@ -66,10 +67,12 @@ export function MaquinasMasUsadasAnualCard({
 
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <SelectField
+            label="Año:"
             value={selectedYear}
             options={availableYears.map((y) => ({ label: String(y), value: y }))}
             onChange={(val) => onYearChange(Number(val))}
-            selectClassName="text-sm px-3 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors cursor-pointer"
+            inline
+            selectClassName={DASHBOARD_SELECT_CLASS}
           />
         </div>
       </div>

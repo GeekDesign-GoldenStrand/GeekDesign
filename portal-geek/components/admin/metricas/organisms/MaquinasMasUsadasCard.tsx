@@ -5,6 +5,8 @@ import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell, Legend } from "recha
 import { SelectField } from "@/components/admin/atoms/SelectField";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl";
 
+import { DASHBOARD_SELECT_CLASS } from "../utils";
+
 import { MaquinasCustomTooltip } from "./MaquinasCustomTooltip";
 
 interface Props {
@@ -49,7 +51,7 @@ export function MaquinasMasUsadasCard({
 
   return (
     <div className="bg-white p-5 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow h-full">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-5 sm:mb-8 gap-4 xl:gap-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 sm:mb-8 gap-4 sm:gap-6">
         <div className="flex flex-col gap-2">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -72,19 +74,23 @@ export function MaquinasMasUsadasCard({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+        <div className="flex flex-wrap justify-start sm:justify-end items-center gap-3 w-full sm:w-auto">
           <SelectField
+            label="Mes:"
             value={selectedMonth}
             options={monthOptions}
             onChange={(val) => onMonthChange(Number(val))}
-            selectClassName="text-sm px-3 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            inline
+            selectClassName={DASHBOARD_SELECT_CLASS}
           />
 
           <SelectField
+            label="Año:"
             value={selectedYear}
             options={yearOptions}
             onChange={(val) => onYearChange(Number(val))}
-            selectClassName="text-sm px-3 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            inline
+            selectClassName={DASHBOARD_SELECT_CLASS}
           />
         </div>
       </div>
