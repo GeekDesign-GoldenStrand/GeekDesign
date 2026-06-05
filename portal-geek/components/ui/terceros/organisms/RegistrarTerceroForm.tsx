@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
+import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl";
 import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
@@ -344,36 +345,18 @@ export function RegistrarTerceroForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <div className="flex bg-[#f1f3f5] p-1.5 rounded-full mb-4 shadow-inner">
-        <button
-          type="button"
-          onClick={() => {
-            setTerceroType("Proveedor");
-            setErrors({});
-          }}
-          className={`flex-1 py-2 text-[14px] font-medium rounded-full transition-all duration-300 ${
-            terceroType === "Proveedor"
-              ? "bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-[#006aff] scale-100"
-              : "text-[#575757] hover:text-[#1e1e1e] hover:bg-[#e8ecef] scale-[0.98]"
-          }`}
-        >
-          Proveedor
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setTerceroType("Instalador");
-            setErrors({});
-          }}
-          className={`flex-1 py-2 text-[14px] font-medium rounded-full transition-all duration-300 ${
-            terceroType === "Instalador"
-              ? "bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-[#006aff] scale-100"
-              : "text-[#575757] hover:text-[#1e1e1e] hover:bg-[#e8ecef] scale-[0.98]"
-          }`}
-        >
-          Instalador
-        </button>
-      </div>
+      <SegmentedControl
+        options={[
+          { label: "Proveedor", value: "Proveedor" },
+          { label: "Instalador", value: "Instalador" },
+        ]}
+        value={terceroType}
+        onChange={(val) => {
+          setTerceroType(val as TerceroType);
+          setErrors({});
+        }}
+        className="mb-4"
+      />
 
       {serverError && (
         <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">

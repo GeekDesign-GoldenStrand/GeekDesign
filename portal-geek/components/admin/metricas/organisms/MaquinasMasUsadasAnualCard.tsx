@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { Legend, Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from "recharts";
 
+import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl";
 import type { MaquinaMetric } from "@/lib/services/metricas";
 
 import { SelectField } from "../../atoms/SelectField";
@@ -51,27 +52,15 @@ export function MaquinasMasUsadasAnualCard({
             <p className="text-xs sm:text-sm text-gray-500 mt-1">Acumulado de todo el año</p>
           </div>
 
-          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50/50 p-1 w-fit mt-1">
-            <button
-              onClick={() => onLimitChange(5)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                topLimit === 5
-                  ? "bg-white text-gray-900 shadow-sm border border-gray-200"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Top 5
-            </button>
-            <button
-              onClick={() => onLimitChange(10)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                topLimit === 10
-                  ? "bg-white text-gray-900 shadow-sm border border-gray-200"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Top 10
-            </button>
+          <div className="flex items-center gap-2 mt-1">
+            <SegmentedControl
+              options={[
+                { label: "Top 5", value: 5 },
+                { label: "Top 10", value: 10 },
+              ]}
+              value={topLimit}
+              onChange={(val) => onLimitChange(val as 5 | 10)}
+            />
           </div>
         </div>
 

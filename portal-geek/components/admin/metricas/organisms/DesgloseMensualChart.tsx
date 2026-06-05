@@ -15,6 +15,8 @@ import {
   ComposedChart,
 } from "recharts";
 
+import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl";
+
 import { SelectField } from "../../atoms/SelectField";
 import {
   formatCurrency,
@@ -86,20 +88,12 @@ export function DesgloseMensualChart({
             inline
             selectClassName={DASHBOARD_SELECT_CLASS}
           />
-          <div className="flex gap-1.5">
-            {chartButtons.map((btn) => (
-              <button
-                key={btn.value}
-                onClick={() => onChartStyleChange(btn.value)}
-                className={`px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
-                  chartStyle === btn.value
-                    ? "bg-red-600 text-white shadow-md shadow-red-200"
-                    : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {btn.label}
-              </button>
-            ))}
+          <div className="flex gap-2">
+            <SegmentedControl
+              options={chartButtons}
+              value={chartStyle}
+              onChange={onChartStyleChange}
+            />
           </div>
         </div>
       </div>

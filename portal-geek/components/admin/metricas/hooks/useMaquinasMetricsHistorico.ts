@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { MetricasMaquinasData } from "@/lib/services/metricas";
 
 export function useMaquinasMetricsHistorico(data: MetricasMaquinasData) {
-  const [topLimit, setTopLimit] = useState<5 | 10 | 20>(10);
+  const [topLimit, setTopLimit] = useState<5 | 10>(10);
 
   const chartData = useMemo(() => {
     const machineMap = new Map();

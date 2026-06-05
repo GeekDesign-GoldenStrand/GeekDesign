@@ -11,14 +11,15 @@ import {
   YAxis,
 } from "recharts";
 
+import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl";
 import type { MaquinaMetric } from "@/lib/services/metricas";
 
 import { MaquinasCustomTooltip } from "./MaquinasCustomTooltip";
 
 interface Props {
-  topLimit: 5 | 10 | 20;
+  topLimit: 5 | 10;
   chartData: MaquinaMetric[];
-  onLimitChange: (l: 5 | 10 | 20) => void;
+  onLimitChange: (l: 5 | 10) => void;
 }
 
 const HISTORICO_COLORS = [
@@ -45,31 +46,24 @@ export function MaquinasMasUsadasHistoricoCard({ topLimit, chartData, onLimitCha
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-2">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              Máquinas Más Usadas (Histórico)
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Acumulado global de todos los tiempos
-            </p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Top Máquinas Histórico</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Acumulado de todos los años</p>
+          </div>
+
+          <div className="flex items-center gap-2 mt-1">
+            <SegmentedControl
+              options={[
+                { label: "Top 5", value: 5 },
+                { label: "Top 10", value: 10 },
+              ]}
+              value={topLimit}
+              onChange={(val) => onLimitChange(val as 5 | 10)}
+            />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
-          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50/50 p-1">
-            {[5, 10, 20].map((limit) => (
-              <button
-                key={limit}
-                onClick={() => onLimitChange(limit as 5 | 10 | 20)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                  topLimit === limit
-                    ? "bg-white text-gray-900 shadow-sm border border-gray-200"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Top {limit}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+          {/* Empty right side container to maintain flex layout if we need to add things later */}
         </div>
       </div>
 
