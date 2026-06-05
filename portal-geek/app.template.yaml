@@ -1,0 +1,60 @@
+# App Engine Standard config TEMPLATE — committed to git, contains NO secrets.
+#
+# The CI/CD workflow (.github/workflows/deploy-appengine.yml) renders this file
+# into a real `app.yaml` at deploy time by substituting the placeholders below
+# from GitHub Environment Secrets + Variables (via `envsubst`). The generated
+# `app.yaml` is NEVER committed — it is produced on the runner and discarded.
+#
+# Placeholder source legend:
+#   (secret) -> GitHub Environment SECRET   (sensitive, masked in logs)
+#   (var)    -> GitHub Environment VARIABLE  (non-sensitive)
+#
+# Connection model: App Engine talks to Cloud SQL over a Unix socket
+# (/cloudsql/<PROJECT>:<REGION>:<INSTANCE>) — no public IP, no TLS layer.
+
+runtime: nodejs22
+entrypoint: npm start
+instance_class: F2
+
+env_variables:
+  # --- App ---------------------------------------------------------------------
+  NODE_ENV: "${NODE_ENV}" # (var)  e.g. "production"
+  NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL}" # (var)  public origin for this env
+
+  # --- Database (Cloud SQL via Unix socket) -----------------------------------
+  # Full DSN incl. the host=/cloudsql/... socket path. Differs per environment.
+  DATABASE_URL: "${DATABASE_URL}" # (secret)
+
+  # --- Auth -------------------------------------------------------------------
+  AUTH_SECRET: "${AUTH_SECRET}" # (secret)
+
+  # --- Object storage (GCS via S3 interop / HMAC) -----------------------------
+  STORAGE_ENDPOINT: "${STORAGE_ENDPOINT}" # (var)
+  STORAGE_REGION: "${STORAGE_REGION}" # (var)
+  STORAGE_BUCKET: "${STORAGE_BUCKET}" # (var)  per-env bucket
+  STORAGE_ACCESS_KEY: "${STORAGE_ACCESS_KEY}" # (secret)
+  STORAGE_SECRET_KEY: "${STORAGE_SECRET_KEY}" # (secret)
+  STORAGE_PUBLIC_BASE_URL: "${STORAGE_PUBLIC_BASE_URL}" # (var)
+
+  # --- Email (Resend) ---------------------------------------------------------
+  RESEND_API_KEY: "${RESEND_API_KEY}" # (secret)
+  RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL}" # (var)
+
+  # --- MercadoPago ------------------------------------------------------------
+  MERCADOPAGO_ACCESS_TOKEN: "${MERCADOPAGO_ACCESS_TOKEN}" # (secret)
+  MERCADOPAGO_WEBHOOK_SECRET: "${MERCADOPAGO_WEBHOOK_SECRET}" # (secret)
+
+# Mounts the Cloud SQL socket inside the App Engine instance.
+# CLOUD_SQL_INSTANCE differs per environment (dev/staging/prod instances).
+beta_settings:
+  cloud_sql_instances: ${CLOUD_SQL_INSTANCE} # (var)
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 4
+  target_cpu_utilization: 0.65
+
+handlers:
+  - url: /.*
+    script: auto
+    secure: always

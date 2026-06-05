@@ -1,0 +1,152 @@
+import { prisma } from "@/lib/db/client";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
+import { evaluateFormula } from "@/lib/utils/formula-evaluator";
+import { toSnakeIdentifier } from "@/lib/utils/slug";
+
+// Profit margin applied to every quoted price. The formula yields the
+// "total cost with IVA"; the selling price marks this up so the gross profit
+// equals MARGEN_GANANCIA of the selling price (the standard "margin on sale"
+// metric, not markup on cost). Formula:  precio_final = costo / (1 - margen).
+const MARGEN_GANANCIA = 0.3;
+
+export interface CalcularPrecioInput {
+  id_servicio: number;
+  id_material: number;
+  variables: Array<{ nombre_variable: string; valor: number }>;
+}
+
+// Loads the servicio's active formula + the selected material's price + the
+// implicit costs, evaluates the formula, and returns the rounded precio_unitario.
+// Currency rounded to two decimals.
+export async function calcularPrecioServicio(input: CalcularPrecioInput): Promise<number> {
+  const { id_servicio, id_material, variables: clienteValues } = input;
+
+  const servicio = await prisma.servicios.findUnique({
+    where: { id_servicio },
+    include: {
+      instalador: true,
+      proveedor: true,
+      formulas: {
+        where: { estatus: "Activa" },
+        include: {
+          variables: true,
+          constantes: {
+            include: { instalador: true, proveedor: true },
+          },
+        },
+      },
+      servicioMateriales: {
+        where: { id_material },
+        include: { proveedorPrecio: true, material: true },
+      },
+    },
+  });
+
+  if (!servicio) {
+    throw new NotFoundError(`Servicio ${id_servicio} no encontrado`);
+  }
+
+  // Level 1: per-(instalador, servicio) price from InstaladorServicios
+  const instaladorServicioPrecio = servicio.id_instalador
+    ? await prisma.instaladorServicios.findUnique({
+        where: {
+          id_instalador_id_servicio: {
+            id_instalador: servicio.id_instalador,
+            id_servicio,
+          },
+        },
+        select: { costo: true },
+      })
+    : null;
+
+  const formula = servicio.formulas[0];
+  if (!formula) {
+    throw new ValidationError(`Servicio ${id_servicio} no tiene una fórmula activa para cotizar`);
+  }
+
+  const material = servicio.servicioMateriales[0];
+  if (!material) {
+    throw new ValidationError(`El material ${id_material} no está vinculado a este servicio`);
+  }
+
+  // Customer-provided overrides indexed by name.
+  const overrides = new Map(clienteValues.map((v) => [v.nombre_variable, v.valor]));
+
+  const variables = formula.variables.map((v) => {
+    const override = overrides.get(v.nombre_variable);
+    if (override !== undefined) {
+      if (!v.editable_por_cliente) {
+        throw new ValidationError(
+          `La variable "${v.nombre_variable}" no es editable por el cliente`
+        );
+      }
+      return { nombre_variable: v.nombre_variable, valor: override };
+    }
+    if (v.valor_default === null) {
+      throw new ValidationError(`La variable "${v.nombre_variable}" requiere un valor`);
+    }
+    return { nombre_variable: v.nombre_variable, valor: Number(v.valor_default) };
+  });
+
+  const constantes = formula.constantes.map((c) => ({
+    nombre_constante: c.nombre_constante,
+    origen: c.origen,
+    valor: c.valor === null ? null : Number(c.valor),
+    instalador: c.instalador ? { costo_instalacion: Number(c.instalador.costo_instalacion) } : null,
+    proveedor: c.proveedor
+      ? {
+          costo: c.proveedor.costo === null ? null : Number(c.proveedor.costo),
+        }
+      : null,
+  }));
+
+  const precio_material = material.proveedorPrecio ? Number(material.proveedorPrecio.precio) : 0;
+
+  // Three-level resolution for costo_instalador:
+  //   1. InstaladorServicios.costo  (pair instalador×servicio)
+  //   2. costo_instalador_override  (service-level override)
+  //   3. instalador.costo_instalacion  (instalador base rate)
+  const costo_instalador =
+    instaladorServicioPrecio !== null
+      ? Number(instaladorServicioPrecio.costo)
+      : servicio.costo_instalador_override !== null
+        ? Number(servicio.costo_instalador_override)
+        : servicio.instalador
+          ? Number(servicio.instalador.costo_instalacion)
+          : 0;
+
+  const costo_proveedor =
+    servicio.costo_proveedor_override !== null
+      ? Number(servicio.costo_proveedor_override)
+      : servicio.proveedor && servicio.proveedor.costo !== null
+        ? Number(servicio.proveedor.costo)
+        : 0;
+
+  // Inject the chosen material's slug-based token (e.g. `costo_material_mdf_3mm`)
+  // so formulas built in FormulaSection's material panel resolve at runtime.
+  // The slug must match exactly what FormulaSection / servicio-mappers generate.
+  // Defensive optional chain — older callers / tests may not include the relation.
+  const materialSlug = toSnakeIdentifier(
+    material.material?.nombre_material ?? `material_${id_material}`
+  );
+  const materialTokenKey = `costo_material_${materialSlug}`;
+
+  const costoTotal = evaluateFormula({
+    expresion: formula.expresion,
+    variables,
+    constantes,
+    implicits: {
+      precio_material,
+      costo_instalador,
+      costo_proveedor,
+      [materialTokenKey]: precio_material,
+    },
+  });
+
+  // Apply the profit margin so the quoted price yields MARGEN_GANANCIA of
+  // gross profit on the sale. Division (not multiplication) is intentional
+  // — see MARGEN_GANANCIA constant comment.
+  const precioConMargen = costoTotal / (1 - MARGEN_GANANCIA);
+
+  return Math.round(precioConMargen * 100) / 100;
+}

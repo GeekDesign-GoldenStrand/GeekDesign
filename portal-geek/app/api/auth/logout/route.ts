@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { deleteSession } from "@/lib/auth/session";
+import { SESSION_COOKIE } from "@/lib/auth/session";
 
 export async function POST() {
-  await deleteSession();
-  return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL!));
+  const response = NextResponse.json({ data: null, error: null }, { status: 200 });
+  response.cookies.delete(SESSION_COOKIE);
+  return response;
 }

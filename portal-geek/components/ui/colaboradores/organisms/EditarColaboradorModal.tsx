@@ -1,0 +1,341 @@
+"use client";
+
+import { useState } from "react";
+
+import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { toE164 } from "@/lib/utils/format";
+
+import type { ColaboradorApiRow } from "./RegistrarColaboradorForm";
+
+interface Rol {
+  id_rol: number;
+  nombre_rol: string;
+}
+interface Sucursal {
+  id_sucursal: number;
+  nombre_sucursal: string;
+}
+
+interface EditarColaboradorModalProps {
+  isOpen: boolean;
+  apiRow: ColaboradorApiRow | null;
+  loadingData: boolean;
+  fetchError: string | null;
+  editLoading: boolean;
+  editError: string | null;
+  roles: Rol[];
+  sucursales: Sucursal[];
+  currentUserId: number;
+  onClose: () => void;
+  onSubmit: (payload: {
+    nombre_completo: string;
+    correo_electronico: string;
+    edad: number;
+    sexo: string;
+    telefono: string;
+    id_rol?: number;
+    id_sucursal: number;
+  }) => void;
+}
+
+const FIELD =
+  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
+const FIELD_ERROR = "border-[#e42200]";
+const FIELD_SUCCESS = "border-[#00c853]";
+const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
+const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ\s'\-]+$/;
+
+interface FormState {
+  nombre_completo: string;
+  correo_electronico: string;
+  edad: string;
+  sexo: string;
+  telefono: string;
+  id_rol: string;
+  id_sucursal: string;
+}
+
+function fromApiRow(apiRow: ColaboradorApiRow): FormState {
+  return {
+    nombre_completo: apiRow.nombre_completo,
+    correo_electronico: apiRow.correo_electronico,
+    edad: String(apiRow.colaborador?.edad ?? ""),
+    sexo: apiRow.colaborador?.sexo ?? "",
+    telefono: toE164(apiRow.colaborador?.telefono),
+    id_rol: String(apiRow.id_rol),
+    id_sucursal: String(apiRow.colaborador?.sucursal?.id_sucursal ?? ""),
+  };
+}
+
+function validate(form: FormState): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!form.nombre_completo.trim()) errors.nombre_completo = "El nombre es requerido.";
+  else if (!NOMBRE_REGEX.test(form.nombre_completo))
+    errors.nombre_completo = "Solo letras, espacios, guiones y apóstrofes.";
+  if (!form.correo_electronico.trim()) errors.correo_electronico = "El correo es requerido.";
+  else if (!EMAIL_REGEX.test(form.correo_electronico))
+    errors.correo_electronico = "Correo electrónico inválido.";
+  const edad = Number(form.edad);
+  if (!form.edad) errors.edad = "La edad es requerida.";
+  else if (isNaN(edad) || edad < 16 || edad > 100)
+    errors.edad = "La edad debe ser entre 16 y 100 años.";
+  if (!form.sexo) errors.sexo = "El sexo es requerido.";
+  if (!form.telefono.trim()) errors.telefono = "El teléfono es requerido.";
+  else if (!isValidPhoneNumber(form.telefono)) errors.telefono = "Número de teléfono inválido.";
+  if (!form.id_rol) errors.id_rol = "Selecciona un rol.";
+  if (!form.id_sucursal) errors.id_sucursal = "Selecciona una sucursal.";
+  return errors;
+}
+
+// Sub-component receives guaranteed non-null apiRow and initialises state directly.
+function EditForm({
+  apiRow,
+  editLoading,
+  editError,
+  roles,
+  sucursales,
+  isSelf,
+  onClose,
+  onSubmit,
+}: {
+  apiRow: ColaboradorApiRow;
+  editLoading: boolean;
+  editError: string | null;
+  roles: Rol[];
+  sucursales: Sucursal[];
+  isSelf: boolean;
+  onClose: () => void;
+  onSubmit: EditarColaboradorModalProps["onSubmit"];
+}) {
+  const [form, setForm] = useState<FormState>(() => fromApiRow(apiRow));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  function setField(key: keyof FormState, value: string) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: "" }));
+    setTouched((prev) => ({ ...prev, [key]: true }));
+  }
+
+  function getFieldClass(key: keyof FormState) {
+    if (errors[key]) return FIELD_ERROR;
+    if (touched[key] && form[key].trim()) return FIELD_SUCCESS;
+    return "";
+  }
+
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const nextErrors = validate(form);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      setTouched(Object.fromEntries(Object.keys(form).map((k) => [k, true])));
+      return;
+    }
+    // When editing yourself, omit id_rol so the server-side self-demotion
+    // guard does not reject the whole update (it triggers on `id_rol !==
+    // undefined`, even if the value is unchanged).
+    onSubmit({
+      nombre_completo: form.nombre_completo.trim(),
+      correo_electronico: form.correo_electronico.trim(),
+      edad: Number(form.edad),
+      sexo: form.sexo,
+      telefono: form.telefono.trim(),
+      ...(isSelf ? {} : { id_rol: Number(form.id_rol) }),
+      id_sucursal: Number(form.id_sucursal),
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+      {editError && (
+        <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
+          {editError}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Nombre <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              maxLength={100}
+              placeholder="Nombre completo"
+              value={form.nombre_completo}
+              onChange={(e) =>
+                setField("nombre_completo", e.target.value.replace(/[^a-zA-ZÀ-ÿ\s'\-]/g, ""))
+              }
+              className={`${FIELD} ${getFieldClass("nombre_completo")}`}
+            />
+            {errors.nombre_completo && <p className={ERROR_MSG}>{errors.nombre_completo}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Rol <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.id_rol}
+              onChange={(v) => setField("id_rol", v)}
+              placeholder="Seleccionar rol"
+              size="sm"
+              disabled={isSelf}
+              error={errors.id_rol || undefined}
+            >
+              {roles.map((r) => (
+                <SelectOption key={r.id_rol} value={String(r.id_rol)}>
+                  {r.nombre_rol}
+                </SelectOption>
+              ))}
+            </Select>
+            {isSelf && (
+              <p className="text-[12px] text-[#575757] mt-1">
+                No puedes cambiar tu propio rol. Pide a otro usuario con rol Dirección que lo haga.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Correo electrónico <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="email"
+              maxLength={150}
+              placeholder="correo@gmail.com"
+              value={form.correo_electronico}
+              onChange={(e) => setField("correo_electronico", e.target.value)}
+              className={`${FIELD} ${getFieldClass("correo_electronico")}`}
+            />
+            {errors.correo_electronico && <p className={ERROR_MSG}>{errors.correo_electronico}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Sucursal <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.id_sucursal}
+              onChange={(v) => setField("id_sucursal", v)}
+              placeholder="Seleccionar sucursal"
+              size="sm"
+              error={errors.id_sucursal || undefined}
+            >
+              {sucursales.map((s) => (
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                  {s.nombre_sucursal}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Edad <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="Edad"
+              value={form.edad}
+              onChange={(e) => setField("edad", e.target.value.replace(/\D/g, ""))}
+              className={`${FIELD} ${getFieldClass("edad")}`}
+            />
+            {errors.edad && <p className={ERROR_MSG}>{errors.edad}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Sexo <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.sexo}
+              onChange={(v) => setField("sexo", v)}
+              placeholder="Sexo"
+              size="sm"
+              error={errors.sexo || undefined}
+            >
+              <SelectOption value="M">Masculino</SelectOption>
+              <SelectOption value="F">Femenino</SelectOption>
+              <SelectOption value="NA">Prefiero no decir</SelectOption>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <label className={LABEL}>
+            Teléfono <span className="text-[#e42200]">*</span>
+          </label>
+          <PhoneInputMX
+            value={form.telefono}
+            onChange={(e164) => setField("telefono", e164)}
+            hasError={!!errors.telefono}
+          />
+          {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 mt-2">
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={editLoading}>
+          {editLoading ? "Guardando..." : "Guardar cambios"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export function EditarColaboradorModal({
+  isOpen,
+  apiRow,
+  loadingData,
+  fetchError,
+  editLoading,
+  editError,
+  roles,
+  sucursales,
+  currentUserId,
+  onClose,
+  onSubmit,
+}: EditarColaboradorModalProps) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Colaborador" size="lg">
+      {loadingData && (
+        <p className="py-10 text-center text-[14px] text-[#8e908f]">Cargando datos...</p>
+      )}
+      {fetchError && !loadingData && (
+        <p role="alert" className="py-10 text-center text-[14px] text-[#e42200]">
+          {fetchError}
+        </p>
+      )}
+      {!loadingData && !fetchError && apiRow && (
+        <EditForm
+          key={apiRow.id_usuario}
+          apiRow={apiRow}
+          editLoading={editLoading}
+          editError={editError}
+          roles={roles}
+          sucursales={sucursales}
+          isSelf={apiRow.id_usuario === currentUserId}
+          onClose={onClose}
+          onSubmit={onSubmit}
+        />
+      )}
+    </Modal>
+  );
+}

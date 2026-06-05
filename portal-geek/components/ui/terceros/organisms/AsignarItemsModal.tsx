@@ -1,0 +1,334 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+
+import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
+import { AsignacionCard } from "../molecules/AsignacionCard";
+
+interface AsignarItemsModalProps {
+  targetId: number;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  role: string;
+  tipo?: string;
+  status: string;
+  isOpen: boolean;
+  itemType: "material" | "servicio";
+  targetType: "proveedor" | "instalador";
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+export function AsignarItemsModal({
+  targetId,
+  companyName,
+  contactName,
+  email,
+  phone,
+  role,
+  tipo,
+  status,
+  isOpen,
+  itemType,
+  targetType,
+  onClose,
+  onSaved,
+}: AsignarItemsModalProps) {
+  const [items, setItems] = useState<{ id: number; name: string; description: string | null }[]>(
+    []
+  );
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [prices, setPrices] = useState<Record<number, string>>({});
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [priceErrors, setPriceErrors] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const isMaterial = itemType === "material";
+  const itemTypePlural = isMaterial ? "materiales" : "servicios";
+  const title = isMaterial ? "Asignar Materiales" : "Asignar Servicios";
+  const typeLabel = isMaterial ? "Material" : "Servicio";
+  const endpoint = isMaterial ? "/api/materiales" : "/api/servicios";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    async function fetchData() {
+      setLoading(true);
+      try {
+        // For materials use mode=options (returns all leaves: individuals + sub-materials, excludes groups).
+        // For services paginate normally.
+        type CatalogItem =
+          | { id_material: number; nombre_material: string; descripcion_material: string | null }
+          | { id_servicio: number; nombre_servicio: string; descripcion_servicio: string | null };
+
+        const allCatalogItems: CatalogItem[] = [];
+
+        if (isMaterial) {
+          const res = await fetch(`${endpoint}?mode=options`);
+          if (!res.ok) throw new Error("Error fetching catalog");
+          const json = await res.json();
+          allCatalogItems.push(...(json.data ?? []));
+        } else {
+          let page = 1;
+          let totalItems = 0;
+          let fetchedItems = 0;
+          do {
+            const res = await fetch(`${endpoint}?activo=true&pageSize=100&page=${page}`);
+            if (!res.ok) throw new Error("Error fetching catalog");
+            const json = await res.json();
+            const pageItems: CatalogItem[] = json.data ?? [];
+            allCatalogItems.push(...pageItems);
+            totalItems = json.total ?? 0;
+            fetchedItems += pageItems.length;
+            page++;
+            if (pageItems.length === 0) break;
+          } while (fetchedItems < totalItems);
+        }
+
+        // Fetch current assignments
+        const assignmentsRes = await fetch(`/api/${targetType}es/${targetId}/asignacion`);
+        if (!assignmentsRes.ok) throw new Error("Error fetching assignments");
+        const currentData = await assignmentsRes.json();
+
+        const mappedItems = allCatalogItems.map((item) => {
+          if ("id_material" in item) {
+            return {
+              id: item.id_material,
+              name: item.nombre_material,
+              description: item.descripcion_material,
+            };
+          } else {
+            return {
+              id: item.id_servicio,
+              name: item.nombre_servicio,
+              description: item.descripcion_servicio,
+            };
+          }
+        });
+
+        setItems(mappedItems);
+        const assignedIds: number[] =
+          currentData.data?.[isMaterial ? "materialIds" : "serviceIds"] ?? [];
+        const assignedPrices: Record<number, number> =
+          currentData.data?.[isMaterial ? "materialPrices" : "servicePrices"] ?? {};
+        const assignedNotes: Record<number, string> =
+          currentData.data?.[isMaterial ? "materialNotes" : "serviceNotes"] ?? {};
+
+        // Intersect with active catalog so inactive assignments don't get posted back
+        const catalogIds = new Set(mappedItems.map((item) => item.id));
+        const activeAssignedIds = assignedIds.filter((id) => catalogIds.has(id));
+
+        setSelectedIds(activeAssignedIds);
+        setPrices(
+          Object.fromEntries(activeAssignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
+        );
+        setNotes(Object.fromEntries(activeAssignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
+      } catch (err) {
+        console.error("Error fetching items:", err);
+        setError(`Hubo un error al cargar los ${itemTypePlural}. Por favor, intenta de nuevo.`);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [isOpen, targetId, isMaterial, endpoint, itemType, itemTypePlural, targetType]);
+
+  function toggleId(id: number) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  }
+
+  function setPrice(id: number, val: string) {
+    setPrices((prev) => ({ ...prev, [id]: val }));
+    if (parseFloat(val) > 0) {
+      setPriceErrors((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  function setNote(id: number, val: string) {
+    setNotes((prev) => ({ ...prev, [id]: val }));
+  }
+
+  async function handleSave() {
+    const invalid = new Set(selectedIds.filter((id) => !(parseFloat(prices[id] ?? "0") > 0)));
+    if (invalid.size > 0) {
+      setPriceErrors(invalid);
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const itemsPayload = selectedIds.map((id) => ({
+        id,
+        precio: parseFloat(prices[id] ?? "0") || 0,
+        notas: notes[id] ?? "",
+      }));
+      const res = await fetch(`/api/${targetType}es/${targetId}/asignacion`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: itemType, items: itemsPayload }),
+      });
+      if (res.ok) {
+        window.alert(`${title} correctamente`);
+        onSaved();
+        onClose();
+      } else {
+        const payload = await res.json().catch(() => ({}));
+        setSaveError(payload?.error ?? "Hubo un error al guardar la asignación");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel={title}
+      size="lg"
+      noPadding
+      zClassName="z-[60]"
+    >
+      <div className="flex min-h-0 flex-col">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
+          <div className="flex flex-col gap-4 w-full">
+            <div className="flex justify-between items-center">
+              <h2 className="text-[20px] font-medium text-[#1e1e1e]">{title}</h2>
+            </div>
+
+            <div className="h-px bg-[#e8e8e8] w-full" />
+
+            <div className="space-y-1">
+              <h3 className="text-[22px] font-semibold text-[#1e1e1e] leading-tight">
+                {companyName}
+              </h3>
+              <p className="text-[18px] font-medium text-[#1e1e1e]">{contactName}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[17px] font-medium text-[#575757]">
+                <span className="underline decoration-gray-300">{email}</span>
+                <span>{phone}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+                  role === "Proveedor"
+                    ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
+                    : tipo === "Contratista"
+                      ? "bg-[rgba(30,58,138,0.08)] border-[#1e3a8a] text-[#1e3a8a]"
+                      : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+                }`}
+              >
+                {tipo === "Contratista" ? "Contratista" : role}
+              </span>
+              <TerceroTypeTag type={typeLabel} />
+              <span
+                className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
+                  status === "Activo"
+                    ? "bg-[rgba(0,200,83,0.07)] border-[#00c853] text-[#00c853]"
+                    : status === "Inactivo"
+                      ? "bg-[rgba(255,179,0,0.07)] border-[#ffb300] text-[#ffb300]"
+                      : "bg-[rgba(255,23,68,0.07)] border-[#ff1744] text-[#ff1744]"
+                }`}
+              >
+                {status}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[#8e908f] hover:text-[#e42200] transition-colors pt-1"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {error ? (
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[14px] px-4 py-3 flex items-center justify-center text-center">
+              {error}
+            </div>
+          ) : loading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
+              <p className="text-[14px] text-[#8e908f] font-medium">
+                Cargando {itemType === "material" ? "materiales" : "servicios"}...
+              </p>
+            </div>
+          ) : items.length === 0 ? (
+            <p className="text-center py-12 text-[#8e908f]">
+              No hay {itemType === "material" ? "materiales" : "servicios"} disponibles.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {items.map((item) => (
+                <AsignacionCard
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  description={item.description ?? undefined}
+                  selected={selectedIds.includes(item.id)}
+                  price={prices[item.id] ?? ""}
+                  notes={notes[item.id] ?? ""}
+                  priceError={priceErrors.has(item.id)}
+                  onToggle={() => toggleId(item.id)}
+                  onPriceChange={(val) => setPrice(item.id, val)}
+                  onNotesChange={(val) => setNote(item.id, val)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 flex flex-col gap-3 bg-gray-50/30">
+          {saveError && (
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
+              {saveError}
+            </div>
+          )}
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || loading}
+              loading={saving}
+            >
+              {saving ? "Guardando..." : "Asignar"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "USUARIOS" ALTER COLUMN "contrasena_hash" DROP NOT NULL;

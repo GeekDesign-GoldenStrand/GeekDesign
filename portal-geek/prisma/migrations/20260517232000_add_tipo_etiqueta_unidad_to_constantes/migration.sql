@@ -1,0 +1,1 @@
+-- Empty migration placeholder (directory was created without SQL)
