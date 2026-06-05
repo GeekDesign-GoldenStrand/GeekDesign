@@ -41,6 +41,26 @@ export async function createPago(data: CreatePagoInput): Promise<Pagos> {
     );
   }
 
+  // Block new payments once the order is fully covered: total cost = sum of its
+  // line-item subtotals; amount paid = sum of "Pagado" payments.
+  const [detalleAgg, pagadoAgg] = await Promise.all([
+    prisma.detallePedido.aggregate({
+      _sum: { subtotal: true },
+      where: { id_pedido: data.id_pedido },
+    }),
+    prisma.pagos.aggregate({
+      _sum: { monto_pago: true },
+      where: { id_pedido: data.id_pedido, estatus_pago: "Pagado" },
+    }),
+  ]);
+  const totalPedido = Number(detalleAgg._sum.subtotal ?? 0);
+  const totalPagado = Number(pagadoAgg._sum.monto_pago ?? 0);
+  if (totalPedido > 0 && totalPagado >= totalPedido) {
+    throw new ValidationError(
+      "El pedido ya está totalmente pagado. No se pueden registrar más pagos."
+    );
+  }
+
   return prisma.pagos.create({
     data: {
       id_pedido: data.id_pedido,

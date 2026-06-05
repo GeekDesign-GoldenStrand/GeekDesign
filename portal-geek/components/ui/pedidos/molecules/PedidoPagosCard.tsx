@@ -1,7 +1,6 @@
 import { CurrencyCircleDollar, Plus } from "@phosphor-icons/react";
 
 import { SectionCard } from "@/components/ui/cotizaciones/atoms/SectionCard";
-import { MAX_PAGOS_POR_PEDIDO } from "@/lib/schemas/pagos";
 import { formatDate } from "@/lib/utils/date";
 import type { PedidoPago } from "@/types/pedido";
 
@@ -13,8 +12,8 @@ interface Props {
   pagos: PedidoPago[];
   /** When provided, renders a "Registrar pago" action in the section. */
   onRegister?: () => void;
-  /** When true, the per-order payment cap was reached: show a note instead. */
-  limitReached?: boolean;
+  /** When set, registering is blocked: show this reason instead of the button. */
+  disabledReason?: string | null;
 }
 
 function RegisterButton({ onRegister }: { onRegister: () => void }) {
@@ -30,33 +29,28 @@ function RegisterButton({ onRegister }: { onRegister: () => void }) {
   );
 }
 
-function LimitNote() {
-  return (
-    <p className="text-[12px] font-medium text-gray-400">
-      Límite de {MAX_PAGOS_POR_PEDIDO} pagos alcanzado.
-    </p>
-  );
-}
-
-// Decides whether to show the register button, the limit note, or nothing.
+// Decides whether to show the register button, the blocked-reason note, or nothing.
 function RegisterAction({
   onRegister,
-  limitReached,
+  disabledReason,
 }: {
   onRegister?: () => void;
-  limitReached?: boolean;
+  disabledReason?: string | null;
 }) {
   if (!onRegister) return null;
-  return limitReached ? <LimitNote /> : <RegisterButton onRegister={onRegister} />;
+  if (disabledReason) {
+    return <p className="text-[12px] font-medium text-gray-400">{disabledReason}</p>;
+  }
+  return <RegisterButton onRegister={onRegister} />;
 }
 
-export function PedidoPagosCard({ pagos, onRegister, limitReached }: Props) {
+export function PedidoPagosCard({ pagos, onRegister, disabledReason }: Props) {
   if (pagos.length === 0) {
     return (
       <SectionCard title="Pagos" icon={<CurrencyCircleDollar size={15} />}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-[14px] text-gray-600">Sin pagos registrados.</p>
-          <RegisterAction onRegister={onRegister} limitReached={limitReached} />
+          <RegisterAction onRegister={onRegister} disabledReason={disabledReason} />
         </div>
       </SectionCard>
     );
@@ -90,7 +84,7 @@ export function PedidoPagosCard({ pagos, onRegister, limitReached }: Props) {
       </table>
       {onRegister && (
         <div className="mt-4 flex justify-end">
-          <RegisterAction onRegister={onRegister} limitReached={limitReached} />
+          <RegisterAction onRegister={onRegister} disabledReason={disabledReason} />
         </div>
       )}
     </SectionCard>

@@ -49,6 +49,19 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
   // PedidoDetallesTable). Pre-fills the modal so the common case is one click.
   const totalDetalle = pedido.detalle.reduce((acc, d) => acc + Number(d.subtotal), 0);
 
+  // Amount already collected = sum of "Pagado" payments. Mirrors the server-side
+  // guards in createPago so the UI and API stay in sync.
+  const totalPagado = pedido.pagos
+    .filter((p) => p.estatus_pago === "Pagado")
+    .reduce((acc, p) => acc + Number(p.monto_pago), 0);
+
+  const registroBloqueado =
+    pedido.pagos.length >= MAX_PAGOS_POR_PEDIDO
+      ? `Límite de ${MAX_PAGOS_POR_PEDIDO} pagos alcanzado.`
+      : totalDetalle > 0 && totalPagado >= totalDetalle
+        ? "El pedido ya está totalmente pagado."
+        : null;
+
   const handleSave = useCallback(async () => {
     await onRefetch();
     setActivePanel(null);
@@ -144,7 +157,7 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
         <PedidoPagosCard
           pagos={pedido.pagos}
           onRegister={canRegisterPago ? () => setShowPagoModal(true) : undefined}
-          limitReached={pedido.pagos.length >= MAX_PAGOS_POR_PEDIDO}
+          disabledReason={registroBloqueado}
         />
       </div>
 
