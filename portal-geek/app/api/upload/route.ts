@@ -14,7 +14,7 @@ import {
   RateLimitError,
   ValidationError,
 } from "@/lib/utils/errors";
-import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { peekRateLimit, recordAttempt } from "@/lib/utils/rate-limit";
 
 // Caps the rate at which a single user can mint presigned PUT URLs. Presigns
 // are cheap on our side but credentials in the wrong hands could fan-out
@@ -25,8 +25,9 @@ const UPLOAD_RATE_LIMIT = { maxAttempts: 30, windowMs: 60_000 };
 // The client must PUT the file with the same Content-Type it declared here.
 export const POST = withAuth(async (req: NextRequest, session: SessionPayload) => {
   try {
-    const { allowed } = checkRateLimit(`upload:${session.id}`, UPLOAD_RATE_LIMIT);
-    if (!allowed) throw new RateLimitError();
+    const rateKey = `upload:${session.id}`;
+    const { allowed, retryAfterMs } = peekRateLimit(rateKey, UPLOAD_RATE_LIMIT);
+    if (!allowed) throw RateLimitError.fromMs(retryAfterMs);
 
     const body = PresignUploadSchema.parse(await req.json());
     const limits = UPLOAD_LIMITS[body.category];
@@ -67,6 +68,7 @@ export const POST = withAuth(async (req: NextRequest, session: SessionPayload) =
     const key = buildKey(body.category, ext);
     const url = await presignPut(key, contentType);
 
+    recordAttempt(rateKey, UPLOAD_RATE_LIMIT);
     return ok({ key, url, expiresIn: DEFAULT_TTL_SECONDS });
   } catch (err) {
     return handleError(err);
@@ -79,8 +81,9 @@ export const POST = withAuth(async (req: NextRequest, session: SessionPayload) =
 // entity's own update/delete flow.
 export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload) => {
   try {
-    const { allowed } = checkRateLimit(`upload:${session.id}`, UPLOAD_RATE_LIMIT);
-    if (!allowed) throw new RateLimitError();
+    const rateKey = `upload:${session.id}`;
+    const { allowed, retryAfterMs } = peekRateLimit(rateKey, UPLOAD_RATE_LIMIT);
+    if (!allowed) throw RateLimitError.fromMs(retryAfterMs);
 
     const key = new URL(req.url).searchParams.get("key");
     if (!key || !isValidKey(key)) {
@@ -93,15 +96,30 @@ export const DELETE = withAuth(async (req: NextRequest, session: SessionPayload)
 
     // Block deletion of keys persisted to any entity. Extend this list when a
     // new entity starts storing storage keys.
-    const inUse = await prisma.materiales.findFirst({
+    const materialInUse = await prisma.materiales.findFirst({
       where: { imagen_url: key },
       select: { id_material: true },
     });
-    if (inUse) {
-      throw new ConflictError("Esta imagen ya está en uso y no puede eliminarse desde aquí.");
+    if (materialInUse) {
+      throw new ConflictError(
+        "Esta imagen ya está en uso por un material y no puede eliminarse desde aquí."
+      );
+    }
+
+    const servicioInUse = await prisma.servicios.findFirst({
+      where: {
+        OR: [{ imagen_url: key }, { imagen_url: { contains: `"${key}"` } }],
+      },
+      select: { id_servicio: true },
+    });
+    if (servicioInUse) {
+      throw new ConflictError(
+        "Esta imagen ya está en uso por un servicio y no puede eliminarse desde aquí."
+      );
     }
 
     await deleteObject(key);
+    recordAttempt(rateKey, UPLOAD_RATE_LIMIT);
     return ok({ deleted: true });
   } catch (err) {
     return handleError(err);

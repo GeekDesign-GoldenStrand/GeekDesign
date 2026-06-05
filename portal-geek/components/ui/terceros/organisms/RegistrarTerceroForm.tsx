@@ -3,23 +3,33 @@
 import { useState } from "react";
 import { z } from "zod";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { CharCounter } from "@/components/ui/terceros/atoms/CharCounter";
 import type { CreateInstaladorInput } from "@/lib/schemas/instaladores";
+import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
+import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 import type { TerceroCardProps, TerceroStatus } from "@/types";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
-function formatPhone(digits: string): string {
-  const metro = /^(55|33|81)/.test(digits);
-  if (metro) {
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-    return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-  }
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-}
+const COLORS: { value: string; label: string }[] = [
+  { value: "#EF4444", label: "Rojo" },
+  { value: "#F97316", label: "Naranja" },
+  { value: "#EAB308", label: "Amarillo" },
+  { value: "#22C55E", label: "Verde" },
+  { value: "#14B8A6", label: "Verde azulado" },
+  { value: "#3B82F6", label: "Azul" },
+  { value: "#6366F1", label: "Índigo" },
+  { value: "#8B5CF6", label: "Violeta" },
+  { value: "#EC4899", label: "Rosa" },
+  { value: "#F43F5E", label: "Carmín" },
+  { value: "#64748B", label: "Gris pizarra" },
+  { value: "#78716C", label: "Marrón" },
+];
 
 const proveedorSchema = z.object({
   nombre_proveedor: z
@@ -41,10 +51,18 @@ const proveedorSchema = z.object({
   telefono: z
     .string()
     .min(1, "El teléfono es requerido.")
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+    .refine((v) => isValidPhoneNumber(v), "Número de teléfono inválido."),
   ubicacion: z
     .string()
-    .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+    .max(100, "Máximo 100 caracteres.")
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    ),
+  color: z
+    .string()
+    .min(1, "Selecciona un color identificador.")
+    .regex(HEX_COLOR_REGEX, "El color debe ser un HEX válido."),
 });
 
 const instaladorSchema = z.object({
@@ -67,11 +85,23 @@ const instaladorSchema = z.object({
   telefono: z
     .string()
     .min(1, "El teléfono es requerido.")
-    .regex(/^\d{10}$/, "Debe tener exactamente 10 dígitos."),
+    .refine((v) => isValidPhoneNumber(v), "Número de teléfono inválido."),
   notas: z.string().max(500, "Máximo 500 caracteres."),
   ubicacion: z
     .string()
-    .refine((v) => !v || /^[^,]+,[^,]+$/.test(v.trim()), "Formato requerido: Municipio, Estado"),
+    .max(100, "Máximo 100 caracteres.")
+    .refine(
+      (v) => !v || UBICACION_REGEX.test(v.trim()),
+      "Solo se permiten caracteres en inglés y español."
+    ),
+  costo_instalacion: z
+    .string()
+    .min(1, "La tarifa base es requerida.")
+    .refine(isValidMoney, "Debe ser un número mayor o igual a 0."),
+  color: z
+    .string()
+    .min(1, "Selecciona un color identificador.")
+    .regex(HEX_COLOR_REGEX, "El color debe ser un HEX válido."),
 });
 
 type TerceroType = "Proveedor" | "Instalador";
@@ -108,6 +138,8 @@ export function RegistrarTerceroForm({
     notas: "",
     descripcion_proveedor: "",
     estatus: "Activo",
+    costo_instalacion: "",
+    color: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -128,7 +160,7 @@ export function RegistrarTerceroForm({
       if (key === "correo" && typeof val === "string")
         return val && EMAIL_REGEX.test(val) ? FIELD_SUCCESS : "";
       if (key === "telefono" && typeof val === "string")
-        return val && /^\d{10}$/.test(val) ? FIELD_SUCCESS : "";
+        return val && isValidPhoneNumber(val) ? FIELD_SUCCESS : "";
       if (typeof val === "string" && val.trim()) return FIELD_SUCCESS;
       if (typeof val === "number" && val > 0) return FIELD_SUCCESS;
     }
@@ -145,6 +177,7 @@ export function RegistrarTerceroForm({
         correo: form.correo,
         telefono: form.telefono,
         ubicacion: form.ubicacion,
+        color: form.color,
       });
       if (!result.success) {
         for (const issue of result.error.issues) {
@@ -160,6 +193,8 @@ export function RegistrarTerceroForm({
         telefono: form.telefono,
         notas: form.notas,
         ubicacion: form.ubicacion,
+        costo_instalacion: form.costo_instalacion,
+        color: form.color,
       });
       if (!result.success) {
         for (const issue of result.error.issues) {
@@ -198,6 +233,7 @@ export function RegistrarTerceroForm({
           descripcion_proveedor: form.descripcion_proveedor || undefined,
           ubicacion: form.ubicacion || undefined,
           estatus: form.estatus,
+          color: form.color,
         };
 
         const res = await fetch("/api/proveedores", {
@@ -235,7 +271,8 @@ export function RegistrarTerceroForm({
           correo: form.correo,
           notas: form.notas || undefined,
           ubicacion: form.ubicacion || undefined,
-          estatus: form.estatus,
+          costo_instalacion: parseFloat(form.costo_instalacion),
+          color: form.color,
         };
 
         const res = await fetch("/api/instaladores", {
@@ -262,6 +299,7 @@ export function RegistrarTerceroForm({
           status: data.estatus as TerceroStatus,
           email: data.correo ?? "",
           phone: data.telefono ?? "",
+          tipo: data.tipo,
         });
       }
 
@@ -272,6 +310,37 @@ export function RegistrarTerceroForm({
       setLoading(false);
     }
   }
+
+  const colorPicker = (
+    <div>
+      <label className={LABEL}>
+        Color identificador <span className="text-[#e42200]">*</span>
+      </label>
+      <div className="flex flex-wrap gap-2 mt-1">
+        {COLORS.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            title={c.label}
+            onClick={() => setField("color", c.value)}
+            className={`w-7 h-7 rounded-full border-2 transition-all ${
+              form.color === c.value
+                ? "border-[#1e1e1e] scale-110 shadow-md ring-2 ring-offset-1 ring-[#1e1e1e]/20"
+                : "border-transparent hover:scale-105 hover:border-[#b9b8b8]"
+            }`}
+            style={{ backgroundColor: c.value }}
+          />
+        ))}
+      </div>
+      {form.color ? (
+        <p className="text-[12px] text-[#8e908f] mt-1">
+          Color seleccionado: <span className="font-medium text-[#1e1e1e]">{form.color}</span>
+        </p>
+      ) : (
+        errors.color && <p className={ERROR_MSG}>{errors.color}</p>
+      )}
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
@@ -328,6 +397,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
               />
               {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
+              <CharCounter value={form.nombre_proveedor} max={30} />
             </div>
             <div>
               <label className={LABEL}>Apodo</label>
@@ -340,6 +410,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("apodo")}`}
               />
               {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
+              <CharCounter value={form.apodo} max={30} />
             </div>
           </div>
 
@@ -348,15 +419,16 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
-              <select
+              <Select
                 value={form.tipo_proveedor_seleccion}
-                onChange={(e) => setField("tipo_proveedor_seleccion", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_proveedor_seleccion")}`}
+                onChange={(v) => setField("tipo_proveedor_seleccion", v)}
+                size="sm"
+                error={errors.tipo_proveedor_seleccion || undefined}
               >
-                <option value="Material">Material</option>
-                <option value="Servicio">Servicio</option>
-                <option value="Ambos">Ambos</option>
-              </select>
+                <SelectOption value="Material">Material</SelectOption>
+                <SelectOption value="Servicio">Servicio</SelectOption>
+                <SelectOption value="Ambos">Ambos</SelectOption>
+              </Select>
             </div>
           </div>
 
@@ -378,16 +450,10 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Teléfono <span className="text-[#e42200]">*</span>
               </label>
-              <input
-                type="tel"
-                placeholder="442 123 4567"
-                inputMode="numeric"
-                value={formatPhone(form.telefono)}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setField("telefono", digits);
-                }}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
+              <PhoneInputMX
+                value={form.telefono}
+                onChange={(e164) => setField("telefono", e164)}
+                hasError={!!errors.telefono}
               />
               {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
             </div>
@@ -397,7 +463,8 @@ export function RegistrarTerceroForm({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Querétaro, Querétaro"
+              maxLength={100}
+              placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
@@ -406,28 +473,19 @@ export function RegistrarTerceroForm({
           </div>
 
           <div>
-            <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
-          </div>
-
-          <div>
             <label className={LABEL}>Descripción</label>
             <textarea
               rows={3}
+              maxLength={500}
               placeholder="Detalles adicionales del proveedor..."
               value={form.descripcion_proveedor}
               onChange={(e) => setField("descripcion_proveedor", e.target.value)}
               className={`${FIELD} ${getFieldClass("descripcion_proveedor")} resize-none`}
             />
+            <CharCounter value={form.descripcion_proveedor} max={500} />
           </div>
+
+          {colorPicker}
         </>
       ) : (
         <>
@@ -445,6 +503,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("nombre_proveedor")}`}
               />
               {errors.nombre_proveedor && <p className={ERROR_MSG}>{errors.nombre_proveedor}</p>}
+              <CharCounter value={form.nombre_proveedor} max={30} />
             </div>
             <div>
               <label className={LABEL}>Apodo</label>
@@ -457,6 +516,7 @@ export function RegistrarTerceroForm({
                 className={`${FIELD} ${getFieldClass("apodo")}`}
               />
               {errors.apodo && <p className={ERROR_MSG}>{errors.apodo}</p>}
+              <CharCounter value={form.apodo} max={30} />
             </div>
           </div>
 
@@ -465,15 +525,41 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Tipo <span className="text-[#e42200]">*</span>
               </label>
-              <select
+              <Select
                 value={form.tipo_instalador}
-                onChange={(e) => setField("tipo_instalador", e.target.value)}
-                className={`${FIELD} ${getFieldClass("tipo_instalador")}`}
+                onChange={(v) => setField("tipo_instalador", v)}
+                size="sm"
+                error={errors.tipo_instalador || undefined}
               >
-                <option value="Instalador">Instalador</option>
-                <option value="Contratista">Contratista</option>
-              </select>
+                <SelectOption value="Instalador">Instalador</SelectOption>
+                <SelectOption value="Contratista">Contratista</SelectOption>
+              </Select>
             </div>
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Tarifa base <span className="text-[#e42200]">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#8e908f] pointer-events-none">
+                $
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
+                placeholder="0.00"
+                value={form.costo_instalacion}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (isValidMoneyInput(raw)) setField("costo_instalacion", raw);
+                }}
+                className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
+              />
+            </div>
+            {errors.costo_instalacion && <p className={ERROR_MSG}>{errors.costo_instalacion}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -494,16 +580,10 @@ export function RegistrarTerceroForm({
               <label className={LABEL}>
                 Teléfono <span className="text-[#e42200]">*</span>
               </label>
-              <input
-                type="tel"
-                placeholder="442 123 4567"
-                inputMode="numeric"
-                value={formatPhone(form.telefono)}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setField("telefono", digits);
-                }}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
+              <PhoneInputMX
+                value={form.telefono}
+                onChange={(e164) => setField("telefono", e164)}
+                hasError={!!errors.telefono}
               />
               {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
             </div>
@@ -513,25 +593,13 @@ export function RegistrarTerceroForm({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Querétaro, Querétaro"
+              maxLength={100}
+              placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
             />
             {errors.ubicacion && <p className={ERROR_MSG}>{errors.ubicacion}</p>}
-          </div>
-
-          <div>
-            <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
           </div>
 
           <div>
@@ -545,24 +613,18 @@ export function RegistrarTerceroForm({
             />
             {errors.notas && <p className={ERROR_MSG}>{errors.notas}</p>}
           </div>
+
+          {colorPicker}
         </>
       )}
 
-      <div className="flex justify-end gap-3 mt-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-        >
+      <div className="flex justify-end gap-3 mt-2">
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Guardar"}
-        </button>
+        </Button>
       </div>
     </form>
   );

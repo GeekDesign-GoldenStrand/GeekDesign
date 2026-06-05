@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { CreateColaboradorSchema } from "@/lib/schemas/colaboradores";
 
 export interface ColaboradorApiRow {
@@ -41,11 +44,9 @@ interface RegistrarColaboradorFormProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
 const FIELD_SUCCESS = "border-[#00c853]";
-const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
+const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -104,6 +105,10 @@ export function RegistrarColaboradorForm({
       fechaErrors.fecha_nacimiento = "La fecha de nacimiento es requerida";
     } else if (!edadCalculada || edadCalculada < 16 || edadCalculada > 100) {
       fechaErrors.fecha_nacimiento = "La edad debe ser entre 16 y 100 años";
+    }
+
+    if (form.telefono && !isValidPhoneNumber(form.telefono)) {
+      fechaErrors.telefono = "Número de teléfono inválido.";
     }
 
     const payload = {
@@ -182,11 +187,12 @@ export function RegistrarColaboradorForm({
         </div>
       )}
 
-      <div className="flex gap-6">
-        {/* Columna izquierda */}
-        <div className="flex-1 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={LABEL}>Nombre *</label>
+            <label className={LABEL}>
+              Nombre <span className="text-[#e42200]">*</span>
+            </label>
             <input
               type="text"
               maxLength={100}
@@ -199,7 +205,30 @@ export function RegistrarColaboradorForm({
           </div>
 
           <div>
-            <label className={LABEL}>Correo electrónico *</label>
+            <label className={LABEL}>
+              Rol <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.id_rol}
+              onChange={(v) => setField("id_rol", v)}
+              placeholder="Seleccionar rol"
+              size="sm"
+              error={errors.id_rol || undefined}
+            >
+              {roles.map((r) => (
+                <SelectOption key={r.id_rol} value={String(r.id_rol)}>
+                  {r.nombre_rol}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Correo electrónico <span className="text-[#e42200]">*</span>
+            </label>
             <input
               type="email"
               maxLength={150}
@@ -212,7 +241,30 @@ export function RegistrarColaboradorForm({
           </div>
 
           <div>
-            <label className={LABEL}>Fecha de nacimiento *</label>
+            <label className={LABEL}>
+              Sucursal <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.id_sucursal}
+              onChange={(v) => setField("id_sucursal", v)}
+              placeholder="Seleccionar sucursal"
+              size="sm"
+              error={errors.id_sucursal || undefined}
+            >
+              {sucursales.map((s) => (
+                <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
+                  {s.nombre_sucursal}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>
+              Fecha de nacimiento <span className="text-[#e42200]">*</span>
+            </label>
             <input
               type="date"
               max={TODAY}
@@ -233,102 +285,43 @@ export function RegistrarColaboradorForm({
           </div>
 
           <div>
-            <label className={LABEL}>Sexo *</label>
-            <select
+            <label className={LABEL}>
+              Sexo <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
               value={form.sexo}
-              onChange={(e) => setField("sexo", e.target.value)}
-              className={`${SELECT_FIELD} ${
-                errors.sexo ? FIELD_ERROR : touched.sexo && form.sexo ? FIELD_SUCCESS : ""
-              }`}
+              onChange={(v) => setField("sexo", v)}
+              placeholder="Sexo"
+              size="sm"
+              error={errors.sexo || undefined}
             >
-              <option value="">Sexo</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
-              <option value="NA">Prefiero no decir</option>
-            </select>
-            {errors.sexo && <p className={ERROR_MSG}>{errors.sexo}</p>}
-          </div>
-
-          <div>
-            <label className={LABEL}>Teléfono *</label>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center h-[38px] px-3 border border-[#b9b8b8] rounded-[6px] text-[14px] text-[#575757] bg-[#f5f5f5] shrink-0 select-none">
-                +52
-              </span>
-              <input
-                type="tel"
-                maxLength={20}
-                placeholder="XXX XXXX XXX"
-                value={form.telefono}
-                onChange={(e) => setField("telefono", e.target.value)}
-                className={`${FIELD} ${getFieldClass("telefono")}`}
-              />
-            </div>
-            {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
+              <SelectOption value="M">Masculino</SelectOption>
+              <SelectOption value="F">Femenino</SelectOption>
+              <SelectOption value="NA">Prefiero no decir</SelectOption>
+            </Select>
           </div>
         </div>
 
-        {/* Columna derecha */}
-        <div className="flex-1 flex flex-col gap-4">
-          <div>
-            <label className={LABEL}>Rol *</label>
-            <select
-              value={form.id_rol}
-              onChange={(e) => setField("id_rol", e.target.value)}
-              className={`${SELECT_FIELD} ${
-                errors.id_rol ? FIELD_ERROR : touched.id_rol && form.id_rol ? FIELD_SUCCESS : ""
-              }`}
-            >
-              <option value="">Seleccionar rol</option>
-              {roles.map((r) => (
-                <option key={r.id_rol} value={r.id_rol}>
-                  {r.nombre_rol}
-                </option>
-              ))}
-            </select>
-            {errors.id_rol && <p className={ERROR_MSG}>{errors.id_rol}</p>}
-          </div>
-
-          <div>
-            <label className={LABEL}>Sucursal *</label>
-            <select
-              value={form.id_sucursal}
-              onChange={(e) => setField("id_sucursal", e.target.value)}
-              className={`${SELECT_FIELD} ${
-                errors.id_sucursal
-                  ? FIELD_ERROR
-                  : touched.id_sucursal && form.id_sucursal
-                    ? FIELD_SUCCESS
-                    : ""
-              }`}
-            >
-              <option value="">Seleccionar sucursal</option>
-              {sucursales.map((s) => (
-                <option key={s.id_sucursal} value={s.id_sucursal}>
-                  {s.nombre_sucursal}
-                </option>
-              ))}
-            </select>
-            {errors.id_sucursal && <p className={ERROR_MSG}>{errors.id_sucursal}</p>}
-          </div>
+        <div>
+          <label className={LABEL}>
+            Teléfono <span className="text-[#e42200]">*</span>
+          </label>
+          <PhoneInputMX
+            value={form.telefono}
+            onChange={(e164) => setField("telefono", e164)}
+            hasError={!!errors.telefono}
+          />
+          {errors.telefono && <p className={ERROR_MSG}>{errors.telefono}</p>}
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-2 border-t border-[#e8e8e8]">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-5 py-2 text-[14px] font-medium text-[#e42200] border border-[#e42200] rounded-[7px] hover:bg-[#ffecec] transition-colors"
-        >
+      <div className="flex justify-end gap-3 mt-2">
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[#27ae60] rounded-[7px] hover:bg-[#219150] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Guardar"}
-        </button>
+        </Button>
       </div>
     </form>
   );

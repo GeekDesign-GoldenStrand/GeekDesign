@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db/client";
 import { NotFoundError, ValidationError } from "@/lib/utils/errors";
 import { evaluateFormula } from "@/lib/utils/formula-evaluator";
+import { toSnakeIdentifier } from "@/lib/utils/slug";
+
+// Profit margin applied to every quoted price. The formula yields the
+// "total cost with IVA"; the selling price marks this up so the gross profit
+// equals MARGEN_GANANCIA of the selling price (the standard "margin on sale"
+// metric, not markup on cost). Formula:  precio_final = costo / (1 - margen).
+const MARGEN_GANANCIA = 0.3;
 
 export interface CalcularPrecioInput {
   id_servicio: number;
@@ -30,7 +37,7 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
       },
       servicioMateriales: {
         where: { id_material },
-        include: { proveedorPrecio: true },
+        include: { proveedorPrecio: true, material: true },
       },
     },
   });
@@ -38,6 +45,19 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
   if (!servicio) {
     throw new NotFoundError(`Servicio ${id_servicio} no encontrado`);
   }
+
+  // Level 1: per-(instalador, servicio) price from InstaladorServicios
+  const instaladorServicioPrecio = servicio.id_instalador
+    ? await prisma.instaladorServicios.findUnique({
+        where: {
+          id_instalador_id_servicio: {
+            id_instalador: servicio.id_instalador,
+            id_servicio,
+          },
+        },
+        select: { costo: true },
+      })
+    : null;
 
   const formula = servicio.formulas[0];
   if (!formula) {
@@ -82,12 +102,18 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
 
   const precio_material = material.proveedorPrecio ? Number(material.proveedorPrecio.precio) : 0;
 
+  // Three-level resolution for costo_instalador:
+  //   1. InstaladorServicios.costo  (pair instalador×servicio)
+  //   2. costo_instalador_override  (service-level override)
+  //   3. instalador.costo_instalacion  (instalador base rate)
   const costo_instalador =
-    servicio.costo_instalador_override !== null
-      ? Number(servicio.costo_instalador_override)
-      : servicio.instalador
-        ? Number(servicio.instalador.costo_instalacion)
-        : 0;
+    instaladorServicioPrecio !== null
+      ? Number(instaladorServicioPrecio.costo)
+      : servicio.costo_instalador_override !== null
+        ? Number(servicio.costo_instalador_override)
+        : servicio.instalador
+          ? Number(servicio.instalador.costo_instalacion)
+          : 0;
 
   const costo_proveedor =
     servicio.costo_proveedor_override !== null
@@ -96,12 +122,31 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
         ? Number(servicio.proveedor.costo)
         : 0;
 
-  const precioUnitario = evaluateFormula({
+  // Inject the chosen material's slug-based token (e.g. `costo_material_mdf_3mm`)
+  // so formulas built in FormulaSection's material panel resolve at runtime.
+  // The slug must match exactly what FormulaSection / servicio-mappers generate.
+  // Defensive optional chain — older callers / tests may not include the relation.
+  const materialSlug = toSnakeIdentifier(
+    material.material?.nombre_material ?? `material_${id_material}`
+  );
+  const materialTokenKey = `costo_material_${materialSlug}`;
+
+  const costoTotal = evaluateFormula({
     expresion: formula.expresion,
     variables,
     constantes,
-    implicits: { precio_material, costo_instalador, costo_proveedor },
+    implicits: {
+      precio_material,
+      costo_instalador,
+      costo_proveedor,
+      [materialTokenKey]: precio_material,
+    },
   });
 
-  return Math.round(precioUnitario * 100) / 100;
+  // Apply the profit margin so the quoted price yields MARGEN_GANANCIA of
+  // gross profit on the sale. Division (not multiplication) is intentional
+  // — see MARGEN_GANANCIA constant comment.
+  const precioConMargen = costoTotal / (1 - MARGEN_GANANCIA);
+
+  return Math.round(precioConMargen * 100) / 100;
 }

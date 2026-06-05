@@ -72,13 +72,20 @@ export type TipoVariableOption = {
 
 export type MaterialOption = {
   id_material: number;
+  id_material_padre: number | null;
+  es_grupo: boolean;
   nombre_material: string;
   descripcion_material: string | null;
-  unidad_medida: string;
+  unidad_medida: string | null;
   ancho: string | null;
   alto: string | null;
   grosor: string | null;
   color: string | null;
+  subMateriales?: Array<{
+    id_material: number;
+    nombre_material: string;
+    id_material_padre: number;
+  }>;
 };
 
 export type ProveedorPrecioOption = {
@@ -92,6 +99,78 @@ export type ProveedorPrecioOption = {
 export type MaterialDraft = {
   id_material: number;
   id_proveedor_precio: number | null;
+};
+
+// ─── Admin detail types (serializable, Decimal → string) ─────────────────
+
+export type MaterialAsignado = {
+  id_servicio_material: number;
+  id_material: number;
+  id_proveedor_precio: number | null;
+  material: {
+    id_material: number;
+    nombre_material: string;
+    descripcion_material: string | null;
+    unidad_medida: string;
+    ancho: string | null;
+    alto: string | null;
+    grosor: string | null;
+    color: string | null;
+  };
+};
+
+export type ServicioAdminDetalle = {
+  id_servicio: number;
+  nombre_servicio: string;
+  descripcion_servicio: string | null;
+  imagenes: string[];
+  id_sucursal: number;
+  sucursal: { id_sucursal: number; nombre_sucursal: string };
+  id_instalador: number | null;
+  costo_instalador_override: string | null;
+  instalador: {
+    id_instalador: number;
+    nombre_instalador: string;
+    apodo: string | null;
+    costo_instalacion: string;
+  } | null;
+  id_proveedor: number | null;
+  costo_proveedor_override: string | null;
+  proveedor: {
+    id_proveedor: number;
+    nombre_proveedor: string;
+    costo: string | null;
+  } | null;
+  maquinas: Array<{
+    maquina: {
+      id_maquina: number;
+      nombre_maquina: string;
+      apodo_maquina: string;
+      tipo: string;
+    };
+  }>;
+  materiales: MaterialAsignado[];
+  formulaActiva: {
+    id_formula: number;
+    expresion: string;
+    variables: Array<{
+      id_variable: number;
+      id_tipo_variable: number;
+      nombre_variable: string;
+      etiqueta: string;
+      valor_default: string | null;
+      editable_por_cliente: boolean;
+      unidad: string | null;
+    }>;
+    constantes: Array<{
+      id_constante: number;
+      nombre_constante: string;
+      origen: string;
+      valor: string | null;
+      id_instalador: number | null;
+      id_proveedor: number | null;
+    }>;
+  } | null;
 };
 
 // ─── Formula builder types ────────────────────────────
@@ -118,6 +197,7 @@ export type NuevoServicioFormState = {
   formulaChunks: FormulaChunk[];
   variables: VariableDraft[];
   constantes: ConstanteDraft[];
+  imagenes: string[];
 };
 
 export const initialNuevoServicioState: NuevoServicioFormState = {
@@ -138,4 +218,5 @@ export const initialNuevoServicioState: NuevoServicioFormState = {
   ],
   variables: [],
   constantes: [{ nombre_constante: "iva", origen: "global", valor: 0.16 }],
+  imagenes: [],
 };

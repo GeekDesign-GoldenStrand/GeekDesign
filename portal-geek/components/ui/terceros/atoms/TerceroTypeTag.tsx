@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronDownIcon } from "@/components/ui/atoms/icons";
+
 interface TerceroTypeTagProps {
   type: "Material" | "Servicio";
   onClick?: () => void;
@@ -20,11 +22,12 @@ export function TerceroTypeTag({ type, onClick }: TerceroTypeTagProps) {
     <button
       onClick={onClick}
       disabled={!onClick}
-      className={`px-2 py-0.5 rounded-[7px] border ${styles} text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] transition-all duration-300 ${
+      className={`inline-flex items-center justify-center gap-1.5 min-w-[84px] px-2.5 py-0.5 rounded-[7px] border ${styles} text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] transition-all duration-300 ${
         onClick ? "cursor-pointer hover:scale-105 active:scale-95" : "cursor-default"
       }`}
     >
-      {type}
+      <span>{type}</span>
+      {onClick && <ChevronDownIcon size={12} className="shrink-0" />}
     </button>
   );
 }

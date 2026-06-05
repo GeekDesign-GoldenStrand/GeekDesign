@@ -1,4 +1,4 @@
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { TipoVariableIdParams, UpdateTipoVariableSchema } from "@/lib/schemas/tipos-variable";
 import {
   getTipoVariable,
@@ -10,7 +10,7 @@ import { handleError } from "@/lib/utils/errors";
 
 type Params = { id: string };
 
-export const GET = withRoleParams<Params>(["Administrador", "Direccion"], async (_req, ctx) => {
+export const GET = withSectionParams<Params>("servicios", "read", async (_req, ctx) => {
   try {
     const { id } = TipoVariableIdParams.parse(await ctx.params);
     return ok(await getTipoVariable(id));
@@ -19,7 +19,7 @@ export const GET = withRoleParams<Params>(["Administrador", "Direccion"], async 
   }
 });
 
-export const PUT = withRoleParams<Params>(["Administrador", "Direccion"], async (req, ctx) => {
+export const PUT = withSectionParams<Params>("servicios", "write", async (req, ctx) => {
   try {
     const { id } = TipoVariableIdParams.parse(await ctx.params);
     const body = UpdateTipoVariableSchema.parse(await req.json());
@@ -29,7 +29,7 @@ export const PUT = withRoleParams<Params>(["Administrador", "Direccion"], async 
   }
 });
 
-export const DELETE = withRoleParams<Params>(["Administrador", "Direccion"], async (_req, ctx) => {
+export const DELETE = withSectionParams<Params>("servicios", "write", async (_req, ctx) => {
   try {
     const { id } = TipoVariableIdParams.parse(await ctx.params);
     await deleteTipoVariable(id);

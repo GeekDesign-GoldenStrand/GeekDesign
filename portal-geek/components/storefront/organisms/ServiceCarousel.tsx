@@ -5,6 +5,8 @@ import type { Servicios } from "@prisma/client";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
+import { getServiceImageUrls } from "@/lib/utils/images";
+
 import { ServiceCard } from "../atoms/ServiceCard";
 
 interface ServiceCarouselProps {
@@ -69,15 +71,18 @@ export function ServiceCarousel({ services }: ServiceCarouselProps) {
         ref={scrollRef}
         className="flex flex-1 overflow-x-auto scrollbar-hide gap-3 md:gap-5 py-2 px-1"
       >
-        {tripled.map((s, i) => (
-          <Link
-            key={`${s.id_servicio}-${i}`}
-            href={`/tienda/servicios/${s.id_servicio}`}
-            className="shrink-0 block w-[calc((100%_-_24px)_/_3_-_0.5px)] md:w-[calc((100%_-_100px)_/_6_-_0.5px)]"
-          >
-            <ServiceCard nombre_servicio={s.nombre_servicio} />
-          </Link>
-        ))}
+        {tripled.map((s, i) => {
+          const images = getServiceImageUrls(s.imagen_url);
+          return (
+            <Link
+              key={`${s.id_servicio}-${i}`}
+              href={`/tienda/servicios/${s.id_servicio}`}
+              className="shrink-0 block w-[calc((100%_-_24px)_/_3_-_0.5px)] md:w-[calc((100%_-_100px)_/_6_-_0.5px)]"
+            >
+              <ServiceCard nombre_servicio={s.nombre_servicio} imagenUrl={images[0] || null} />
+            </Link>
+          );
+        })}
       </div>
 
       <button

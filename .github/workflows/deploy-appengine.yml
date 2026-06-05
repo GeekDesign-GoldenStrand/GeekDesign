@@ -1,0 +1,248 @@
+name: Deploy to App Engine
+
+# Deploys the portal-geek Next.js app to Google App Engine Standard.
+#
+# Flow: a merge/push to a long-lived branch triggers a deploy to the matching
+# environment. PRs never deploy (no `pull_request` trigger). Production
+# (`main`) is gated behind a GitHub Environment approval rule.
+#
+#   develop branch -> GitHub Environment "develop"    -> version dev-<run>   (promote — see note below)
+#   staging branch -> GitHub Environment "staging"     -> version stg-<run>   (no promote)
+#   main    branch -> GitHub Environment "production"  -> version prod-<run>  (promote)
+#
+# develop is promoted on purpose: the GCS bucket's CORS allow-list covers the
+# App Engine *service* URL only (https://<service>.<region>.r.appspot.com), not
+# the version-specific subdomains (https://dev-N-dot-<service>...). Without
+# promotion, browsers landing on the version URL get CORS-blocked on the
+# presigned-PUT image-upload flow. Promoting keeps the service URL pointed at
+# the just-deployed version so uploads keep working on develop.
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+
+# Least-privilege token. `id-token: write` is REQUIRED for Workload Identity
+# Federation (the OIDC token exchanged for GCP credentials). `contents: read`
+# lets the job check out the repo. Nothing else is granted.
+permissions:
+  id-token: write
+  contents: read
+
+# One in-flight deploy per branch. A newer push cancels the older run so we
+# never race two deploys onto the same environment.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_ID: learned-ocean-475917-c9
+  REGION: us-central1
+  # App Engine code + app.template.yaml live in this subdirectory.
+  WORKDIR: portal-geek
+
+jobs:
+  deploy:
+    name: Deploy (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+
+    # Bind this job to the GitHub Environment chosen by branch. Environment
+    # Secrets/Variables resolve from this environment, and any protection rules
+    # (e.g. required reviewers on "production") gate the job here.
+    #
+    # This MUST be a pure expression of github.* context — the `steps` context
+    # is empty when GitHub resolves the job's environment (before any step runs),
+    # so referencing steps.config here would bind to no environment, skipping
+    # env secrets/vars AND the production reviewer gate. Map: main -> production,
+    # otherwise the branch name already equals the environment name.
+    environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name }}
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Resolve branch -> environment / version / promote ──────────────
+      # The job's `environment:` is resolved from github.ref_name directly (see
+      # above). This step derives the version name, promote flag, and a display
+      # env_name for later steps (e.g. the summary).
+      - name: Configure environment
+        id: config
+        run: |
+          set -euo pipefail
+          case "${GITHUB_REF_NAME}" in
+            develop)
+              echo "env_name=develop"                 >> "$GITHUB_OUTPUT"
+              echo "version=dev-${GITHUB_RUN_NUMBER}"  >> "$GITHUB_OUTPUT"
+              # promote=true so the service URL serves the just-deployed code;
+              # GCS bucket CORS only allows the service origin (not the version
+              # subdomain), so without promotion image uploads break on develop.
+              echo "promote=true"                      >> "$GITHUB_OUTPUT"
+              ;;
+            staging)
+              echo "env_name=staging"                  >> "$GITHUB_OUTPUT"
+              echo "version=stg-${GITHUB_RUN_NUMBER}"  >> "$GITHUB_OUTPUT"
+              echo "promote=false"                     >> "$GITHUB_OUTPUT"
+              ;;
+            main)
+              echo "env_name=production"               >> "$GITHUB_OUTPUT"
+              echo "version=prod-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+              echo "promote=true"                      >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Branch ${GITHUB_REF_NAME} is not a deploy target"
+              exit 1
+              ;;
+          esac
+
+      # ── 3. Authenticate to GCP via Workload Identity Federation ───────────
+      # No JSON keys. GitHub mints a short-lived OIDC token; GCP exchanges it
+      # for a short-lived access token impersonating the deployer SA.
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      # ── 4. Render app.yaml from template (no secrets committed) ───────────
+      # envsubst replaces ONLY the named placeholders, so a literal `$` inside
+      # any secret value is left untouched. Secrets come from the environment
+      # block below and are masked in logs by GitHub.
+      - name: Generate app.yaml
+        working-directory: ${{ env.WORKDIR }}
+        env:
+          # Non-sensitive — GitHub Environment Variables
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          STORAGE_ENDPOINT: ${{ vars.STORAGE_ENDPOINT }}
+          STORAGE_REGION: ${{ vars.STORAGE_REGION }}
+          STORAGE_BUCKET: ${{ vars.STORAGE_BUCKET }}
+          STORAGE_PUBLIC_BASE_URL: ${{ vars.STORAGE_PUBLIC_BASE_URL }}
+          RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
+          CLOUD_SQL_INSTANCE: ${{ vars.CLOUD_SQL_INSTANCE }}
+          # Sensitive — GitHub Environment Secrets
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          STORAGE_ACCESS_KEY: ${{ secrets.STORAGE_ACCESS_KEY }}
+          STORAGE_SECRET_KEY: ${{ secrets.STORAGE_SECRET_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
+          MERCADOPAGO_WEBHOOK_SECRET: ${{ secrets.MERCADOPAGO_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          # Restrict substitution to our known keys so nothing else expands.
+          VARS='${NODE_ENV} ${NEXT_PUBLIC_APP_URL} ${STORAGE_ENDPOINT}
+                ${STORAGE_REGION} ${STORAGE_BUCKET} ${STORAGE_PUBLIC_BASE_URL}
+                ${RESEND_FROM_EMAIL} ${CLOUD_SQL_INSTANCE} ${DATABASE_URL}
+                ${AUTH_SECRET} ${STORAGE_ACCESS_KEY} ${STORAGE_SECRET_KEY}
+                ${RESEND_API_KEY} ${MERCADOPAGO_ACCESS_TOKEN}
+                ${MERCADOPAGO_WEBHOOK_SECRET}'
+          envsubst "$VARS" < app.template.yaml > app.yaml
+          # Fail fast if any placeholder went unrendered (missing var/secret).
+          if grep -q '\${' app.yaml; then
+            echo "::error::Unrendered placeholders remain in app.yaml — a Secret/Variable is missing for this environment."
+            grep -n '\${' app.yaml | sed 's/=.*//'
+            exit 1
+          fi
+          echo "Rendered app.yaml ($(wc -l < app.yaml) lines). Values masked."
+
+      # ── 5. Deploy to App Engine ───────────────────────────────────────────
+      # NOTE: DB migrations are NOT run here. The runtime DB user is least-
+      # privilege (no DDL); migrations are a manual prerequisite run from a
+      # trusted machine BEFORE merging a schema change. See docs/deployment.md §2.
+      - name: Deploy to App Engine
+        id: deploy
+        uses: google-github-actions/deploy-appengine@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          working_directory: ${{ env.WORKDIR }}
+          deliverables: app.yaml
+          version: ${{ steps.config.outputs.version }}
+          promote: ${{ steps.config.outputs.promote }}
+
+      # ── 6. Report deployed URL ────────────────────────────────────────────
+      - name: Print deployed version URL
+        run: |
+          echo "### ✅ Deployed to ${{ steps.config.outputs.env_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| | |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | \`${{ steps.config.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Promoted | \`${{ steps.config.outputs.promote }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version URL | ${{ steps.deploy.outputs.version_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Service URL | ${{ steps.deploy.outputs.url }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed version URL: ${{ steps.deploy.outputs.version_url }}"
+          echo "Service (promoted) URL: ${{ steps.deploy.outputs.url }}"
+
+    outputs:
+      env_name: ${{ steps.config.outputs.env_name }}
+      url: ${{ steps.deploy.outputs.url }}
+
+  # ── Lighthouse CI — post-deploy perf gate ──────────────────────────────────
+  # Runs against the just-deployed URL (/tienda only — the page the May 2026
+  # audit flagged). Triggers on every environment (develop, staging, production)
+  # so perf regressions are caught before they reach prod. Budgets are
+  # permissive on purpose: every assertion is `warn`, so the workflow never
+  # blocks a deploy. The point is to publish the report and a baseline;
+  # tighten to `error` as perf work lands. Narrow back to production-only
+  # by gating on `needs.deploy.outputs.env_name == 'production'` if the
+  # develop/staging report cadence becomes noisy.
+  lighthouse:
+    name: Lighthouse (${{ needs.deploy.outputs.env_name }})
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: needs.deploy.outputs.url != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.14.x
+
+      # Build the /tienda URL slash-safely. The deploy action's `url` output
+      # may or may not carry a trailing slash depending on the App Engine
+      # response; stripping then re-appending guarantees exactly one.
+      - name: Compute target URL
+        id: target
+        run: |
+          base="${{ needs.deploy.outputs.url }}"
+          echo "url=${base%/}/tienda" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for new version to be reachable
+        run: |
+          url="${{ steps.target.outputs.url }}"
+          for i in 1 2 3 4 5 6; do
+            if curl -sf -o /dev/null "$url"; then
+              echo "Reachable on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::$url did not respond after 6 attempts"
+          exit 1
+
+      - name: Run Lighthouse CI
+        working-directory: portal-geek
+        env:
+          LHCI_URL: ${{ steps.target.outputs.url }}
+        run: |
+          lhci autorun \
+            --collect.url="$LHCI_URL" \
+            --config=./lighthouserc.json
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Lighthouse — ${{ needs.deploy.outputs.env_name }} — ${{ steps.target.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Reports uploaded to temporary public storage (link in the LHCI step log)." >> "$GITHUB_STEP_SUMMARY"
+          echo "All assertions are currently \`warn\` — failures here do not block the deploy." >> "$GITHUB_STEP_SUMMARY"

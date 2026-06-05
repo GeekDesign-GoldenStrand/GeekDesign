@@ -14,12 +14,15 @@ import { mapMaterialRow, type MaterialApiRow } from "@/lib/utils/materiales";
 import type {
   MaterialCardProps,
   MaterialSortOrder,
+  MaterialTipoFilter,
   MaterialesVisibleColumns,
   UserRole,
 } from "@/types";
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
+
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
 
 function buildDefaultColumns(canViewProveedores: boolean): MaterialesVisibleColumns {
   return {
@@ -50,6 +53,40 @@ type FetchAction =
   | { type: "update"; row: MaterialCardProps }
   | { type: "remove"; id: number };
 
+// Recursive tree updaters (max 3 levels: categoría → grupo|individual → variante).
+function insertChild(
+  nodes: MaterialCardProps[],
+  parentId: number,
+  child: MaterialCardProps
+): MaterialCardProps[] {
+  return nodes.map((n) => {
+    if (n.id === parentId) {
+      return { ...n, subMateriales: [...(n.subMateriales ?? []), child] };
+    }
+    if (n.subMateriales?.length) {
+      return { ...n, subMateriales: insertChild(n.subMateriales, parentId, child) };
+    }
+    return n;
+  });
+}
+
+function replaceNode(nodes: MaterialCardProps[], row: MaterialCardProps): MaterialCardProps[] {
+  return nodes.map((n) => {
+    if (n.id === row.id) return { ...row, subMateriales: n.subMateriales };
+    if (n.subMateriales?.length) {
+      return { ...n, subMateriales: replaceNode(n.subMateriales, row) };
+    }
+    return n;
+  });
+}
+
+function removeNode(nodes: MaterialCardProps[], id: number): MaterialCardProps[] {
+  const filtered = nodes.filter((n) => n.id !== id);
+  return filtered.map((n) =>
+    n.subMateriales?.length ? { ...n, subMateriales: removeNode(n.subMateriales, id) } : n
+  );
+}
+
 function fetchReducer(state: FetchState, action: FetchAction): FetchState {
   switch (action.type) {
     case "start":
@@ -58,12 +95,22 @@ function fetchReducer(state: FetchState, action: FetchAction): FetchState {
       return { loading: false, error: null, rows: action.rows, totalPages: action.totalPages };
     case "error":
       return { ...state, loading: false, error: "No se pudieron cargar los materiales" };
-    case "add":
+
+    case "add": {
+      if (action.row.id_material_padre != null) {
+        return {
+          ...state,
+          rows: insertChild(state.rows, action.row.id_material_padre, action.row),
+        };
+      }
       return { ...state, rows: [action.row, ...state.rows] };
+    }
+
     case "update":
-      return { ...state, rows: state.rows.map((r) => (r.id === action.row.id ? action.row : r)) };
+      return { ...state, rows: replaceNode(state.rows, action.row) };
+
     case "remove":
-      return { ...state, rows: state.rows.filter((r) => r.id !== action.id) };
+      return { ...state, rows: removeNode(state.rows, action.id) };
   }
 }
 
@@ -80,23 +127,27 @@ export function MaterialesView({ role }: { role: UserRole }) {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalTipo, setAddModalTipo] = useState<Tipo>("individual");
+  const [addModalPadreId, setAddModalPadreId] = useState<number | undefined>(undefined);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
   const [showProveedoresModal, setShowProveedoresModal] = useState(false);
   const [proveedoresMaterialId, setProveedoresMaterialId] = useState<number | null>(null);
   const [proveedoresMaterialName, setProveedoresMaterialName] = useState("");
   const [sortOrder, setSortOrder] = useState<MaterialSortOrder>("az");
+  const [tipoFilter, setTipoFilter] = useState<MaterialTipoFilter>("all");
   const [visibleColumns, setVisibleColumns] = useState<MaterialesVisibleColumns>(() =>
     buildDefaultColumns(canViewProveedores)
   );
   const [page, setPage] = useState(1);
   const [retryAttempt, setRetryAttempt] = useState(0);
 
-  // Debounce search and reset page together so only one fetch fires.
   useEffect(() => {
+    // La búsqueda no reinicia la página: se aplica sobre TODOS los registros en
+    // el servidor y el fetch acota la página a la última válida si quedó fuera
+    // de rango (ver clamp más abajo), igual que en sucursales.
     const id = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [search]);
@@ -111,6 +162,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
       sort,
     });
     if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+    if (tipoFilter !== "all") params.set("tipo", tipoFilter);
 
     fetch(`/api/materiales?${params}`, { signal: abortController.signal })
       .then(async (res) => {
@@ -119,12 +171,22 @@ export function MaterialesView({ role }: { role: UserRole }) {
       })
       .then((payload) => {
         if (abortController.signal.aborted) return;
-        const items = ((payload?.data ?? []) as MaterialApiRow[]).map(mapMaterialRow);
         const total = payload?.total ?? 0;
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+        // Si la página actual quedó fuera de rango tras buscar/filtrar, acota a
+        // la última válida en lugar de saltar a la 1: el cambio de `page`
+        // dispara un refetch que traerá datos (nunca una página vacía).
+        if (page > pages) {
+          setPage(pages);
+          return;
+        }
+
+        const items = ((payload?.data ?? []) as MaterialApiRow[]).map((row) => mapMaterialRow(row));
         dispatch({
           type: "success",
           rows: items,
-          totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+          totalPages: pages,
         });
       })
       .catch(() => {
@@ -135,7 +197,7 @@ export function MaterialesView({ role }: { role: UserRole }) {
     return () => {
       abortController.abort();
     };
-  }, [page, sortOrder, debouncedSearch, retryAttempt]);
+  }, [page, sortOrder, debouncedSearch, tipoFilter, retryAttempt]);
 
   function handlePageChange(nextPage: number) {
     setPage(nextPage);
@@ -145,22 +207,26 @@ export function MaterialesView({ role }: { role: UserRole }) {
     setRetryAttempt((n) => n + 1);
   }
 
-  function handleToggleColumn(key: keyof MaterialesVisibleColumns) {
-    setVisibleColumns((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      if (!Object.values(next).some(Boolean)) return prev;
-      return next;
-    });
+  function handleColumnsChange(columns: MaterialesVisibleColumns) {
+    // Guard against an all-hidden table even if a caller passes one in.
+    if (!Object.values(columns).some(Boolean)) return;
+    setVisibleColumns(columns);
   }
 
   function handleResetFilters() {
     setVisibleColumns(buildDefaultColumns(canViewProveedores));
     setSortOrder("az");
+    setTipoFilter("all");
     setSearch("");
   }
 
   function handleSortChange(order: MaterialSortOrder) {
     setSortOrder(order);
+    setPage(1);
+  }
+
+  function handleTipoFilterChange(value: MaterialTipoFilter) {
+    setTipoFilter(value);
     setPage(1);
   }
 
@@ -198,8 +264,32 @@ export function MaterialesView({ role }: { role: UserRole }) {
     dispatch({ type: "remove", id: materialId });
   }
 
+  function handleAddSubMaterial(groupId: number) {
+    setAddModalTipo("sub");
+    setAddModalPadreId(groupId);
+    setShowAddModal(true);
+  }
+
+  function handleAddGrupo(categoriaId: number) {
+    setAddModalTipo("grupo");
+    setAddModalPadreId(categoriaId);
+    setShowAddModal(true);
+  }
+
+  function handleOpenAddModal() {
+    setAddModalTipo("individual");
+    setAddModalPadreId(undefined);
+    setShowAddModal(true);
+  }
+
+  function handleAddModalClose() {
+    setShowAddModal(false);
+    setAddModalTipo("individual");
+    setAddModalPadreId(undefined);
+  }
+
   return (
-    <div className="min-h-screen bg-[#ececec] font-ibm-plex">
+    <div className="min-h-screen bg-[#f5f5f5] font-ibm-plex">
       <AdminHeader title="Materiales" />
       <main className="py-6">
         <section className="max-w-[1350px] mx-auto px-4 sm:px-8 pt-5 space-y-4">
@@ -209,10 +299,12 @@ export function MaterialesView({ role }: { role: UserRole }) {
             isFilterOpen={showFilters}
             visibleColumns={visibleColumns}
             sortOrder={sortOrder}
-            onToggleColumn={handleToggleColumn}
+            tipoFilter={tipoFilter}
+            onColumnsChange={handleColumnsChange}
             onSortChange={handleSortChange}
+            onTipoFilterChange={handleTipoFilterChange}
             onResetFilters={handleResetFilters}
-            onAddClick={() => setShowAddModal(true)}
+            onAddClick={handleOpenAddModal}
             onFilterClick={() => setShowFilters((state) => !state)}
             onCloseFilter={() => setShowFilters(false)}
             canViewProveedores={canViewProveedores}
@@ -238,6 +330,9 @@ export function MaterialesView({ role }: { role: UserRole }) {
               visibleColumns={visibleColumns}
               onEditMaterial={handleEditClick}
               onViewProveedores={handleViewProveedores}
+              onAddSubMaterial={handleAddSubMaterial}
+              onAddGrupo={handleAddGrupo}
+              groupOrphans={tipoFilter === "all"}
               page={page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
@@ -250,8 +345,10 @@ export function MaterialesView({ role }: { role: UserRole }) {
 
       <AgregarMaterialModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={handleAddModalClose}
         onCreated={handleCreated}
+        initialTipo={addModalTipo}
+        initialPadreId={addModalPadreId}
       />
 
       <EditarMaterialModal

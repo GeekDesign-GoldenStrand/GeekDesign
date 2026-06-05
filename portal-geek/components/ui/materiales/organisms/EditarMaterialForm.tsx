@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
-import { MaterialImageInput } from "@/components/ui/materiales/molecules/MaterialImageInput";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { ImageUploader } from "@/components/ui/molecules/ImageUploader";
 import { CreateMaterialSchema, UNIDADES_MEDIDA } from "@/lib/schemas/materiales";
 import {
   mapMaterialRow,
@@ -21,14 +23,12 @@ interface EditarMaterialFormProps {
 
 const FIELD =
   "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] placeholder:text-[#8e908f] transition-colors";
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const FIELD_ERROR = "border-[#e42200]";
-const FIELD_SUCCESS = "border-[#00c853]";
+const FIELD_SUCCESS = "border-[#006aff]";
 const LABEL = "block text-[14px] font-medium text-[#575757] mb-1";
 const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
-const REQUIRED_NUMERIC = ["ancho", "alto", "grosor"] as const;
+const REQUIRED_NUMERIC = ["ancho", "alto", "grosor", "velocidad_avance"] as const;
 
 export function EditarMaterialForm({
   material,
@@ -36,26 +36,61 @@ export function EditarMaterialForm({
   onDeleted,
   onClose,
 }: EditarMaterialFormProps) {
+  const isGrupo = material.tipo === "grupo";
+  const isCategoria = material.tipo === "categoria";
+  // Categorías y grupos comparten formulario "ligero": solo nombre/descripción/imagen.
+  const isLight = isGrupo || isCategoria;
+  const needsDimensions = !isLight;
+
   const [form, setForm] = useState({
     nombre_material: material.name,
     descripcion_material: material.description,
-    unidad_medida: material.unit,
+    unidad_medida: material.unit === "-" ? "" : material.unit,
     ancho: material.width === "-" ? "" : material.width,
     alto: material.height === "-" ? "" : material.height,
     grosor: material.thickness === "-" ? "" : material.thickness,
+    velocidad_avance: material.feedRate === "-" ? "" : material.feedRate,
     color: material.color === "-" ? "" : material.color,
   });
-  // Storage key from a fresh upload. null = keep the existing image (omit from PUT).
-  // The server already replaced `material.imageUrl` with a presigned GET URL on
-  // read, so we never send that value back — it isn't a storage key.
-  const [newImageKey, setNewImageKey] = useState<string | null>(null);
 
+  const [newImageKey, setNewImageKey] = useState<string | null>(null);
+  const [imageCleared, setImageCleared] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImpactConfirm, setShowImpactConfirm] = useState(false);
+  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [impacto, setImpacto] = useState<{
+    servicios: number;
+    proveedores: number;
+    instaladores: number;
+  } | null>(null);
+  const [impactoLoading, setImpactoLoading] = useState(false);
+  const [impactoError, setImpactoError] = useState<string | null>(null);
+
+  async function handleFirstConfirm() {
+    setImpactoError(null);
+    setImpacto(null);
+    setImpactoLoading(true);
+    setShowDeleteConfirm(false);
+    setShowImpactConfirm(true);
+    try {
+      const res = await fetch(`/api/materiales/${material.id}/impacto`);
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setImpactoError(payload?.error ?? `Error ${res.status}`);
+        return;
+      }
+      setImpacto(payload?.data ?? { servicios: 0, proveedores: 0, instaladores: 0 });
+    } catch {
+      setImpactoError("Error de red al calcular el impacto.");
+    } finally {
+      setImpactoLoading(false);
+    }
+  }
 
   function setField(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -67,12 +102,9 @@ export function EditarMaterialForm({
     if (errors[key]) return FIELD_ERROR;
     if (touched[key]) {
       const value = form[key];
-      if (["ancho", "alto", "grosor"].includes(key)) {
+      if (["ancho", "alto", "grosor", "velocidad_avance"].includes(key)) {
         const parsed = parseOptionalNumber(value);
         return parsed && parsed > 0 ? FIELD_SUCCESS : "";
-      }
-      if (key === "unidad_medida") {
-        return value.trim() ? FIELD_SUCCESS : "";
       }
       return value.trim() ? FIELD_SUCCESS : "";
     }
@@ -80,8 +112,24 @@ export function EditarMaterialForm({
   }
 
   function validate() {
-    // Guard empty numeric fields explicitly so undefined values are never
-    // silently dropped by JSON.stringify before reaching the API.
+    if (isLight) {
+      const payload: Record<string, unknown> = {
+        nombre_material: form.nombre_material.trim(),
+        descripcion_material: form.descripcion_material.trim() || undefined,
+      };
+      if (newImageKey) payload.imagen_url = newImageKey;
+      else if (imageCleared) payload.imagen_url = "";
+
+      const nameError = !payload.nombre_material ? "El nombre es requerido." : "";
+      if (nameError) {
+        setErrors({ nombre_material: nameError });
+        return null;
+      }
+      setErrors({});
+      return payload;
+    }
+
+    // individual / sub — require numeric fields
     const numericErrors: Record<string, string> = {};
     for (const key of REQUIRED_NUMERIC) {
       if (!form[key].trim()) numericErrors[key] = "Campo requerido";
@@ -91,23 +139,22 @@ export function EditarMaterialForm({
       return null;
     }
 
-    // Build the payload the schema validates against (requires imagen_url).
-    // For the PUT we'll strip imagen_url back out when the user didn't upload a
-    // new image — UpdateMaterialSchema is partial, so omitting it is valid.
     const payload = {
       nombre_material: form.nombre_material.trim(),
-      descripcion_material: form.descripcion_material.trim(),
+      descripcion_material: form.descripcion_material.trim() || undefined,
       unidad_medida: form.unidad_medida.trim(),
       ancho: parseOptionalNumber(form.ancho),
       alto: parseOptionalNumber(form.alto),
       grosor: parseOptionalNumber(form.grosor),
+      velocidad_avance: parseOptionalNumber(form.velocidad_avance),
       color: form.color.trim(),
-      imagen_url: newImageKey ?? "placeholder-for-validation",
+      imagen_url: newImageKey ?? (imageCleared ? "" : "placeholder-for-validation"),
     };
 
-    const schemaToUse = newImageKey
-      ? CreateMaterialSchema
-      : CreateMaterialSchema.omit({ imagen_url: true });
+    const schemaToUse =
+      newImageKey || imageCleared
+        ? CreateMaterialSchema
+        : CreateMaterialSchema.omit({ imagen_url: true });
     const result = schemaToUse.safeParse(payload);
     if (result.success) {
       setErrors({});
@@ -130,11 +177,19 @@ export function EditarMaterialForm({
     const validatedPayload = validate();
     if (!validatedPayload) return;
 
-    // Only send imagen_url when the user uploaded a new image. Otherwise the
-    // existing storage key on the row is preserved by the partial update.
-    const { imagen_url: _omit, ...rest } = validatedPayload;
-    void _omit;
-    const bodyPayload = newImageKey ? { ...rest, imagen_url: newImageKey } : rest;
+    // For individual/sub: strip the placeholder imagen_url unless a new image was uploaded
+    let bodyPayload: Record<string, unknown>;
+    if (isLight) {
+      bodyPayload = validatedPayload;
+    } else {
+      const { imagen_url: _omit, ...rest } = validatedPayload as Record<string, unknown>;
+      void _omit;
+      bodyPayload = newImageKey
+        ? { ...rest, imagen_url: newImageKey }
+        : imageCleared
+          ? { ...rest, imagen_url: "" }
+          : rest;
+    }
 
     setLoading(true);
     try {
@@ -164,13 +219,13 @@ export function EditarMaterialForm({
     setDeleting(true);
 
     try {
-      const res = await fetch(`/api/materiales/${material.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/materiales/${material.id}`, { method: "DELETE" });
 
       if (!res.ok) {
         const responsePayload = await res.json().catch(() => ({}));
         setServerError(responsePayload?.error ?? `Error ${res.status}`);
+        setShowImpactConfirm(false);
+        setShowFinalConfirm(false);
         setDeleting(false);
         return;
       }
@@ -179,6 +234,8 @@ export function EditarMaterialForm({
       onClose();
     } catch {
       setServerError("Error de red. Intenta de nuevo.");
+      setShowImpactConfirm(false);
+      setShowFinalConfirm(false);
       setDeleting(false);
     }
   }
@@ -191,8 +248,20 @@ export function EditarMaterialForm({
         </div>
       )}
 
+      {isLight && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-[#fff3e0] border border-[#ffb74d] rounded-[6px]">
+          <span className="text-[13px] text-[#e65100]">
+            {isCategoria
+              ? "Categoría — edita el nombre, descripción e imagen."
+              : "Grupo de materiales — edita el nombre, descripción e imagen del grupo."}
+          </span>
+        </div>
+      )}
+
       <div>
-        <label className={LABEL}>Nombre *</label>
+        <label className={LABEL}>
+          Nombre <span className="text-[#e42200]">*</span>
+        </label>
         <input
           type="text"
           maxLength={100}
@@ -205,7 +274,7 @@ export function EditarMaterialForm({
       </div>
 
       <div>
-        <label className={LABEL}>Descripción *</label>
+        <label className={LABEL}>Descripción</label>
         <textarea
           rows={3}
           maxLength={500}
@@ -217,162 +286,303 @@ export function EditarMaterialForm({
         {errors.descripcion_material && <p className={ERROR_MSG}>{errors.descripcion_material}</p>}
       </div>
 
-      <div>
-        <label className={LABEL}>Unidad de medida *</label>
-        <select
-          value={form.unidad_medida}
-          onChange={(e) => setField("unidad_medida", e.target.value)}
-          className={`${SELECT_FIELD} ${getFieldClass("unidad_medida")}`}
-        >
-          <option value="">Seleccionar unidad</option>
-          {UNIDADES_MEDIDA.map((unit) => (
-            <option key={unit} value={unit}>
-              {unit === "mm" && "Milímetros (mm)"}
-              {unit === "in" && "Pulgadas (in)"}
-              {unit === "cm" && "Centímetros (cm)"}
-              {unit === "mu" && "Micras (mu)"}
-              {unit === "pt" && "Puntos (pt)"}
-            </option>
-          ))}
-        </select>
-        {errors.unidad_medida && <p className={ERROR_MSG}>{errors.unidad_medida}</p>}
-      </div>
+      {needsDimensions && (
+        <>
+          <div>
+            <label className={LABEL}>
+              Unidad de medida <span className="text-[#e42200]">*</span>
+            </label>
+            <Select
+              value={form.unidad_medida}
+              onChange={(v) => setField("unidad_medida", v)}
+              placeholder="Seleccionar unidad"
+              size="sm"
+              error={errors.unidad_medida || undefined}
+            >
+              {UNIDADES_MEDIDA.map((unit) => (
+                <SelectOption key={unit} value={unit}>
+                  {unit === "mm" && "Milímetros (mm)"}
+                  {unit === "in" && "Pulgadas (in)"}
+                  {unit === "cm" && "Centímetros (cm)"}
+                  {unit === "mu" && "Micras (mu)"}
+                  {unit === "pt" && "Puntos (pt)"}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className={LABEL}>Ancho *</label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0.00"
-            value={form.ancho}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-            }}
-            onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
-            className={`${FIELD} ${getFieldClass("ancho")}`}
-          />
-          {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>Alto *</label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0.00"
-            value={form.alto}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-            }}
-            onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
-            className={`${FIELD} ${getFieldClass("alto")}`}
-          />
-          {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
-        </div>
-        <div>
-          <label className={LABEL}>Grosor *</label>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0.00"
-            value={form.grosor}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
-            }}
-            onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
-            className={`${FIELD} ${getFieldClass("grosor")}`}
-          />
-          {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
-        </div>
-      </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={LABEL}>
+                Ancho{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
+                placeholder="0.00"
+                value={form.ancho}
+                onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
+                className={`${FIELD} ${getFieldClass("ancho")}`}
+              />
+              {errors.ancho && <p className={ERROR_MSG}>{errors.ancho}</p>}
+            </div>
+            <div>
+              <label className={LABEL}>
+                Alto{form.unidad_medida ? ` (${form.unidad_medida})` : ""} *
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
+                placeholder="0.00"
+                value={form.alto}
+                onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
+                className={`${FIELD} ${getFieldClass("alto")}`}
+              />
+              {errors.alto && <p className={ERROR_MSG}>{errors.alto}</p>}
+            </div>
+            <div>
+              <label className={LABEL}>Grosor (mm) *</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
+                placeholder="0.00"
+                value={form.grosor}
+                onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
+                className={`${FIELD} ${getFieldClass("grosor")}`}
+              />
+              {errors.grosor && <p className={ERROR_MSG}>{errors.grosor}</p>}
+            </div>
+          </div>
 
-      <div>
-        <label className={LABEL}>Color *</label>
-        <input
-          type="text"
-          maxLength={50}
-          placeholder="Ej. #d18c59 o Negro"
-          value={form.color}
-          onChange={(e) => setField("color", e.target.value)}
-          className={`${FIELD} ${getFieldClass("color")}`}
-        />
-        {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
-      </div>
+          <div>
+            <label className={LABEL}>
+              Velocidad de avance (mm/s) <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={form.velocidad_avance}
+              onChange={(e) => setField("velocidad_avance", normalizeNumericInput(e.target.value))}
+              className={`${FIELD} ${getFieldClass("velocidad_avance")}`}
+            />
+            {errors.velocidad_avance && <p className={ERROR_MSG}>{errors.velocidad_avance}</p>}
+          </div>
+
+          <div>
+            <label className={LABEL}>
+              Descripción de color <span className="text-[#e42200]">*</span>
+            </label>
+            <input
+              type="text"
+              maxLength={50}
+              placeholder="Ej. Rojo"
+              value={form.color}
+              onChange={(e) => setField("color", e.target.value)}
+              className={`${FIELD} ${getFieldClass("color")}`}
+            />
+            {errors.color && <p className={ERROR_MSG}>{errors.color}</p>}
+          </div>
+        </>
+      )}
 
       <div>
         <label className={LABEL}>Imagen</label>
-        <MaterialImageInput
+        <ImageUploader
+          mode="single"
+          category="materiales"
           initialPreviewUrl={material.imageUrl}
           onUploaded={(key) => {
             setNewImageKey(key);
+            setImageCleared(key === null && Boolean(material.imageUrl));
             setErrors((prev) => ({ ...prev, imagen_url: "" }));
           }}
-          onError={(message) => {
-            setErrors((prev) => ({ ...prev, imagen_url: message }));
-          }}
+          onError={(message) => setErrors((prev) => ({ ...prev, imagen_url: message }))}
           hasError={Boolean(errors.imagen_url)}
         />
         {errors.imagen_url && <p className={ERROR_MSG}>{errors.imagen_url}</p>}
       </div>
 
       <div className="flex justify-between gap-3 mt-2">
-        <button
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
           onClick={() => setShowDeleteConfirm(true)}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
           disabled={loading || deleting}
         >
           Eliminar
-        </button>
+        </Button>
 
         <div className="flex gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
             disabled={loading || deleting}
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={loading || deleting}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
+            loading={loading}
           >
             {loading ? "Actualizando..." : "Guardar cambios"}
-          </button>
+          </Button>
         </div>
       </div>
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">¿Eliminar material?</h3>
+            <h3 className="text-[18px] font-medium text-[#1e1e1e] mb-4">
+              {isCategoria
+                ? "¿Eliminar categoría?"
+                : isGrupo
+                  ? "¿Eliminar grupo?"
+                  : "¿Eliminar material?"}
+            </h3>
             <p className="text-[14px] text-[#575757] mb-6">
-              Esta acción no se puede deshacer. El material &quot;{material.name}&quot; será
-              eliminado permanentemente. Si está asociado a opciones de producto, la eliminación
-              será bloqueada.
+              {isCategoria ? (
+                <>
+                  ¿Estás seguro que quieres eliminar la categoría &quot;{material.name}&quot;?{" "}
+                  <strong className="text-[#1e1e1e]">
+                    Esto también eliminará todos los grupos, variantes e individuales que contiene.
+                  </strong>
+                </>
+              ) : isGrupo ? (
+                <>
+                  ¿Estás seguro que quieres eliminar el grupo &quot;{material.name}&quot;?{" "}
+                  <strong className="text-[#1e1e1e]">
+                    Esto también eliminará todas sus variantes.
+                  </strong>
+                </>
+              ) : (
+                `¿Estás seguro que quieres eliminar el material "${material.name}"?`
+              )}
             </p>
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
+              >
+                Cancelar
+              </Button>
+              <Button type="button" variant="destructive" size="sm" onClick={handleFirstConfirm}>
+                Sí, eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showImpactConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Acción irreversible</h3>
+
+            {impactoLoading && (
+              <p className="text-[14px] text-[#575757] mb-6">Calculando impacto...</p>
+            )}
+
+            {impactoError && (
+              <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2 mb-4">
+                {impactoError}
+              </div>
+            )}
+
+            {!impactoLoading && !impactoError && impacto && (
+              <>
+                <p className="text-[14px] text-[#575757] mb-3">
+                  <strong className="text-[#e42200]">Esta acción no se puede deshacer.</strong>{" "}
+                  Afectará a:
+                </p>
+                <ul className="text-[14px] text-[#1e1e1e] mb-6 list-disc pl-5 space-y-1">
+                  <li>
+                    <strong className="text-[#e42200]">{impacto.servicios}</strong>{" "}
+                    <strong>{impacto.servicios === 1 ? "servicio" : "servicios"}</strong>
+                  </li>
+                  <li>
+                    <strong className="text-[#e42200]">{impacto.proveedores}</strong>{" "}
+                    <strong>{impacto.proveedores === 1 ? "proveedor" : "proveedores"}</strong>
+                  </li>
+                  <li>
+                    <strong className="text-[#e42200]">{impacto.instaladores}</strong>{" "}
+                    <strong>{impacto.instaladores === 1 ? "instalador" : "instaladores"}</strong>
+                  </li>
+                </ul>
+              </>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowImpactConfirm(false)}
                 disabled={deleting}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setShowImpactConfirm(false);
+                  setShowFinalConfirm(true);
+                }}
+                disabled={deleting || impactoLoading || Boolean(impactoError)}
+              >
+                Eliminar definitivamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinalConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[12px] shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-[18px] font-medium text-[#e42200] mb-4">Última confirmación</h3>
+            <p className="text-[14px] text-[#575757] mb-6">
+              <strong className="text-[#1e1e1e]">
+                Revisa tus proveedores, instaladores y servicios. Asegúrate de que tengan al menos
+                un material registrado.
+              </strong>
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowFinalConfirm(false)}
+                disabled={deleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-5 py-2 text-[14px] font-medium text-white bg-[#e42200] rounded-[7px] hover:bg-[#c71a00] transition-colors disabled:opacity-60"
+                loading={deleting}
               >
-                {deleting ? "Eliminando..." : "Sí, eliminar"}
-              </button>
+                {deleting ? "Eliminando..." : "Entendido, eliminar"}
+              </Button>
             </div>
           </div>
         </div>

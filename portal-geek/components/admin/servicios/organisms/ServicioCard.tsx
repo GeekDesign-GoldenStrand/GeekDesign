@@ -1,60 +1,93 @@
 "use client";
 
+import { ActionButton, ActionLink } from "@/components/ui/atoms";
+import { EditIcon, TrashIcon } from "@/components/ui/atoms/icons";
+import { formatDate } from "@/lib/utils/date";
 import type { ServicioListadoItem } from "@/types/servicios";
 
 type ServicioCardProps = {
   servicio: ServicioListadoItem;
-  onVerDetalle?: (id: number) => void;
   onEliminar?: (id: number) => void;
 };
 
-export function ServicioCard({ servicio, onVerDetalle, onEliminar }: ServicioCardProps) {
-  //Date Format to "D de MMMM de YYYY"
-  const fechaFormateada = new Date(servicio.fecha_modificacion).toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
+  const fechaFormateada = formatDate(servicio.fecha_modificacion);
 
-  // Machines list as comma-separated string or "Sin máquinas asignadas" if empty
-  const maquinasTexto =
-    servicio.maquinas.length === 0
-      ? "Sin máquinas asignadas"
-      : servicio.maquinas.map((m) => m.maquina.apodo_maquina).join(", ");
+  const maquinas = servicio.maquinas.map((m) => m.maquina.apodo_maquina);
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0px_4px_7px_0px_rgba(0,0,0,0.10)] p-6 flex items-center justify-between">
-      <div className="flex-1">
-        <h3 className="text-xl font-bold text-[#1e1e1e] mb-2">{servicio.nombre_servicio}</h3>
-        <div className="space-y-0.5 text-sm text-[#1e1e1e]">
-          <p>
-            <span className="font-medium">Descripción:</span>{" "}
-            {servicio.descripcion_servicio ?? "Sin descripción"}
-          </p>
-          <p>
-            <span className="font-medium">Máquina:</span> {maquinasTexto}
-          </p>
-          <p>
-            <span className="font-medium">Última fecha de modificación:</span> {fechaFormateada}
-          </p>
-        </div>
+    <div className="bg-white gap-4 rounded-[7px] shadow-[0px_0px_20px_0px_rgba(0,0,0,0.25)] p-4 flex flex-col w-full min-w-0 font-['IBM_Plex_Sans_JP',sans-serif]">
+      {/* Header */}
+      <div>
+        <h3 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
+          {servicio.nombre_servicio}
+        </h3>
       </div>
 
-      <div className="flex items-center gap-3 ml-4">
-        <button
-          type="button"
-          onClick={() => onVerDetalle?.(servicio.id_servicio)}
-          className="bg-gray-300 text-gray-700 hover:bg-gray-400 h-9 px-5 rounded-full font-medium text-sm transition-all"
-        >
-          Ver detalle
-        </button>
-        <button
-          type="button"
+      <p className="text-[14px] text-gray-500">Modificado: {fechaFormateada}</p>
+
+      {/* Descripción */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
+          Descripción
+        </p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {servicio.descripcion_servicio ?? "Sin descripción"}
+        </p>
+      </div>
+
+      {/* Sucursal */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">Sucursal</p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {servicio.sucursal?.nombre_sucursal ?? "Sin sucursal asignada"}
+        </p>
+      </div>
+
+      {/* Máquinas */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">Máquinas</p>
+        {maquinas.length > 0 ? (
+          <div className="flex flex-wrap gap-2 flex-1">
+            {maquinas.map((maq, idx) => (
+              <p
+                key={idx}
+                className="border border-gray-400 bg-gray-100 text-xs w-fit max-w-full h-fit font-regular px-2 py-1 rounded-lg text-[#1e1e1e] break-words"
+              >
+                {maq}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e]">
+            Sin máquinas asignadas
+          </p>
+        )}
+      </div>
+
+      {/* Última modificación */}
+      <div>
+        <p className="text-[16px] font-IBM-plex-sans font-medium text-[#1e1e1e] mb-1">
+          Última modificación
+        </p>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#1e1e1e] break-words">
+          {fechaFormateada}
+        </p>
+      </div>
+
+      {/* Footer / Actions */}
+      <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 gap-2 flex-wrap">
+        <ActionLink
+          href={`/servicios/${servicio.id_servicio}/editar`}
+          aria-label="Editar"
+          icon={<EditIcon size={16} />}
+        />
+        <ActionButton
+          tone="danger"
           onClick={() => onEliminar?.(servicio.id_servicio)}
-          className="bg-[#e42200] text-white hover:bg-[#c41e00] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] h-9 px-5 rounded-full font-medium text-sm transition-all"
-        >
-          Eliminar
-        </button>
+          aria-label="Eliminar"
+          icon={<TrashIcon size={16} />}
+        />
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ describe("GET /api/proveedores/[id]/asignacion", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 si el rol no es Direccion", async () => {
+  it("retorna 403 si el rol no es Direccion (proveedores es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
     const res = await testApp().get("/api/proveedores/1/asignacion");
     expect(res.status).toBe(403);
@@ -181,5 +181,33 @@ describe("PUT /api/proveedores/[id]/asignacion", () => {
       .send({ type: "servicio", items: [{ id: 1, precio: 50 }] });
 
     expect(res.status).toBe(404);
+  });
+
+  it("retorna 422 con el mensaje si un servicio asignado es inactivo o inválido", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const { ValidationError } = await import("@/lib/utils/errors");
+    mockSyncAssignments.mockRejectedValue(
+      new ValidationError("Servicios no válidos o inactivos: 88")
+    );
+
+    const res = await testApp()
+      .put("/api/proveedores/1/asignacion")
+      .send({ type: "servicio", items: [{ id: 88, precio: 50 }] });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe("Servicios no válidos o inactivos: 88");
+  });
+
+  it("retorna 422 con el mensaje si un material asignado no existe o está inactivo", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const { ValidationError } = await import("@/lib/utils/errors");
+    mockSyncAssignments.mockRejectedValue(new ValidationError("Materiales no encontrados: 77"));
+
+    const res = await testApp()
+      .put("/api/proveedores/1/asignacion")
+      .send({ type: "material", items: [{ id: 77, precio: 50 }] });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe("Materiales no encontrados: 77");
   });
 });

@@ -23,7 +23,7 @@ export async function loginUser(email: string, password: string): Promise<LoginR
   });
 
   // Same error for missing user + bad password — avoids leaking which is wrong.
-  if (!usuario || usuario.estatus !== "Activo") {
+  if (!usuario || usuario.estatus !== "Activo" || !usuario.contrasena_hash) {
     throw new UnauthorizedError("Credenciales inválidas");
   }
 

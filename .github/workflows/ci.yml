@@ -75,7 +75,7 @@ jobs:
           cache-dependency-path: portal-geek/package-lock.json
       - run: npm ci
       - run: npx prisma generate
-      - run: npm test -- --passWithNoTests --ci
+      - run: npm test -- --ci
 
   # ── Heavier checks — only on PRs to main or develop ─────────────────────────
 

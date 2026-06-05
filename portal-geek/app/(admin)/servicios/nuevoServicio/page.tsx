@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
-import { ADMIN_ROLES } from "@/lib/auth/guards";
-import { getSession } from "@/lib/auth/session";
+import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 
 import { ViewNuevoServicio } from "./view-NuevoServicio";
 
+// Role/section access is enforced in ../layout.tsx (requireSection("servicios")).
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Nuevo servicio | Geek Design" };
 
-export default async function NuevoServicioPage() {
-  const session = await getSession();
-  if (!session || !ADMIN_ROLES.includes(session.role)) redirect("/login");
-
-  return <ViewNuevoServicio />;
+export default function NuevoServicioPage() {
+  return (
+    <div>
+      <AdminHeader title="Registrar nuevo servicio" />
+      <ViewNuevoServicio />
+    </div>
+  );
 }

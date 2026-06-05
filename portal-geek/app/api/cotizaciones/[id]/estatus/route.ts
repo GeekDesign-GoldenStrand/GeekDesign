@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { withRoleParams } from "@/lib/auth/guards";
+import { withSectionParams } from "@/lib/auth/guards";
 import { CotizacionIdParams } from "@/lib/schemas/cotizaciones";
 import { changeQuotationStatus, QUOTATION_STATUS } from "@/lib/services/cotizaciones";
 import { ok } from "@/lib/utils/api";
@@ -18,8 +18,9 @@ const ChangeQuotationStatusSchema = z.object({
   ]),
 });
 
-export const PATCH = withRoleParams<Params>(
-  ["Direccion", "Administrador"],
+export const PATCH = withSectionParams<Params>(
+  "cotizaciones",
+  "write",
   async (req, ctx, session) => {
     try {
       const { id } = CotizacionIdParams.parse(await ctx.params);

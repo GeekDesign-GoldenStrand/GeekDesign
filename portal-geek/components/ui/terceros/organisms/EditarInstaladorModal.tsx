@@ -2,23 +2,32 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { isValidPhoneNumber, PhoneInputMX } from "@/components/ui/atoms/PhoneInputMX";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
 import { ModalShell } from "@/components/ui/terceros/molecules/ModalShell";
 import type { UpdateInstaladorInput } from "@/lib/schemas/instaladores";
+import { UBICACION_REGEX } from "@/lib/schemas/proveedores";
+import { toE164 } from "@/lib/utils/format";
+import { isValidMoney, isValidMoneyInput } from "@/lib/utils/money";
 
 const NOMBRE_REGEX = /^[a-zA-ZÀ-ÿ0-9.,\-' ]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function formatPhone(digits: string): string {
-  const metro = /^(55|33|81)/.test(digits);
-  if (metro) {
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-    return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-  }
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-}
+const COLORS: { value: string; label: string }[] = [
+  { value: "#EF4444", label: "Rojo" },
+  { value: "#F97316", label: "Naranja" },
+  { value: "#EAB308", label: "Amarillo" },
+  { value: "#22C55E", label: "Verde" },
+  { value: "#14B8A6", label: "Verde azulado" },
+  { value: "#3B82F6", label: "Azul" },
+  { value: "#6366F1", label: "Índigo" },
+  { value: "#8B5CF6", label: "Violeta" },
+  { value: "#EC4899", label: "Rosa" },
+  { value: "#F43F5E", label: "Carmín" },
+  { value: "#64748B", label: "Gris pizarra" },
+  { value: "#78716C", label: "Marrón" },
+];
 
 function validateFields(form: InstaladorFormData): Record<string, string> {
   const errs: Record<string, string> = {};
@@ -32,10 +41,18 @@ function validateFields(form: InstaladorFormData): Record<string, string> {
   if (!form.correo.trim()) errs.correo = "El correo es requerido.";
   else if (!EMAIL_REGEX.test(form.correo)) errs.correo = "Correo electrónico inválido.";
   if (!form.telefono) errs.telefono = "El teléfono es requerido.";
-  else if (!/^\d{10}$/.test(form.telefono)) errs.telefono = "Debe tener exactamente 10 dígitos.";
+  else if (!isValidPhoneNumber(form.telefono)) errs.telefono = "Número de teléfono inválido.";
   if (!["Instalador", "Contratista"].includes(form.tipo)) errs.tipo = "Seleccione un tipo válido.";
-  if (form.ubicacion && form.ubicacion.length > 255) errs.ubicacion = "Máximo 255 caracteres.";
+  if (form.ubicacion) {
+    if (form.ubicacion.length > 100) errs.ubicacion = "Máximo 100 caracteres.";
+    else if (!UBICACION_REGEX.test(form.ubicacion.trim()))
+      errs.ubicacion = "Solo se permiten caracteres en inglés y español.";
+  }
   if (form.notas && form.notas.length > 500) errs.notas = "Máximo 500 caracteres.";
+  if (!form.costo_instalacion.trim()) errs.costo_instalacion = "La tarifa base es requerida.";
+  else if (!isValidMoney(form.costo_instalacion))
+    errs.costo_instalacion = "Debe ser un número mayor o igual a 0.";
+  if (!form.color) errs.color = "Selecciona un color identificador.";
   return errs;
 }
 
@@ -50,6 +67,8 @@ function parseServerFieldErrors(serverError: string | null): Record<string, stri
     "ubicacion",
     "notas",
     "estatus",
+    "costo_instalacion",
+    "color",
   ];
   const parsed: Record<string, string> = {};
   for (const field of fields) {
@@ -75,6 +94,8 @@ export type InstaladorFormData = {
   ubicacion: string;
   notas: string;
   estatus: string;
+  costo_instalacion: string;
+  color: string;
 };
 
 interface EditarInstaladorModalProps {
@@ -94,7 +115,10 @@ export function EditarInstaladorModal({
   onClose,
   onSubmit,
 }: EditarInstaladorModalProps) {
-  const [form, setForm] = useState<InstaladorFormData>(initialData);
+  const [form, setForm] = useState<InstaladorFormData>(() => ({
+    ...initialData,
+    telefono: toE164(initialData.telefono),
+  }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -115,7 +139,7 @@ export function EditarInstaladorModal({
     if (touched[key]) {
       const val = form[key as keyof typeof form];
       if (key === "correo") return EMAIL_REGEX.test(val) ? FIELD_SUCCESS : "";
-      if (key === "telefono") return val && /^\d{10}$/.test(val) ? FIELD_SUCCESS : "";
+      if (key === "telefono") return val && isValidPhoneNumber(val) ? FIELD_SUCCESS : "";
       if (typeof val === "string" && val.trim()) return FIELD_SUCCESS;
     }
     return "";
@@ -137,6 +161,8 @@ export function EditarInstaladorModal({
       ubicacion: form.ubicacion || undefined,
       notas: form.notas || undefined,
       estatus: form.estatus as UpdateInstaladorInput["estatus"],
+      costo_instalacion: parseFloat(form.costo_instalacion),
+      color: form.color,
     });
   }
 
@@ -183,16 +209,43 @@ export function EditarInstaladorModal({
             <label className={LABEL}>
               Tipo <span className="text-[#e42200]">*</span>
             </label>
-            <select
+            <Select
               value={form.tipo}
-              onChange={(e) => setField("tipo", e.target.value)}
-              className={`${FIELD} ${getFieldClass("tipo")}`}
+              onChange={(v) => setField("tipo", v)}
+              size="sm"
+              error={allErrors.tipo || undefined}
             >
-              <option value="Instalador">Instalador</option>
-              <option value="Contratista">Contratista</option>
-            </select>
-            {allErrors.tipo && <p className={ERROR_MSG}>{allErrors.tipo}</p>}
+              <SelectOption value="Instalador">Instalador</SelectOption>
+              <SelectOption value="Contratista">Contratista</SelectOption>
+            </Select>
           </div>
+        </div>
+
+        <div>
+          <label className={LABEL}>
+            Tarifa base <span className="text-[#e42200]">*</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#8e908f] pointer-events-none">
+              $
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              pattern="^[0-9]*\.?[0-9]{0,2}$"
+              min="0"
+              placeholder="0.00"
+              value={form.costo_instalacion}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (isValidMoneyInput(raw)) setField("costo_instalacion", raw);
+              }}
+              className={`${FIELD} ${getFieldClass("costo_instalacion")} pl-7`}
+            />
+          </div>
+          {allErrors.costo_instalacion && (
+            <p className={ERROR_MSG}>{allErrors.costo_instalacion}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -213,16 +266,10 @@ export function EditarInstaladorModal({
             <label className={LABEL}>
               Teléfono <span className="text-[#e42200]">*</span>
             </label>
-            <input
-              type="tel"
-              inputMode="numeric"
-              placeholder="442 123 4567"
-              value={formatPhone(form.telefono)}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                setField("telefono", digits);
-              }}
-              className={`${FIELD} ${getFieldClass("telefono")}`}
+            <PhoneInputMX
+              value={form.telefono}
+              onChange={(e164) => setField("telefono", e164)}
+              hasError={!!allErrors.telefono}
             />
             {allErrors.telefono && <p className={ERROR_MSG}>{allErrors.telefono}</p>}
           </div>
@@ -233,7 +280,8 @@ export function EditarInstaladorModal({
             <label className={LABEL}>Ubicación</label>
             <input
               type="text"
-              placeholder="Querétaro, Querétaro"
+              maxLength={100}
+              placeholder="Ej. Blvrd Mediterráneo 236 B, Villa Corregidora, 76900 El Pueblito, Qro."
               value={form.ubicacion}
               onChange={(e) => setField("ubicacion", e.target.value)}
               className={`${FIELD} ${getFieldClass("ubicacion")}`}
@@ -243,16 +291,51 @@ export function EditarInstaladorModal({
 
           <div>
             <label className={LABEL}>Estatus</label>
-            <select
-              value={form.estatus}
-              onChange={(e) => setField("estatus", e.target.value)}
-              className={`${FIELD} ${getFieldClass("estatus")}`}
-            >
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Baneado">Baneado</option>
-            </select>
+            <Select value={form.estatus} onChange={(v) => setField("estatus", v)} size="sm">
+              <SelectOption value="Activo">Activo</SelectOption>
+              <SelectOption value="Inactivo">Inactivo</SelectOption>
+              <SelectOption value="Baneado">Baneado</SelectOption>
+            </Select>
           </div>
+        </div>
+
+        <div>
+          <label className={LABEL}>Color identificador</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {COLORS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                title={c.label}
+                onClick={() => setField("color", c.value)}
+                className={`w-7 h-7 rounded-full border-2 transition-all ${
+                  form.color === c.value
+                    ? "border-[#1e1e1e] scale-110 shadow-md ring-2 ring-offset-1 ring-[#1e1e1e]/20"
+                    : "border-transparent hover:scale-105 hover:border-[#b9b8b8]"
+                }`}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+            <button
+              type="button"
+              title="Sin color"
+              onClick={() => setField("color", "")}
+              className={`w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center text-[10px] font-bold ${
+                !form.color
+                  ? "border-[#1e1e1e] bg-[#f5f5f5] text-[#1e1e1e] scale-110 shadow-md"
+                  : "border-[#b9b8b8] bg-white text-[#8e908f] hover:scale-105"
+              }`}
+            >
+              ∅
+            </button>
+          </div>
+          {form.color ? (
+            <p className="text-[12px] text-[#8e908f] mt-1">
+              Color seleccionado: <span className="font-medium text-[#1e1e1e]">{form.color}</span>
+            </p>
+          ) : (
+            allErrors.color && <p className={ERROR_MSG}>{allErrors.color}</p>
+          )}
         </div>
 
         <div>
@@ -268,21 +351,12 @@ export function EditarInstaladorModal({
         </div>
 
         <div className="flex justify-end gap-3 mt-2">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
-          >
+          <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-          >
+          </Button>
+          <Button type="submit" variant="primary" size="sm" loading={loading}>
             {loading ? "Guardando..." : "Guardar cambios"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalShell>

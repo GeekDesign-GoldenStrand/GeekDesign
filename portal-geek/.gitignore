@@ -43,11 +43,14 @@ yarn-error.log*
 # vercel
 .vercel
 
-# App Engine — keep example only, real config holds secrets
+# App Engine — never commit a rendered app.yaml (holds secrets).
+# Keep the committed templates/examples.
 app.yaml
 !app.yaml.example
+!app.template.yaml
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
+.lighthouseci

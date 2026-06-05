@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { EditIcon, UsersIcon } from "@/components/ui/atoms/icons";
+import { EditIcon, UserGearIcon } from "@/components/ui/atoms/icons";
 import type { MaterialCardProps, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialCardRowProps extends MaterialCardProps {
@@ -16,7 +16,7 @@ function ColorDescription({ value }: { value: string }) {
   return (
     <div className="flex items-center justify-center">
       <span
-        className="inline-flex min-h-6 items-center justify-center rounded-full border border-[#b9b8b8] px-3 py-1 text-[14px] text-[#1e1e1e] text-center"
+        className="inline-flex min-h-6 items-center justify-center rounded-full border border-[#b9b8b8] px-3 py-1 text-sm text-[#1e1e1e] text-center"
         aria-label={hasValue ? `Descripción del color ${value}` : "Sin descripción del color"}
       >
         {hasValue ? value : "-"}
@@ -53,28 +53,49 @@ export function MaterialCard({
   width,
   height,
   thickness,
+  feedRate,
   description,
   imageUrl,
+  id_material_padre,
+  tipo,
+  subMateriales,
   visibleColumns,
   gridTemplateColumns,
   onEdit,
   onViewProveedores,
 }: MaterialCardRowProps) {
   const onEditClick = () =>
-    onEdit({ id, name, unit, color, width, height, thickness, description, imageUrl });
+    onEdit({
+      id,
+      name,
+      unit,
+      color,
+      width,
+      height,
+      thickness,
+      feedRate,
+      description,
+      imageUrl,
+      id_material_padre,
+      tipo,
+      subMateriales,
+    });
 
   const onProveedoresClick = () => onViewProveedores(id, name);
 
+  // Sizing matches CotizacionesTable + ClientesTable: px-4 py-3, text-sm,
+  // rounded shadow. Cells inherit text color/weight (no bolded name on desktop)
+  // for visual consistency across admin tables.
   return (
     <article
-      className="flex flex-col md:grid md:items-center gap-3 md:gap-4 p-4 md:px-4 md:py-3 bg-white rounded-[7px] shadow-[0_2px_7px_rgba(0,0,0,0.14)] relative"
+      className="flex flex-col md:grid md:items-center gap-3 md:gap-4 p-4 md:px-4 md:py-3 bg-white text-[#1e1e1e] rounded shadow text-sm relative transition-shadow hover:shadow-md"
       style={{ gridTemplateColumns }}
     >
       <div className="flex items-center justify-between md:contents">
         {visibleColumns.name && (
-          <div className="flex flex-col md:flex md:items-center md:justify-center">
+          <div className="flex flex-col md:flex md:items-center md:justify-center min-w-0">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Nombre</span>
-            <p className="text-[15px] lg:text-[16px] text-[#1e1e1e] font-semibold md:font-normal truncate">
+            <p className="text-sm font-semibold md:font-normal truncate max-w-full" title={name}>
               {name}
             </p>
           </div>
@@ -90,11 +111,11 @@ export function MaterialCard({
       </div>
 
       {visibleColumns.description && (
-        <div className="flex flex-col md:flex md:items-center md:justify-center">
+        <div className="flex flex-col md:flex md:items-center md:justify-center min-w-0">
           <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">
             Descripción
           </span>
-          <p className="text-[12px] text-[#575757] line-clamp-2">{description || "-"}</p>
+          <p className="text-sm line-clamp-2 max-w-full break-words">{description || "-"}</p>
         </div>
       )}
 
@@ -102,25 +123,25 @@ export function MaterialCard({
         {visibleColumns.unit && (
           <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Unidad</span>
-            <p className="text-[14px] text-[#1e1e1e]">{unit}</p>
+            <p className="text-sm">{unit}</p>
           </div>
         )}
         {visibleColumns.width && (
           <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Ancho</span>
-            <p className="text-[14px] md:text-[16px] text-[#1e1e1e]">{width}</p>
+            <p className="text-sm">{width}</p>
           </div>
         )}
         {visibleColumns.height && (
           <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Alto</span>
-            <p className="text-[14px] md:text-[16px] text-[#1e1e1e]">{height}</p>
+            <p className="text-sm">{height}</p>
           </div>
         )}
         {visibleColumns.thickness && (
           <div className="flex flex-col md:flex md:items-center md:justify-center">
             <span className="text-[10px] uppercase text-[#8e908f] font-bold md:hidden">Grosor</span>
-            <p className="text-[14px] md:text-[16px] text-[#1e1e1e]">{thickness}</p>
+            <p className="text-sm">{thickness}</p>
           </div>
         )}
       </div>
@@ -146,9 +167,9 @@ export function MaterialCard({
           <button
             onClick={onProveedoresClick}
             aria-label={`Ver proveedores de ${name}`}
-            className="inline-flex items-center gap-1.5 px-3 h-8 rounded-[7px] border border-[#575757] bg-[#e8e8e8] text-[#1e1e1e] text-[12px] font-medium hover:bg-[#d8d8d8] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3 h-8 rounded border border-[#575757] bg-[#e8e8e8] text-[#1e1e1e] text-sm font-medium hover:bg-[#d8d8d8] transition-colors whitespace-nowrap"
           >
-            <UsersIcon size={14} />
+            <UserGearIcon size={14} />
             Ver proveedores
           </button>
         </div>

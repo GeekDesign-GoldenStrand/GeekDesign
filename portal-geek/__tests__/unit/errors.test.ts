@@ -1,6 +1,7 @@
 /**
  * @jest-environment node
  */
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 
 import {
@@ -81,6 +82,32 @@ describe("handleError", () => {
   it("devuelve 500 cuando recibe un valor no-Error", async () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation();
     const response = handleError("string inesperado");
+    expect(response.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
+
+  // Regression: P2020 (numeric field overflow) was falling through to the
+  // generic 500 handler because handleError didn't recognise Prisma errors.
+  // It must now return 422 so the client gets a usable message instead of 500.
+  it("devuelve 422 para Prisma P2020 (numeric field overflow)", async () => {
+    const p2020 = new Prisma.PrismaClientKnownRequestError("Value out of range for the type", {
+      code: "P2020",
+      clientVersion: "7.0.0",
+    });
+    const response = handleError(p2020);
+    const body = await response.json();
+    expect(response.status).toBe(422);
+    expect(body.error).toBe("Valor numérico fuera del rango permitido");
+    expect(body.data).toBeNull();
+  });
+
+  it("devuelve 500 para otros errores de Prisma (no P2020)", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const p2002 = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+      code: "P2002",
+      clientVersion: "7.0.0",
+    });
+    const response = handleError(p2002);
     expect(response.status).toBe(500);
     consoleSpy.mockRestore();
   });

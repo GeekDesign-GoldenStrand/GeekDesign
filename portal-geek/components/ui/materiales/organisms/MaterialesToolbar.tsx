@@ -1,6 +1,6 @@
 import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/atoms/icons";
 import { MaterialesFilterPanel } from "@/components/ui/materiales/molecules/MaterialesFilterPanel";
-import type { MaterialSortOrder, MaterialesVisibleColumns } from "@/types";
+import type { MaterialSortOrder, MaterialTipoFilter, MaterialesVisibleColumns } from "@/types";
 
 interface MaterialesToolbarProps {
   search: string;
@@ -8,8 +8,10 @@ interface MaterialesToolbarProps {
   isFilterOpen: boolean;
   visibleColumns: MaterialesVisibleColumns;
   sortOrder: MaterialSortOrder;
-  onToggleColumn: (key: keyof MaterialesVisibleColumns) => void;
+  tipoFilter: MaterialTipoFilter;
+  onColumnsChange: (columns: MaterialesVisibleColumns) => void;
   onSortChange: (order: MaterialSortOrder) => void;
+  onTipoFilterChange: (value: MaterialTipoFilter) => void;
   onResetFilters: () => void;
   onAddClick?: () => void;
   onFilterClick?: () => void;
@@ -23,8 +25,10 @@ export function MaterialesToolbar({
   isFilterOpen,
   visibleColumns,
   sortOrder,
-  onToggleColumn,
+  tipoFilter,
+  onColumnsChange,
   onSortChange,
+  onTipoFilterChange,
   onResetFilters,
   onAddClick,
   onFilterClick,
@@ -41,6 +45,7 @@ export function MaterialesToolbar({
           placeholder="Buscar"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
+          maxLength={50}
           className="flex-1 text-[14px] font-medium text-[#1e1e1e] placeholder:text-[#8e908f] outline-none bg-transparent"
         />
         <span className="text-[#8e908f]">
@@ -66,18 +71,18 @@ export function MaterialesToolbar({
         </button>
       </div>
 
-      {isFilterOpen && (
-        // Filter panel is controlled by page state to keep filters centralized.
-        <MaterialesFilterPanel
-          visibleColumns={visibleColumns}
-          sortOrder={sortOrder}
-          onToggleColumn={onToggleColumn}
-          onSortChange={onSortChange}
-          onReset={onResetFilters}
-          onClose={onCloseFilter}
-          canViewProveedores={canViewProveedores}
-        />
-      )}
+      <MaterialesFilterPanel
+        open={isFilterOpen}
+        visibleColumns={visibleColumns}
+        sortOrder={sortOrder}
+        tipoFilter={tipoFilter}
+        onColumnsChange={onColumnsChange}
+        onSortChange={onSortChange}
+        onTipoFilterChange={onTipoFilterChange}
+        onReset={onResetFilters}
+        onClose={onCloseFilter}
+        canViewProveedores={canViewProveedores}
+      />
     </div>
   );
 }

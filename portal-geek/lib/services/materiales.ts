@@ -1,12 +1,31 @@
-import type { Materiales } from "@prisma/client";
+import type { Materiales, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
-import type { CreateMaterialInput, UpdateMaterialInput } from "@/lib/schemas/materiales";
+import type {
+  CreateCategoriaMaterialInput,
+  CreateGrupoMaterialInput,
+  CreateMaterialInput,
+  CreateSubMaterialInput,
+  UpdateMaterialInput,
+} from "@/lib/schemas/materiales";
 import { deleteObject, resolveImageUrl } from "@/lib/services/storage";
 import { ConflictError, NotFoundError } from "@/lib/utils/errors";
 
-export async function getMaterialesOptions(): Promise<Materiales[]> {
-  return prisma.materiales.findMany({ orderBy: { nombre_material: "asc" } });
+export type MaterialesConSubs = Materiales & {
+  subMateriales: MaterialesConSubs[];
+};
+
+// "Sin categoría" is the UI label for id_material_padre = NULL (no parent), not
+// a real row. Reject creating/renaming a real categoría to this name so the
+// presentational bucket never collides with an actual category.
+const RESERVED_CATEGORIA_NOMBRE = "sin categoría";
+
+function assertNombreCategoriaPermitido(nombre: string): void {
+  if (nombre.trim().toLowerCase() === RESERVED_CATEGORIA_NOMBRE) {
+    throw new ConflictError(
+      '"Sin categoría" es un nombre reservado: representa los materiales sin categoría asignada.'
+    );
+  }
 }
 
 export interface MaterialProveedor {
@@ -19,14 +38,16 @@ export interface MaterialProveedor {
   precio: string;
 }
 
-// On read, the `imagen_url` column holds the storage key. Replace it with a
-// fetchable URL (public or short-lived presigned GET) before returning.
+export interface MaterialImpacto {
+  servicios: number;
+  proveedores: number;
+  instaladores: number;
+}
+
 async function withResolvedImagen(material: Materiales): Promise<Materiales> {
   return { ...material, imagen_url: await resolveImageUrl(material.imagen_url) };
 }
 
-// Best-effort storage cleanup. We never let a failed object delete block the
-// DB transaction or response — orphaned objects are cheaper than 500s.
 async function safeDelete(key: string | null): Promise<void> {
   if (!key) return;
   try {
@@ -36,13 +57,50 @@ async function safeDelete(key: string | null): Promise<void> {
   }
 }
 
+// Recursive resolve: any depth (categoría → grupo → variante).
+async function resolveConSubs(
+  item: Materiales & { subMateriales?: unknown }
+): Promise<MaterialesConSubs> {
+  const resolved = await withResolvedImagen(item);
+  const raw = (item as MaterialesConSubs).subMateriales ?? [];
+  const resolvedSubs = await Promise.all(raw.map(resolveConSubs));
+  return { ...resolved, subMateriales: resolvedSubs };
+}
+
+// Leaf-only materials (es_grupo=false, es_categoria=false). For pickers.
+export async function getMaterialesOptions(): Promise<Materiales[]> {
+  return prisma.materiales.findMany({
+    where: { es_grupo: false, es_categoria: false },
+    orderBy: { nombre_material: "asc" },
+  });
+}
+
+// Groups with their variantes. For service forms that pick groups.
+export async function getMaterialesGrupos(): Promise<MaterialesConSubs[]> {
+  const grupos = await prisma.materiales.findMany({
+    where: { es_grupo: true },
+    include: { subMateriales: true },
+    orderBy: { nombre_material: "asc" },
+  });
+  return Promise.all(grupos.map((g) => resolveConSubs(g)));
+}
+
+// Top-level categorías. For category pickers in create modals.
+export async function getCategorias(): Promise<Materiales[]> {
+  return prisma.materiales.findMany({
+    where: { es_categoria: true },
+    orderBy: { nombre_material: "asc" },
+  });
+}
+
 export async function listMateriales(
   page: number,
   pageSize: number,
   q?: string,
-  sort: "asc" | "desc" = "asc"
-): Promise<{ items: Materiales[]; total: number }> {
-  const where = q
+  sort: "asc" | "desc" = "asc",
+  tipo?: "categorias" | "grupos" | "individuales"
+): Promise<{ items: MaterialesConSubs[]; total: number }> {
+  const searchFilter = q
     ? {
         OR: [
           { nombre_material: { contains: q, mode: "insensitive" as const } },
@@ -53,29 +111,69 @@ export async function listMateriales(
       }
     : undefined;
 
+  const tipoFilter: Prisma.MaterialesWhereInput | undefined =
+    tipo === "categorias"
+      ? { es_categoria: true }
+      : tipo === "grupos"
+        ? { es_grupo: true, es_categoria: false }
+        : tipo === "individuales"
+          ? {
+              es_grupo: false,
+              es_categoria: false,
+              // Exclude variantes (their padre is a grupo): an individual sits at
+              // the root or under a categoría.
+              OR: [{ id_material_padre: null }, { padre: { es_categoria: true } }],
+            }
+          : undefined;
+
+  // A `tipo` filter targets a role across the WHOLE tree, so it must not pin
+  // id_material_padre — the migration reparented legacy root grupos/individuales
+  // under the "Sin categoría" categoría, and users can assign others to real
+  // categorías. Without a tipo we still show only tree roots.
+  const base: Prisma.MaterialesWhereInput = {
+    ...(tipo ? {} : { id_material_padre: null }),
+    ...tipoFilter,
+  };
+
+  // `individuales` carries its own OR (to exclude variantes); AND it with the
+  // search OR so neither clobbers the other. Every other case can flat-merge.
+  const where: Prisma.MaterialesWhereInput =
+    searchFilter && tipoFilter && "OR" in tipoFilter
+      ? { AND: [base, searchFilter] }
+      : { ...base, ...searchFilter };
+
+  // Eager-load 2 levels: categoría → (grupo|individual) → variante.
   const [items, total] = await prisma.$transaction([
     prisma.materiales.findMany({
       where,
+      include: {
+        subMateriales: {
+          include: { subMateriales: true },
+          orderBy: { nombre_material: sort },
+        },
+      },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: { nombre_material: sort },
+      orderBy: [{ es_categoria: "desc" }, { es_grupo: "desc" }, { nombre_material: sort }],
     }),
     prisma.materiales.count({ where }),
   ]);
 
-  const resolved = await Promise.all(items.map(withResolvedImagen));
+  const resolved = await Promise.all(items.map((i) => resolveConSubs(i)));
   return { items: resolved, total };
 }
 
-export async function getMaterial(id: number): Promise<Materiales> {
-  // Fetch material by primary key.
-  const material = await prisma.materiales.findUnique({ where: { id_material: id } });
+export async function getMaterial(id: number): Promise<MaterialesConSubs> {
+  const material = await prisma.materiales.findUnique({
+    where: { id_material: id },
+    include: { subMateriales: { include: { subMateriales: true } } },
+  });
 
   if (!material) {
     throw new NotFoundError(`Material ${id} no encontrado`);
   }
 
-  return withResolvedImagen(material);
+  return resolveConSubs(material);
 }
 
 export async function getMaterialProveedores(id: number): Promise<MaterialProveedor[]> {
@@ -106,33 +204,191 @@ export async function getMaterialProveedores(id: number): Promise<MaterialProvee
   }));
 }
 
-export async function createMaterial(data: CreateMaterialInput): Promise<Materiales> {
-  // Persist a new material row using validated payload from the API schema.
-  const created = await prisma.materiales.create({ data });
-  return withResolvedImagen(created);
+// Validates that `padreId` is a legal parent for a row whose target role is:
+// - "categoria": padre must be null (categorías are top-level only).
+// - "grupo": padre null o categoría.
+// - "variante": padre debe ser grupo.
+// - "individual": padre null o categoría.
+async function assertPadreValido(
+  padreId: number | null | undefined,
+  role: "categoria" | "grupo" | "variante" | "individual",
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0] = prisma as never
+): Promise<void> {
+  if (padreId == null) {
+    if (role === "variante") {
+      throw new ConflictError("Una variante debe pertenecer a un grupo");
+    }
+    return;
+  }
+
+  const padre = await tx.materiales.findUnique({
+    where: { id_material: padreId },
+    select: { es_grupo: true, es_categoria: true },
+  });
+
+  if (!padre) {
+    throw new NotFoundError(`Material padre ${padreId} no encontrado`);
+  }
+
+  if (role === "categoria") {
+    throw new ConflictError("Una categoría no puede tener padre");
+  }
+
+  if (role === "grupo" || role === "individual") {
+    if (!padre.es_categoria) {
+      throw new ConflictError("El padre de un grupo o material individual debe ser una categoría");
+    }
+    return;
+  }
+
+  // role === "variante"
+  if (!padre.es_grupo) {
+    throw new ConflictError("El padre de una variante debe ser un grupo");
+  }
 }
 
-export async function updateMaterial(id: number, data: UpdateMaterialInput): Promise<Materiales> {
-  try {
-    // Capture the previous image key so we can clean it up if it changes.
-    const existing =
-      data.imagen_url !== undefined
-        ? await prisma.materiales.findUnique({
-            where: { id_material: id },
-            select: { imagen_url: true },
-          })
-        : null;
+export async function createCategoria(
+  data: CreateCategoriaMaterialInput
+): Promise<MaterialesConSubs> {
+  const { tipo: _tipo, ...rest } = data;
+  assertNombreCategoriaPermitido(rest.nombre_material);
+  const created = await prisma.materiales.create({
+    data: {
+      nombre_material: rest.nombre_material,
+      descripcion_material: rest.descripcion_material ?? null,
+      imagen_url: rest.imagen_url ?? null,
+      es_categoria: true,
+      es_grupo: false,
+      unidad_medida: null,
+    },
+    include: { subMateriales: { include: { subMateriales: true } } },
+  });
+  return resolveConSubs(created);
+}
 
-    const updated = await prisma.materiales.update({
-      where: { id_material: id },
-      data,
+export async function createMaterial(data: CreateMaterialInput): Promise<MaterialesConSubs> {
+  const created = await prisma.$transaction(async (tx) => {
+    await assertPadreValido(data.id_material_padre ?? null, "individual", tx);
+    return tx.materiales.create({
+      data: { ...data, es_grupo: false, es_categoria: false },
+      include: { subMateriales: { include: { subMateriales: true } } },
+    });
+  });
+  return resolveConSubs(created);
+}
+
+export async function createGrupo(data: CreateGrupoMaterialInput): Promise<MaterialesConSubs> {
+  const { tipo: _tipo, ...rest } = data;
+  const created = await prisma.$transaction(async (tx) => {
+    await assertPadreValido(rest.id_material_padre ?? null, "grupo", tx);
+    return tx.materiales.create({
+      data: {
+        nombre_material: rest.nombre_material,
+        descripcion_material: rest.descripcion_material ?? null,
+        imagen_url: rest.imagen_url ?? null,
+        id_material_padre: rest.id_material_padre ?? null,
+        es_grupo: true,
+        es_categoria: false,
+        unidad_medida: null,
+      },
+      include: { subMateriales: { include: { subMateriales: true } } },
+    });
+  });
+  return resolveConSubs(created);
+}
+
+export async function createSubMaterial(data: CreateSubMaterialInput): Promise<MaterialesConSubs> {
+  const { tipo: _tipo, ...rest } = data;
+  const created = await prisma.$transaction(async (tx) => {
+    await assertPadreValido(rest.id_material_padre, "variante", tx);
+    return tx.materiales.create({
+      data: { ...rest, es_grupo: false, es_categoria: false },
+      include: { subMateriales: { include: { subMateriales: true } } },
+    });
+  });
+  return resolveConSubs(created);
+}
+
+export async function updateMaterial(
+  id: number,
+  input: UpdateMaterialInput
+): Promise<MaterialesConSubs> {
+  // A cleared image arrives as "" from the form; persist it as NULL so the
+  // column stays empty rather than holding an invalid empty-string key.
+  const data = {
+    ...input,
+    ...(input.imagen_url === "" ? { imagen_url: null } : {}),
+  };
+  try {
+    const { updated, oldImagenKey } = await prisma.$transaction(async (tx) => {
+      const existing = await tx.materiales.findUnique({
+        where: { id_material: id },
+        select: { imagen_url: true, es_grupo: true, es_categoria: true },
+      });
+
+      if (!existing) {
+        throw new NotFoundError(`Material ${id} no encontrado`);
+      }
+
+      // Renaming a categoría to the reserved "Sin categoría" label is not allowed.
+      if (existing.es_categoria && data.nombre_material !== undefined) {
+        assertNombreCategoriaPermitido(data.nombre_material);
+      }
+
+      if (data.id_material_padre !== undefined) {
+        if (data.id_material_padre === id) {
+          throw new ConflictError("Un material no puede ser su propio padre");
+        }
+
+        const role: "categoria" | "grupo" | "variante" | "individual" = existing.es_categoria
+          ? "categoria"
+          : existing.es_grupo
+            ? "grupo"
+            : data.id_material_padre != null
+              ? // For leaf rows, the role depends on the parent's kind; assertPadreValido
+                // validates both "variante" and "individual" parent rules. We pick the
+                // role from the parent below.
+                "individual"
+              : "individual";
+
+        // For leaves, infer whether the new parent is a grupo (→ variante) or
+        // categoría (→ individual) so we use the right rule.
+        if (!existing.es_grupo && !existing.es_categoria && data.id_material_padre != null) {
+          const padre = await tx.materiales.findUnique({
+            where: { id_material: data.id_material_padre },
+            select: { es_grupo: true, es_categoria: true },
+          });
+          if (!padre) {
+            throw new NotFoundError(`Material padre ${data.id_material_padre} no encontrado`);
+          }
+          if (padre.es_grupo) {
+            await assertPadreValido(data.id_material_padre, "variante", tx);
+          } else if (padre.es_categoria) {
+            await assertPadreValido(data.id_material_padre, "individual", tx);
+          } else {
+            throw new ConflictError("El padre de un material debe ser un grupo o una categoría");
+          }
+        } else {
+          await assertPadreValido(data.id_material_padre, role, tx);
+        }
+      }
+
+      const result = await tx.materiales.update({
+        where: { id_material: id },
+        data,
+        include: { subMateriales: { include: { subMateriales: true } } },
+      });
+
+      const oldImagenKey =
+        existing.imagen_url && existing.imagen_url !== result.imagen_url
+          ? existing.imagen_url
+          : null;
+
+      return { updated: result, oldImagenKey };
     });
 
-    if (existing && existing.imagen_url && existing.imagen_url !== updated.imagen_url) {
-      await safeDelete(existing.imagen_url);
-    }
-
-    return withResolvedImagen(updated);
+    await safeDelete(oldImagenKey);
+    return resolveConSubs(updated);
   } catch (err) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Material ${id} no encontrado`);
@@ -141,41 +397,184 @@ export async function updateMaterial(id: number, data: UpdateMaterialInput): Pro
   }
 }
 
+// Compute how many distinct servicios, proveedores e instaladores would be
+// affected by deleting `id` (and, for groups, all its sub-materials).
+//
+// Servicios: distinct servicios referencing any of the material ids through
+// either ServicioMaterial or OpcionesProducto.
+// Proveedores: union of (a) ProveedorPrecios with id_material in scope and
+// (b) the proveedor assigned to any servicio in the impacted services set.
+// Instaladores: union of servicio.id_instalador and InstaladorServicios for
+// any servicio in the impacted set.
+export async function getMaterialImpacto(id: number): Promise<MaterialImpacto> {
+  const target = await prisma.materiales.findUnique({
+    where: { id_material: id },
+    select: {
+      id_material: true,
+      // Load 2 levels of descendants so a categoría's impact spans
+      // grupos → variantes, matching deleteMaterial's cascade.
+      subMateriales: {
+        select: {
+          id_material: true,
+          subMateriales: { select: { id_material: true } },
+        },
+      },
+    },
+  });
+
+  if (!target) {
+    throw new NotFoundError(`Material ${id} no encontrado`);
+  }
+
+  // Flatten target + up to 2 levels (categoría → grupo → variante). For a grupo
+  // this is just its variantes; for a leaf, nothing extra.
+  const ids = [target.id_material];
+  for (const child of target.subMateriales) {
+    ids.push(child.id_material);
+    for (const grand of child.subMateriales ?? []) {
+      ids.push(grand.id_material);
+    }
+  }
+
+  const [servicioMateriales, opciones, proveedorPreciosDirectos] = await Promise.all([
+    prisma.servicioMaterial.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_servicio: true },
+    }),
+    prisma.opcionesProducto.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_servicio: true },
+    }),
+    prisma.proveedorPrecios.findMany({
+      where: { id_material: { in: ids } },
+      select: { id_proveedor: true },
+    }),
+  ]);
+
+  const servicioIds = new Set<number>([
+    ...servicioMateriales.map((sm) => sm.id_servicio),
+    ...opciones.map((o) => o.id_servicio),
+  ]);
+
+  const proveedorIds = new Set<number>(proveedorPreciosDirectos.map((p) => p.id_proveedor));
+  const instaladorIds = new Set<number>();
+
+  if (servicioIds.size > 0) {
+    const servicioIdList = [...servicioIds];
+    const [serviciosRefs, instaladorServicios] = await Promise.all([
+      prisma.servicios.findMany({
+        where: { id_servicio: { in: servicioIdList } },
+        select: { id_proveedor: true, id_instalador: true },
+      }),
+      prisma.instaladorServicios.findMany({
+        where: { id_servicio: { in: servicioIdList } },
+        select: { id_instalador: true },
+      }),
+    ]);
+
+    for (const s of serviciosRefs) {
+      if (s.id_proveedor) proveedorIds.add(s.id_proveedor);
+      if (s.id_instalador) instaladorIds.add(s.id_instalador);
+    }
+    for (const ins of instaladorServicios) instaladorIds.add(ins.id_instalador);
+  }
+
+  return {
+    servicios: servicioIds.size,
+    proveedores: proveedorIds.size,
+    instaladores: instaladorIds.size,
+  };
+}
+
+// Force-deletes a material (and, for groups, its sub-materials) even if it is
+// in use. Per stakeholder request — bypasses the previous ConflictError guard
+// and cascades through OpcionesProducto/ValoresOpcion/MatrizDePrecios,
+// ServicioMaterial, ProveedorPrecios (nulling Gastos refs), DetallePedido and
+// PedidoMaquina. UI must show three confirmation steps before invoking this.
 export async function deleteMaterial(id: number): Promise<void> {
-  let imagenKey: string | null = null;
+  const imagenKeys: string[] = [];
+
   try {
     await prisma.$transaction(async (tx) => {
-      const material = await tx.materiales.findUnique({
+      const target = await tx.materiales.findUnique({
         where: { id_material: id },
         select: {
           id_material: true,
           imagen_url: true,
-          opciones: { select: { id_opcion: true } },
-          detallesPedido: { select: { id_detalle: true } },
-          pedidoMaquinas: { select: { id_pedido_maquina: true } },
+          es_grupo: true,
+          es_categoria: true,
+          // Load 2 levels of descendants so categoría delete cascades through
+          // grupos → variantes as well.
+          subMateriales: {
+            select: {
+              id_material: true,
+              imagen_url: true,
+              subMateriales: { select: { id_material: true, imagen_url: true } },
+            },
+          },
         },
       });
 
-      if (!material) {
+      if (!target) {
         throw new NotFoundError(`Material ${id} no encontrado`);
       }
 
-      if (
-        material.detallesPedido.length > 0 ||
-        material.pedidoMaquinas.length > 0 ||
-        material.opciones.length > 0
-      ) {
-        throw new ConflictError(`Material ${id} no se puede eliminar porque ya está en uso`);
+      // Flatten descendants (up to 2 levels: categoría → grupo → variante).
+      const subIds: number[] = [];
+      for (const child of target.subMateriales) {
+        subIds.push(child.id_material);
+        if (child.imagen_url) imagenKeys.push(child.imagen_url);
+        for (const grand of child.subMateriales ?? []) {
+          subIds.push(grand.id_material);
+          if (grand.imagen_url) imagenKeys.push(grand.imagen_url);
+        }
+      }
+      if (target.imagen_url) imagenKeys.push(target.imagen_url);
+
+      const allIds = [...subIds, target.id_material];
+
+      // OpcionesProducto → cascade ValoresOpcion + MatrizDePrecios first.
+      const opciones = await tx.opcionesProducto.findMany({
+        where: { id_material: { in: allIds } },
+        select: { id_opcion: true },
+      });
+      const opcionIds = opciones.map((o) => o.id_opcion);
+      if (opcionIds.length > 0) {
+        await tx.matrizDePrecios.deleteMany({ where: { id_opcion: { in: opcionIds } } });
+        await tx.valoresOpcion.deleteMany({ where: { id_opcion: { in: opcionIds } } });
+        await tx.opcionesProducto.deleteMany({ where: { id_opcion: { in: opcionIds } } });
       }
 
-      imagenKey = material.imagen_url;
+      // ServicioMaterial references both material AND a ProveedorPrecio row;
+      // delete it before its proveedorPrecio so the FK to it goes away.
+      await tx.servicioMaterial.deleteMany({ where: { id_material: { in: allIds } } });
 
-      await tx.materiales.delete({
-        where: { id_material: id },
+      // ProveedorPrecios → Gastos has nullable FK, set it null then delete.
+      const proveedorPrecios = await tx.proveedorPrecios.findMany({
+        where: { id_material: { in: allIds } },
+        select: { id_proveedor_precio: true },
       });
+      const proveedorPrecioIds = proveedorPrecios.map((p) => p.id_proveedor_precio);
+      if (proveedorPrecioIds.length > 0) {
+        await tx.gastos.updateMany({
+          where: { id_proveedor_precio: { in: proveedorPrecioIds } },
+          data: { id_proveedor_precio: null },
+        });
+        await tx.proveedorPrecios.deleteMany({
+          where: { id_proveedor_precio: { in: proveedorPrecioIds } },
+        });
+      }
+
+      await tx.detallePedido.deleteMany({ where: { id_material: { in: allIds } } });
+      await tx.pedidoMaquina.deleteMany({ where: { id_material: { in: allIds } } });
+
+      if (subIds.length > 0) {
+        await tx.materiales.deleteMany({ where: { id_material: { in: subIds } } });
+      }
+      await tx.materiales.delete({ where: { id_material: target.id_material } });
     });
 
-    await safeDelete(imagenKey);
+    await Promise.all(imagenKeys.map(safeDelete));
   } catch (err) {
     if ((err as { code?: string }).code === "P2025") {
       throw new NotFoundError(`Material ${id} no encontrado`);

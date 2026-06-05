@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/colaboradores";
 import { FiltrarColaboradoresPanel } from "@/components/ui/colaboradores/molecules/FiltrarColaboradoresPanel";
 import { PaginacionControles } from "@/components/ui/materiales/molecules/PaginacionControles";
+import { formatDate } from "@/lib/utils/date";
 
 const PAGE_SIZE = 20;
 
@@ -57,23 +58,27 @@ function mapApiRow(item: ColaboradorApiRow): ColaboradorRow {
     sucursal: item.colaborador?.sucursal?.nombre_sucursal ?? null,
     id_sucursal: item.colaborador?.sucursal?.id_sucursal ?? null,
     telefono: item.colaborador?.telefono ?? null,
+    // Pre-formatted with the shared DD MMM YYYY helper so every admin card
+    // (Servicios, Pedidos, Cotizaciones, Maquinas, Clientes, Colaboradores)
+    // surfaces dates in the same shape.
     fecha_modificacion: item.colaborador?.fecha_modificacion
-      ? new Date(item.colaborador.fecha_modificacion).toLocaleDateString("es-MX", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+      ? formatDate(item.colaborador.fecha_modificacion)
       : null,
   };
 }
 
-export function ColaboradoresView() {
+interface ColaboradoresViewProps {
+  currentUserId: number;
+}
+
+export function ColaboradoresView({ currentUserId }: ColaboradoresViewProps) {
   const [colaboradores, setColaboradores] = useState<ColaboradorRow[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [savingStatus, setSavingStatus] = useState<number | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -110,28 +115,63 @@ export function ColaboradoresView() {
   const [asignarLoading, setAsignarLoading] = useState(false);
   const [asignarError, setAsignarError] = useState<string | null>(null);
 
+  // Debounce de la búsqueda para no pegarle al servidor en cada tecla.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Roles y sucursales no dependen de la búsqueda/paginación: se cargan una vez.
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
-    Promise.all([
-      fetch(`/api/colaboradores?${params}`),
-      fetch("/api/roles"),
-      fetch("/api/sucursales?page=1&pageSize=100"),
-    ])
-      .then(async ([colabRes, rolesRes, sucursalesRes]) => {
-        if (!colabRes.ok || !rolesRes.ok || !sucursalesRes.ok) throw new Error();
-        const [colabJson, rolesJson, sucursalesJson] = await Promise.all([
-          colabRes.json(),
+    Promise.all([fetch("/api/roles"), fetch("/api/sucursales?page=1&pageSize=100")])
+      .then(async ([rolesRes, sucursalesRes]) => {
+        if (!rolesRes.ok || !sucursalesRes.ok) throw new Error();
+        const [rolesJson, sucursalesJson] = await Promise.all([
           rolesRes.json(),
           sucursalesRes.json(),
         ]);
         if (cancelled) return;
-        setColaboradores(((colabJson.data ?? []) as ColaboradorApiRow[]).map(mapApiRow));
-        setTotalPages(Math.max(1, Math.ceil((colabJson.total ?? 0) / PAGE_SIZE)));
         setRoles((rolesJson.data ?? []) as Rol[]);
         setSucursales((sucursalesJson.data ?? []) as Sucursal[]);
+      })
+      .catch(() => {
+        /* roles/sucursales son auxiliares; el error de colaboradores se maneja aparte */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Colaboradores: búsqueda y filtros se aplican en el SERVIDOR para que recorran
+  // todos los registros, no solo la página cargada. Si la página actual quedó
+  // fuera de rango tras filtrar, se acota a la última válida (clamp), igual que
+  // en sucursales.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    if (filterEstatus) params.set("estatus", filterEstatus);
+    filterRoles.forEach((id) => params.append("rol", String(id)));
+
+    fetch(`/api/colaboradores?${params}`)
+      .then(async (colabRes) => {
+        if (!colabRes.ok) throw new Error();
+        const colabJson = await colabRes.json();
+        if (cancelled) return;
+
+        const total = colabJson.total ?? 0;
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (page > pages) {
+          setPage(pages);
+          return;
+        }
+
+        setColaboradores(((colabJson.data ?? []) as ColaboradorApiRow[]).map(mapApiRow));
+        setTotalPages(pages);
       })
       .catch(() => {
         if (!cancelled) setError("No se pudieron cargar los colaboradores. Intenta de nuevo.");
@@ -139,10 +179,11 @@ export function ColaboradoresView() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [page, retryAttempt]);
+  }, [page, retryAttempt, debouncedSearch, filterEstatus, filterRoles]);
 
   async function handleStatusChange(userId: number, newStatus: string) {
     setSavingStatus(userId);
@@ -208,7 +249,7 @@ export function ColaboradoresView() {
     edad: number;
     sexo: string;
     telefono: string;
-    id_rol: number;
+    id_rol?: number;
     id_sucursal: number;
   }) {
     if (!editingId) return;
@@ -296,56 +337,28 @@ export function ColaboradoresView() {
     }
   }
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, filterEstatus, filterRoles]);
-
-  function handleRolToggle(id: number) {
-    setFilterRoles((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
-  }
-
-  function handleLimpiarFiltros() {
-    setFilterEstatus("");
-    setFilterRoles([]);
-  }
-
-  const q = search.trim().toLowerCase();
-  const filtered = colaboradores.filter((u) => {
-    if (
-      q &&
-      !u.nombre_completo.toLowerCase().includes(q) &&
-      !(u.correo_electronico?.toLowerCase().includes(q) ?? false)
-    )
-      return false;
-    if (filterEstatus && u.estatus_colaborador !== filterEstatus) return false;
-    if (filterRoles.length > 0 && !filterRoles.includes(u.id_rol)) return false;
-    return true;
-  });
+  const hasQuery = search.trim().length > 0 || !!filterEstatus || filterRoles.length > 0;
 
   return (
     <div>
       <AdminHeader title="Colaboradores" />
 
       <div className="px-4 sm:px-8 pt-6 pb-4">
-        <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            onAgregar={() => setModalOpen(true)}
-            onFiltrar={() => setFilterOpen((v) => !v)}
-          />
-          {filterOpen && (
-            <FiltrarColaboradoresPanel
-              roles={roles}
-              filterEstatus={filterEstatus}
-              filterRoles={filterRoles}
-              onEstatusChange={setFilterEstatus}
-              onRolToggle={handleRolToggle}
-              onReset={handleLimpiarFiltros}
-              onClose={() => setFilterOpen(false)}
-            />
-          )}
-        </div>
+        <AdminToolbar
+          search={search}
+          onSearchChange={setSearch}
+          onAgregar={() => setModalOpen(true)}
+          onFiltrar={() => setFilterOpen(true)}
+        />
+        <FiltrarColaboradoresPanel
+          open={filterOpen}
+          roles={roles}
+          filterEstatus={filterEstatus}
+          filterRoles={filterRoles}
+          setFilterEstatus={setFilterEstatus}
+          setFilterRoles={setFilterRoles}
+          onClose={() => setFilterOpen(false)}
+        />
         {statusError && (
           <p role="alert" className="mt-3 text-[14px] text-[#df2646]">
             {statusError}
@@ -372,7 +385,7 @@ export function ColaboradoresView() {
       {!loading && !error && (
         <div className="px-4 sm:px-8 pb-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((u) => (
+            {colaboradores.map((u) => (
               <UserCard
                 key={u.id_usuario}
                 user={{ ...u, estatus: u.estatus_colaborador }}
@@ -386,9 +399,11 @@ export function ColaboradoresView() {
                 }}
               />
             ))}
-            {filtered.length === 0 && (
+            {colaboradores.length === 0 && (
               <p className="col-span-full py-16 text-center font-ibm-plex text-[#888]">
-                {q ? "Sin resultados para esa búsqueda." : "No hay colaboradores registrados."}
+                {hasQuery
+                  ? "Sin resultados para esa búsqueda."
+                  : "No hay colaboradores registrados."}
               </p>
             )}
           </div>
@@ -437,6 +452,7 @@ export function ColaboradoresView() {
         editError={editError}
         roles={roles}
         sucursales={sucursales}
+        currentUserId={currentUserId}
         onClose={closeEditModal}
         onSubmit={handleEditSubmit}
       />

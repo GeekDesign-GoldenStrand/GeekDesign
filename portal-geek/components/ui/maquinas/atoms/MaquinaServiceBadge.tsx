@@ -4,7 +4,7 @@ export default function MaquinaServiceBadge({ services }: { services: string[] }
       {services.map((service, index) => (
         <p
           key={index}
-          className="border border-gray-400 bg-gray-100 text-xs w-fit h-fit font-regular px-2 py-1 rounded-lg"
+          className="border border-gray-400 bg-gray-100 text-xs text-gray-800 w-fit h-fit font-regular px-2 py-1 rounded-lg"
         >
           {service}
         </p>

@@ -6,8 +6,10 @@ import { FilterIcon, PlusIcon } from "@/components/ui/atoms/icons";
 interface AdminToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
+  searchPlaceholder?: string;
   onAgregar?: () => void;
   onFiltrar?: () => void;
+  filterCount?: number;
   agregarLabel?: string;
   tabs?: string[];
   activeTab?: string;
@@ -17,8 +19,10 @@ interface AdminToolbarProps {
 export function AdminToolbar({
   search,
   onSearchChange,
+  searchPlaceholder,
   onAgregar,
   onFiltrar,
+  filterCount,
   agregarLabel = "Agregar",
   tabs,
   activeTab,
@@ -45,7 +49,7 @@ export function AdminToolbar({
         </div>
       )}
 
-      <SearchBar value={search} onChange={onSearchChange} />
+      <SearchBar value={search} onChange={onSearchChange} placeholder={searchPlaceholder} />
 
       {(onAgregar || onFiltrar) && (
         <div className="flex items-center justify-start sm:justify-end gap-3 flex-wrap sm:flex-nowrap">
@@ -64,10 +68,15 @@ export function AdminToolbar({
             <button
               type="button"
               onClick={onFiltrar}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap"
+              className="relative flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-10.25 px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap"
             >
               <FilterIcon />
               Filtrar
+              {filterCount != null && filterCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-4.5 h-4.5 px-1 rounded-full bg-[#e42200] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {filterCount}
+                </span>
+              )}
             </button>
           )}
         </div>

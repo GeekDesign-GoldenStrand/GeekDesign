@@ -27,12 +27,14 @@ export default async function ConfirmacionPage({ searchParams }: Props) {
         )}
         <div className="flex flex-col gap-[12px] items-center">
           <p className="text-[13px] text-[#666]">
-            ¿No recibiste el correo? Puedes pedir un nuevo enlace en{" "}
-            <Link href="/tienda/cotizacion" className="underline">
-              /tienda/cotizacion
-            </Link>
-            .
+            ¿No recibiste el correo? Puedes pedir un nuevo enlace aquí.
           </p>
+          <Link
+            href="/tienda/cotizacion"
+            className="inline-flex items-center justify-center rounded-full bg-[#8b434a] px-[18px] py-[10px] text-[13px] font-semibold text-white transition-colors hover:bg-[#73363c]"
+          >
+            Pedir nuevo enlace
+          </Link>
         </div>
       </div>
     </div>

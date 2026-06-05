@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -12,8 +15,6 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
   const [nombre, setNombre] = useState("");
   const [direccion, setDireccion] = useState("");
   const [estatus, setEstatus] = useState<string[]>([]);
-
-  if (!isOpen) return null;
 
   function toggleEstatus(value: string) {
     setEstatus((prev) =>
@@ -27,16 +28,15 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-[400px] space-y-4">
-        <h2 className="text-lg font-bold text-[#1e1e1e]">Filtrar sucursales</h2>
-
+    <Modal isOpen={isOpen} onClose={onClose} title="Filtrar sucursales" size="md">
+      <div className="space-y-4">
         <div className="space-y-2">
           <label className="block text-sm font-semibold">Nombre</label>
           <input
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            maxLength={50}
             className="w-full border rounded px-2 py-1"
           />
         </div>
@@ -47,6 +47,7 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
             type="text"
             value={direccion}
             onChange={(e) => setDireccion(e.target.value)}
+            maxLength={50}
             className="w-full border rounded px-2 py-1"
           />
         </div>
@@ -68,14 +69,14 @@ export function SucursalesFilterModal({ isOpen, onClose, onApply }: Props) {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button onClick={onClose} className="px-3 py-1 border rounded">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancelar
-          </button>
-          <button onClick={handleApply} className="px-3 py-1 bg-[#e63946] text-white rounded">
+          </Button>
+          <Button type="button" variant="primary" size="sm" onClick={handleApply}>
             Aplicar filtros
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

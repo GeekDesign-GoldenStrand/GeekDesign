@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+
 interface Sucursal {
   id_sucursal: number;
   nombre_sucursal: string;
@@ -19,10 +23,7 @@ interface AsignarSucursalModalProps {
   onSubmit: (idSucursal: number) => void;
 }
 
-const SELECT_FIELD =
-  "w-full border border-[#b9b8b8] rounded-[6px] px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#006aff] bg-white transition-colors";
 const LABEL = "block text-[13px] font-medium text-[#575757] mb-1";
-const ERROR_MSG = "text-[12px] text-[#e42200] mt-1";
 
 function AsignarSucursalForm({
   colaboradorName,
@@ -77,42 +78,33 @@ function AsignarSucursalForm({
         <label htmlFor="asignar-sucursal-select" className={LABEL}>
           Sucursal <span className="text-[#e42200]">*</span>
         </label>
-        <select
+        <Select
           id="asignar-sucursal-select"
           value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
+          onChange={(v) => {
+            setSelected(v);
             if (error) setError("");
           }}
-          className={`${SELECT_FIELD} ${error ? "border-[#e42200]" : ""}`}
+          placeholder="Seleccionar sucursal"
+          size="sm"
           disabled={loading}
+          error={error || undefined}
         >
-          <option value="">Seleccionar sucursal</option>
           {sucursales.map((s) => (
-            <option key={s.id_sucursal} value={s.id_sucursal}>
+            <SelectOption key={s.id_sucursal} value={String(s.id_sucursal)}>
               {s.nombre_sucursal}
-            </option>
+            </SelectOption>
           ))}
-        </select>
-        {error && <p className={ERROR_MSG}>{error}</p>}
+        </Select>
       </div>
 
       <div className="flex justify-end gap-3 mt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors disabled:opacity-60"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={loading}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2 text-[14px] font-medium text-white bg-[rgba(0,106,255,0.85)] rounded-[7px] hover:bg-[#006aff] transition-colors disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           {loading ? "Guardando..." : "Asignar"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -129,47 +121,18 @@ export function AsignarSucursalModal({
   onClose,
   onSubmit,
 }: AsignarSucursalModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <h2 className="text-[20px] font-medium text-[#1e1e1e]">Asignar sucursal</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[#8e908f] hover:text-[#e42200] transition-colors"
-            aria-label="Cerrar"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        <AsignarSucursalForm
-          key={colaboradorId ?? "none"}
-          colaboradorName={colaboradorName}
-          currentSucursalId={currentSucursalId}
-          sucursales={sucursales}
-          loading={loading}
-          serverError={serverError}
-          onClose={onClose}
-          onSubmit={onSubmit}
-        />
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Asignar sucursal" size="lg" noPadding>
+      <AsignarSucursalForm
+        key={colaboradorId ?? "none"}
+        colaboradorName={colaboradorName}
+        currentSucursalId={currentSucursalId}
+        sucursales={sucursales}
+        loading={loading}
+        serverError={serverError}
+        onClose={onClose}
+        onSubmit={onSubmit}
+      />
+    </Modal>
   );
 }

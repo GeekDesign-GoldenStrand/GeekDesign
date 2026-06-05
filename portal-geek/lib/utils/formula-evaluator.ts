@@ -32,6 +32,10 @@ export interface EvaluatorImplicits {
   precio_material: number;
   costo_instalador: number;
   costo_proveedor: number;
+  // Per-material slug tokens (e.g. `costo_material_mdf_3mm`) injected by the
+  // pricing layer based on the customer's selected material — that's how
+  // FormulaSection's material chip identifiers resolve at evaluation time.
+  [key: string]: number;
 }
 
 export interface EvaluateFormulaInput {
@@ -44,8 +48,21 @@ export interface EvaluateFormulaInput {
 // Pure evaluator. No DB, no Prisma — caller resolves all values first.
 // Throws EvaluatorError (422) on parse failure, unresolved identifier,
 // unsupported origen, or non-finite numeric result.
+//
+// IVA semantics (two-pass evaluation):
+//   `iva` resolves to "16% of the pre-tax subtotal", NOT the bare 0.16 rate.
+//   This lets formulas written as `base + iva` produce `base * 1.16`
+//   (the common case) without forcing the admin to spell out `* (1 + 0.16)`.
+//
+// To make `iva = subtotal * 0.16` self-consistent we run the parser twice:
+//   1. Evaluate with iva = 0  →  yields the pre-tax subtotal.
+//   2. Set iva = subtotal * 0.16, re-evaluate the same expression.
+//
+// Caveat: this assumes `iva` is used additively in the expression. Formulas
+// that multiply by iva (legacy "base * iva" → tax amount) now return 0 in
+// pass 1 and therefore 0 in pass 2. Migrate those to `base + iva` (the new
+// semantics) or to an explicit `* 1.16` multiplier.
 export function evaluateFormula(input: EvaluateFormulaInput): number {
-  const scope = buildScope(input);
   const parser = new Parser({
     operators: {
       // Disable statement-level features so the expression stays a pure value.
@@ -54,9 +71,36 @@ export function evaluateFormula(input: EvaluateFormulaInput): number {
     },
   });
 
+  // Parse once and reuse the AST for both passes — saves the second parse
+  // and guarantees both runs see the exact same expression structure.
+  let ast: ReturnType<typeof parser.parse>;
+  try {
+    ast = parser.parse(input.expresion);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new EvaluatorError(`Error al evaluar fórmula: ${reason}`);
+  }
+
+  // Pass 1: subtotal with iva treated as 0.
+  const subtotalScope = buildScope(input);
+  subtotalScope.iva = 0;
+  let subtotal: unknown;
+  try {
+    subtotal = ast.evaluate(subtotalScope);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new EvaluatorError(`Error al evaluar fórmula: ${reason}`);
+  }
+  if (typeof subtotal !== "number" || !Number.isFinite(subtotal)) {
+    throw new EvaluatorError("La fórmula no produjo un número finito");
+  }
+
+  // Pass 2: iva is 16% of the subtotal, re-evaluate the same AST.
+  const finalScope = buildScope(input);
+  finalScope.iva = subtotal * IVA_MX;
   let result: unknown;
   try {
-    result = parser.parse(input.expresion).evaluate(scope);
+    result = ast.evaluate(finalScope);
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     throw new EvaluatorError(`Error al evaluar fórmula: ${reason}`);
@@ -69,11 +113,11 @@ export function evaluateFormula(input: EvaluateFormulaInput): number {
 }
 
 function buildScope(input: EvaluateFormulaInput): Record<string, number> {
+  // Spread all implicits — covers the fixed trio (precio_material, costo_instalador,
+  // costo_proveedor) plus any dynamic per-material tokens injected by the caller.
   const scope: Record<string, number> = {
     iva: IVA_MX,
-    precio_material: input.implicits.precio_material,
-    costo_instalador: input.implicits.costo_instalador,
-    costo_proveedor: input.implicits.costo_proveedor,
+    ...input.implicits,
   };
 
   for (const v of input.variables) {
@@ -98,7 +142,7 @@ function buildScope(input: EvaluateFormulaInput): Record<string, number> {
         `La constante "${c.nombre_constante}" usa un identificador reservado`
       );
     }
-    // Copilot review #5: a constante must not shadow a variable (or another constante).
+    //A constante must not shadow a variable (or another constante).
     if (Object.prototype.hasOwnProperty.call(scope, c.nombre_constante)) {
       throw new EvaluatorError(
         `Identificador duplicado: "${c.nombre_constante}" colisiona con una variable o constante previa`

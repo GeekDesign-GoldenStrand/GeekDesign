@@ -2,7 +2,8 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateServicioInput, UpdateServicioInput } from "@/lib/schemas/servicios";
-import { NotFoundError } from "@/lib/utils/errors";
+import { NotFoundError, ValidationError } from "@/lib/utils/errors";
+import type { ServicioAdminDetalle } from "@/types/servicios";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -189,11 +190,141 @@ export async function getServicio(id: number): Promise<ServicioCompleto> {
   return servicio;
 }
 
+export type ServicioParaAdmin = Prisma.ServiciosGetPayload<{
+  include: {
+    sucursal: true;
+    maquinas: { include: { maquina: true } };
+    instalador: true;
+    proveedor: true;
+    formulas: {
+      include: {
+        variables: { include: { tipo: true } };
+        constantes: { include: { instalador: true; proveedor: true } };
+      };
+    };
+    servicioMateriales: { include: { material: true } };
+  };
+}>;
+
+export async function getServicioParaAdmin(id: number): Promise<ServicioParaAdmin> {
+  const servicio = await prisma.servicios.findFirst({
+    where: { id_servicio: id, estatus_servicio: true },
+    include: {
+      sucursal: true,
+      maquinas: { include: { maquina: true } },
+      instalador: true,
+      proveedor: true,
+      formulas: {
+        where: { estatus: "Activa" },
+        orderBy: { fecha_creacion: "desc" },
+        take: 1,
+        include: {
+          variables: { include: { tipo: true } },
+          constantes: { include: { instalador: true, proveedor: true } },
+        },
+      },
+      servicioMateriales: { include: { material: true } },
+    },
+  });
+
+  if (!servicio) throw new NotFoundError(`Servicio con id ${id} no encontrado`);
+  return servicio;
+}
+
+// imagen_url is stored as a JSON-encoded string[]. Legacy rows may hold a single
+// raw URL or null, so we degrade gracefully instead of throwing.
+function parseImagenUrl(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === "string") : [];
+  } catch {
+    return typeof raw === "string" && raw.length > 0 ? [raw] : [];
+  }
+}
+
+export function toServicioAdminDetalle(s: ServicioParaAdmin): ServicioAdminDetalle {
+  const formulaActiva = s.formulas[0] ?? null;
+  return {
+    id_servicio: s.id_servicio,
+    nombre_servicio: s.nombre_servicio,
+    descripcion_servicio: s.descripcion_servicio,
+    imagenes: parseImagenUrl(s.imagen_url),
+    id_sucursal: s.id_sucursal,
+    sucursal: { id_sucursal: s.sucursal.id_sucursal, nombre_sucursal: s.sucursal.nombre_sucursal },
+    id_instalador: s.id_instalador,
+    costo_instalador_override: s.costo_instalador_override?.toString() ?? null,
+    instalador: s.instalador
+      ? {
+          id_instalador: s.instalador.id_instalador,
+          nombre_instalador: s.instalador.nombre_instalador,
+          apodo: s.instalador.apodo,
+          costo_instalacion: s.instalador.costo_instalacion.toString(),
+        }
+      : null,
+    id_proveedor: s.id_proveedor,
+    costo_proveedor_override: s.costo_proveedor_override?.toString() ?? null,
+    proveedor: s.proveedor
+      ? {
+          id_proveedor: s.proveedor.id_proveedor,
+          nombre_proveedor: s.proveedor.nombre_proveedor,
+          costo: s.proveedor.costo?.toString() ?? null,
+        }
+      : null,
+    maquinas: s.maquinas.map((m) => ({
+      maquina: {
+        id_maquina: m.maquina.id_maquina,
+        nombre_maquina: m.maquina.nombre_maquina,
+        apodo_maquina: m.maquina.apodo_maquina,
+        tipo: m.maquina.tipo,
+      },
+    })),
+    materiales: s.servicioMateriales.map((m) => ({
+      id_servicio_material: m.id_servicio_material,
+      id_material: m.id_material,
+      id_proveedor_precio: m.id_proveedor_precio,
+      material: {
+        id_material: m.material.id_material,
+        nombre_material: m.material.nombre_material,
+        descripcion_material: m.material.descripcion_material,
+        unidad_medida: m.material.unidad_medida ?? "",
+        ancho: m.material.ancho?.toString() ?? null,
+        alto: m.material.alto?.toString() ?? null,
+        grosor: m.material.grosor?.toString() ?? null,
+        color: m.material.color,
+      },
+    })),
+    formulaActiva: formulaActiva
+      ? {
+          id_formula: formulaActiva.id_formula,
+          expresion: formulaActiva.expresion,
+          variables: formulaActiva.variables.map((v) => ({
+            id_variable: v.id_variable,
+            id_tipo_variable: v.id_tipo_variable,
+            nombre_variable: v.nombre_variable,
+            etiqueta: v.etiqueta,
+            valor_default: v.valor_default?.toString() ?? null,
+            editable_por_cliente: v.editable_por_cliente,
+            unidad: v.unidad,
+          })),
+          constantes: formulaActiva.constantes.map((c) => ({
+            id_constante: c.id_constante,
+            nombre_constante: c.nombre_constante,
+            origen: c.origen,
+            valor: c.valor?.toString() ?? null,
+            id_instalador: c.id_instalador,
+            id_proveedor: c.id_proveedor,
+          })),
+        }
+      : null,
+  };
+}
+
 export async function createServicio(
   data: CreateServicioInput,
   id_usuario: number
 ): Promise<ServicioSimple> {
-  const { id_maquinas, formula, materiales, ...servicioData } = data;
+  const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
 
   return prisma.$transaction(async (tx) => {
     // 1. Resolve the "Activo" EstatusServicio — frontend does not send id_estatus.
@@ -201,9 +332,12 @@ export async function createServicio(
       where: { descripcion: "Activo" },
     });
 
+    const imagen_url = imagenes && imagenes.length > 0 ? JSON.stringify(imagenes) : null;
+
     const servicio = await tx.servicios.create({
       data: {
         ...servicioData,
+        imagen_url,
         id_estatus: estatusActivo.id_estatus_servicio,
       } as Prisma.ServiciosUncheckedCreateInput,
     });
@@ -274,97 +408,148 @@ export async function createServicio(
   });
 }
 
+async function validateServicioFKs(
+  tx: Prisma.TransactionClient,
+  data: UpdateServicioInput
+): Promise<void> {
+  if (data.id_sucursal !== undefined) {
+    const found = await tx.sucursales.findFirst({ where: { id_sucursal: data.id_sucursal } });
+    if (!found) throw new ValidationError(`Sucursal con id ${data.id_sucursal} no encontrada`);
+  }
+  if (data.id_instalador != null) {
+    const found = await tx.instaladores.findFirst({ where: { id_instalador: data.id_instalador } });
+    if (!found) throw new ValidationError(`Instalador con id ${data.id_instalador} no encontrado`);
+  }
+  if (data.id_proveedor != null) {
+    const found = await tx.proveedores.findFirst({ where: { id_proveedor: data.id_proveedor } });
+    if (!found) throw new ValidationError(`Proveedor con id ${data.id_proveedor} no encontrado`);
+  }
+  if (data.id_maquinas && data.id_maquinas.length > 0) {
+    const uniqueMachineIds = Array.from(new Set(data.id_maquinas));
+    const found = await tx.maquinas.findMany({
+      where: { id_maquina: { in: uniqueMachineIds } },
+      select: { id_maquina: true },
+    });
+    if (found.length !== uniqueMachineIds.length) {
+      const foundIds = new Set(found.map((m) => m.id_maquina));
+      const missing = uniqueMachineIds.filter((id_maq) => !foundIds.has(id_maq));
+      throw new ValidationError(`Máquinas no encontradas: ${missing.join(", ")}`);
+    }
+  }
+  if (data.materiales && data.materiales.length > 0) {
+    const uniqueMaterialIds = Array.from(new Set(data.materiales.map((m) => m.id_material)));
+    const found = await tx.materiales.findMany({
+      where: { id_material: { in: uniqueMaterialIds } },
+      select: { id_material: true },
+    });
+    if (found.length !== uniqueMaterialIds.length) {
+      const foundIds = new Set(found.map((m) => m.id_material));
+      const missing = uniqueMaterialIds.filter((id_mat) => !foundIds.has(id_mat));
+      throw new ValidationError(`Materiales no encontrados: ${missing.join(", ")}`);
+    }
+  }
+}
+
 export async function updateServicio(
   id: number,
   data: UpdateServicioInput,
   id_usuario: number
-): Promise<ServicioSimple> {
-  const { id_maquinas, formula, ...servicioData } = data;
+): Promise<ServicioAdminDetalle> {
+  const existing = await prisma.servicios.findFirst({
+    where: { id_servicio: id, estatus_servicio: true },
+  });
+  if (!existing) throw new NotFoundError(`Servicio con id ${id} no encontrado`);
 
-  try {
-    return await prisma.$transaction(async (tx) => {
-      const servicio = await tx.servicios.update({
-        where: { id_servicio: id },
-        data: servicioData,
+  const { id_maquinas, formula, materiales, imagenes, ...servicioData } = data;
+
+  await prisma.$transaction(async (tx) => {
+    await validateServicioFKs(tx, data);
+
+    const updateData: Prisma.ServiciosUpdateInput = { ...servicioData };
+    if (imagenes !== undefined) {
+      updateData.imagen_url = imagenes && imagenes.length > 0 ? JSON.stringify(imagenes) : null;
+    }
+    await tx.servicios.update({ where: { id_servicio: id }, data: updateData });
+
+    if (id_maquinas !== undefined) {
+      await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });
+      if (id_maquinas.length > 0) {
+        await tx.servicioMaquina.createMany({
+          data: id_maquinas.map((id_maquina) => ({ id_servicio: id, id_maquina })),
+        });
+      }
+    }
+
+    if (materiales !== undefined) {
+      await tx.servicioMaterial.deleteMany({ where: { id_servicio: id } });
+      if (materiales.length > 0) {
+        await tx.servicioMaterial.createMany({
+          data: materiales.map((m) => ({
+            id_servicio: id,
+            id_material: m.id_material,
+            id_proveedor_precio: m.id_proveedor_precio ?? null,
+          })),
+        });
+      }
+    }
+
+    if (formula !== undefined) {
+      const formulasActivas = await tx.formulas.findMany({
+        where: { id_servicio: id, estatus: "Activa" },
+        select: { id_formula: true },
+      });
+      if (formulasActivas.length > 0) {
+        await tx.formulaVariables.updateMany({
+          where: { id_formula: { in: formulasActivas.map((f) => f.id_formula) } },
+          data: { estatus: "Inactivo" },
+        });
+      }
+      await tx.formulas.updateMany({
+        where: { id_servicio: id, estatus: "Activa" },
+        data: { estatus: "Inactiva" },
       });
 
-      // Resync machines: drop old vinculations and create new ones.
-      if (id_maquinas !== undefined) {
-        await tx.servicioMaquina.deleteMany({ where: { id_servicio: id } });
-        if (id_maquinas.length > 0) {
-          await tx.servicioMaquina.createMany({
-            data: id_maquinas.map((id_maquina) => ({
-              id_servicio: id,
-              id_maquina,
-            })),
-          });
-        }
+      const formulaCreada = await tx.formulas.create({
+        data: {
+          id_servicio: id,
+          expresion: formula.expresion,
+          estatus: "Activa",
+          id_usuario_creo: id_usuario,
+        },
+      });
+
+      if (formula.variables.length > 0) {
+        await tx.formulaVariables.createMany({
+          data: formula.variables.map((v) => ({
+            id_formula: formulaCreada.id_formula,
+            id_tipo_variable: v.id_tipo_variable,
+            nombre_variable: v.nombre_variable,
+            etiqueta: v.etiqueta,
+            valor_default: v.valor_default ?? null,
+            editable_por_cliente: v.editable_por_cliente,
+            unidad: v.unidad ?? null,
+            estatus: "Activo",
+          })),
+        });
       }
 
-      // Replace formula: deactivate the previous one and create a new active one.
-      if (formula !== undefined) {
-        const formulasActivas = await tx.formulas.findMany({
-          where: { id_servicio: id, estatus: "Activa" },
-          select: { id_formula: true },
+      if (formula.constantes.length > 0) {
+        await tx.formulaConstantes.createMany({
+          data: formula.constantes.map((c) => ({
+            id_formula: formulaCreada.id_formula,
+            nombre_constante: c.nombre_constante,
+            origen: c.origen,
+            valor: c.valor ?? null,
+            id_instalador: c.id_instalador ?? null,
+            id_proveedor: c.id_proveedor ?? null,
+            estatus: "Activo",
+          })),
         });
-        if (formulasActivas.length > 0) {
-          await tx.formulaVariables.updateMany({
-            where: { id_formula: { in: formulasActivas.map((f) => f.id_formula) } },
-            data: { estatus: "Inactivo" },
-          });
-        }
-        await tx.formulas.updateMany({
-          where: { id_servicio: id, estatus: "Activa" },
-          data: { estatus: "Inactiva" },
-        });
-
-        const formulaCreada = await tx.formulas.create({
-          data: {
-            id_servicio: id,
-            expresion: formula.expresion,
-            estatus: "Activa",
-            id_usuario_creo: id_usuario,
-          },
-        });
-
-        if (formula.variables.length > 0) {
-          await tx.formulaVariables.createMany({
-            data: formula.variables.map((v) => ({
-              id_formula: formulaCreada.id_formula,
-              id_tipo_variable: v.id_tipo_variable,
-              nombre_variable: v.nombre_variable,
-              etiqueta: v.etiqueta,
-              valor_default: v.valor_default ?? null,
-              editable_por_cliente: v.editable_por_cliente,
-              unidad: v.unidad ?? null,
-              estatus: "Activo",
-            })),
-          });
-        }
-
-        if (formula.constantes.length > 0) {
-          await tx.formulaConstantes.createMany({
-            data: formula.constantes.map((c) => ({
-              id_formula: formulaCreada.id_formula,
-              nombre_constante: c.nombre_constante,
-              origen: c.origen,
-              valor: c.valor ?? null,
-              id_instalador: c.id_instalador ?? null,
-              id_proveedor: c.id_proveedor ?? null,
-              estatus: "Activo",
-            })),
-          });
-        }
       }
-
-      return servicio;
-    });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      throw new NotFoundError(`Servicio con id ${id} no encontrado`);
     }
-    throw error;
-  }
+  });
+
+  return toServicioAdminDetalle(await getServicioParaAdmin(id));
 }
 
 export async function deleteServicio(id: number): Promise<void> {

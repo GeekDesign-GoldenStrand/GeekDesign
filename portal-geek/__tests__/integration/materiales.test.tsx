@@ -14,10 +14,21 @@ jest.mock("@/lib/db/client", () => ({
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      deleteMany: jest.fn(),
     },
     proveedorPrecios: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
+    opcionesProducto: { findMany: jest.fn(), deleteMany: jest.fn() },
+    valoresOpcion: { deleteMany: jest.fn() },
+    matrizDePrecios: { deleteMany: jest.fn() },
+    servicioMaterial: { deleteMany: jest.fn(), findMany: jest.fn() },
+    gastos: { updateMany: jest.fn() },
+    detallePedido: { deleteMany: jest.fn() },
+    pedidoMaquina: { deleteMany: jest.fn() },
+    servicios: { findMany: jest.fn() },
+    instaladorServicios: { findMany: jest.fn() },
     $transaction: jest.fn(),
   },
 }));
@@ -55,14 +66,18 @@ const KEY = "materiales/2026/05/00000000-0000-4000-8000-000000000001.jpg";
 
 const BASE_MATERIAL = {
   id_material: 1,
+  id_material_padre: null,
+  es_grupo: false,
   nombre_material: "Acrílico espejo",
   descripcion_material: "Material de alta reflectividad",
   unidad_medida: "mm",
   ancho: 1200,
   alto: 2400,
   grosor: 3,
-  color: "Plata",
+  velocidad_avance: 50,
+  color: "#C0C0C0",
   imagen_url: KEY,
+  subMateriales: [],
 };
 
 const VALID_PAYLOAD = {
@@ -72,7 +87,8 @@ const VALID_PAYLOAD = {
   ancho: 1200,
   alto: 2400,
   grosor: 3,
-  color: "Plata",
+  velocidad_avance: 50,
+  color: "#C0C0C0",
   imagen_url: KEY,
 };
 
@@ -99,22 +115,20 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 con rol no permitido (Finanzas)", async () => {
+  it("retorna 403 con rol Finanzas (materiales es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await createApp({ GET: routes.GET }).get("/api/materiales");
     expect(res.status).toBe(403);
   });
 
-  it("retorna 200 con items y total (rol Colaborador)", async () => {
+  it("retorna 200 con rol Colaborador (MAT-01: Colaborador puede consultar)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
     mockFindMany.mockResolvedValue([BASE_MATERIAL]);
     mockCount.mockResolvedValue(1);
 
     const res = await createApp({ GET: routes.GET }).get("/api/materiales");
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.total).toBe(1);
   });
 
   it("retorna 200 con items y total (rol Administrador)", async () => {
@@ -145,7 +159,9 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
 
     await createApp({ GET: routes.GET }).get("/api/materiales?sort=desc");
     expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { nombre_material: "desc" } })
+      expect.objectContaining({
+        orderBy: expect.arrayContaining([{ nombre_material: "desc" }]),
+      })
     );
   });
 
@@ -170,6 +186,34 @@ describe("GET /api/materiales — MAT-01 Listar materiales", () => {
     await createApp({ GET: routes.GET }).get("/api/materiales?pageSize=9999");
     expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
   });
+
+  it("retorna 200 con materiales no-grupo al pasar ?mode=options", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    mockFindMany.mockResolvedValue([BASE_MATERIAL]);
+
+    const res = await createApp({ GET: routes.GET }).get("/api/materiales?mode=options");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { es_grupo: false, es_categoria: false } })
+    );
+  });
+
+  it("retorna 200 con grupos al pasar ?mode=grupos", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    const GRUPO = { ...BASE_MATERIAL, es_grupo: true, unidad_medida: null, subMateriales: [] };
+    mockFindMany.mockResolvedValue([GRUPO]);
+
+    const res = await createApp({ GET: routes.GET }).get("/api/materiales?mode=grupos");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { es_grupo: true },
+        include: { subMateriales: true },
+      })
+    );
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -183,7 +227,11 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     routes = await import("@/app/api/materiales/route");
   });
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+  });
 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
@@ -207,7 +255,7 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     expect(res.status).toBe(201);
   });
 
-  it("retorna 201 con el material creado (rol Direccion)", async () => {
+  it("retorna 201 con el material individual creado (rol Direccion)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockCreate.mockResolvedValue(BASE_MATERIAL);
 
@@ -264,6 +312,63 @@ describe("POST /api/materiales — MAT-02 Registrar material", () => {
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("ancho");
   });
+
+  // ── Grupos ──────────────────────────────────────────────────────────────────
+
+  it("retorna 201 al crear un grupo (tipo=grupo)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const GRUPO = { ...BASE_MATERIAL, es_grupo: true, unidad_medida: null, subMateriales: [] };
+    mockCreate.mockResolvedValue(GRUPO);
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ tipo: "grupo", nombre_material: "Acrílicos de colores" });
+    expect(res.status).toBe(201);
+    expect(res.body.data.es_grupo).toBe(true);
+  });
+
+  it("retorna 422 cuando tipo=grupo y falta nombre_material", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ tipo: "grupo" });
+    expect(res.status).toBe(422);
+  });
+
+  // ── Sub-materiales ──────────────────────────────────────────────────────────
+
+  it("retorna 201 al crear un sub-material (tipo=sub)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({ es_grupo: true });
+    const SUB = { ...BASE_MATERIAL, id_material: 3, id_material_padre: 2, subMateriales: [] };
+    mockCreate.mockResolvedValue(SUB);
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ ...VALID_PAYLOAD, tipo: "sub", id_material_padre: 2 });
+    expect(res.status).toBe(201);
+    expect(res.body.data.id_material_padre).toBe(2);
+  });
+
+  it("retorna 422 cuando tipo=sub y falta id_material_padre", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ ...VALID_PAYLOAD, tipo: "sub" });
+    expect(res.status).toBe(422);
+  });
+
+  it("retorna 409 cuando tipo=sub y el padre no es un grupo", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({ es_grupo: false });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/materiales")
+      .send({ ...VALID_PAYLOAD, tipo: "sub", id_material_padre: 2 });
+    expect(res.status).toBe(409);
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -286,7 +391,7 @@ describe("GET /api/materiales/[id] — MAT-03 Obtener material por ID", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 con rol Finanzas", async () => {
+  it("retorna 403 con rol Finanzas (materiales es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await makeAppById({ GET: routes.GET }).get("/api/materiales/1");
@@ -294,7 +399,7 @@ describe("GET /api/materiales/[id] — MAT-03 Obtener material por ID", () => {
   });
 
   it("retorna 200 con los datos del material", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue(BASE_MATERIAL);
 
     const res = await makeAppById({ GET: routes.GET }).get("/api/materiales/1");
@@ -330,7 +435,18 @@ describe("PUT /api/materiales/[id] — MAT-04 Modificar material", () => {
     routes = await import("@/app/api/materiales/[id]/route");
   });
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<unknown>) => fn(prisma));
+    // updateMaterial ahora lee el material existente dentro de la transacción
+    // antes de hacer update; por defecto devolvemos una fila válida.
+    mockFindUnique.mockResolvedValue({
+      imagen_url: BASE_MATERIAL.imagen_url,
+      es_grupo: false,
+      es_categoria: false,
+    });
+  });
 
   it("retorna 401 sin sesión activa", async () => {
     mockGetSession.mockResolvedValue(null);
@@ -406,7 +522,7 @@ describe("PUT /api/materiales/[id] — MAT-04 Modificar material", () => {
 // ──────────────────────────────────────────────────────────────────────────────
 // MAT-05 – DELETE /api/materiales/[id]
 // ──────────────────────────────────────────────────────────────────────────────
-describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
+describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material (force delete)", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let routes: any;
 
@@ -416,6 +532,20 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Default no-op resolutions for every cascade table the service touches.
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.valoresOpcion.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.matrizDePrecios.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.servicioMaterial.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.proveedorPrecios.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.gastos.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.detallePedido.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.pedidoMaquina.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.materiales.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => fn(prisma));
   });
@@ -438,9 +568,9 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
     mockFindUnique.mockResolvedValue({
       id_material: 1,
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [],
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
     });
     mockDelete.mockResolvedValue(BASE_MATERIAL);
 
@@ -452,14 +582,55 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
     mockFindUnique.mockResolvedValue({
       id_material: 1,
-      opciones: [],
-      detallesPedido: [],
-      pedidoMaquinas: [],
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
     });
     mockDelete.mockResolvedValue(BASE_MATERIAL);
 
     const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/1");
     expect(res.status).toBe(204);
+  });
+
+  it("forza el borrado de un grupo con sub-materiales (204)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      imagen_url: null,
+      es_grupo: true,
+      subMateriales: [{ id_material: 2, imagen_url: null }],
+    });
+    mockDelete.mockResolvedValue(BASE_MATERIAL);
+
+    const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/1");
+    expect(res.status).toBe(204);
+    expect(prisma.materiales.deleteMany).toHaveBeenCalledWith({
+      where: { id_material: { in: [2] } },
+    });
+  });
+
+  it("forza el borrado aunque haya opciones, detalles de pedido y pedidoMaquina (204)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      imagen_url: null,
+      es_grupo: false,
+      subMateriales: [],
+    });
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([{ id_opcion: 50 }]);
+    mockDelete.mockResolvedValue(BASE_MATERIAL);
+
+    const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/1");
+    expect(res.status).toBe(204);
+    expect(prisma.matrizDePrecios.deleteMany).toHaveBeenCalled();
+    expect(prisma.valoresOpcion.deleteMany).toHaveBeenCalled();
+    expect(prisma.opcionesProducto.deleteMany).toHaveBeenCalled();
+    expect(prisma.detallePedido.deleteMany).toHaveBeenCalledWith({
+      where: { id_material: { in: [1] } },
+    });
+    expect(prisma.pedidoMaquina.deleteMany).toHaveBeenCalledWith({
+      where: { id_material: { in: [1] } },
+    });
   });
 
   it("retorna 404 cuando el material no existe", async () => {
@@ -471,38 +642,128 @@ describe("DELETE /api/materiales/[id] — MAT-05 Eliminar material", () => {
     expect(res.body.error).toContain("no encontrado");
   });
 
-  it("retorna 409 cuando el material está asociado a opciones de producto", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockFindUnique.mockResolvedValue({
-      id_material: 1,
-      opciones: [{ id_opcion: 1 }],
-      detallesPedido: [],
-      pedidoMaquinas: [],
-    });
-
-    const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/1");
-    expect(res.status).toBe(409);
-    expect(mockDelete).not.toHaveBeenCalled();
-  });
-
-  it("retorna 409 cuando el material está referenciado en pedidos", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-    mockFindUnique.mockResolvedValue({
-      id_material: 1,
-      opciones: [],
-      detallesPedido: [{ id_detalle: 1 }],
-      pedidoMaquinas: [],
-    });
-
-    const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/1");
-    expect(res.status).toBe(409);
-  });
-
   it("retorna 422 cuando el id no es un número", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await makeAppById({ DELETE: routes.DELETE }).delete("/api/materiales/abc");
     expect(res.status).toBe(422);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /api/materiales/[id]/impacto — pre-delete impact counts
+// ──────────────────────────────────────────────────────────────────────────────
+describe("GET /api/materiales/[id]/impacto", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let routes: any;
+
+  // For /api/materiales/[id]/impacto, the dynamic segment is the second-to-last.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function makeAppImpacto(rs: Record<string, any>) {
+    return createApp(rs, (url) => {
+      const segments = url.pathname.split("/");
+      return { id: segments[segments.length - 2] };
+    });
+  }
+
+  beforeAll(async () => {
+    routes = await import("@/app/api/materiales/[id]/impacto/route");
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("retorna 401 sin sesión activa", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const res = await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna conteo cero cuando el material no tiene relaciones", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({ id_material: 1, es_grupo: false, subMateriales: [] });
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
+
+    const res = await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ servicios: 0, proveedores: 0, instaladores: 0 });
+  });
+
+  it("agrupa servicios, proveedores (directos+vía servicio) e instaladores distintos", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({ id_material: 1, es_grupo: false, subMateriales: [] });
+
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([
+      { id_servicio: 100 },
+      { id_servicio: 101 },
+    ]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([{ id_servicio: 100 }]); // duplicado, se debe colapsar
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([
+      { id_proveedor: 7 },
+      { id_proveedor: 8 },
+    ]);
+    (prisma.servicios.findMany as jest.Mock).mockResolvedValue([
+      { id_proveedor: 8, id_instalador: 20 }, // proveedor 8 ya contado
+      { id_proveedor: 9, id_instalador: null },
+    ]);
+    (prisma.instaladorServicios.findMany as jest.Mock).mockResolvedValue([
+      { id_instalador: 20 }, // ya contado
+      { id_instalador: 21 },
+    ]);
+
+    const res = await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ servicios: 2, proveedores: 3, instaladores: 2 });
+  });
+
+  it("para grupos agrega los ids de los sub-materiales", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      es_grupo: true,
+      subMateriales: [{ id_material: 2 }, { id_material: 3 }],
+    });
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
+
+    await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+
+    expect(prisma.proveedorPrecios.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_material: { in: [1, 2, 3] } } })
+    );
+  });
+
+  it("para categorías agrega los ids de los grupos y sus variantes (2 niveles)", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    // Categoría (1) → grupo (2) → variantes (4, 5); grupo (3) sin variantes.
+    mockFindUnique.mockResolvedValue({
+      id_material: 1,
+      subMateriales: [
+        { id_material: 2, subMateriales: [{ id_material: 4 }, { id_material: 5 }] },
+        { id_material: 3, subMateriales: [] },
+      ],
+    });
+    (prisma.servicioMaterial.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.opcionesProducto.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.proveedorPrecios.findMany as jest.Mock).mockResolvedValue([]);
+
+    await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/1/impacto");
+
+    expect(prisma.proveedorPrecios.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id_material: { in: [1, 2, 4, 5, 3] } } })
+    );
+  });
+
+  it("retorna 404 cuando el material no existe", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockFindUnique.mockResolvedValue(null);
+
+    const res = await makeAppImpacto({ GET: routes.GET }).get("/api/materiales/999/impacto");
+    expect(res.status).toBe(404);
   });
 });
 
@@ -549,7 +810,7 @@ describe("GET /api/materiales/[id]/proveedores — MAT-06 Listar proveedores de 
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 con rol Finanzas", async () => {
+  it("retorna 403 con rol Finanzas (materiales es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await makeApp().get("/api/materiales/1/proveedores");
@@ -574,15 +835,11 @@ describe("GET /api/materiales/[id]/proveedores — MAT-06 Listar proveedores de 
     expect(res.body.data).toHaveLength(1);
   });
 
-  it("retorna 200 con la lista de proveedores (rol Colaborador)", async () => {
-    // Colaborador puede llamar al endpoint directamente aunque la columna
-    // esté oculta en la UI — el guard de la ruta lo permite explícitamente.
+  it("retorna 403 con rol Colaborador (proveedores de un material es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
-    mockProveedoresFindMany.mockResolvedValue([BASE_ROW]);
 
     const res = await makeApp().get("/api/materiales/1/proveedores");
-    expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
+    expect(res.status).toBe(403);
   });
 
   it("proyecta correctamente los campos del proveedor y el precio", async () => {

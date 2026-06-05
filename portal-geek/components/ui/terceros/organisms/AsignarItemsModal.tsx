@@ -2,33 +2,40 @@
 
 import { useEffect, useState } from "react";
 
+import { Modal } from "@/components/ui/atoms";
+import { Button } from "@/components/ui/atoms/Button";
+
 import { TerceroTypeTag } from "../atoms/TerceroTypeTag";
 import { AsignacionCard } from "../molecules/AsignacionCard";
 
 interface AsignarItemsModalProps {
-  id_proveedor: number;
+  targetId: number;
   companyName: string;
   contactName: string;
   email: string;
   phone: string;
   role: string;
+  tipo?: string;
   status: string;
   isOpen: boolean;
   itemType: "material" | "servicio";
+  targetType: "proveedor" | "instalador";
   onClose: () => void;
   onSaved: () => void;
 }
 
 export function AsignarItemsModal({
-  id_proveedor,
+  targetId,
   companyName,
   contactName,
   email,
   phone,
   role,
+  tipo,
   status,
   isOpen,
   itemType,
+  targetType,
   onClose,
   onSaved,
 }: AsignarItemsModalProps) {
@@ -42,6 +49,7 @@ export function AsignarItemsModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isMaterial = itemType === "material";
   const itemTypePlural = isMaterial ? "materiales" : "servicios";
@@ -55,38 +63,41 @@ export function AsignarItemsModal({
     async function fetchData() {
       setLoading(true);
       try {
-        // Fetch all catalog items sequentially to avoid silent cuts
+        // For materials use mode=options (returns all leaves: individuals + sub-materials, excludes groups).
+        // For services paginate normally.
         type CatalogItem =
           | { id_material: number; nombre_material: string; descripcion_material: string | null }
           | { id_servicio: number; nombre_servicio: string; descripcion_servicio: string | null };
 
         const allCatalogItems: CatalogItem[] = [];
-        let page = 1;
-        let totalItems = 0;
-        let fetchedItems = 0;
 
-        do {
-          const res = await fetch(`${endpoint}?activo=true&pageSize=100&page=${page}`);
+        if (isMaterial) {
+          const res = await fetch(`${endpoint}?mode=options`);
           if (!res.ok) throw new Error("Error fetching catalog");
-
           const json = await res.json();
-          const pageItems: CatalogItem[] = json.data ?? [];
-          allCatalogItems.push(...pageItems);
-
-          totalItems = json.total ?? 0;
-          fetchedItems += pageItems.length;
-          page++;
-
-          // Failsafe to prevent infinite loops if API is misbehaving
-          if (pageItems.length === 0) break;
-        } while (fetchedItems < totalItems);
+          allCatalogItems.push(...(json.data ?? []));
+        } else {
+          let page = 1;
+          let totalItems = 0;
+          let fetchedItems = 0;
+          do {
+            const res = await fetch(`${endpoint}?activo=true&pageSize=100&page=${page}`);
+            if (!res.ok) throw new Error("Error fetching catalog");
+            const json = await res.json();
+            const pageItems: CatalogItem[] = json.data ?? [];
+            allCatalogItems.push(...pageItems);
+            totalItems = json.total ?? 0;
+            fetchedItems += pageItems.length;
+            page++;
+            if (pageItems.length === 0) break;
+          } while (fetchedItems < totalItems);
+        }
 
         // Fetch current assignments
-        const assignmentsRes = await fetch(`/api/proveedores/${id_proveedor}/asignacion`);
+        const assignmentsRes = await fetch(`/api/${targetType}es/${targetId}/asignacion`);
         if (!assignmentsRes.ok) throw new Error("Error fetching assignments");
         const currentData = await assignmentsRes.json();
 
-        // Map data
         const mappedItems = allCatalogItems.map((item) => {
           if ("id_material" in item) {
             return {
@@ -110,11 +121,16 @@ export function AsignarItemsModal({
           currentData.data?.[isMaterial ? "materialPrices" : "servicePrices"] ?? {};
         const assignedNotes: Record<number, string> =
           currentData.data?.[isMaterial ? "materialNotes" : "serviceNotes"] ?? {};
-        setSelectedIds(assignedIds);
+
+        // Intersect with active catalog so inactive assignments don't get posted back
+        const catalogIds = new Set(mappedItems.map((item) => item.id));
+        const activeAssignedIds = assignedIds.filter((id) => catalogIds.has(id));
+
+        setSelectedIds(activeAssignedIds);
         setPrices(
-          Object.fromEntries(assignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
+          Object.fromEntries(activeAssignedIds.map((id) => [id, String(assignedPrices[id] ?? "")]))
         );
-        setNotes(Object.fromEntries(assignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
+        setNotes(Object.fromEntries(activeAssignedIds.map((id) => [id, assignedNotes[id] ?? ""])));
       } catch (err) {
         console.error("Error fetching items:", err);
         setError(`Hubo un error al cargar los ${itemTypePlural}. Por favor, intenta de nuevo.`);
@@ -125,7 +141,7 @@ export function AsignarItemsModal({
     }
 
     fetchData();
-  }, [isOpen, id_proveedor, isMaterial, itemType, itemTypePlural, endpoint]);
+  }, [isOpen, targetId, isMaterial, endpoint, itemType, itemTypePlural, targetType]);
 
   function toggleId(id: number) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
@@ -153,13 +169,14 @@ export function AsignarItemsModal({
       return;
     }
     setSaving(true);
+    setSaveError(null);
     try {
       const itemsPayload = selectedIds.map((id) => ({
         id,
         precio: parseFloat(prices[id] ?? "0") || 0,
         notas: notes[id] ?? "",
       }));
-      const res = await fetch(`/api/proveedores/${id_proveedor}/asignacion`, {
+      const res = await fetch(`/api/${targetType}es/${targetId}/asignacion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: itemType, items: itemsPayload }),
@@ -169,18 +186,24 @@ export function AsignarItemsModal({
         onSaved();
         onClose();
       } else {
-        window.alert("Hubo un error al guardar la asignación");
+        const payload = await res.json().catch(() => ({}));
+        setSaveError(payload?.error ?? "Hubo un error al guardar la asignación");
       }
     } finally {
       setSaving(false);
     }
   }
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-[12px] shadow-lg w-full max-w-[550px] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel={title}
+      size="lg"
+      noPadding
+      zClassName="z-[60]"
+    >
+      <div className="flex min-h-0 flex-col">
         <div className="flex items-start justify-between px-6 py-4 border-b border-[#e8e8e8]">
           <div className="flex flex-col gap-4 w-full">
             <div className="flex justify-between items-center">
@@ -205,10 +228,12 @@ export function AsignarItemsModal({
                 className={`px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] ${
                   role === "Proveedor"
                     ? "bg-[rgba(139,92,246,0.12)] border-[#8b5cf6] text-[#8b5cf6]"
-                    : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
+                    : tipo === "Contratista"
+                      ? "bg-[rgba(30,58,138,0.08)] border-[#1e3a8a] text-[#1e3a8a]"
+                      : "bg-[rgba(0,128,255,0.07)] border-[#006aff] text-[#006aff]"
                 }`}
               >
-                {role}
+                {tipo === "Contratista" ? "Contratista" : role}
               </span>
               <TerceroTypeTag type={typeLabel} />
               <span
@@ -252,10 +277,14 @@ export function AsignarItemsModal({
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-4 border-[#006aff] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[14px] text-[#8e908f] font-medium">Cargando {itemTypePlural}...</p>
+              <p className="text-[14px] text-[#8e908f] font-medium">
+                Cargando {itemType === "material" ? "materiales" : "servicios"}...
+              </p>
             </div>
           ) : items.length === 0 ? (
-            <p className="text-center py-12 text-[#8e908f]">No hay {itemTypePlural} disponibles.</p>
+            <p className="text-center py-12 text-[#8e908f]">
+              No hay {itemType === "material" ? "materiales" : "servicios"} disponibles.
+            </p>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {items.map((item) => (
@@ -277,22 +306,29 @@ export function AsignarItemsModal({
           )}
         </div>
 
-        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3 bg-gray-50/30">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 text-[14px] font-medium text-[#575757] border border-[#b9b8b8] rounded-[7px] hover:bg-[#f5f5f5] transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="px-5 py-2 text-[14px] font-medium text-white bg-[#006aff] hover:bg-[#0056ce] rounded-[7px] transition-all shadow-[0_4px_12px_rgba(0,106,255,0.15)] disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {saving ? "Guardando..." : "Asignar"}
-          </button>
+        <div className="p-6 flex flex-col gap-3 bg-gray-50/30">
+          {saveError && (
+            <div className="rounded-[6px] bg-[#ffecec] border border-[#e42200] text-[#e42200] text-[13px] px-4 py-2">
+              {saveError}
+            </div>
+          )}
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || loading}
+              loading={saving}
+            >
+              {saving ? "Guardando..." : "Asignar"}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

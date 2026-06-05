@@ -1,96 +1,85 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
-import { ChevronDownIcon, CheckIcon } from "@/components/ui/atoms/icons";
+import { ChevronDownIcon } from "@/components/ui/atoms/icons";
+import { Popover, PopoverItem } from "@/components/ui/primitives/Popover";
 
 export type ClientCategory = "Black" | "Silver" | "Gold" | "Emprendedor" | "Baneado";
 
 const CATEGORY_OPTIONS: ClientCategory[] = ["Black", "Silver", "Gold", "Emprendedor", "Baneado"];
 
-const CATEGORY_STYLES: Record<string, { color: string; bg: string; border: string }> = {
-  Black: { color: "#ffffff", bg: "#000000", border: "#000000" },
-  Silver: { color: "#1e1e1e", bg: "#e0e0e0", border: "#d1d1d1" },
-  Gold: { color: "#1e1e1e", bg: "#f4d966", border: "#e0c54d" },
-  Emprendedor: { color: "#1e1e1e", bg: "#acf466", border: "#96d65a" },
-  Baneado: { color: "#ffffff", bg: "#ff0000", border: "#cc0000" },
+// Bordered-pill chrome mirrors the terceros StatusDropdown and the
+// colaboradores StatusTag: rounded-[7px], 1px border in the entry color,
+// faint tinted background, a 4px drop shadow, and a CaretDown affordance.
+// Same Tailwind formula on the trigger — only the color tokens change per
+// category — so all three admin entity dropdowns read as one component family.
+const TRIGGER_STYLES: Record<ClientCategory, string> = {
+  Black: "bg-[rgba(30,30,30,0.15)] border-[#1e1e1e] text-[#1e1e1e]",
+  Silver: "bg-[rgba(142,144,143,0.12)] border-[#8e908f] text-[#5a5a5a]",
+  Gold: "bg-[rgba(212,160,23,0.10)] border-[#d4a017] text-[#b58a1a]",
+  Emprendedor: "bg-[rgba(0,200,83,0.07)] border-[#00c853] text-[#00c853]",
+  Baneado: "bg-[rgba(255,23,68,0.07)] border-[#ff1744] text-[#ff1744]",
 };
+
+// "Sin categoría" trigger — used when the column is empty or holds a value
+// outside the known set. Visually distinct from Silver (which is also gray-on-
+// gray) by using a dashed border + italic label, mirroring the codebase's
+// existing empty-state convention (e.g. UserCard's "Sin sucursal" button).
+const FALLBACK_STYLE =
+  "bg-[#fafafa] border-dashed border-[#b9b8b8] text-[#8e908f] italic font-normal";
 
 interface CategoryDropdownProps {
   category: string | null;
-  onChange?: (category: ClientCategory) => void;
+  // `null` is sent when the admin picks "Sin categoría" — the parent forwards
+  // it to PUT /api/clientes/:id and the server clears the column.
+  onChange?: (category: ClientCategory | null) => void;
 }
 
 export function CategoryDropdown({ category, onChange }: CategoryDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
-  const currentCategory = (category as ClientCategory) || "Silver";
-  const style = CATEGORY_STYLES[currentCategory] || {
-    color: "#1e1e1e",
-    bg: "#f0f0f0",
-    border: "#d1d1d1",
-  };
-
-  function handleSelect(option: ClientCategory) {
-    setOpen(false);
-    if (option !== category) onChange?.(option);
-  }
+  const isKnown = category != null && (CATEGORY_OPTIONS as readonly string[]).includes(category);
+  const triggerStyle = isKnown ? TRIGGER_STYLES[category as ClientCategory] : FALLBACK_STYLE;
+  // Treat both `null` and unrecognized strings as the "no category" state for
+  // the dropdown's selected highlighting.
+  const isEmpty = !isKnown;
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center justify-between min-w-[140px] h-[38px] px-4 rounded-[19px] text-[14px] font-bold font-ibm-plex transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1)] border"
-        style={{
-          color: style.color,
-          backgroundColor: style.bg,
-          borderColor: style.border,
-        }}
-      >
-        <span className="truncate">{category || "Sin categoría"}</span>
-        <span className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`}>
-          <ChevronDownIcon size={14} />
-        </span>
-      </button>
-
-      {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 min-w-[160px] bg-white rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-gray-100 overflow-hidden p-1 flex flex-col gap-1">
-          {CATEGORY_OPTIONS.map((opt) => {
-            const optStyle = CATEGORY_STYLES[opt];
-            const isSelected = opt === category;
-
-            return (
-              <button
-                key={opt}
-                onClick={() => handleSelect(opt)}
-                className="w-full text-left px-4 py-2.5 text-[15px] font-bold rounded-[8px] flex items-center justify-between transition-all hover:scale-[1.02] active:scale-[0.98]"
-                style={{
-                  backgroundColor: optStyle.bg,
-                  color: optStyle.color,
-                  opacity: isSelected ? 0.6 : 1,
-                  cursor: isSelected ? "default" : "pointer",
-                }}
-              >
-                <span>{opt}</span>
-                {isSelected && <CheckIcon size={16} style={{ color: optStyle.color }} />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <Popover
+      align="start"
+      panelClassName="min-w-[160px]"
+      trigger={
+        <button
+          type="button"
+          className={`flex items-center justify-center gap-1 min-w-[84px] px-2 py-0.5 rounded-[7px] border text-[14px] font-medium shadow-[0px_4px_10px_0px_rgba(0,0,0,0.25)] transition-all ${triggerStyle}`}
+        >
+          {category || "Sin categoría"}
+          <ChevronDownIcon />
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {CATEGORY_OPTIONS.map((opt) => (
+          <PopoverItem
+            key={opt}
+            selected={opt === category}
+            onSelect={() => {
+              if (opt !== category) onChange?.(opt);
+            }}
+          >
+            {opt}
+          </PopoverItem>
+        ))}
+        {/* "Sin categoría" — clears the column on the server. Italicized to
+            echo the trigger's empty-state styling so the option is visually
+            grouped with the fallback pill rather than the brand tiers above. */}
+        <PopoverItem
+          selected={isEmpty}
+          onSelect={() => {
+            if (!isEmpty) onChange?.(null);
+          }}
+          className="italic"
+        >
+          Sin categoría
+        </PopoverItem>
+      </div>
+    </Popover>
   );
 }

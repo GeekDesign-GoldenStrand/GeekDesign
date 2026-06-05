@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { CheckCircle, WarningCircle, StopCircle, Info } from "@phosphor-icons/react";
+import Link from "next/link";
+import { useState } from "react";
 
-import { AdminToolbar } from "@/components/admin/molecules/AdminToolbar";
+import {
+  PedidosServiceTabs,
+  type PedidoServiceOption,
+} from "@/components/admin/molecules/PedidosServiceTabs";
+import { SearchBar } from "@/components/admin/molecules/SearchBar";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
+import { PedidosFilterSidebar } from "@/components/admin/organisms/PedidosFilterSidebar";
 import { PedidosTable } from "@/components/admin/organisms/PedidosTable";
+import { FilterIcon } from "@/components/ui/atoms/icons";
+import type { UserRole } from "@/types";
 
 // Frontend type for an order
 type Pedido = {
@@ -12,6 +21,7 @@ type Pedido = {
   fecha_creacion: string;
   fecha_estimada?: string | null;
   monto_total?: number | null;
+  nombre_oportunidad?: string | null;
 
   cliente: {
     nombre_cliente: string;
@@ -25,6 +35,8 @@ type Pedido = {
   estado_factura?: {
     descripcion: string;
   } | null;
+
+  archivos: { id: number; nombre: string }[];
 };
 
 // Props
@@ -40,20 +52,32 @@ type Props = {
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: string) => void;
 
-  onlyActive: boolean;
-  setOnlyActive: (v: boolean) => void;
-
-  serviceIds: number[];
-  setServiceIds: (v: number[]) => void;
+  clienteEmpresa: string | null;
+  setClienteEmpresa: (v: string | null) => void;
 
   estatuses: string[];
   setEstatuses: (v: string[]) => void;
 
-  empresa: string | null;
-  setEmpresa: (v: string | null) => void;
+  fechaEstimadaDesde: string;
+  setFechaEstimadaDesde: (value: string) => void;
+  fechaEstimadaHasta: string;
+  setFechaEstimadaHasta: (value: string) => void;
 
-  cliente: string | null;
-  setCliente: (v: string | null) => void;
+  detalleEstatuses: string[];
+  setDetalleEstatuses: (v: string[]) => void;
+
+  services: PedidoServiceOption[];
+  selectedServiceId: number | null;
+  onServiceSelect: (id: number | null) => void;
+  onDetalleStatusChange: (detalleIds: number[], status: string) => void;
+
+  title?: string;
+  historyButtonHref?: string;
+  historyButtonLabel?: string;
+  backButtonHref?: string;
+  backButtonLabel?: string;
+  showServiceTabs?: boolean;
+  role?: UserRole;
 };
 
 export function PedidosTemplate({
@@ -65,187 +89,193 @@ export function PedidosTemplate({
   total,
   onDelete,
   onStatusChange,
-  onlyActive,
-  setOnlyActive,
-  serviceIds,
-  setServiceIds,
+  clienteEmpresa,
+  setClienteEmpresa,
   estatuses,
   setEstatuses,
-  empresa,
-  setEmpresa,
-  cliente,
-  setCliente,
+  fechaEstimadaDesde,
+  setFechaEstimadaDesde,
+  fechaEstimadaHasta,
+  setFechaEstimadaHasta,
+  detalleEstatuses,
+  setDetalleEstatuses,
+  services,
+  selectedServiceId,
+  onServiceSelect,
+  onDetalleStatusChange,
+  title = "Pedidos",
+  historyButtonHref,
+  historyButtonLabel,
+  backButtonHref,
+  backButtonLabel,
+  showServiceTabs = true,
+  role: _role,
 }: Props) {
   const [showFilter, setShowFilter] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
 
-  /**
-   * UI → API mapping for statuses
-   * Keeps UI readable while preserving backend contract
-   */
-  const STATUS_OPTIONS = [
-    { label: "Cotización", value: "Cotizacion" },
-    { label: "Pagado", value: "Pagado" },
-    { label: "En cola", value: "En_cola" },
-    { label: "Aprobación diseño", value: "Aprobacion_diseno" },
-    { label: "En producción", value: "En_produccion" },
-    { label: "Entregado", value: "Entregado" },
-    { label: "Facturado", value: "Facturado" },
-  ];
+  const activeFilterChips = [
+    clienteEmpresa
+      ? {
+          key: "clienteEmpresa",
+          label: `Cliente/Empresa: ${clienteEmpresa}`,
+          clear: () => setClienteEmpresa(null),
+        }
+      : null,
+    ...estatuses.map((s) => ({
+      key: `estatus-${s}`,
+      label: s,
+      clear: () => setEstatuses(estatuses.filter((e) => e !== s)),
+    })),
+    fechaEstimadaDesde
+      ? {
+          key: "desde",
+          label: `Desde: ${fechaEstimadaDesde}`,
+          clear: () => setFechaEstimadaDesde(""),
+        }
+      : null,
+    fechaEstimadaHasta
+      ? {
+          key: "hasta",
+          label: `Hasta: ${fechaEstimadaHasta}`,
+          clear: () => setFechaEstimadaHasta(""),
+        }
+      : null,
+    ...detalleEstatuses.map((s) => ({
+      key: `detalle-${s}`,
+      label: `Servicio: ${s}`,
+      clear: () => setDetalleEstatuses(detalleEstatuses.filter((e) => e !== s)),
+    })),
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
 
-  /**
-   * Close filter dropdown when clicking outside
-   */
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setShowFilter(false);
-      }
-    }
+  const filterCount = activeFilterChips.length;
 
-    if (showFilter) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showFilter]);
+  function clearAllFilters() {
+    setClienteEmpresa(null);
+    setEstatuses([]);
+    setFechaEstimadaDesde("");
+    setFechaEstimadaHasta("");
+    setDetalleEstatuses([]);
+  }
 
   return (
     <>
-      <AdminHeader title="Pedidos" />
+      <AdminHeader title={title} />
 
-      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-5 space-y-4">
-        {/* Toolbar */}
-        <div className="relative">
-          <AdminToolbar
-            search={search}
-            onSearchChange={setSearch}
-            // Button for adding a new order. Backend not implemented yet.
-            // onAgregar={() => {}}
-            // Filter button for orders, uncomment if you want to implement it
-            // onFiltrar={() => setShowFilter((prev) => !prev)}
-          />
+      <section className="max-w-[1350px] mx-auto px-4 md:px-6 pt-8 space-y-6">
+        {/* Service filter tabs */}
+        {showServiceTabs && (
+          <div className="pt-2">
+            <PedidosServiceTabs
+              services={services}
+              selectedServiceId={selectedServiceId}
+              onSelectService={onServiceSelect}
+            />
+          </div>
+        )}
 
-          {/* Filter dropdown */}
-          {showFilter && (
-            <div ref={filterRef} className="absolute right-0 mt-2 z-50">
-              <div className="bg-white p-6 rounded-[14px] w-[21rem] shadow-[0_8px_30px_rgba(0,0,0,0.18)] border-4 border-[#ffc1c1] text-black">
-                <h2 className="text-[24px] font-semibold mb-4 text-[#1e1e1e]">Filtros</h2>
-
-                {/* Active filter */}
-                <label className="flex items-center gap-2 mb-4 text-[13px]">
-                  <input
-                    type="checkbox"
-                    checked={onlyActive}
-                    onChange={(e) => setOnlyActive(e.target.checked)}
-                    className="accent-[#ff6b6b]"
-                  />
-                  Mostrar solo activos
-                </label>
-
-                {/* Cliente */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Cliente</p>
-                  <input
-                    value={cliente ?? ""}
-                    onChange={(e) => setCliente(e.target.value || null)}
-                    className="w-full border border-[#ffd6d6] bg-[#fff5f5] rounded-[6px] p-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f7f]"
-                  />
-                </div>
-
-                {/* Empresa */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-1">Empresa</p>
-                  <input
-                    value={empresa ?? ""}
-                    onChange={(e) => setEmpresa(e.target.value || null)}
-                    className="w-full border border-[#ffd6d6] bg-[#fff5f5] rounded-[6px] p-2 focus:outline-none focus:ring-2 focus:ring-[#ff7f7f]"
-                  />
-                </div>
-
-                {/* Estatus */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Estatus</p>
-                  <div className="space-y-2">
-                    {STATUS_OPTIONS.map((s) => (
-                      <label key={s.value} className="flex items-center gap-2 text-[13px]">
-                        <input
-                          type="checkbox"
-                          checked={estatuses.includes(s.value)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEstatuses([...estatuses, s.value]);
-                            } else {
-                              setEstatuses(estatuses.filter((x) => x !== s.value));
-                            }
-                          }}
-                          className="accent-[#ff6b6b]"
-                        />
-                        {s.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Servicios */}
-                <div className="mb-3">
-                  <p className="text-[13px] font-semibold text-[#575757] mb-2">Servicio</p>
-                  <div className="space-y-2">
-                    {[
-                      { id: 1, name: "Corte Láser" },
-                      { id: 2, name: "Grabado Láser" },
-                    ].map((service) => (
-                      <label key={service.id} className="flex items-center gap-2 text-[13px]">
-                        <input
-                          type="checkbox"
-                          checked={serviceIds.includes(service.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setServiceIds([...serviceIds, service.id]);
-                            } else {
-                              setServiceIds(serviceIds.filter((id) => id !== service.id));
-                            }
-                          }}
-                          className="accent-[#ff6b6b]"
-                        />
-                        {service.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="mt-4 flex justify-center gap-3">
-                  <button
-                    onClick={() => {
-                      setOnlyActive(false);
-                      setServiceIds([]);
-                      setEstatuses([]);
-                      setEmpresa(null);
-                      setCliente(null);
-                    }}
-                    className="h-8 px-4 rounded-[6px] bg-[#ffc1c1] text-white text-[13px] font-semibold hover:bg-[#ff9e9e]"
-                  >
-                    Restablecer
-                  </button>
-
-                  <button
-                    onClick={() => setShowFilter(false)}
-                    className="h-8 px-6 rounded-[6px] bg-[#ff9e9e] text-white text-[13px] font-semibold hover:bg-[#ff7f7f]"
-                  >
-                    Aplicar
-                  </button>
-                </div>
-              </div>
+        {/* Toolbar — search + filter on the left, history/back button on the right */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Left group: search + filter */}
+          <div className="flex items-center gap-6">
+            <div className="min-w-0 w-[430px]">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Buscar por folio o nombre de oportunidad"
+              />
             </div>
-          )}
+
+            <button
+              type="button"
+              onClick={() => setShowFilter(true)}
+              className="relative flex items-center justify-center gap-1.5 h-[41px] px-4 rounded-[7px] border border-[#e42200] bg-[#ffecec] font-ibm-plex font-medium text-[13px] text-[#e42200] transition-colors hover:bg-[#ffd5d5] whitespace-nowrap shrink-0"
+            >
+              <FilterIcon />
+              Filtrar
+              {filterCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-[#e42200] text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {filterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Right group: nav buttons */}
+          <div className="flex items-center gap-3">
+            {backButtonHref && backButtonLabel && (
+              <Link
+                href={backButtonHref}
+                className="h-[41px] px-6 rounded-md border border-[#c6c6c6] bg-white text-[#575757] text-sm font-semibold flex items-center justify-center whitespace-nowrap shrink-0 hover:border-[#8e908f] hover:text-[#1e1e1e] transition"
+              >
+                ← {backButtonLabel}
+              </Link>
+            )}
+
+            {historyButtonHref && historyButtonLabel && (
+              <Link
+                href={historyButtonHref}
+                className="h-[41px] px-6 rounded-md border border-[#c6c6c6] bg-white text-[#575757] text-sm font-semibold flex items-center justify-center whitespace-nowrap shrink-0 hover:border-[#8e908f] hover:text-[#1e1e1e] transition"
+              >
+                {historyButtonLabel}
+              </Link>
+            )}
+          </div>
         </div>
 
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ffecec] border border-[#e42200]/30 text-[12px] font-medium text-[#e42200]"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.clear}
+                  aria-label={`Quitar filtro ${chip.label}`}
+                  className="leading-none hover:text-[#b31a00]"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[12px] text-[#8e908f] underline hover:text-[#1e1e1e] transition-colors"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
+
+        <PedidosFilterSidebar
+          open={showFilter}
+          onClose={() => setShowFilter(false)}
+          clienteEmpresa={clienteEmpresa}
+          setClienteEmpresa={setClienteEmpresa}
+          estatuses={estatuses}
+          setEstatuses={setEstatuses}
+          fechaEstimadaDesde={fechaEstimadaDesde}
+          setFechaEstimadaDesde={setFechaEstimadaDesde}
+          fechaEstimadaHasta={fechaEstimadaHasta}
+          setFechaEstimadaHasta={setFechaEstimadaHasta}
+          selectedServiceId={selectedServiceId}
+          detalleEstatuses={detalleEstatuses}
+          setDetalleEstatuses={setDetalleEstatuses}
+        />
+
         {/* Table */}
-        <PedidosTable pedidos={pedidos} onDelete={onDelete} onStatusChange={onStatusChange} />
+        <PedidosTable
+          pedidos={pedidos}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+          selectedServiceId={selectedServiceId}
+          onDetalleStatusChange={onDetalleStatusChange}
+        />
 
         {/* Pagination */}
         <div className="flex justify-end mt-8 mb-6 pr-4">
@@ -285,6 +315,82 @@ export function PedidosTemplate({
             >
               {">"}
             </button>
+          </div>
+        </div>
+
+        {/* Leyenda / Index */}
+        <div
+          id="pedidos-index"
+          className="flex flex-col md:flex-row justify-between gap-8 pt-8 pb-12 border-t border-[#e8e8e8] text-base"
+        >
+          {/* Semáforo de Servicios */}
+          <div className="space-y-4">
+            <h4 className="font-bold uppercase tracking-[0.5px] text-[14px] text-[#575757]">
+              Semáforo de Servicios{" "}
+              <button
+                type="button"
+                aria-label="Ver leyenda del semáforo"
+                className="inline-flex ml-2 cursor-pointer bg-transparent border-0 p-0 leading-none align-middle"
+                onClick={() =>
+                  document.getElementById("pedidos-index")?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                <Info size={16} className="text-[#6f6f6f]" />
+              </button>
+            </h4>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#F7B9FF] text-[#700188] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Pendiente</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#FFE4A5] text-[#8A6F02] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">En producción</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#CCFFA5] text-[#2A940D] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Finalizado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#B9EEFF] text-[#043B66] flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Entregado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-[#B1B1B1] text-black flex items-center justify-center font-bold text-sm">
+                  1
+                </span>
+                <span className="text-[#1e1e1e] font-medium">Cancelado</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Estatus de Facturación */}
+          <div className="space-y-4">
+            <h4 className="font-bold uppercase tracking-[0.5px] text-[14px] text-[#575757]">
+              Estatus de Factura
+            </h4>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-3">
+                <CheckCircle size={24} className="text-[#6ACE0D]" weight="fill" />
+                <span className="text-[#1e1e1e] font-medium">Facturado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <WarningCircle size={24} className="text-[#E42200]" weight="fill" />
+                <span className="text-[#1e1e1e] font-medium">En proceso / Pendiente</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <StopCircle size={24} className="text-gray-400" weight="fill" />
+                <span className="text-[#1e1e1e] font-medium">No se requiere factura</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

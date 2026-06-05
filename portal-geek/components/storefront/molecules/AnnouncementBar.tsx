@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* When the link is needed again, uncomment the relevant code and remove this line */
 import Link from "next/link";
 
 interface AnnouncementBarProps {
@@ -7,7 +9,7 @@ interface AnnouncementBarProps {
 }
 
 export function AnnouncementBar({
-  mensaje = "Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el 10 de abril |",
+  mensaje = "Noticias importantes de ofertas, por ejemplo: 30% de descuento en carteles 3D | Termina el 10 de abril",
   linkTexto = "Comprar ahora",
   linkHref = "/tienda",
 }: AnnouncementBarProps) {
@@ -16,12 +18,14 @@ export function AnnouncementBar({
       <p className="text-[#fffcfc] text-[13px] md:text-[16.742px] font-medium leading-normal text-center line-clamp-2 md:whitespace-nowrap md:line-clamp-none">
         {mensaje}
       </p>
+      {/*
       <Link
         href={linkHref}
         className="text-[#fffcfc] text-[13px] md:text-[16.742px] font-medium underline [text-decoration-skip-ink:none] decoration-solid whitespace-nowrap shrink-0"
       >
         {linkTexto}
       </Link>
+      */}
     </div>
   );
 }

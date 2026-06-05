@@ -2,7 +2,7 @@ import type { Proveedores } from "@prisma/client";
 
 import { prisma } from "@/lib/db/client";
 import type { CreateProveedorInput, UpdateProveedorInput } from "@/lib/schemas/proveedores";
-import { NotFoundError } from "@/lib/utils/errors";
+import { ConflictError, NotFoundError, ValidationError } from "@/lib/utils/errors";
 
 export async function listProveedores(
   page: number,
@@ -28,6 +28,20 @@ export async function getProveedor(id: number): Promise<Proveedores> {
 }
 
 export async function createProveedor(data: CreateProveedorInput): Promise<Proveedores> {
+  // Reject duplicates by email (case-insensitive) among non-deleted providers.
+  // Email is the identity key — different companies may share a name, but not an
+  // email; one provider offering many products is handled via item assignments,
+  // not duplicate records.
+  const existing = await prisma.proveedores.findFirst({
+    where: {
+      correo: { equals: data.correo, mode: "insensitive" },
+      estatus: { not: "Inactivo" },
+    },
+    select: { id_proveedor: true },
+  });
+  if (existing) {
+    throw new ConflictError(`Ya existe un proveedor con el correo "${data.correo}".`);
+  }
   return prisma.proveedores.create({
     data: {
       ...data,
@@ -141,63 +155,108 @@ export async function syncProviderAssignments(
   await getProveedor(id);
   const isServicio = type === "servicio";
 
-  const current = await prisma.proveedorPrecios.findMany({
-    where: {
-      id_proveedor: id,
-      id_servicio: isServicio ? { not: null } : undefined,
-      id_material: !isServicio ? { not: null } : undefined,
-    },
-  });
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.proveedorPrecios.findMany({
+      where: {
+        id_proveedor: id,
+        id_servicio: isServicio ? { not: null } : undefined,
+        id_material: !isServicio ? { not: null } : undefined,
+      },
+      select: { id_proveedor_precio: true, id_servicio: true, id_material: true },
+    });
 
-  const incomingIdSet = new Set(items.map((i) => i.id));
-  const priceMap = new Map(items.map((i) => [i.id, i.precio]));
-  const notesMap = new Map(items.map((i) => [i.id, i.notas ?? ""]));
+    const incomingIdSet = new Set(items.map((i) => i.id));
+    const priceMap = new Map(items.map((i) => [i.id, i.precio]));
+    const notesMap = new Map(items.map((i) => [i.id, i.notas ?? ""]));
 
-  const toRemove = current
-    .filter((c) => {
-      const cid = isServicio ? c.id_servicio : c.id_material;
-      return cid !== null && !incomingIdSet.has(cid);
-    })
-    .map((c) => c.id_proveedor_precio);
+    const candidatePkIds = existing
+      .filter((e) => {
+        const cid = isServicio ? e.id_servicio : e.id_material;
+        return cid !== null && !incomingIdSet.has(cid);
+      })
+      .map((e) => e.id_proveedor_precio);
 
-  const currentIdSet = new Set(
-    current
-      .map((c) => (isServicio ? c.id_servicio : c.id_material))
-      .filter((v): v is number => v !== null)
-  );
+    // Skip rows referenced by Gastos — deleting them would break cost history
+    let toDeletePkIds: number[] = candidatePkIds;
+    if (candidatePkIds.length > 0) {
+      const referenced = await tx.gastos.findMany({
+        where: { id_proveedor_precio: { in: candidatePkIds } },
+        select: { id_proveedor_precio: true },
+      });
+      const referencedSet = new Set(referenced.map((g) => g.id_proveedor_precio));
+      toDeletePkIds = candidatePkIds.filter((pk) => !referencedSet.has(pk));
+    }
 
-  const toAdd = items.filter((item) => !currentIdSet.has(item.id));
-  const toUpdate = current.filter((c) => {
-    const cid = isServicio ? c.id_servicio : c.id_material;
-    return cid !== null && incomingIdSet.has(cid);
-  });
+    const existingIdSet = new Set(
+      existing
+        .map((e) => (isServicio ? e.id_servicio : e.id_material))
+        .filter((v): v is number => v !== null)
+    );
 
-  const operations = [
-    prisma.proveedorPrecios.deleteMany({
-      where: { id_proveedor_precio: { in: toRemove } },
-    }),
-    ...toAdd.map((item) =>
-      prisma.proveedorPrecios.create({
-        data: {
+    const toAdd = items.filter((item) => !existingIdSet.has(item.id));
+    const toUpdate = existing.flatMap((e) => {
+      const cid = isServicio ? e.id_servicio : e.id_material;
+      if (cid === null || !incomingIdSet.has(cid)) return [];
+      const precio = priceMap.get(cid);
+      if (precio === undefined) return []; // structurally unreachable, but explicit
+      return [
+        { id_proveedor_precio: e.id_proveedor_precio, precio, notas: notesMap.get(cid) ?? "" },
+      ];
+    });
+
+    // Validate only brand-new assignments. Re-syncing an existing assignment
+    // whose entity was deactivated after the fact is intentionally allowed —
+    // blocking it would prevent price/notes updates to every other unrelated
+    // assignment in the same payload.
+    if (toAdd.length > 0) {
+      const newIds = toAdd.map((item) => item.id);
+      if (isServicio) {
+        const valid = await tx.servicios.findMany({
+          where: { id_servicio: { in: newIds }, estatus_servicio: true },
+          select: { id_servicio: true },
+        });
+        if (valid.length !== newIds.length) {
+          const validSet = new Set(valid.map((s) => s.id_servicio));
+          const bad = newIds.filter((newId) => !validSet.has(newId));
+          throw new ValidationError(`Servicios no válidos o inactivos: ${bad.join(", ")}`);
+        }
+      } else {
+        const valid = await tx.materiales.findMany({
+          where: { id_material: { in: newIds } },
+          select: { id_material: true },
+        });
+        if (valid.length !== newIds.length) {
+          const validSet = new Set(valid.map((m) => m.id_material));
+          const bad = newIds.filter((newId) => !validSet.has(newId));
+          throw new ValidationError(`Materiales no encontrados: ${bad.join(", ")}`);
+        }
+      }
+    }
+
+    if (toDeletePkIds.length > 0) {
+      await tx.proveedorPrecios.deleteMany({
+        where: { id_proveedor_precio: { in: toDeletePkIds } },
+      });
+    }
+
+    if (toAdd.length > 0) {
+      await tx.proveedorPrecios.createMany({
+        data: toAdd.map((item) => ({
           id_proveedor: id,
           id_servicio: isServicio ? item.id : null,
           id_material: !isServicio ? item.id : null,
           precio: item.precio,
           notas: item.notas ?? "",
-        },
-      })
-    ),
-    ...toUpdate.map((row) => {
-      const cid = (isServicio ? row.id_servicio : row.id_material) as number;
-      return prisma.proveedorPrecios.update({
-        where: { id_proveedor_precio: row.id_proveedor_precio },
-        data: {
-          precio: priceMap.get(cid) ?? row.precio,
-          notas: notesMap.get(cid) ?? row.notas ?? "",
-        },
+        })),
+        skipDuplicates: true,
       });
-    }),
-  ];
+    }
 
-  await prisma.$transaction(operations);
+    for (const { id_proveedor_precio, precio, notas } of toUpdate) {
+      await tx.proveedorPrecios.update({
+        where: { id_proveedor_precio },
+        data: { precio, notas },
+      });
+    }
+  });
 }

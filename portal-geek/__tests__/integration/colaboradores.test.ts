@@ -14,12 +14,25 @@ jest.mock("@/lib/db/client", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
+    },
+    colaboradores: {
+      deleteMany: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
+    },
+    tokensRecuperacion: {
+      deleteMany: jest.fn(),
     },
   },
 }));
 
 jest.mock("@/lib/auth/password", () => ({
   hashPassword: jest.fn().mockResolvedValue("hashed_password"),
+}));
+
+jest.mock("@/lib/services/password-reset", () => ({
+  sendWelcomeEmailForColaborador: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockTransaction = prisma.$transaction as jest.Mock;
@@ -405,6 +418,17 @@ describe("PUT /api/colaboradores/[id] — COL-03 Modificar información", () => 
       .put("/api/colaboradores/1")
       .send({ edad: 150 });
     expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando Dirección intenta cambiar su propio rol", async () => {
+    mockGetSession.mockResolvedValue({ id: 7, role: "Direccion" });
+
+    const res = await makeAppById({ PUT: routes.PUT })
+      .put("/api/colaboradores/7")
+      .send({ id_rol: 2 });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/propio rol/i);
   });
 });
 

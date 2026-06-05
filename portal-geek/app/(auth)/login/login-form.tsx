@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { AuthInput } from "@/components/ui/atoms/AuthInput";
 import { PrimaryButton } from "@/components/ui/atoms/PrimaryButton";
 import { PasswordField } from "@/components/ui/molecules/PasswordField";
+import { landingPath, normalizeRole } from "@/lib/auth/access";
 
 export function LoginForm() {
   const router = useRouter();
@@ -30,7 +31,10 @@ export function LoginForm() {
         setError("Correo o contraseña incorrectos");
         return;
       }
-      router.push("/dashboard");
+      // Land each role where it has access — Direccion gets the metrics
+      // dashboard; the others go straight to their working section.
+      const { data } = await res.json();
+      router.push(landingPath(normalizeRole(data?.user?.rol ?? "")));
       router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor");

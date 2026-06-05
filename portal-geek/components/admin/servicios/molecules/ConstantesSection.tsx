@@ -3,7 +3,11 @@
 import { InfoIcon, LockKeyIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/atoms/Button";
+import { Select, SelectOption } from "@/components/ui/atoms/Select";
+import { hasCharRun, repeatedWords } from "@/lib/utils/safe-text";
 import { toSnakeIdentifier } from "@/lib/utils/slug";
+import { unidadesParaTipo } from "@/lib/utils/unidades-por-tipo";
 import type { TipoVariableOption } from "@/types/servicios";
 
 import { Icon } from "../atoms/Icon";
@@ -24,23 +28,29 @@ type ConstantesSectionProps = {
 };
 
 const MAX_NOMBRE_LEN = 30;
+const MAX_VALOR_DIGITOS = 8;
 
+// Stored value = short symbol. Label = verbose description shown in the dropdown only.
 const UNIT_OPTIONS = [
-  "$ - pesos",
-  "cm - centímetros",
-  "cm² - centímetros cuadrados",
-  "m - metros",
-  "m² - metros cuadrados",
-  "pz - piezas",
-  "min - minutos",
-  "horas - horas",
-  "% - porcentaje",
-  "unidad - unidades",
+  { value: "$", label: "$ - pesos" },
+  { value: "mm", label: "mm - milímetros" },
+  { value: "mm²", label: "mm² - milímetros cuadrados" },
+  { value: "cm", label: "cm - centímetros" },
+  { value: "cm²", label: "cm² - centímetros cuadrados" },
+  { value: "m", label: "m - metros" },
+  { value: "m²", label: "m² - metros cuadrados" },
+  { value: "pz", label: "pz - piezas" },
+  { value: "ms", label: "ms - milisegundos" },
+  { value: "s", label: "s - segundos" },
+  { value: "min", label: "min - minutos" },
+  { value: "h", label: "h - horas" },
+  { value: "%", label: "% - porcentaje" },
+  { value: "u", label: "u - unidades" },
 ] as const;
 
 const getTipoUnidad = (id: number, tipos: TipoVariableOption[]) => {
   const tipo = tipos.find((t) => t.id_tipo_variable === id);
-  return tipo?.unidad_default ?? "unidad";
+  return tipo?.unidad_default ?? "u";
 };
 
 export function ConstantesSection({
@@ -70,6 +80,18 @@ export function ConstantesSection({
       setError("Escribe el nombre de la constante");
       return;
     }
+    if (!/^[A-Za-záéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(draft.etiqueta.trim())) {
+      setError("El nombre solo puede contener letras");
+      return;
+    }
+    if (hasCharRun(draft.etiqueta)) {
+      setError("El nombre tiene letras repetidas sin coherencia.");
+      return;
+    }
+    if (repeatedWords(draft.etiqueta)) {
+      setError("El nombre repite la misma palabra varias veces.");
+      return;
+    }
     const nombre = toSnakeIdentifier(draft.etiqueta).slice(0, MAX_NOMBRE_LEN);
     if (!nombre) {
       setError("El nombre debe contener letras o números");
@@ -94,6 +116,15 @@ export function ConstantesSection({
     const valorParsed = parseFloat(draft.valor);
     if (isNaN(valorParsed)) {
       setError("El valor de la constante debe ser un número");
+      return;
+    }
+    if (valorParsed > 999999.99) {
+      setError("El valor no puede superar 999,999.99");
+      return;
+    }
+    const dotIdx = draft.valor.indexOf(".");
+    if (dotIdx !== -1 && draft.valor.length - dotIdx - 1 > 2) {
+      setError("Máximo 2 decimales permitidos");
       return;
     }
 
@@ -125,7 +156,7 @@ export function ConstantesSection({
 
   const chipDescripcion = (c: ConstanteDraft): string => {
     if (c.origen === "global") {
-      return c.nombre_constante === "iva" ? "16% — fijo" : "Constante del sistema";
+      return c.nombre_constante === "iva" ? "16% del subtotal" : "Constante del sistema";
     }
     const partes = [
       c.id_tipo_variable ? tipoNombre(c.id_tipo_variable) : null,
@@ -195,8 +226,13 @@ export function ConstantesSection({
                 type="text"
                 placeholder="Ej. Markup de mostrador"
                 value={draft.etiqueta}
-                onChange={(e) => setDraft((d) => ({ ...d, etiqueta: e.target.value }))}
-                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+                onChange={(e) => {
+                  const next = e.target.value
+                    .normalize("NFC")
+                    .replace(/[^A-Za-záéíóúÁÉÍÓÚñÑüÜ ]/gu, "");
+                  setDraft((d) => ({ ...d, etiqueta: next }));
+                }}
+                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
                 maxLength={MAX_NOMBRE_LEN}
               />
               {previewNombre && (
@@ -212,67 +248,91 @@ export function ConstantesSection({
 
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Valor de la constante
+                Valor de la constante{" "}
+                <span className="text-gray-400 font-normal">
+                  (máx. {MAX_VALOR_DIGITOS} dígitos)
+                </span>
               </label>
               <input
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 placeholder="Ej. 1.4"
                 value={draft.valor}
-                onChange={(e) => setDraft((d) => ({ ...d, valor: e.target.value }))}
-                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+                onChange={(e) => {
+                  // Only allow digits with at most one decimal point, capped at
+                  // MAX_VALOR_DIGITOS digits (the dot doesn't count). Reject letters,
+                  // scientific notation, signs, and anything else type="number" would
+                  // let slip through via paste or "e" key.
+                  const next = e.target.value;
+                  const digitCount = next.replace(/\./g, "").length;
+                  if (
+                    next === "" ||
+                    (/^\d*\.?\d{0,2}$/.test(next) && digitCount <= MAX_VALOR_DIGITOS)
+                  ) {
+                    setDraft((d) => ({ ...d, valor: next }));
+                  }
+                }}
+                className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm text-[#1e1e1e] w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo</label>
-                <select
-                  value={draft.id_tipo_variable}
-                  onChange={(e) => {
-                    const selectedTypeId = Number(e.target.value);
+                <Select
+                  value={String(draft.id_tipo_variable)}
+                  onChange={(v) => {
+                    const selectedTypeId = Number(v);
                     setDraft((d) => ({
                       ...d,
                       id_tipo_variable: selectedTypeId,
                       unidad: getTipoUnidad(selectedTypeId, tiposDisponibles),
                     }));
                   }}
-                  className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+                  placeholder="Selecciona..."
+                  size="sm"
                 >
-                  <option value={0}>Selecciona...</option>
                   {tiposDisponibles.map((t) => (
-                    <option key={t.id_tipo_variable} value={t.id_tipo_variable}>
+                    <SelectOption key={t.id_tipo_variable} value={String(t.id_tipo_variable)}>
                       {t.nombre_tipo}
-                    </option>
+                    </SelectOption>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Unidad</label>
-                <select
-                  value={draft.unidad ?? "unidad"}
-                  onChange={(e) => setDraft((d) => ({ ...d, unidad: e.target.value }))}
-                  className="h-9 px-2 rounded-md border border-gray-300 bg-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#e42200]"
+                <Select
+                  value={draft.unidad ?? "u"}
+                  onChange={(v) => setDraft((d) => ({ ...d, unidad: v }))}
+                  size="sm"
                 >
-                  {UNIT_OPTIONS.map((unidad) => (
-                    <option key={unidad} value={unidad}>
-                      {unidad}
-                    </option>
-                  ))}
-                </select>
+                  {(() => {
+                    // Filter UNIT_OPTIONS by the selected tipo so only related
+                    // units appear (e.g. cm/m for Dimensión, $ for Costo). If
+                    // the tipo is unknown, fall back to all units.
+                    const tipoNombreSeleccionado = tiposDisponibles.find(
+                      (t) => t.id_tipo_variable === draft.id_tipo_variable
+                    )?.nombre_tipo;
+                    const allowed = unidadesParaTipo(tipoNombreSeleccionado);
+                    const visibles = allowed
+                      ? UNIT_OPTIONS.filter((u) => allowed.includes(u.value))
+                      : UNIT_OPTIONS;
+                    return visibles.map((u) => (
+                      <SelectOption key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectOption>
+                    ));
+                  })()}
+                </Select>
               </div>
             </div>
 
             {error && <p className="text-sm text-[#e42200]">{error}</p>}
 
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="h-10 px-5 bg-[#e42200] text-white hover:bg-[#c41e00] rounded-full text-sm font-medium transition-colors"
-            >
+            <Button type="button" variant="primary" size="sm" onClick={handleAdd}>
               + Agregar constante
-            </button>
+            </Button>
           </div>
         </>
       )}

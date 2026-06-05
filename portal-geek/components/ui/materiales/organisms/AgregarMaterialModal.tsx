@@ -1,60 +1,41 @@
 "use client";
 
+import { Modal } from "@/components/ui/atoms";
 import { RegistrarMaterialForm } from "@/components/ui/materiales/organisms/RegistrarMaterialForm";
 import type { MaterialCardProps } from "@/types";
+
+type Tipo = "individual" | "grupo" | "sub" | "categoria";
 
 interface AgregarMaterialModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated: (row: MaterialCardProps) => void;
+  initialTipo?: Tipo;
+  initialPadreId?: number;
 }
 
-export function AgregarMaterialModal({ isOpen, onClose, onCreated }: AgregarMaterialModalProps) {
-  if (!isOpen) return null;
+const TITLES: Record<Tipo, string> = {
+  categoria: "Crear Categoría",
+  individual: "Agregar Material",
+  grupo: "Crear Grupo",
+  sub: "Agregar Variante",
+};
 
+export function AgregarMaterialModal({
+  isOpen,
+  onClose,
+  onCreated,
+  initialTipo = "individual",
+  initialPadreId,
+}: AgregarMaterialModalProps) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      aria-hidden="true"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="agregar-material-title"
-        className="bg-white rounded-[12px] shadow-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
-          <h2 id="agregar-material-title" className="text-[20px] font-medium text-[#1e1e1e]">
-            Agregar Material
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar modal"
-            className="text-[#8e908f] hover:text-[#e42200] transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto">
-          <RegistrarMaterialForm onCreated={onCreated} onClose={onClose} />
-        </div>
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={TITLES[initialTipo]} size="lg">
+      <RegistrarMaterialForm
+        onCreated={onCreated}
+        onClose={onClose}
+        initialTipo={initialTipo}
+        initialPadreId={initialPadreId}
+      />
+    </Modal>
   );
 }

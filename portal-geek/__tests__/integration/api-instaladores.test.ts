@@ -31,6 +31,7 @@ const VALID_PAYLOAD = {
   correo: "juan@example.com",
   costo_instalacion: 350,
   estatus: "Activo",
+  color: "#3B82F6",
 };
 
 const CREATED_INSTALADOR = {
@@ -237,24 +238,36 @@ describe("POST /api/instaladores", () => {
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando telefono no tiene exactamente 10 dígitos", async () => {
+  it("retorna 422 cuando telefono es cadena vacía", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, telefono: "12345" });
+      .send({ ...VALID_PAYLOAD, telefono: "" });
 
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando telefono contiene letras", async () => {
+  it("retorna 422 cuando telefono supera 20 caracteres", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, telefono: "555abc4567" });
+      .send({ ...VALID_PAYLOAD, telefono: "1".repeat(21) });
 
     expect(res.status).toBe(422);
+  });
+
+  it("acepta telefono en formato E.164 internacional", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    mockCreate.mockResolvedValue({ ...CREATED_INSTALADOR, telefono: "+524421234567" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, telefono: "+524421234567" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.telefono).toBe("+524421234567");
   });
 
   it("retorna 422 cuando correo no tiene formato válido", async () => {
@@ -293,16 +306,6 @@ describe("POST /api/instaladores", () => {
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
       .send({ ...VALID_PAYLOAD, estatus: "Suspendido" });
-
-    expect(res.status).toBe(422);
-  });
-
-  it("retorna 422 cuando telefono tiene 11 dígitos", async () => {
-    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
-
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, telefono: "55512345678" });
 
     expect(res.status).toBe(422);
   });
@@ -347,12 +350,12 @@ describe("POST /api/instaladores", () => {
     expect(res.status).toBe(422);
   });
 
-  it("retorna 422 cuando ubicacion supera 255 caracteres", async () => {
+  it("retorna 422 cuando ubicacion supera 100 caracteres", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/instaladores")
-      .send({ ...VALID_PAYLOAD, ubicacion: "A".repeat(256) });
+      .send({ ...VALID_PAYLOAD, ubicacion: "A".repeat(101) });
 
     expect(res.status).toBe(422);
   });
@@ -365,6 +368,29 @@ describe("POST /api/instaladores", () => {
       .send({ ...VALID_PAYLOAD, nombre_instalador: "" });
 
     expect(res.status).toBe(422);
+  });
+
+  it("retorna 422 cuando color está ausente", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+    const { color: _color, ...payloadSinColor } = VALID_PAYLOAD;
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send(payloadSinColor);
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("color");
+  });
+
+  it("retorna 422 cuando color es cadena vacía", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Direccion" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/instaladores")
+      .send({ ...VALID_PAYLOAD, color: "" });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("color");
   });
 });
 
@@ -391,8 +417,16 @@ describe("GET /api/instaladores", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 403 cuando el rol es Colaborador", async () => {
+  it("retorna 403 cuando el rol es Colaborador (instaladores es Dirección-only)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Colaborador" });
+
+    const res = await createApp({ GET: routes.GET }).get("/api/instaladores");
+
+    expect(res.status).toBe(403);
+  });
+
+  it("retorna 403 cuando el rol es Finanzas", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Finanzas" });
 
     const res = await createApp({ GET: routes.GET }).get("/api/instaladores");
 

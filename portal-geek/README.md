@@ -44,7 +44,7 @@ npm install
 cp .env.example .env
 ```
 
-The default values in `.env` already match the Docker database — no changes needed for local dev.
+The default values in `.env` are wired to the docker-compose Postgres and a placeholder dev `AUTH_SECRET` — copying as-is is enough for local dev. The S3/GCS, MercadoPago, and Resend keys stay empty unless you need those flows locally.
 
 ### 3. Start the database
 
@@ -74,7 +74,14 @@ This creates all the tables in the database.
 npm run db:seed
 ```
 
-This loads roles, order statuses, a test product with pricing, and a demo client.
+This loads roles, order statuses, a test product with pricing, a demo client, and two demo users you can log in with:
+
+| Email                     | Password       | Role          |
+| ------------------------- | -------------- | ------------- |
+| `admin@geekdesign.mx`     | `admin123`     | Administrador |
+| `direccion@geekdesign.mx` | `direccion123` | Direccion     |
+
+These are seed-only credentials — never deploy them.
 
 ### 6. Start the dev server
 
