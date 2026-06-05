@@ -330,7 +330,6 @@ export function ServicioForm(props: ServicioFormProps) {
             idInstalador={form.id_instalador}
             idProveedor={form.id_proveedor}
             materiales={form.materiales}
-            opcionesMateriales={options.materiales}
           />
           <VariablesSection
             tiposDisponibles={options.tiposVariable}

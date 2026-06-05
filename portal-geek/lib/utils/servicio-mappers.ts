@@ -105,6 +105,15 @@ export function mapServicioDetalladoToFormState(
     )}`,
   }));
 
+  // Polymorphic material tokens — must be in the token list so the chunks
+  // reconstructor recognizes them when reloading a saved expression. We add
+  // them whenever the servicio has any material attached; if the saved
+  // expression doesn't reference them they just sit unused.
+  const hasAnyMaterial = servicio.materiales.length > 0;
+  const polymorphicMaterialTokens = hasAnyMaterial
+    ? [{ value: "precio_material" }, { value: "velocidad_avance" }]
+    : [];
+
   // Build all token identifiers so we can reconstruct chunks from the expression.
   const tokenList: Array<{ value: string; immutable?: boolean }> = [
     ...variables.map((v) => ({ value: v.nombre_variable })),
@@ -114,6 +123,7 @@ export function mapServicioDetalladoToFormState(
     })),
     ...(servicio.id_instalador !== null ? [{ value: "costo_instalador" }] : []),
     ...(servicio.id_proveedor !== null ? [{ value: "costo_proveedor" }] : []),
+    ...polymorphicMaterialTokens,
     ...materialTokens,
   ];
 

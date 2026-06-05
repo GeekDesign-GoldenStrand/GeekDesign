@@ -4,8 +4,13 @@ import { EvaluatorError } from "@/lib/utils/errors";
 
 // Identifiers that the evaluator always injects into scope.
 // Variables and constantes cannot reuse these names — see buildScope guard.
+//
+// `precio_material` and `velocidad_avance` are *polymorphic* material tokens:
+// they resolve to the corresponding property of whichever material the
+// customer picked at quotation time.
 export const RESERVED_IDENTIFIERS = [
   "precio_material",
+  "velocidad_avance",
   "costo_instalador",
   "costo_proveedor",
   "iva",
@@ -29,7 +34,9 @@ export interface EvaluatorConstante {
 }
 
 export interface EvaluatorImplicits {
+  // Polymorphic — adopts the value of the material the customer chose.
   precio_material: number;
+  velocidad_avance: number;
   costo_instalador: number;
   costo_proveedor: number;
   // Per-material slug tokens (e.g. `costo_material_mdf_3mm`) injected by the
