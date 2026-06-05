@@ -345,11 +345,12 @@ export async function updateCotizacion(
       });
       const baseSum = detalles.reduce((sum, d) => sum + Number(d.subtotal), 0);
 
-      // Re-apply the stored discount so monto_total stays consistent with
-      // porcentaje_descuento. Without this the row would drift to an
-      // un-discounted total while still advertising a discount %.
+      // Re-apply the stored discount/surcharge so monto_total stays consistent
+      // with porcentaje_descuento. Positive pct = discount (reduces total),
+      // negative pct = surcharge/interest (increases total). Without this the
+      // row would drift to an unadjusted total while still advertising a %.
       const pct = existing.porcentaje_descuento ? Number(existing.porcentaje_descuento) : 0;
-      computedMontoTotal = pct > 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
+      computedMontoTotal = pct !== 0 ? Math.round(baseSum * (1 - pct / 100) * 100) / 100 : baseSum;
 
       // monto_total is Decimal(10,2) — values above 99,999,999.99 trigger a
       // Postgres "numeric field overflow" that surfaces to the client as a
@@ -468,6 +469,13 @@ export async function aplicarDescuento(
   }
 
   const montoConDescuento = Math.round(baseOriginal * (1 - porcentaje / 100) * 100) / 100;
+
+  const MONTO_TOTAL_MAX = 99999999.99;
+  if (montoConDescuento > MONTO_TOTAL_MAX) {
+    throw new ValidationError(
+      `El monto total con interés no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}.`
+    );
+  }
 
   // Trim then normalize "" / null → null so the column never holds whitespace-only.
   const motivoNormalizado = motivo?.trim() ? motivo.trim() : null;
@@ -826,6 +834,13 @@ export async function createCotizacionFromCart(
   );
 
   const monto_total = Math.round(pricedItems.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+
+  const MONTO_TOTAL_MAX = 99999999.99;
+  if (monto_total > MONTO_TOTAL_MAX) {
+    throw new ValidationError(
+      `El monto total de la cotización no puede superar ${MONTO_TOTAL_MAX.toLocaleString("es-MX")}. Reduce alguna cantidad o elimina servicios del carrito.`
+    );
+  }
 
   const sistemaUserId = await getSistemaUserId();
   const placeholderArchivoId = await getPlaceholderArchivoId();

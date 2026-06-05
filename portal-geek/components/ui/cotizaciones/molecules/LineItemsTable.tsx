@@ -42,7 +42,11 @@ interface TotalsProps {
 function TotalsBlock({ subtotal, discountAmount, discountLabel, iva }: TotalsProps) {
   const discount = discountAmount ?? 0;
   const ivaAmount = iva ?? 0;
-  const total = subtotal - discount + ivaAmount;
+  // Positive discount → green; negative interest → red
+  const isDiscount = discount > 0;
+  const displayLabel = discountLabel ?? (isDiscount ? "Descuento" : "Interés");
+  const displayAmount = Math.abs(discount);
+  const total = subtotal - discount + ivaAmount; // subtracting a negative adds interest
   return (
     <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-end gap-1.5">
       <div className="flex gap-8 text-[15px] text-gray-700">
@@ -50,10 +54,14 @@ function TotalsBlock({ subtotal, discountAmount, discountLabel, iva }: TotalsPro
         <span className="min-w-[100px] text-right text-gray-800">{formatAmount(subtotal)}</span>
       </div>
 
-      {discount > 0 && (
+      {discount !== 0 && (
         <div className="flex gap-8 text-[15px] text-gray-700">
-          <span>{discountLabel ?? "Descuento"}</span>
-          <span className="min-w-[100px] text-right text-red-600">{formatAmount(discount)}</span>
+          <span>{displayLabel}</span>
+          <span
+            className={`min-w-[100px] text-right ${isDiscount ? "text-red-600" : "text-green-600"}`}
+          >
+            {isDiscount ? "−" : "+"} {formatAmount(displayAmount)}
+          </span>
         </div>
       )}
 

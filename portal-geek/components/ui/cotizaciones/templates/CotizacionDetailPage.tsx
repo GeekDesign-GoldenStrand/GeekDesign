@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from "react";
 
-import AplicarDescuento from "@/app/(admin)/cotizaciones/[id]/aplicar-descuento";
 import EditarCotizacion from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
 import type { EditableFields } from "@/app/(admin)/cotizaciones/[id]/editar-cotizacion";
+import { ConfirmDialog } from "@/components/ui/atoms/ConfirmDialog";
+import { SuccessModal } from "@/components/ui/atoms/SuccessModal";
 import type { UserRole } from "@/types";
 import {
   QUOTATION_STATUS,
@@ -20,7 +21,7 @@ import { NotasCard } from "../molecules/NotasCard";
 import { CotizacionHeader } from "../organisms/CotizacionHeader";
 import { CotizacionSummary } from "../organisms/CotizacionSummary";
 
-type ActivePanel = "edit" | "discount" | null;
+type ActivePanel = "edit" | null;
 
 interface CotizacionDetailPageProps {
   cotizacion: Cotizacion;
@@ -100,20 +101,22 @@ export function CotizacionDetailPage({
     [onRefetch]
   );
 
-  // ── Discount (COT-06) ─────────────────────
+  // ── Discount/surcharge (COT-06) ───────────
+  // porcentajeDescuento is signed: positive = discount (reduces total),
+  // negative = interest/surcharge (raises total). Labels flip on the sign.
   const serviciosSubtotal = fields.servicios.reduce((acc, p) => acc + p.subtotal, 0);
   const montoTotalActual = parseFloat(cotizacion.monto_total);
   const porcentajeDescuento = cotizacion.porcentaje_descuento
     ? parseFloat(cotizacion.porcentaje_descuento)
     : 0;
   const baseAmount = serviciosSubtotal || montoTotalActual;
-  const discountAmount = porcentajeDescuento > 0 ? Math.max(0, baseAmount - montoTotalActual) : 0;
-  const discountLabel =
-    porcentajeDescuento > 0
-      ? `Descuento ${Math.round(porcentajeDescuento)}%${
-          cotizacion.motivo_descuento ? ` — ${cotizacion.motivo_descuento}` : ""
-        }`
-      : "";
+  const hasAdjustment = porcentajeDescuento !== 0;
+  const adjustmentAmount = hasAdjustment ? baseAmount - montoTotalActual : 0;
+  const adjustmentLabel = hasAdjustment
+    ? `${porcentajeDescuento < 0 ? "Interés" : "Descuento"} ${Math.abs(
+        Math.round(porcentajeDescuento)
+      )}%${cotizacion.motivo_descuento ? ` — ${cotizacion.motivo_descuento}` : ""}`
+    : "";
 
   const handleDiscountApplied = useCallback(async () => {
     await onRefetch?.();
@@ -139,32 +142,51 @@ export function CotizacionDetailPage({
   // — keeps this in lock-step with the backend if the catalog string ever
   // changes.
   const isMutable = cotizacion.estatus.descripcion === QUOTATION_STATUS.PENDIENTE;
-  // PATCH /api/cotizaciones/[id]/descuento requires Direccion. Mirror that
-  // gate here so non-Direccion users don't see discount affordances that
-  // would 403 on save — the discount inputs in the edit modal are also
-  // hidden via userRole there.
-  const canManageDiscount = isMutable && userRole === "Direccion";
+
+  const canEditDiscount = userRole === "Direccion";
+  const canManageDiscount = isMutable && canEditDiscount;
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDeleteDiscountModal, setShowDeleteDiscountModal] = useState(false);
+  const [isDeletingDiscount, setIsDeletingDiscount] = useState(false);
+  const [deleteDiscountError, setDeleteDiscountError] = useState<string | null>(null);
+
+  const handleConfirmDeleteDiscount = async () => {
+    setIsDeletingDiscount(true);
+    setDeleteDiscountError(null);
+    try {
+      const res = await fetch(`/api/cotizaciones/${cotizacion.id_cotizacion}/descuento`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          porcentaje_descuento: null,
+          motivo_descuento: null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteDiscountError(data.error ?? "No se pudo eliminar el ajuste.");
+        return;
+      }
+
+      setShowDeleteDiscountModal(false);
+      await onRefetch?.();
+      setShowSuccessModal(true);
+    } catch (err) {
+      setDeleteDiscountError(err instanceof Error ? err.message : "Error de red al eliminar.");
+    } finally {
+      setIsDeletingDiscount(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 font-sans">
       <CotizacionHeader
         folio={cotizacion.folio}
         nombreOportunidad={fields.nombre_oportunidad || cotizacion.nombre_oportunidad}
-        discountApplied={porcentajeDescuento > 0}
         canEdit={isMutable}
-        canAddDiscount={canManageDiscount}
         onEdit={() => togglePanel("edit")}
-        onDiscount={() => togglePanel("discount")}
-      />
-
-      <AplicarDescuento
-        idCotizacion={cotizacion.id_cotizacion}
-        baseAmount={baseAmount}
-        isOpen={activePanel === "discount"}
-        initialPercentage={porcentajeDescuento || undefined}
-        initialMotivo={cotizacion.motivo_descuento ?? undefined}
-        onApplied={handleDiscountApplied}
-        onClose={() => setActivePanel(null)}
       />
 
       <EditarCotizacion
@@ -181,6 +203,11 @@ export function CotizacionDetailPage({
         userRole={userRole}
         onSave={handleSave}
         onClose={() => setActivePanel(null)}
+        onDiscountApplied={handleDiscountApplied}
+        onSuccess={() => {
+          // Success modal triggered
+          setShowSuccessModal(true);
+        }}
       />
 
       <CotizacionSummary
@@ -191,11 +218,8 @@ export function CotizacionDetailPage({
         fechaEntrega={fields.fecha_fin || cotizacion.fecha_fin}
         servicios={fields.servicios}
         // Trash icon on the discount ribbon is only wired when the quote
-        // can still be mutated AND the viewer is Direccion — withholding
-        // the callback hides the button in CotizacionSummary (it gates on
-        // the prop being defined). Without the role check, other roles
-        // would see the icon and hit a 403 on click.
-        onDeleteDiscount={canManageDiscount ? () => togglePanel("discount") : undefined}
+        // can still be mutated AND the viewer is Direccion.
+        onDeleteDiscount={canManageDiscount ? () => setShowDeleteDiscountModal(true) : undefined}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -220,8 +244,8 @@ export function CotizacionDetailPage({
       <div className="mb-4">
         <LineItemsTable
           servicios={fields.servicios}
-          discountAmount={discountAmount || undefined}
-          discountLabel={discountLabel || undefined}
+          discountAmount={adjustmentAmount || undefined}
+          discountLabel={adjustmentLabel || undefined}
         />
       </div>
 
@@ -231,6 +255,27 @@ export function CotizacionDetailPage({
 
       {(fields.notas || cotizacion.notas) && (
         <NotasCard notas={fields.notas || cotizacion.notas!} />
+      )}
+
+      {showDeleteDiscountModal && (
+        <ConfirmDialog
+          isOpen={true}
+          title={`Eliminar ${porcentajeDescuento < 0 ? "interés" : "descuento"}`}
+          description={`¿Estás seguro de que deseas eliminar este ${porcentajeDescuento < 0 ? "interés" : "descuento"}?`}
+          confirmLabel="Eliminar"
+          loading={isDeletingDiscount}
+          error={deleteDiscountError}
+          onConfirm={handleConfirmDeleteDiscount}
+          onClose={() => setShowDeleteDiscountModal(false)}
+        />
+      )}
+
+      {showSuccessModal && (
+        <SuccessModal
+          message="¡Cotización actualizada con éxito!"
+          onClose={() => setShowSuccessModal(false)}
+          variant="success"
+        />
       )}
     </div>
   );

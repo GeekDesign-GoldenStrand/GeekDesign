@@ -400,6 +400,8 @@ export function RegistrarMaterialForm({
               <input
                 type="text"
                 inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
                 placeholder="0.00"
                 value={form.ancho}
                 onChange={(e) => setField("ancho", normalizeNumericInput(e.target.value))}
@@ -414,6 +416,8 @@ export function RegistrarMaterialForm({
               <input
                 type="text"
                 inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
                 placeholder="0.00"
                 value={form.alto}
                 onChange={(e) => setField("alto", normalizeNumericInput(e.target.value))}
@@ -426,6 +430,8 @@ export function RegistrarMaterialForm({
               <input
                 type="text"
                 inputMode="decimal"
+                pattern="^[0-9]*\.?[0-9]{0,2}$"
+                min="0"
                 placeholder="0.00"
                 value={form.grosor}
                 onChange={(e) => setField("grosor", normalizeNumericInput(e.target.value))}
