@@ -54,6 +54,7 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
               {[
                 "Servicio",
                 "Material",
+                "Máquina",
                 "Cant.",
                 "Especificaciones",
                 "Estatus",
@@ -105,6 +106,20 @@ export function PedidoDetallesTable({ detalle, detalleIds }: Props) {
                     )}
                   </td>
                   <td className="py-3 px-2 text-gray-700">{item.material.nombre_material}</td>
+                  <td className="py-3 px-2 align-top text-gray-700">
+                    {item.maquinaAsignada ? (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-[#1e1e1e]">
+                          {item.maquinaAsignada.apodo_maquina}
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {item.maquinaAsignada.tipo}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Sin máquina asignada</span>
+                    )}
+                  </td>
                   <td className="py-3 px-2 text-gray-700">{item.cantidad}</td>
                   <td className="py-3 px-2 text-gray-500 align-top">
                     {vars.length > 0 ? (

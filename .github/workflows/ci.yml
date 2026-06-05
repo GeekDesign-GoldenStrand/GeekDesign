@@ -24,76 +24,90 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run lint
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      - name: Run lint
+        run: npm run lint
 
   format:
     name: Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
-      - run: npm ci
-      - run: npm run format:check
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Check format
+        run: npm run format:check
 
   typecheck:
     name: Typecheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npx tsc --noEmit
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      - name: Run typecheck
+        run: npx tsc --noEmit
 
   test:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm test -- --ci
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      - name: Run tests
+        run: npm test -- --ci
 
   # ── Heavier checks — only on PRs to main or develop ─────────────────────────
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.event_name == 'pull_request'
     needs: [lint, format, typecheck, test]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
           cache-dependency-path: portal-geek/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      - name: Run build
+        run: npm run build
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
           AUTH_SECRET: ci-dummy-auth-secret-not-used-in-build-1234
@@ -102,7 +116,7 @@ jobs:
 
   links:
     name: Link Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
