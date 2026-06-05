@@ -61,7 +61,10 @@ export async function getPedidoFacturacion(id: number): Promise<PedidoFacturacio
 
 export async function getPedidosParaFacturar(): Promise<PedidoParaFacturar[]> {
   return prisma.pedidos.findMany({
-    where: { factura: true },
+    where: {
+      factura: true,
+      cotizaciones: { some: { estatus: { descripcion: "Validada" } } },
+    },
     orderBy: { fecha_creacion: "desc" },
     select: {
       id_pedido: true,
