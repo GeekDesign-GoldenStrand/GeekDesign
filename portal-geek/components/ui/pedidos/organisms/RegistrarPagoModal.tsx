@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/atoms/Button";
 import { Modal } from "@/components/ui/atoms/Modal";
@@ -13,19 +13,29 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => Promise<void> | void;
+  /** Pre-fills the amount field when the modal opens (e.g. the order total). */
+  montoSugerido?: number;
 }
 
 const METODOS: MetodoPago[] = ["efectivo", "transferencia", "Mercado Pago"];
 const ESTATUS: EstatusPago[] = ["Pagado", "Pendiente", "Reembolsado"];
 
+// Cap the integer part at 7 digits (the decimal point doesn't count), well within
 // the monto_pago Decimal(10,2) column.
-const MAX_MONTO_DIGITOS = 5;
+const MAX_MONTO_DIGITOS = 7;
 
 const LABEL = "block text-[13px] font-medium text-[#1e1e1e] mb-1";
 const FIELD =
   "w-full rounded-lg border border-[#d1d1d1] bg-white px-3 py-2 text-[14px] text-[#1e1e1e] outline-none focus:border-[#e42200] focus:ring-1 focus:ring-[#e42200]";
 
-export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess }: Props) {
+// Render a numeric amount as an editable string: drop the decimals when it's a
+// whole number, otherwise keep two places.
+function formatMonto(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess, montoSugerido }: Props) {
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState<MetodoPago>("efectivo");
   // Default to "Pagado" — registering a payment usually means it was collected,
@@ -48,6 +58,13 @@ export function RegistrarPagoModal({ idPedido, isOpen, onClose, onSuccess }: Pro
     reset();
     onClose();
   }
+
+  // Pre-fill the amount with the suggested total each time the modal opens. The
+  // field stays fully editable — this is just a sensible default.
+  useEffect(() => {
+    if (!isOpen) return;
+    setMonto(montoSugerido && montoSugerido > 0 ? formatMonto(montoSugerido) : "");
+  }, [isOpen, montoSugerido]);
 
   // Mirror the system-wide numeric-input guard: digits with at most one decimal
   // point and two decimals, capped at MAX_MONTO_DIGITOS digits (the dot doesn't

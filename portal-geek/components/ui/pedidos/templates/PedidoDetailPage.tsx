@@ -44,6 +44,10 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
   // Administrador is a legacy alias of Direccion).
   const canRegisterPago = role === "Direccion" || role === "Administrador" || role === "Finanzas";
 
+  // Suggested payment amount = the order's line-item total (same sum shown in
+  // PedidoDetallesTable). Pre-fills the modal so the common case is one click.
+  const totalDetalle = pedido.detalle.reduce((acc, d) => acc + Number(d.subtotal), 0);
+
   const handleSave = useCallback(async () => {
     await onRefetch();
     setActivePanel(null);
@@ -144,6 +148,7 @@ export function PedidoDetailPage({ pedido, role, onRefetch, detalleIds }: Props)
 
       <RegistrarPagoModal
         idPedido={pedido.pedido.id_pedido}
+        montoSugerido={totalDetalle}
         isOpen={showPagoModal}
         onClose={() => setShowPagoModal(false)}
         onSuccess={async () => {
