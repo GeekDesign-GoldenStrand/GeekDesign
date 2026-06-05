@@ -13,6 +13,7 @@ import {
 
 const ZERO_IMPLICITS: EvaluatorImplicits = {
   precio_material: 0,
+  velocidad_avance: 0,
   costo_instalador: 0,
   costo_proveedor: 0,
 };
@@ -41,7 +42,12 @@ describe("evaluateFormula — happy path", () => {
       expresion: "ancho * alto * costo_laser + precio_material",
       variables: [variable("ancho", 10), variable("alto", 5)],
       constantes: [manual("costo_laser", 2.5)],
-      implicits: { precio_material: 100, costo_instalador: 0, costo_proveedor: 0 },
+      implicits: {
+        precio_material: 100,
+        velocidad_avance: 0,
+        costo_instalador: 0,
+        costo_proveedor: 0,
+      },
     });
     // 10 * 5 * 2.5 + 100 = 225
     expect(result).toBe(225);
@@ -89,7 +95,12 @@ describe("evaluateFormula — happy path", () => {
       expresion: "costo_instalador + costo_proveedor",
       variables: [],
       constantes: [],
-      implicits: { precio_material: 0, costo_instalador: 50, costo_proveedor: 30 },
+      implicits: {
+        precio_material: 0,
+        velocidad_avance: 0,
+        costo_instalador: 50,
+        costo_proveedor: 30,
+      },
     });
     expect(result).toBe(80);
   });
