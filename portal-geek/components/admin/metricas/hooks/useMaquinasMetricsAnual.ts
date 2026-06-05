@@ -2,24 +2,8 @@ import { useMemo, useState } from "react";
 
 import type { MetricasMaquinasData } from "@/lib/services/metricas";
 
-const MONTHS = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
-
-export function useMaquinasMetrics(data: MetricasMaquinasData) {
+export function useMaquinasMetricsAnual(data: MetricasMaquinasData) {
   const currentYear = new Date().getUTCFullYear();
-  const currentMonth = new Date().getUTCMonth();
 
   const availableYears = useMemo(() => {
     const years = Object.keys(data)
@@ -32,25 +16,31 @@ export function useMaquinasMetrics(data: MetricasMaquinasData) {
   const [selectedYear, setSelectedYear] = useState<number>(() =>
     availableYears.includes(currentYear) ? currentYear : availableYears[0]
   );
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
   const [topLimit, setTopLimit] = useState<5 | 10>(5);
-
-  const availableMonths = useMemo(() => MONTHS.map((name, index) => ({ name, value: index })), []);
 
   const chartData = useMemo(() => {
     const yearData = data[selectedYear] || {};
-    const monthData = yearData[selectedMonth] || [];
 
-    return monthData.slice(0, topLimit);
-  }, [data, selectedYear, selectedMonth, topLimit]);
+    const machineMap = new Map();
+    for (const monthMachines of Object.values(yearData)) {
+      for (const m of monthMachines) {
+        if (!machineMap.has(m.id_maquina)) {
+          machineMap.set(m.id_maquina, { ...m, veces_usada: 0 });
+        }
+        machineMap.get(m.id_maquina).veces_usada += m.veces_usada;
+      }
+    }
+
+    const processedData = Array.from(machineMap.values());
+    processedData.sort((a, b) => b.veces_usada - a.veces_usada);
+
+    return processedData.slice(0, topLimit);
+  }, [data, selectedYear, topLimit]);
 
   return {
     availableYears,
-    availableMonths,
     selectedYear,
     setSelectedYear,
-    selectedMonth,
-    setSelectedMonth,
     topLimit,
     setTopLimit,
     chartData,

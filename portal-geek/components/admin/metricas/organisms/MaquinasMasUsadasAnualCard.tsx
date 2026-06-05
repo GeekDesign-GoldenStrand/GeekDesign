@@ -1,0 +1,169 @@
+"use client";
+
+import { useId, useState } from "react";
+import { Legend, Pie, PieChart, ResponsiveContainer, Tooltip, Cell } from "recharts";
+
+import type { MaquinaMetric } from "@/lib/services/metricas";
+
+import { SelectField } from "../../atoms/SelectField";
+import { TOOLTIP_CONTENT_STYLE, TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE } from "../utils";
+
+interface Props {
+  availableYears: number[];
+  selectedYear: number;
+  topLimit: 5 | 10;
+  chartData: MaquinaMetric[];
+  onYearChange: (y: number) => void;
+  onLimitChange: (l: 5 | 10) => void;
+}
+
+const PIE_COLORS_ANUAL = [
+  "var(--color-sky-500, #0ea5e9)",
+  "var(--color-emerald-500, #10b981)",
+  "var(--color-amber-500, #f59e0b)",
+  "var(--color-rose-500, #f43f5e)",
+  "var(--color-fuchsia-500, #d946ef)",
+  "var(--color-teal-500, #14b8a6)",
+  "var(--color-lime-500, #84cc16)",
+  "var(--color-purple-500, #a855f7)",
+  "var(--color-cyan-500, #06b6d4)",
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const maquinasTooltipFormatter = (value: any, name: any, props: any) => {
+  const machineName = props.payload?.nombre_maquina || name;
+  return [
+    <span key="val" className="font-bold text-gray-900">
+      {value} veces usada
+    </span>,
+    <span key="name" className="text-gray-500 ml-1">
+      ({machineName})
+    </span>,
+  ];
+};
+
+export function MaquinasMasUsadasAnualCard({
+  availableYears,
+  selectedYear,
+  topLimit,
+  chartData,
+  onYearChange,
+  onLimitChange,
+}: Props) {
+  const chartId = useId();
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col h-full hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+        <div className="flex flex-col gap-2">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              Máquinas Más Usadas Anualmente
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Acumulado de todo el año</p>
+          </div>
+
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50/50 p-1 w-fit mt-1">
+            <button
+              onClick={() => onLimitChange(5)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                topLimit === 5
+                  ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Top 5
+            </button>
+            <button
+              onClick={() => onLimitChange(10)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                topLimit === 10
+                  ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Top 10
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <SelectField
+            value={selectedYear}
+            options={availableYears.map((y) => ({ label: String(y), value: y }))}
+            onChange={(val) => onYearChange(Number(val))}
+            selectClassName="text-sm px-3 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors cursor-pointer"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-[300px] sm:min-h-[350px] w-full relative">
+        {chartData.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+            No hay datos para este año
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <defs>
+                {chartData.map((entry, index) => (
+                  <filter key={`shadow-${index}`} id={`shadow-${chartId}-${index}`}>
+                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodOpacity="0.2" />
+                  </filter>
+                ))}
+              </defs>
+              <Tooltip
+                cursor={{ fill: "transparent" }}
+                contentStyle={TOOLTIP_CONTENT_STYLE}
+                itemStyle={TOOLTIP_ITEM_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
+                formatter={maquinasTooltipFormatter}
+              />
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                iconType="circle"
+                wrapperStyle={{ fontSize: "13px", paddingTop: "20px" }}
+              />
+              <Pie
+                data={chartData}
+                dataKey="veces_usada"
+                nameKey="apodo_maquina"
+                cx="50%"
+                cy="50%"
+                innerRadius={0}
+                outerRadius="80%"
+                paddingAngle={2}
+                animationDuration={1500}
+                animationEasing="ease-out"
+                stroke="none"
+              >
+                {chartData.map((entry, index) => {
+                  const isHovered = activeIndex === index;
+                  const isOtherHovered = activeIndex !== undefined && !isHovered;
+
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={PIE_COLORS_ANUAL[index % PIE_COLORS_ANUAL.length]}
+                      opacity={isOtherHovered ? 0.4 : 1}
+                      filter={isHovered ? `url(#shadow-${chartId}-${index})` : "none"}
+                      style={{
+                        transition: "all 0.3s ease",
+                        outline: "none",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onMouseLeave={() => setActiveIndex(undefined)}
+                    />
+                  );
+                })}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
+}

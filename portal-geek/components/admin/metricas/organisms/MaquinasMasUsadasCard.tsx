@@ -5,6 +5,8 @@ import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell, Legend } from "recha
 import { SelectField } from "../../atoms/SelectField";
 import { TOOLTIP_ITEM_STYLE, TOOLTIP_LABEL_STYLE, TOOLTIP_CONTENT_STYLE } from "../utils";
 
+import { maquinasTooltipFormatter } from "./MaquinasMasUsadasAnualCard";
+
 interface Props {
   availableYears: number[];
   availableMonths: { name: string; value: number }[];
@@ -17,7 +19,7 @@ interface Props {
   onLimitChange: (val: 5 | 10) => void;
 }
 
-const PIE_COLORS = [
+export const PIE_COLORS = [
   "var(--color-red-500, #ef4444)",
   "var(--color-orange-500, #f97316)",
   "var(--color-yellow-500, #eab308)",
@@ -127,13 +129,7 @@ export function MaquinasMasUsadasCard({
               </Pie>
               <Tooltip
                 cursor={{ fill: "transparent" }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formatter={(value: any, name: any) => [
-                  <span key="val" className="font-bold text-gray-900">
-                    {value}
-                  </span>,
-                  name,
-                ]}
+                formatter={maquinasTooltipFormatter}
                 contentStyle={TOOLTIP_CONTENT_STYLE}
                 itemStyle={TOOLTIP_ITEM_STYLE}
                 labelStyle={TOOLTIP_LABEL_STYLE}

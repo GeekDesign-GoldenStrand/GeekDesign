@@ -5,10 +5,12 @@ import { useState, useEffect, useRef } from "react";
 import { Toast } from "@/components/admin/atoms/Toast";
 import { useDashboardFinanciero } from "@/components/admin/metricas/hooks/useDashboardFinanciero";
 import { useMaquinasMetrics } from "@/components/admin/metricas/hooks/useMaquinasMetrics";
+import { useMaquinasMetricsAnual } from "@/components/admin/metricas/hooks/useMaquinasMetricsAnual";
 import { CustomComparisonChart } from "@/components/admin/metricas/organisms/CustomComparisonChart";
 import { DesgloseMensualChart } from "@/components/admin/metricas/organisms/DesgloseMensualChart";
 import { IngresosAnualesCard } from "@/components/admin/metricas/organisms/IngresosAnualesCard";
 import { IngresosMensualesCard } from "@/components/admin/metricas/organisms/IngresosMensualesCard";
+import { MaquinasMasUsadasAnualCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasAnualCard";
 import { MaquinasMasUsadasCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasCard";
 import { MetricasGeneralesCard } from "@/components/admin/metricas/organisms/MetricasGeneralesCard";
 import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
@@ -19,7 +21,8 @@ type WidgetId =
   | "comparativa_historica"
   | "desglose_mensual"
   | "comparativa_personalizada"
-  | "maquinas_mas_usadas";
+  | "maquinas_mas_usadas"
+  | "maquinas_mas_usadas_anual";
 
 interface GeneralConfig {
   cards: WidgetId[];
@@ -28,7 +31,12 @@ interface GeneralConfig {
 
 const DEFAULT_CONFIG: GeneralConfig = {
   cards: ["ingresos_anuales", "ingresos_mensuales"],
-  charts: ["comparativa_historica", "desglose_mensual"],
+  charts: [
+    "comparativa_historica",
+    "desglose_mensual",
+    "maquinas_mas_usadas",
+    "maquinas_mas_usadas_anual",
+  ],
 };
 
 export function GeneralTab({
@@ -54,6 +62,7 @@ export function GeneralTab({
   // Hook with all the state
   const dashboardState = useDashboardFinanciero(data);
   const maquinasState = useMaquinasMetrics(maquinasData);
+  const maquinasAnualState = useMaquinasMetricsAnual(maquinasData);
 
   // Load from localStorage
   useEffect(() => {
@@ -172,7 +181,16 @@ export function GeneralTab({
                     checked={config.charts.includes("maquinas_mas_usadas")}
                     onChange={() => handleToggleWidget("charts", "maquinas_mas_usadas")}
                   />
-                  <span className="font-medium text-black">Máquinas Más Usadas</span>
+                  <span className="font-medium text-black">Máquinas Más Usadas (Mensual)</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-red-600"
+                    checked={config.charts.includes("maquinas_mas_usadas_anual")}
+                    onChange={() => handleToggleWidget("charts", "maquinas_mas_usadas_anual")}
+                  />
+                  <span className="font-medium text-black">Máquinas Más Usadas (Anual)</span>
                 </label>
                 <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
                   <input
@@ -253,6 +271,16 @@ export function GeneralTab({
               onYearChange={maquinasState.setSelectedYear}
               onMonthChange={maquinasState.setSelectedMonth}
               onLimitChange={maquinasState.setTopLimit}
+            />
+          )}
+          {config.charts.includes("maquinas_mas_usadas_anual") && (
+            <MaquinasMasUsadasAnualCard
+              availableYears={maquinasAnualState.availableYears}
+              selectedYear={maquinasAnualState.selectedYear}
+              topLimit={maquinasAnualState.topLimit}
+              chartData={maquinasAnualState.chartData}
+              onYearChange={maquinasAnualState.setSelectedYear}
+              onLimitChange={maquinasAnualState.setTopLimit}
             />
           )}
         </div>
