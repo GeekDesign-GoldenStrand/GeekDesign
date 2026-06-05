@@ -127,7 +127,8 @@ export function MaquinasMasUsadasCard({
               </Pie>
               <Tooltip
                 cursor={{ fill: "transparent" }}
-                formatter={(value: number, name: string) => [
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={(value: any, name: any) => [
                   <span key="val" className="font-bold text-gray-900">
                     {value}
                   </span>,
