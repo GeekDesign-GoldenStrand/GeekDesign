@@ -525,6 +525,7 @@ async function main() {
   // ── Invoice statuses ─────────────────────────────────────────
   const invoiceStatuses = [
     "Cotizacion",
+    "No_aplica",
     "Pagado",
     "En_cola",
     "Aprobacion_diseno",
@@ -1009,7 +1010,29 @@ async function main() {
     });
 
     // ── Demo Pedidos ───────────────────────────────────────────────
-    const demoPedidos = [
+    type DemoPedidoSeed = {
+      id_cliente: number;
+      status: string;
+      estado_factura: string;
+      fecha_creacion: Date;
+      fecha_estimada: Date;
+      notas: string;
+      nombre_oportunidad: string;
+      factura?: boolean;
+      facturado?: boolean;
+      numero_factura?: string;
+      datos_facturacion?: {
+        rfc: string;
+        razon_social: string;
+        tipo_persona: string;
+        regimen_fiscal: string;
+        uso_cfdi: string;
+        codigo_postal_fiscal: string;
+        correo_facturacion?: string;
+      };
+    };
+
+    const demoPedidos: DemoPedidoSeed[] = [
       {
         id_cliente: 2,
         status: "Pendiente",
@@ -1028,6 +1051,16 @@ async function main() {
         fecha_estimada: new Date("2026-04-22"),
         notas: "Pedido demo en producción",
         nombre_oportunidad: "Corte y grabado trofeos",
+        factura: true,
+        datos_facturacion: {
+          rfc: "ROVL850314MN3",
+          razon_social: "Laura Rodríguez Vega",
+          tipo_persona: "Fisica",
+          regimen_fiscal: "612 - Personas Físicas con Actividades Empresariales y Profesionales",
+          uso_cfdi: "G03 - Gastos en general",
+          codigo_postal_fiscal: "76000",
+          correo_facturacion: "laura.rodriguez@example.mx",
+        },
       },
 
       {
@@ -1048,6 +1081,18 @@ async function main() {
         fecha_estimada: new Date("2026-04-27"),
         notas: "Pedido demo entregado",
         nombre_oportunidad: "Rotulación flota vehicular",
+        factura: true,
+        facturado: true,
+        numero_factura: "FAC-2026-0001",
+        datos_facturacion: {
+          rfc: "GEN200115A19",
+          razon_social: "Grupo Empresarial NL SA de CV",
+          tipo_persona: "Moral",
+          regimen_fiscal: "601 - General de Ley Personas Morales",
+          uso_cfdi: "G03 - Gastos en general",
+          codigo_postal_fiscal: "64000",
+          correo_facturacion: "facturacion@gruponl.mx",
+        },
       },
 
       {
@@ -1171,6 +1216,13 @@ async function main() {
             fecha_estimada: pedido.fecha_estimada,
             notas: pedido.notas,
             nombre_oportunidad: pedido.nombre_oportunidad,
+            factura: pedido.factura ?? false,
+            facturado: pedido.facturado ?? false,
+            numero_factura: pedido.numero_factura,
+
+            ...(pedido.datos_facturacion && {
+              datos_facturacion: { create: pedido.datos_facturacion },
+            }),
           },
         });
         createdPedidoIds.push(created.id_pedido);

@@ -472,15 +472,32 @@ model Pedidos {
   estatus        EstatusPedidos       @relation(fields: [id_estatus], references: [id_estatus])
   estado_factura EstadoFacturaPedido? @relation(fields: [id_estado_factura], references: [id_estado_factura])
 
-  sucursal       Sucursales?               @relation(fields: [id_sucursal], references: [id_sucursal])
-  detalles       DetallePedido[]
-  pagos          Pagos[]
-  historial      HistorialEstadosPedidos[]
-  pedidoMaquinas PedidoMaquina[]
-  cotizaciones   Cotizaciones[]
-  gastos         Gastos[]
+  sucursal           Sucursales?               @relation(fields: [id_sucursal], references: [id_sucursal])
+  detalles           DetallePedido[]
+  pagos              Pagos[]
+  historial          HistorialEstadosPedidos[]
+  pedidoMaquinas     PedidoMaquina[]
+  cotizaciones       Cotizaciones[]
+  gastos             Gastos[]
+  datos_facturacion  DatosFacturacion?
 
   @@map("PEDIDOS")
+}
+
+model DatosFacturacion {
+  id_datos_facturacion Int     @id @default(autoincrement())
+  id_pedido            Int     @unique
+  rfc                  String  @db.VarChar(13)
+  razon_social         String  @db.VarChar(254)
+  tipo_persona         String  @db.VarChar(10)
+  regimen_fiscal       String  @db.VarChar(100)
+  uso_cfdi             String  @db.VarChar(100)
+  codigo_postal_fiscal String  @db.VarChar(5)
+  correo_facturacion   String? @db.VarChar(150)
+
+  pedido Pedidos @relation(fields: [id_pedido], references: [id_pedido])
+
+  @@map("DATOSFACTURACION")
 }
 
 model ArchivosDisenio {

@@ -175,9 +175,21 @@ const SolicitarClienteSchema = z.object({
   numero_telefono: z.string().min(1).max(20),
 });
 
+const DatosFacturacionSchema = z.object({
+  rfc: z.string().min(12).max(13),
+  razon_social: z.string().min(1).max(254),
+  tipo_persona: z.enum(["Fisica", "Moral"]),
+  regimen_fiscal: z.string().min(1).max(100),
+  uso_cfdi: z.string().min(1).max(100),
+  codigo_postal_fiscal: z.string().regex(/^\d{5}$/, "El código postal debe tener 5 dígitos"),
+  correo_facturacion: z.string().email().max(150).optional(),
+});
+
 export const SolicitarCotizacionSchema = z.object({
   cliente: SolicitarClienteSchema,
   id_sucursal: z.number().int().positive(),
+  factura: z.boolean().optional(),
+  datos_facturacion: DatosFacturacionSchema.optional(),
   notas: z
     .string()
     .max(500, "Las notas no pueden superar los 500 caracteres")

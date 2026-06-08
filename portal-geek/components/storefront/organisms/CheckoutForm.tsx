@@ -136,6 +136,21 @@ export function CheckoutForm({ sucursales, initialContact }: Props) {
     }
   }
 
+  const [desearFacturar, setDesearFacturar] = useState(false);
+  const [rfc, setRfc] = useState("");
+  const [rfcError, setRfcError] = useState<string | null>(null);
+  const [razonSocial, setRazonSocial] = useState("");
+  const [razonSocialError, setRazonSocialError] = useState<string | null>(null);
+  const [tipoPersona, setTipoPersona] = useState<"Fisica" | "Moral">("Fisica");
+  const [regimenFiscal, setRegimenFiscal] = useState("");
+  const [regimenFiscalError, setRegimenFiscalError] = useState<string | null>(null);
+  const [usoCfdi, setUsoCfdi] = useState("");
+  const [usoCfdiError, setUsoCfdiError] = useState<string | null>(null);
+  const [codigoPostal, setCodigoPostal] = useState("");
+  const [codigoPostalError, setCodigoPostalError] = useState<string | null>(null);
+  const [correoFacturacion, setCorreoFacturacion] = useState("");
+  const [correoFacturacionError, setCorreoFacturacionError] = useState<string | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fechaError, setFechaError] = useState<string | null>(null);
@@ -161,6 +176,18 @@ export function CheckoutForm({ sucursales, initialContact }: Props) {
     };
     hydrate();
   }, []);
+
+  function validateRfc(value: string, tipo: "Fisica" | "Moral"): string | null {
+    const v = value.trim().toUpperCase();
+    if (!v) return "El RFC es requerido";
+    const regex =
+      tipo === "Fisica" ? /^[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}$/ : /^[A-ZÑ&]{3}\d{6}[A-Z0-9]{3}$/;
+    if (!regex.test(v))
+      return tipo === "Fisica"
+        ? "RFC de persona física: 4 letras, 6 dígitos de fecha y 3 caracteres de homoclave (13 en total)"
+        : "RFC de persona moral: 3 letras, 6 dígitos de fecha y 3 caracteres de homoclave (12 en total)";
+    return null;
+  }
 
   function isFechaEstimadaValida(fecha: string) {
     if (!fecha) return false;
@@ -189,6 +216,33 @@ export function CheckoutForm({ sucursales, initialContact }: Props) {
       : null;
     const notasInvalid = notas.trim() && !NOTAS_REGEX.test(notas) ? NOTAS_INVALID_MSG : null;
 
+    let rfcInvalid: string | null = null;
+    let razonSocialInvalid: string | null = null;
+    let regimenFiscalInvalid: string | null = null;
+    let usoCfdiInvalid: string | null = null;
+    let codigoPostalInvalid: string | null = null;
+    let correoFacturacionInvalid: string | null = null;
+
+    if (desearFacturar) {
+      rfcInvalid = validateRfc(rfc, tipoPersona);
+      razonSocialInvalid = razonSocial.trim().length === 0 ? "La razón social es requerida" : null;
+      regimenFiscalInvalid =
+        regimenFiscal.trim().length === 0 ? "El régimen fiscal es requerido" : null;
+      usoCfdiInvalid = usoCfdi.trim().length === 0 ? "El uso de CFDI es requerido" : null;
+      codigoPostalInvalid = !/^\d{5}$/.test(codigoPostal.trim())
+        ? "El código postal debe tener 5 dígitos numéricos"
+        : null;
+      correoFacturacionInvalid =
+        correoFacturacion.trim() && !isValidEmail(correoFacturacion) ? EMAIL_ERROR_MESSAGE : null;
+
+      setRfcError(rfcInvalid);
+      setRazonSocialError(razonSocialInvalid);
+      setRegimenFiscalError(regimenFiscalInvalid);
+      setUsoCfdiError(usoCfdiInvalid);
+      setCodigoPostalError(codigoPostalInvalid);
+      setCorreoFacturacionError(correoFacturacionInvalid);
+    }
+
     setNombreError(nombreInvalid);
     setCorreoError(correoInvalid);
     setTelefonoError(telefonoInvalid);
@@ -202,7 +256,13 @@ export function CheckoutForm({ sucursales, initialContact }: Props) {
       telefonoInvalid ||
       sucursalInvalid ||
       fechaInvalid ||
-      notasInvalid
+      notasInvalid ||
+      rfcInvalid ||
+      razonSocialInvalid ||
+      regimenFiscalInvalid ||
+      usoCfdiInvalid ||
+      codigoPostalInvalid ||
+      correoFacturacionInvalid
     ) {
       return;
     }
@@ -223,6 +283,18 @@ export function CheckoutForm({ sucursales, initialContact }: Props) {
           numero_telefono: telefono,
         },
         id_sucursal: idSucursal,
+        factura: desearFacturar,
+        datos_facturacion: desearFacturar
+          ? {
+              rfc: rfc.trim().toUpperCase(),
+              razon_social: razonSocial.trim(),
+              tipo_persona: tipoPersona,
+              regimen_fiscal: regimenFiscal.trim(),
+              uso_cfdi: usoCfdi.trim(),
+              codigo_postal_fiscal: codigoPostal.trim(),
+              correo_facturacion: correoFacturacion.trim() || undefined,
+            }
+          : undefined,
         notas: notas.trim() || undefined,
         fecha_estimada: fechaEstimada || undefined,
         items: items.map((i) => ({
@@ -506,7 +578,263 @@ export function CheckoutForm({ sucursales, initialContact }: Props) {
             </p>
           )}
         </div>
+
+        <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
+          <input
+            type="checkbox"
+            checked={desearFacturar}
+            onChange={(e) => setDesearFacturar(e.target.checked)}
+            className="w-4.5 h-4.5 accent-[#8b434a] cursor-pointer"
+          />
+          <span className="text-[14px] font-semibold text-[#1e1e1e]">Deseo facturar</span>
+        </label>
       </section>
+
+      {desearFacturar && (
+        <section className="bg-white rounded-[10px] border border-[#c2c0c0] p-6 flex flex-col gap-4">
+          <h2 className="font-bold text-[20px] text-[#1e1e1e]">Datos de facturación</h2>
+          <p className="text-[13px] text-[#666]">
+            Estos datos se compartirán con el área de contabilidad para emitir tu factura.
+          </p>
+
+          {/* Tipo de persona */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[14px] font-semibold text-[#1e1e1e]">
+              Tipo de persona <span className="text-[#c14a4a]">*</span>
+            </span>
+            <div className="flex gap-6">
+              {(["Fisica", "Moral"] as const).map((tipo) => (
+                <label key={tipo} className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="radio"
+                    name="tipoPersona"
+                    value={tipo}
+                    checked={tipoPersona === tipo}
+                    onChange={() => {
+                      setTipoPersona(tipo);
+                      if (rfcError) setRfcError(validateRfc(rfc, tipo));
+                    }}
+                    className="accent-[#8b434a]"
+                  />
+                  <span className="text-[14px] text-[#1e1e1e]">
+                    {tipo === "Fisica" ? "Persona Física" : "Persona Moral"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* RFC */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="rfc" className="text-[14px] font-semibold text-[#1e1e1e]">
+              RFC <span className="text-[#c14a4a]">*</span>
+            </label>
+            <input
+              id="rfc"
+              maxLength={13}
+              value={rfc}
+              onChange={(e) => {
+                const v = e.target.value.toUpperCase();
+                setRfc(v);
+                if (rfcError) setRfcError(validateRfc(v, tipoPersona));
+              }}
+              onBlur={() => setRfcError(validateRfc(rfc, tipoPersona))}
+              aria-invalid={rfcError !== null}
+              aria-describedby={rfcError ? "rfc-error" : undefined}
+              placeholder={tipoPersona === "Fisica" ? "XAXX010101000" : "XAX010101000"}
+              className={`h-11 rounded-lg border bg-white px-3 text-[14px] text-[#1e1e1e] uppercase tracking-wider ${
+                rfcError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+              }`}
+            />
+            {rfcError && (
+              <p id="rfc-error" className="text-[12px] font-medium text-[#c14a4a]">
+                {rfcError}
+              </p>
+            )}
+          </div>
+
+          {/* Razón social */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="razonSocial" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Razón social <span className="text-[#c14a4a]">*</span>
+            </label>
+            <input
+              id="razonSocial"
+              maxLength={254}
+              value={razonSocial}
+              onChange={(e) => {
+                setRazonSocial(e.target.value);
+                if (razonSocialError) setRazonSocialError(null);
+              }}
+              onBlur={() =>
+                setRazonSocialError(
+                  razonSocial.trim().length === 0 ? "La razón social es requerida" : null
+                )
+              }
+              aria-invalid={razonSocialError !== null}
+              aria-describedby={razonSocialError ? "razonSocial-error" : "razonSocial-help"}
+              className={`h-11 rounded-lg border bg-white px-3 text-[14px] text-[#1e1e1e] ${
+                razonSocialError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+              }`}
+            />
+            {razonSocialError ? (
+              <p id="razonSocial-error" className="text-[12px] font-medium text-[#c14a4a]">
+                {razonSocialError}
+              </p>
+            ) : (
+              <p id="razonSocial-help" className="text-[12px] text-[#666]">
+                Tal como aparece registrado ante el SAT.
+              </p>
+            )}
+          </div>
+
+          {/* Régimen fiscal */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="regimenFiscal" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Régimen fiscal <span className="text-[#c14a4a]">*</span>
+            </label>
+            <input
+              id="regimenFiscal"
+              maxLength={100}
+              value={regimenFiscal}
+              onChange={(e) => {
+                setRegimenFiscal(e.target.value);
+                if (regimenFiscalError) setRegimenFiscalError(null);
+              }}
+              onBlur={() =>
+                setRegimenFiscalError(
+                  regimenFiscal.trim().length === 0 ? "El régimen fiscal es requerido" : null
+                )
+              }
+              aria-invalid={regimenFiscalError !== null}
+              aria-describedby={regimenFiscalError ? "regimenFiscal-error" : undefined}
+              placeholder="Ej. 601 - General de Ley Personas Morales"
+              className={`h-11 rounded-lg border bg-white px-3 text-[14px] text-[#1e1e1e] ${
+                regimenFiscalError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+              }`}
+            />
+            {regimenFiscalError && (
+              <p id="regimenFiscal-error" className="text-[12px] font-medium text-[#c14a4a]">
+                {regimenFiscalError}
+              </p>
+            )}
+          </div>
+
+          {/* Uso de CFDI */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="usoCfdi" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Uso de CFDI <span className="text-[#c14a4a]">*</span>
+            </label>
+            <input
+              id="usoCfdi"
+              maxLength={100}
+              value={usoCfdi}
+              onChange={(e) => {
+                setUsoCfdi(e.target.value);
+                if (usoCfdiError) setUsoCfdiError(null);
+              }}
+              onBlur={() =>
+                setUsoCfdiError(usoCfdi.trim().length === 0 ? "El uso de CFDI es requerido" : null)
+              }
+              aria-invalid={usoCfdiError !== null}
+              aria-describedby={usoCfdiError ? "usoCfdi-error" : undefined}
+              placeholder="Ej. G03 - Gastos en general"
+              className={`h-11 rounded-lg border bg-white px-3 text-[14px] text-[#1e1e1e] ${
+                usoCfdiError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+              }`}
+            />
+            {usoCfdiError && (
+              <p id="usoCfdi-error" className="text-[12px] font-medium text-[#c14a4a]">
+                {usoCfdiError}
+              </p>
+            )}
+          </div>
+
+          {/* Código postal fiscal */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="codigoPostal" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Código postal fiscal <span className="text-[#c14a4a]">*</span>
+            </label>
+            <input
+              id="codigoPostal"
+              inputMode="numeric"
+              maxLength={5}
+              value={codigoPostal}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "");
+                setCodigoPostal(v);
+                if (codigoPostalError) setCodigoPostalError(null);
+              }}
+              onBlur={() =>
+                setCodigoPostalError(
+                  !/^\d{5}$/.test(codigoPostal.trim())
+                    ? "El código postal debe tener 5 dígitos numéricos"
+                    : null
+                )
+              }
+              aria-invalid={codigoPostalError !== null}
+              aria-describedby={codigoPostalError ? "codigoPostal-error" : "codigoPostal-help"}
+              placeholder="76000"
+              className={`h-11 rounded-lg border bg-white px-3 text-[14px] text-[#1e1e1e] ${
+                codigoPostalError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+              }`}
+            />
+            {codigoPostalError ? (
+              <p id="codigoPostal-error" className="text-[12px] font-medium text-[#c14a4a]">
+                {codigoPostalError}
+              </p>
+            ) : (
+              <p id="codigoPostal-help" className="text-[12px] text-[#666]">
+                El registrado ante el SAT, no necesariamente el de tu domicilio.
+              </p>
+            )}
+          </div>
+
+          {/* Correo de facturación */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="correoFacturacion" className="text-[14px] font-semibold text-[#1e1e1e]">
+              Correo de facturación (opcional)
+            </label>
+            <input
+              id="correoFacturacion"
+              type="email"
+              maxLength={150}
+              inputMode="email"
+              spellCheck={false}
+              value={correoFacturacion}
+              onChange={(e) => {
+                setCorreoFacturacion(e.target.value);
+                if (correoFacturacionError) setCorreoFacturacionError(null);
+              }}
+              onBlur={() => {
+                if (!correoFacturacion.trim()) {
+                  setCorreoFacturacionError(null);
+                  return;
+                }
+                setCorreoFacturacionError(
+                  isValidEmail(correoFacturacion) ? null : EMAIL_ERROR_MESSAGE
+                );
+              }}
+              aria-invalid={correoFacturacionError !== null}
+              aria-describedby={
+                correoFacturacionError ? "correoFacturacion-error" : "correoFacturacion-help"
+              }
+              className={`h-11 rounded-lg border bg-white px-3 text-[14px] text-[#1e1e1e] ${
+                correoFacturacionError ? "border-[#c14a4a]" : "border-[#c2c0c0]"
+              }`}
+            />
+            {correoFacturacionError ? (
+              <p id="correoFacturacion-error" className="text-[12px] font-medium text-[#c14a4a]">
+                {correoFacturacionError}
+              </p>
+            ) : (
+              <p id="correoFacturacion-help" className="text-[12px] text-[#666]">
+                Si la factura debe llegar a un correo distinto al de contacto.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="bg-white rounded-[10px] border border-[#c2c0c0] p-[24px] flex flex-col gap-[8px]">
         <h2 className="font-bold text-[20px] text-[#1e1e1e]">Resumen</h2>

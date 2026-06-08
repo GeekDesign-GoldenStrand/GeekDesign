@@ -56,16 +56,16 @@ export function PedidoGeneralCard({ pedido }: Props) {
           </span>
         }
       />
+      <FieldRow
+        label="Estado factura"
+        value={
+          <span className="font-normal text-gray-700">
+            {pedido.estado_factura?.descripcion ?? "—"}
+          </span>
+        }
+      />
       {pedido.factura && (
         <>
-          <FieldRow
-            label="Estado factura"
-            value={
-              <span className="font-normal text-gray-700">
-                {pedido.estado_factura?.descripcion ?? "—"}
-              </span>
-            }
-          />
           <FieldRow
             label="Facturado"
             value={
