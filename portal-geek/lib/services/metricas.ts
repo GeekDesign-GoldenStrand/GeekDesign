@@ -176,8 +176,7 @@ export async function getMetricasMaquinas(): Promise<MetricasMaquinasData> {
   const rawData: Record<number, Record<number, Record<number, MaquinaMetric>>> = {};
 
   for (const detalle of detalles) {
-    const dateToUse =
-      detalle.fecha_modificacion || detalle.pedido.fecha_fin || detalle.pedido.fecha_creacion;
+    const dateToUse = detalle.pedido.fecha_fin || detalle.pedido.fecha_creacion;
     const year = dateToUse.getUTCFullYear();
     const month = dateToUse.getUTCMonth();
 
