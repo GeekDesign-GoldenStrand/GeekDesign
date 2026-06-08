@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { can, landingPath } from "@/lib/auth/access";
 import type { Role } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
-import { getMetricasDashboard, getTopClientes } from "@/lib/services/metricas";
+import { getMetricasDashboard, getMetricasMaquinas, getTopClientes } from "@/lib/services/metricas";
 
 import { DashboardView } from "./dashboard-view";
 
@@ -21,7 +21,11 @@ export default async function DashboardPage() {
   const role = session.role as Role;
   if (!can(role, "metricas", "read")) redirect(landingPath(role));
 
-  const [data, topClientes] = await Promise.all([getMetricasDashboard(), getTopClientes()]);
+  const [data, maquinasData, topClientes] = await Promise.all([
+    getMetricasDashboard(),
+    getMetricasMaquinas(),
+    getTopClientes(),
+  ]);
 
-  return <DashboardView data={data} topClientes={topClientes} />;
+  return <DashboardView data={data} maquinasData={maquinasData} topClientes={topClientes} />;
 }

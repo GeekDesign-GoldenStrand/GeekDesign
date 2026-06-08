@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/db/client";
-import { getMetricasDashboard, getIngresosMensualesPorAno } from "@/lib/services/metricas";
+import {
+  getMetricasDashboard,
+  getIngresosMensualesPorAno,
+  getMetricasMaquinas,
+} from "@/lib/services/metricas";
 
 jest.mock("@/lib/db/client", () => ({
   prisma: {
     pagos: {
+      findMany: jest.fn(),
+    },
+    detallePedido: {
       findMany: jest.fn(),
     },
   },
@@ -121,6 +128,90 @@ describe("metricas service", () => {
 
       await expect(getIngresosMensualesPorAno(2026)).rejects.toThrow(
         "No se pudieron cargar las métricas en este momento."
+      );
+    });
+  });
+
+  describe("getMetricasMaquinas", () => {
+    it("should correctly group and sort machines usage by year and month", async () => {
+      (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
+        {
+          id_material: "mat-1",
+          pedido: {
+            fecha_fin: new Date("2026-06-10T12:00:00Z"),
+            pedidoMaquinas: [
+              {
+                id_material: "mat-1",
+                id_maquina: "maq-1",
+                maquina: { nombre_maquina: "Cortadora Láser", apodo_maquina: "Láser" },
+              },
+              {
+                id_material: "mat-2",
+                id_maquina: "maq-2",
+                maquina: { nombre_maquina: "Bordadora", apodo_maquina: "Borda" },
+              },
+            ],
+          },
+        },
+        {
+          id_material: "mat-1",
+          pedido: {
+            fecha_fin: new Date("2026-06-15T12:00:00Z"),
+            pedidoMaquinas: [
+              {
+                id_material: "mat-1",
+                id_maquina: "maq-1",
+                maquina: { nombre_maquina: "Cortadora Láser", apodo_maquina: "Láser" },
+              },
+            ],
+          },
+        },
+        {
+          id_material: "mat-2",
+          pedido: {
+            fecha_fin: new Date("2025-01-05T12:00:00Z"),
+            pedidoMaquinas: [
+              {
+                id_material: "mat-2",
+                id_maquina: "maq-2",
+                maquina: { nombre_maquina: "Bordadora", apodo_maquina: "Borda" },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await getMetricasMaquinas();
+
+      // 2026 checks
+      expect(result[2026]).toBeDefined();
+      expect(result[2026][5]).toBeDefined(); // Junio (índice 5)
+      expect(result[2026][5].length).toBe(1);
+      expect(result[2026][5][0].nombre_maquina).toBe("Cortadora Láser");
+      expect(result[2026][5][0].apodo_maquina).toBe("Láser");
+      expect(result[2026][5][0].veces_usada).toBe(2);
+
+      // 2025 checks
+      expect(result[2025]).toBeDefined();
+      expect(result[2025][0]).toBeDefined(); // Enero (índice 0)
+      expect(result[2025][0].length).toBe(1);
+      expect(result[2025][0][0].nombre_maquina).toBe("Bordadora");
+      expect(result[2025][0][0].apodo_maquina).toBe("Borda");
+      expect(result[2025][0][0].veces_usada).toBe(1);
+    });
+
+    it("should handle empty dataset", async () => {
+      (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([]);
+      const result = await getMetricasMaquinas();
+      const currentYear = new Date().getUTCFullYear();
+      expect(result[currentYear]).toBeDefined();
+      expect(result[currentYear][0]).toEqual([]); // Array de máquinas vacío por defecto
+    });
+
+    it("should handle database errors", async () => {
+      (prisma.detallePedido.findMany as jest.Mock).mockRejectedValue(new Error("DB timeout"));
+      await expect(getMetricasMaquinas()).rejects.toThrow(
+        "No se pudieron cargar las métricas de máquinas en este momento."
       );
     });
   });

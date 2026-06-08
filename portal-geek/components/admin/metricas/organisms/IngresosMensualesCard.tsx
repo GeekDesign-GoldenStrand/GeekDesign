@@ -44,7 +44,7 @@ export function IngresosMensualesCard({
         <h2 className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider">
           Ingresos Totales (Mensual)
         </h2>
-        <div className="flex gap-2 items-center flex-wrap">
+        <div className="flex flex-wrap justify-start sm:justify-end items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
           <SelectField
             label="Mes:"
             value={month}

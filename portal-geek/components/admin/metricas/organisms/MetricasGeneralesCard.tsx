@@ -67,54 +67,56 @@ export function MetricasGeneralesCard({
           />
         </div>
       </div>
-      <div className="w-full h-[200px] sm:h-[280px] xl:h-[320px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={yearlyTotals} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <defs>
-              <linearGradient id="barBlue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#60a5fa" stopOpacity={1} />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity={0.9} />
-              </linearGradient>
-              <linearGradient id="barLightBlue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#93c5fd" stopOpacity={1} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.9} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-            <XAxis
-              dataKey="year"
-              axisLine={false}
-              tickLine={false}
-              tick={AXIS_TICK_LARGE}
-              dy={10}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={AXIS_TICK_LARGE}
-              dx={-10}
-              tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-              width={50}
-            />
-            <Tooltip
-              cursor={{ fill: "#f9fafb" }}
-              formatter={(
-                value: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
-              ) => [formatCurrency(Number(value) || 0), "Total"]}
-              contentStyle={TOOLTIP_CONTENT_STYLE}
-              itemStyle={TOOLTIP_ITEM_STYLE}
-              labelStyle={TOOLTIP_LABEL_STYLE}
-            />
-            <Bar dataKey="total" radius={[8, 8, 0, 0]} maxBarSize={70}>
-              {yearlyTotals.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={index % 2 === 0 ? "url(#barBlue)" : "url(#barLightBlue)"}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="w-full h-[200px] sm:h-[280px] xl:h-[320px] relative">
+        <div className="absolute inset-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={yearlyTotals} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="barBlue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#60a5fa" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="barLightBlue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#93c5fd" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.9} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis
+                dataKey="year"
+                axisLine={false}
+                tickLine={false}
+                tick={AXIS_TICK_LARGE}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={AXIS_TICK_LARGE}
+                dx={-10}
+                tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                width={50}
+              />
+              <Tooltip
+                cursor={{ fill: "#f9fafb" }}
+                formatter={(
+                  value: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+                ) => [formatCurrency(Number(value) || 0), "Total"]}
+                contentStyle={TOOLTIP_CONTENT_STYLE}
+                itemStyle={TOOLTIP_ITEM_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
+              />
+              <Bar dataKey="total" radius={[8, 8, 0, 0]} maxBarSize={70}>
+                {yearlyTotals.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={index % 2 === 0 ? "url(#barBlue)" : "url(#barLightBlue)"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

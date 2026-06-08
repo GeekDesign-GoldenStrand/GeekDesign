@@ -11,14 +11,14 @@ export function useDashboardFinanciero(data: MetricasDashboardData) {
 
   const initialYear = availableYears.length > 0 ? availableYears[0] : new Date().getFullYear();
 
-  // ── Card 1: Ingresos Anuales ──
+  // ── Card 1: Yearly Revenue ──
   const [card1Year, setCard1Year] = useState<number>(initialYear);
   const card1Data = data[card1Year] || [];
   const totalAnual = card1Data.reduce((acc, curr) => acc + curr.ingresos, 0);
   const prevCard1Data = data[card1Year - 1] || [];
   const prevTotalAnual = prevCard1Data.reduce((acc, curr) => acc + curr.ingresos, 0);
 
-  // ── Card 2: Ingresos Mensuales ──
+  // ── Card 2: Monthly Revenue ──
   const [card2Year, setCard2Year] = useState<number>(initialYear);
   const [card2Month, setCard2Month] = useState<number>(new Date().getMonth());
   const card2Data = data[card2Year] || [];
@@ -28,7 +28,7 @@ export function useDashboardFinanciero(data: MetricasDashboardData) {
   const prevCard2Data = data[prevYear] || [];
   const prevTotalMensual = prevCard2Data.find((m) => m.mes_num === prevMonth)?.ingresos || 0;
 
-  // ── Card 3: Comparativa Histórica ──
+  // ── Card 3: Historical Comparison ──
   const [card3Years, setCard3Years] = useState<number[]>(availableYears);
   const yearlyTotals = card3Years.map((year) => {
     const yearData = data[year] || [];
@@ -50,12 +50,12 @@ export function useDashboardFinanciero(data: MetricasDashboardData) {
     );
   };
 
-  // ── Card 4: Desglose Mensual ──
+  // ── Card 4: Monthly Breakdown ──
   const [card4Year, setCard4Year] = useState<number>(initialYear);
   const [chartStyle, setChartStyle] = useState<1 | 2 | 3>(3);
   const card4Data = data[card4Year] || [];
 
-  // ── Card 5: Comparativa Personalizada ──
+  // ── Card 5: Custom Comparison ──
   const [customPeriods, setCustomPeriods] = useState<{ month: number; year: number }[]>([
     { month: 0, year: availableYears[availableYears.length - 1] || initialYear },
     { month: 11, year: availableYears[0] || initialYear },
@@ -94,12 +94,12 @@ export function useDashboardFinanciero(data: MetricasDashboardData) {
 
   return {
     availableYears,
-    // Ingresos Anuales
+    // Yearly Revenue
     card1Year,
     setCard1Year,
     totalAnual,
     prevTotalAnual,
-    // Ingresos Mensuales
+    // Monthly Revenue
     card2Year,
     setCard2Year,
     card2Month,
@@ -108,7 +108,7 @@ export function useDashboardFinanciero(data: MetricasDashboardData) {
     prevTotalMensual,
     prevMonth,
     prevYear,
-    // Comparativa Histórica
+    // Historical Comparison
     card3Years,
     toggleCard3Year,
     yearlyTotals,
@@ -116,13 +116,13 @@ export function useDashboardFinanciero(data: MetricasDashboardData) {
     previousYear,
     card3DeltaCurrent,
     card3DeltaPrev,
-    // Desglose Mensual
+    // Monthly Breakdown
     card4Year,
     setCard4Year,
     chartStyle,
     setChartStyle,
     card4Data,
-    // Comparativa Personalizada
+    // Custom Comparison
     customPeriods,
     customData,
     getCustomValue,
