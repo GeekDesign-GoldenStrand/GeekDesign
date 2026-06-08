@@ -34,7 +34,14 @@ describe("GeneralTab Configurar Vista", () => {
   });
 
   it("renders with default configuration", () => {
-    render(<GeneralTab data={mockData} maquinasData={{}} isEditing={false} />);
+    render(
+      <GeneralTab
+        data={mockData}
+        maquinasData={{}}
+        topClientesData={{ clientes: [], availableYears: [] }}
+        isEditing={false}
+      />
+    );
 
     // By default, it should have "ingresos_anuales", "ingresos_mensuales"
     // "comparativa_historica", "desglose_mensual"
@@ -50,7 +57,14 @@ describe("GeneralTab Configurar Vista", () => {
       JSON.stringify({ cards: ["ingresos_anuales"], charts: [] })
     );
 
-    render(<GeneralTab data={mockData} maquinasData={{}} isEditing={false} />);
+    render(
+      <GeneralTab
+        data={mockData}
+        maquinasData={{}}
+        topClientesData={{ clientes: [], availableYears: [] }}
+        isEditing={false}
+      />
+    );
 
     expect(screen.getByText(/Ingresos Totales \(Anual\)/i)).toBeInTheDocument();
 
@@ -60,7 +74,14 @@ describe("GeneralTab Configurar Vista", () => {
   });
 
   it("toggles widgets when editing and saves to localStorage", () => {
-    render(<GeneralTab data={mockData} maquinasData={{}} isEditing={true} />);
+    render(
+      <GeneralTab
+        data={mockData}
+        maquinasData={{}}
+        topClientesData={{ clientes: [], availableYears: [] }}
+        isEditing={true}
+      />
+    );
 
     // Uncheck "Ingresos Anuales"
     const checkboxAnual = screen.getByRole("checkbox", {
@@ -86,7 +107,14 @@ describe("GeneralTab Configurar Vista", () => {
       })
     );
 
-    render(<GeneralTab data={mockData} maquinasData={{}} isEditing={true} />);
+    render(
+      <GeneralTab
+        data={mockData}
+        maquinasData={{}}
+        topClientesData={{ clientes: [], availableYears: [] }}
+        isEditing={true}
+      />
+    );
 
     // Try to toggle another card? Actually we only have 2 cards available in the UI check,
     // but let's say the user clicks a checkbox for a card that IS NOT in the list.
@@ -105,7 +133,14 @@ describe("GeneralTab Configurar Vista", () => {
     cleanup();
 
     // Re-render to pick up new localStorage
-    render(<GeneralTab data={mockData} maquinasData={{}} isEditing={true} />);
+    render(
+      <GeneralTab
+        data={mockData}
+        maquinasData={{}}
+        topClientesData={{ clientes: [], availableYears: [] }}
+        isEditing={true}
+      />
+    );
 
     const checkboxHist = screen.getByRole("checkbox", {
       name: /Comparativa Histórica/i,
@@ -128,7 +163,14 @@ describe("GeneralTab Configurar Vista", () => {
       JSON.stringify({ cards: [], charts: [] })
     );
 
-    render(<GeneralTab data={mockData} maquinasData={{}} isEditing={false} />);
+    render(
+      <GeneralTab
+        data={mockData}
+        maquinasData={{}}
+        topClientesData={{ clientes: [], availableYears: [] }}
+        isEditing={false}
+      />
+    );
 
     expect(
       screen.getByText(/No has seleccionado ninguna métrica para mostrar/i)
