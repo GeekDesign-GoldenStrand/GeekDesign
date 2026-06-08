@@ -136,9 +136,9 @@ describe("metricas service", () => {
     it("should correctly group and sort machines usage by year and month", async () => {
       (prisma.detallePedido.findMany as jest.Mock).mockResolvedValue([
         {
-          fecha_modificacion: new Date("2026-06-10T12:00:00Z"),
           id_material: "mat-1",
           pedido: {
+            fecha_fin: new Date("2026-06-10T12:00:00Z"),
             pedidoMaquinas: [
               {
                 id_material: "mat-1",
@@ -154,9 +154,9 @@ describe("metricas service", () => {
           },
         },
         {
-          fecha_modificacion: new Date("2026-06-15T12:00:00Z"),
           id_material: "mat-1",
           pedido: {
+            fecha_fin: new Date("2026-06-15T12:00:00Z"),
             pedidoMaquinas: [
               {
                 id_material: "mat-1",
@@ -167,9 +167,9 @@ describe("metricas service", () => {
           },
         },
         {
-          fecha_modificacion: new Date("2025-01-05T12:00:00Z"),
           id_material: "mat-2",
           pedido: {
+            fecha_fin: new Date("2025-01-05T12:00:00Z"),
             pedidoMaquinas: [
               {
                 id_material: "mat-2",
