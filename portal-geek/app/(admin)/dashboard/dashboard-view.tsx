@@ -67,7 +67,12 @@ export function DashboardView({ data, maquinasData, topClientes }: Props) {
       {/* Tab Content */}
       <div className="mt-2">
         {activeTab === "General" && (
-          <GeneralTab data={data} maquinasData={maquinasData} isEditing={isEditingConfig} />
+          <GeneralTab
+            data={data}
+            maquinasData={maquinasData}
+            topClientesData={topClientes}
+            isEditing={isEditingConfig}
+          />
         )}
         {activeTab === "Ingresos" && <DashboardFinanciero data={data} />}
         {activeTab === "Máquinas" && <MaquinasTab data={maquinasData} />}

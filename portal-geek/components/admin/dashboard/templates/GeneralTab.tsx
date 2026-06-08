@@ -7,6 +7,7 @@ import { useDashboardFinanciero } from "@/components/admin/metricas/hooks/useDas
 import { useMaquinasMetrics } from "@/components/admin/metricas/hooks/useMaquinasMetrics";
 import { useMaquinasMetricsAnual } from "@/components/admin/metricas/hooks/useMaquinasMetricsAnual";
 import { useMaquinasMetricsHistorico } from "@/components/admin/metricas/hooks/useMaquinasMetricsHistorico";
+import { useTopClientes } from "@/components/admin/metricas/hooks/useTopClientes";
 import { CustomComparisonChart } from "@/components/admin/metricas/organisms/CustomComparisonChart";
 import { DesgloseMensualChart } from "@/components/admin/metricas/organisms/DesgloseMensualChart";
 import { IngresosAnualesCard } from "@/components/admin/metricas/organisms/IngresosAnualesCard";
@@ -15,7 +16,12 @@ import { MaquinasMasUsadasAnualCard } from "@/components/admin/metricas/organism
 import { MaquinasMasUsadasCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasCard";
 import { MaquinasMasUsadasHistoricoCard } from "@/components/admin/metricas/organisms/MaquinasMasUsadasHistoricoCard";
 import { MetricasGeneralesCard } from "@/components/admin/metricas/organisms/MetricasGeneralesCard";
-import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
+import { TopClientesCard } from "@/components/admin/metricas/organisms/TopClientesCard";
+import type {
+  MetricasDashboardData,
+  MetricasMaquinasData,
+  TopClientesResult,
+} from "@/lib/services/metricas";
 
 type WidgetId =
   | "ingresos_anuales"
@@ -25,7 +31,8 @@ type WidgetId =
   | "comparativa_personalizada"
   | "maquinas_mas_usadas"
   | "maquinas_mas_usadas_anual"
-  | "maquinas_mas_usadas_historico";
+  | "maquinas_mas_usadas_historico"
+  | "top_clientes";
 
 interface GeneralConfig {
   cards: WidgetId[];
@@ -40,16 +47,19 @@ const DEFAULT_CONFIG: GeneralConfig = {
     "maquinas_mas_usadas",
     "maquinas_mas_usadas_anual",
     "maquinas_mas_usadas_historico",
+    "top_clientes",
   ],
 };
 
 export function GeneralTab({
   data,
   maquinasData,
+  topClientesData,
   isEditing,
 }: {
   data: MetricasDashboardData;
   maquinasData: MetricasMaquinasData;
+  topClientesData: TopClientesResult;
   isEditing: boolean;
 }) {
   const [config, setConfig] = useState<GeneralConfig>(DEFAULT_CONFIG);
@@ -84,6 +94,7 @@ export function GeneralTab({
   const maquinasState = useMaquinasMetrics(maquinasData);
   const maquinasAnualState = useMaquinasMetricsAnual(maquinasData);
   const maquinasHistoricoState = useMaquinasMetricsHistorico(maquinasData);
+  const topClientesState = useTopClientes(topClientesData);
 
   // Load from localStorage
   useEffect(() => {
@@ -231,6 +242,15 @@ export function GeneralTab({
                   />
                   <span className="font-medium text-black">Comparativa Personalizada</span>
                 </label>
+                <label className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer text-black">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-red-600"
+                    checked={config.charts.includes("top_clientes")}
+                    onChange={() => handleToggleWidget("charts", "top_clientes")}
+                  />
+                  <span className="font-medium text-black">Top Clientes por Ingresos</span>
+                </label>
               </div>
             </div>
           </div>
@@ -321,6 +341,15 @@ export function GeneralTab({
                 onLimitChange={maquinasHistoricoState.setTopLimit}
               />
             </div>
+          )}
+          {config.charts.includes("top_clientes") && (
+            <TopClientesCard
+              rows={topClientesState.rows}
+              totalScope={topClientesState.totalScope}
+              year={topClientesState.year}
+              availableYears={topClientesState.availableYears}
+              onYearChange={topClientesState.setYear}
+            />
           )}
         </div>
       )}
