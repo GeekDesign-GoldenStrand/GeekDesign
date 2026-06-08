@@ -4,22 +4,28 @@ import { Gear } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { ServiceFilterButton } from "@/components/admin/atoms/ServiceFilterButton";
+import { ClientesTab } from "@/components/admin/dashboard/templates/ClientesTab";
 import { GeneralTab } from "@/components/admin/dashboard/templates/GeneralTab";
 import { MaquinasTab } from "@/components/admin/dashboard/templates/MaquinasTab";
 import { DashboardFinanciero } from "@/components/admin/metricas/DashboardFinanciero";
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
-import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
+import type {
+  MetricasDashboardData,
+  MetricasMaquinasData,
+  TopClientesResult,
+} from "@/lib/services/metricas";
 
-export type DashboardTab = "General" | "Ingresos" | "Máquinas" | "Clientes";
+export type DashboardTab = "General" | "Ingresos" | "Máquinas" | "Clientes" | "Gastos";
 
-const TABS: DashboardTab[] = ["General", "Ingresos", "Máquinas", "Clientes"];
+const TABS: DashboardTab[] = ["General", "Ingresos", "Máquinas", "Clientes", "Gastos"];
 
 interface Props {
   data: MetricasDashboardData;
   maquinasData: MetricasMaquinasData;
+  topClientes: TopClientesResult;
 }
 
-export function DashboardView({ data, maquinasData }: Props) {
+export function DashboardView({ data, maquinasData, topClientes }: Props) {
   const [activeTab, setActiveTab] = useState<DashboardTab>("General");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
 
@@ -65,8 +71,9 @@ export function DashboardView({ data, maquinasData }: Props) {
         )}
         {activeTab === "Ingresos" && <DashboardFinanciero data={data} />}
         {activeTab === "Máquinas" && <MaquinasTab data={maquinasData} />}
+        {activeTab === "Clientes" && <ClientesTab data={topClientes} />}
         {/* Blank for the empty tabs */}
-        {activeTab === "Clientes" && <div className="min-h-[400px]" />}
+        {["Gastos"].includes(activeTab) && <div className="min-h-[400px]" />}
       </div>
     </div>
   );

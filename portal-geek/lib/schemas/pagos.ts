@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Hard cap on how many payments a single order may have. Lives here (a
+// client-safe module) so both the service and UI can share it without the UI
+// importing the Prisma-backed service layer.
+export const MAX_PAGOS_POR_PEDIDO = 10;
+
 export const CreatePagoSchema = z.object({
   id_pedido: z.number().int().positive(),
   monto_pago: z.number().positive(),
