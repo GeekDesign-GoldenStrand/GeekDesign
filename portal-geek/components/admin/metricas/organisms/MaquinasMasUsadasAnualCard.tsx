@@ -83,47 +83,49 @@ export function MaquinasMasUsadasAnualCard({
             No hay datos para este año
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <defs>
-                {chartData.map((entry, index) => (
-                  <filter key={`shadow-${index}`} id={`shadow-${chartId}-${index}`}>
-                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodOpacity="0.2" />
-                  </filter>
-                ))}
-              </defs>
-              <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                iconType="circle"
-                wrapperStyle={{ fontSize: "13px", paddingTop: "20px" }}
-              />
-              <Pie
-                data={chartData}
-                dataKey="veces_usada"
-                nameKey="apodo_maquina"
-                cx="50%"
-                cy="50%"
-                innerRadius={0}
-                outerRadius="80%"
-                paddingAngle={2}
-                animationDuration={1500}
-                animationEasing="ease-out"
-                stroke="none"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={PIE_COLORS_ANUAL[index % PIE_COLORS_ANUAL.length]}
-                    style={{
-                      outline: "none",
-                    }}
-                  />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="absolute inset-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  {chartData.map((entry, index) => (
+                    <filter key={`shadow-${index}`} id={`shadow-${chartId}-${index}`}>
+                      <feDropShadow dx="0" dy="4" stdDeviation="6" floodOpacity="0.2" />
+                    </filter>
+                  ))}
+                </defs>
+                <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "13px", paddingTop: "20px" }}
+                />
+                <Pie
+                  data={chartData}
+                  dataKey="veces_usada"
+                  nameKey="apodo_maquina"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={0}
+                  outerRadius="80%"
+                  paddingAngle={2}
+                  animationDuration={1500}
+                  animationEasing="ease-out"
+                  stroke="none"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={PIE_COLORS_ANUAL[index % PIE_COLORS_ANUAL.length]}
+                      style={{
+                        outline: "none",
+                      }}
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>

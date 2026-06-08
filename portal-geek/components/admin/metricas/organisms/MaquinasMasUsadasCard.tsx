@@ -95,45 +95,47 @@ export function MaquinasMasUsadasCard({
         </div>
       </div>
 
-      <div className="w-full flex-grow min-h-[300px] sm:min-h-[400px]">
+      <div className="w-full flex-grow min-h-[300px] sm:min-h-[400px] relative">
         {displayData.length === 0 ? (
-          <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">
+          <div className="w-full h-full flex items-center justify-center text-sm text-gray-400 absolute inset-0">
             No hay servicios terminados en este periodo.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={displayData}
-                dataKey="veces_usada"
-                nameKey="apodo_maquina"
-                cx="50%"
-                cy="50%"
-                innerRadius="50%"
-                outerRadius="80%"
-                paddingAngle={4}
-                animationDuration={1500}
-                animationEasing="ease-out"
-                stroke="none"
-              >
-                {displayData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                iconType="circle"
-                wrapperStyle={{
-                  paddingTop: "20px",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  color: "var(--color-gray-600, #4b5563)",
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="absolute inset-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={displayData}
+                  dataKey="veces_usada"
+                  nameKey="apodo_maquina"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="50%"
+                  outerRadius="80%"
+                  paddingAngle={4}
+                  animationDuration={1500}
+                  animationEasing="ease-out"
+                  stroke="none"
+                >
+                  {displayData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{
+                    paddingTop: "20px",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    color: "var(--color-gray-600, #4b5563)",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>

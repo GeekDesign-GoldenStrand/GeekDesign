@@ -73,42 +73,44 @@ export function MaquinasMasUsadasHistoricoCard({ topLimit, chartData, onLimitCha
             No hay datos históricos disponibles
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-              <XAxis
-                type="number"
-                tick={{ fill: "#6B7280", fontSize: 12 }}
-                axisLine={{ stroke: "#E5E7EB" }}
-                tickLine={false}
-              />
-              <YAxis
-                type="category"
-                dataKey="apodo_maquina"
-                tick={{ fill: "#374151", fontSize: 13, fontWeight: 500 }}
-                axisLine={{ stroke: "#E5E7EB" }}
-                tickLine={false}
-                width={80}
-              />
-              <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
-              <Bar
-                dataKey="veces_usada"
-                radius={[0, 6, 6, 0]}
-                barSize={Math.max(20, 40 - chartData.length)} // Adjust bar size dynamically
+          <div className="absolute inset-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
               >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={HISTORICO_COLORS[index % HISTORICO_COLORS.length]}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                <XAxis
+                  type="number"
+                  tick={{ fill: "#6B7280", fontSize: 12 }}
+                  axisLine={{ stroke: "#E5E7EB" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="apodo_maquina"
+                  tick={{ fill: "#374151", fontSize: 13, fontWeight: 500 }}
+                  axisLine={{ stroke: "#E5E7EB" }}
+                  tickLine={false}
+                  width={80}
+                />
+                <Tooltip content={<MaquinasCustomTooltip />} cursor={{ fill: "transparent" }} />
+                <Bar
+                  dataKey="veces_usada"
+                  radius={[0, 6, 6, 0]}
+                  barSize={Math.max(20, 40 - chartData.length)} // Adjust bar size dynamically
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={HISTORICO_COLORS[index % HISTORICO_COLORS.length]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>
