@@ -73,23 +73,6 @@ export function GeneralTab({
     toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Suppress known Recharts console warning on hydration
-  useEffect(() => {
-    const originalConsoleWarn = console.warn;
-    console.warn = (...args) => {
-      if (
-        typeof args[0] === "string" &&
-        args[0].includes("The width(-1) and height(-1) of chart should be greater than 0")
-      ) {
-        return;
-      }
-      originalConsoleWarn(...args);
-    };
-    return () => {
-      console.warn = originalConsoleWarn;
-    };
-  }, []);
-
   const dashboardState = useDashboardFinanciero(data);
   const maquinasState = useMaquinasMetrics(maquinasData);
   const maquinasAnualState = useMaquinasMetricsAnual(maquinasData);
