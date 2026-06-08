@@ -10,9 +10,9 @@ import { DashboardFinanciero } from "@/components/admin/metricas/DashboardFinanc
 import { AdminHeader } from "@/components/admin/organisms/AdminHeader";
 import type { MetricasDashboardData, MetricasMaquinasData } from "@/lib/services/metricas";
 
-export type DashboardTab = "General" | "Ingresos" | "Máquinas" | "Clientes" | "Gastos";
+export type DashboardTab = "General" | "Ingresos" | "Máquinas" | "Clientes";
 
-const TABS: DashboardTab[] = ["General", "Ingresos", "Máquinas", "Clientes", "Gastos"];
+const TABS: DashboardTab[] = ["General", "Ingresos", "Máquinas", "Clientes"];
 
 interface Props {
   data: MetricasDashboardData;
@@ -66,7 +66,7 @@ export function DashboardView({ data, maquinasData }: Props) {
         {activeTab === "Ingresos" && <DashboardFinanciero data={data} />}
         {activeTab === "Máquinas" && <MaquinasTab data={maquinasData} />}
         {/* Blank for the empty tabs */}
-        {["Clientes", "Gastos"].includes(activeTab) && <div className="min-h-[400px]" />}
+        {activeTab === "Clientes" && <div className="min-h-[400px]" />}
       </div>
     </div>
   );
