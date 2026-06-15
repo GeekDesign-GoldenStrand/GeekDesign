@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db/client";
 import type {
   CreateCotizacionInput,
   SolicitarCotizacionInput,
+  SolicitarLeadInput,
   UpdateCotizacionInput,
 } from "@/lib/schemas/cotizaciones";
 import { calcularPrecioServicio } from "@/lib/services/formula-pricing";
@@ -1066,6 +1067,95 @@ export async function createCotizacionFromCart(
       // link consumes a single-use token and sets a JWT session cookie.
       lookup_url: `/tienda/cotizacion/confirmacion?folio=${encodeURIComponent(folio)}`,
     };
+  });
+}
+
+/**
+ * ST-10/11/12 — anonymous cliente submits a guided solicitud (lead) from the
+ * storefront hub (idea nula / idea vaga / personalización). Atomically:
+ *   1. upserts Cliente by correo_electronico (@unique, D8) — PII on create only
+ *   2. allocates a folio via the folio_seq Postgres sequence
+ *   3. creates a lead-shaped Cotización (Option A): id_pedido = null,
+ *      monto_total = 0, with the descriptive fields and tipo_solicitud
+ *   4. logs HistorialEstadosCotizacion with actor_tipo="Cliente"
+ *
+ * No Pedido / DetallePedido is created — a lead has no configured items yet.
+ * Dirección turns it into a real quote later. Returns the folio so the cliente
+ * has a reference.
+ */
+export async function solicitarLead(
+  input: SolicitarLeadInput
+): Promise<{ folio: string; id_cotizacion: number }> {
+  const correo = normalizeEmail(input.cliente.correo_electronico);
+
+  // Validate the optional servicio (personalización) before opening the tx so
+  // a bad id fails as 422 instead of an FK-violation 500.
+  if (input.id_servicio !== undefined) {
+    const servicio = await prisma.servicios.findUnique({
+      where: { id_servicio: input.id_servicio },
+      select: { id_servicio: true, estatus_servicio: true },
+    });
+    if (!servicio || !servicio.estatus_servicio) {
+      throw new ValidationError(`Servicio ${input.id_servicio} no existe o no está disponible`);
+    }
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // Cliente upsert (D8). KIKW12 review #1a: public unauthenticated endpoint —
+    // the `update` branch MUST stay empty so nobody can overwrite an existing
+    // cliente's PII by knowing their email. PII is set on `create` only.
+    const cliente = await tx.clientes.upsert({
+      where: { correo_electronico: correo },
+      update: {},
+      create: {
+        nombre_cliente: input.cliente.nombre_cliente,
+        correo_electronico: correo,
+        numero_telefono: input.cliente.numero_telefono,
+        empresa: input.cliente.empresa ?? null,
+      },
+    });
+
+    const cotizacionStatusPendiente = await tx.estatusCotizacion.findUnique({
+      where: { descripcion: QUOTATION_STATUS.PENDIENTE },
+    });
+    if (!cotizacionStatusPendiente) {
+      throw new ConfigurationError("Catálogo de estatus incompleto — ejecuta npm run db:seed");
+    }
+
+    // Folio via the shared Postgres sequence (atomic, concurrent-safe).
+    const seqRow = await tx.$queryRaw<Array<{ nextval: bigint }>>`
+      SELECT nextval('folio_seq') AS nextval
+    `;
+    const seq = Number(seqRow[0].nextval);
+    const folio = `GD-${new Date().getFullYear()}-${String(seq).padStart(5, "0")}`;
+
+    const cotizacion = await tx.cotizaciones.create({
+      data: {
+        id_cliente: cliente.id_cliente,
+        id_pedido: null,
+        id_estatus_cotizacion: cotizacionStatusPendiente.id_estatus,
+        folio,
+        monto_total: 0,
+        empresa_cliente: input.cliente.empresa ?? null,
+        tipo_solicitud: input.tipo_solicitud,
+        descripcion_solicitud: input.descripcion_solicitud,
+        presupuesto_aprox: input.presupuesto_aprox ?? null,
+        fecha_requerida: input.fecha_requerida ?? null,
+        id_servicio: input.id_servicio ?? null,
+      },
+    });
+
+    await tx.historialEstadosCotizacion.create({
+      data: {
+        id_cotizacion: cotizacion.id_cotizacion,
+        id_cliente: cliente.id_cliente,
+        id_estado_anterior: null,
+        id_estado_nuevo: cotizacionStatusPendiente.id_estatus,
+        actor_tipo: "Cliente",
+      },
+    });
+
+    return { folio, id_cotizacion: cotizacion.id_cotizacion };
   });
 }
 

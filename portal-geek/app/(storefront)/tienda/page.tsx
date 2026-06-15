@@ -4,7 +4,7 @@ import { preload } from "react-dom";
 
 import { ServiceCatalogCard } from "@/components/storefront/atoms/ServiceCatalogCard";
 import { AnnouncementBar } from "@/components/storefront/molecules/AnnouncementBar";
-import { CTABanner } from "@/components/storefront/molecules/CTABanner";
+import { CotizacionTipoHub } from "@/components/storefront/organisms/CotizacionTipoHub";
 import { HeroBanner } from "@/components/storefront/organisms/HeroBanner";
 import { ServiceGrid } from "@/components/storefront/organisms/ServiceGrid";
 import { listServicios } from "@/lib/services/servicios";
@@ -69,7 +69,7 @@ export default async function StorefrontHome({ searchParams }: Props) {
         </section>
       )}
 
-      <CTABanner />
+      <CotizacionTipoHub />
     </>
   );
 }

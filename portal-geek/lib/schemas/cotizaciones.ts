@@ -218,7 +218,60 @@ export const SolicitarCotizacionSchema = z.object({
   items: z.array(SolicitarItemSchema).min(1, "El carrito está vacío"),
 });
 
+// ── ST-10/11/12: solicitud de cotización guiada (lead) ────────────────────────
+// The three storefront hub entries (idea nula / idea vaga / personalización).
+// No cart items — just the cliente's contact, a free-text description, an
+// optional approximate budget and a desired date. Persisted as a lead-shaped
+// Cotización (Option A): id_pedido = null, monto_total = 0.
+
+export const LEAD_TIPOS = ["idea_nula", "idea_vaga", "personalizada"] as const;
+
+const PRESUPUESTO_MAX = 99999999.99;
+
+export const SolicitarLeadSchema = z.object({
+  tipo_solicitud: z.enum(LEAD_TIPOS),
+  cliente: SolicitarClienteSchema,
+  descripcion_solicitud: z
+    .string()
+    .trim()
+    .min(1, "Cuéntanos qué necesitas")
+    .max(2000, "La descripción no puede superar los 2000 caracteres")
+    .refine(noEmoji, { message: "La descripción no debe contener emojis" })
+    .refine(textOnly, {
+      message: "La descripción solo debe contener caracteres en inglés o español y signos comunes",
+    }),
+  presupuesto_aprox: z
+    .number()
+    .nonnegative("El presupuesto no puede ser negativo")
+    .max(
+      PRESUPUESTO_MAX,
+      `El presupuesto no puede superar ${PRESUPUESTO_MAX.toLocaleString("es-MX")}`
+    )
+    .optional(),
+  // Same bounds as SolicitarCotizacionSchema.fecha_estimada — only validated
+  // when the cliente provides a date (optional).
+  fecha_requerida: z.coerce
+    .date()
+    .refine((val) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const limit = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      return val >= limit;
+    }, "La fecha requerida no puede ser anterior a la fecha actual")
+    .refine((val) => {
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 2);
+      maxDate.setHours(23, 59, 59, 999);
+      const limit = new Date(maxDate.getTime() + 24 * 60 * 60 * 1000);
+      return val <= limit;
+    }, "La fecha requerida no puede superar los 2 años a partir de hoy")
+    .optional(),
+  // Only meaningful for personalización started from a catalog service.
+  id_servicio: z.number().int().positive().optional(),
+});
+
 export type CreateCotizacionInput = z.infer<typeof CreateCotizacionSchema>;
 export type UpdateCotizacionInput = z.infer<typeof UpdateCotizacionSchema>;
 export type SolicitarCotizacionInput = z.infer<typeof SolicitarCotizacionSchema>;
+export type SolicitarLeadInput = z.infer<typeof SolicitarLeadSchema>;
 export type AplicarDescuentoInput = z.infer<typeof AplicarDescuentoSchema>;

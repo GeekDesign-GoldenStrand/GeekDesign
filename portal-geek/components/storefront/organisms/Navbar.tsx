@@ -19,13 +19,18 @@ interface NavbarProps {
 export function Navbar({ categories = [] }: NavbarProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // `exact` is for links whose sub-routes are distinct flows that shouldn't
+  // inherit the highlight. e.g. "Seguimiento" → /tienda/cotizacion is the folio
+  // tracker; /tienda/cotizacion/{idea-nula,idea-vaga,personalizada,checkout,…}
+  // are solicitud/checkout pages, not the tracker.
+  const isActive = (href: string, exact = false) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
-  const linkCls = (href: string) =>
-    `flex items-center gap-[6px] transition-opacity ${isActive(href) ? "text-[#df2646]" : "text-[#1e1e1e] hover:opacity-70"}`;
+  const linkCls = (href: string, exact = false) =>
+    `flex items-center gap-[6px] transition-opacity ${isActive(href, exact) ? "text-[#df2646]" : "text-[#1e1e1e] hover:opacity-70"}`;
 
-  const textCls = (href: string) =>
-    `whitespace-nowrap leading-none mt-1 ${isActive(href) ? "underline underline-offset-2" : ""}`;
+  const textCls = (href: string, exact = false) =>
+    `whitespace-nowrap leading-none mt-1 ${isActive(href, exact) ? "underline underline-offset-2" : ""}`;
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b-[1.5px] border-[#c2c0c0] w-full">
@@ -71,12 +76,12 @@ export function Navbar({ categories = [] }: NavbarProps) {
 
           <Link
             href="/tienda/cotizacion"
-            className={linkCls("/tienda/cotizacion")}
+            className={linkCls("/tienda/cotizacion", true)}
             aria-label="Consultar Cotización"
           >
             <MagnifyingGlassIcon size={28} weight="light" aria-hidden="true" />
             <span
-              className={`hidden lg:block text-[15px] md:text-[16px] font-medium ${textCls("/tienda/cotizacion")}`}
+              className={`hidden lg:block text-[15px] md:text-[16px] font-medium ${textCls("/tienda/cotizacion", true)}`}
             >
               Seguimiento
             </span>
