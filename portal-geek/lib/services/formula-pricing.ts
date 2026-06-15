@@ -102,6 +102,12 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
 
   const precio_material = material.proveedorPrecio ? Number(material.proveedorPrecio.precio) : 0;
 
+  // Polymorphic material property — adopts the velocidad_avance of whichever
+  // material the customer selected. Default 0 when the material has no value
+  // set; the formula can then short-circuit (e.g. multiplied by 0).
+  const velocidad_avance =
+    material.material?.velocidad_avance != null ? Number(material.material.velocidad_avance) : 0;
+
   // Three-level resolution for costo_instalador:
   //   1. InstaladorServicios.costo  (pair instalador×servicio)
   //   2. costo_instalador_override  (service-level override)
@@ -137,6 +143,7 @@ export async function calcularPrecioServicio(input: CalcularPrecioInput): Promis
     constantes,
     implicits: {
       precio_material,
+      velocidad_avance,
       costo_instalador,
       costo_proveedor,
       [materialTokenKey]: precio_material,

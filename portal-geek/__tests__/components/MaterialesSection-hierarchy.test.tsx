@@ -29,6 +29,7 @@ function leaf(
     alto: null,
     grosor: null,
     color: null,
+    velocidad_avance: null,
     ...partial,
   };
 }

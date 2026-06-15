@@ -3,7 +3,6 @@
 import { LockKeyIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
 
-import { toSnakeIdentifier } from "@/lib/utils/slug";
 import type { FormulaChunk, MaterialDraft, MaterialOption } from "@/types/servicios";
 
 import { Icon } from "../atoms/Icon";
@@ -21,6 +20,9 @@ type FormulaSectionProps = {
   idInstalador: number | null;
   idProveedor: number | null;
   materiales: MaterialDraft[];
+  // Catalog of all materiales. Used to check polymorphic properties
+  // (e.g. velocidad_avance) of the selected materials to decide which
+  // chips to expose in the formula panel.
   opcionesMateriales: MaterialOption[];
 };
 
@@ -127,21 +129,37 @@ export function FormulaSection({
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
-  const materialTokens = materiales
-    .filter((m) => m.id_proveedor_precio !== null)
-    .map((m) => {
-      const info = opcionesMateriales.find((o) => o.id_material === m.id_material);
-      const slug = toSnakeIdentifier(info?.nombre_material ?? `material_${m.id_material}`);
-      return {
-        value: `costo_material_${slug}`,
-        label: info?.nombre_material ?? `Material #${m.id_material}`,
-      };
-    });
+  // Polymorphic material tokens — single chips that adopt the value of whatever
+  // material the customer picks at quotation time. Each chip only appears when
+  // at least one selected material actually exposes that property: precio_material
+  // when some material has a proveedor (otherwise the chip would have no value
+  // to inject), velocidad_avance when some material has the field populated
+  // (typical for láser/grabado services, absent for bordado/rotulación).
+  //
+  // Per-material tokens (`costo_material_<slug>`) were intentionally removed
+  // from the panel: with polymorphic chips covering the same functionality,
+  // exposing both was confusing and triggered duplicate-key React warnings
+  // when two materiales slugged to the same name. The mappers still recognize
+  // legacy slug tokens in saved expressions (for backward compatibility), but
+  // new formulas should only use the polymorphic chips below.
+  const hasMaterialWithProveedor = materiales.some((m) => m.id_proveedor_precio !== null);
+  const hasMaterialWithVelocidadAvance = materiales.some((m) => {
+    const info = opcionesMateriales.find((o) => o.id_material === m.id_material);
+    return info?.velocidad_avance != null;
+  });
+  const polymorphicMaterialTokens = [
+    ...(hasMaterialWithProveedor
+      ? [{ value: "precio_material", label: "Precio del material seleccionado" }]
+      : []),
+    ...(hasMaterialWithVelocidadAvance
+      ? [{ value: "velocidad_avance", label: "Velocidad de avance del material" }]
+      : []),
+  ];
 
   const terceros = [
     ...(idInstalador !== null ? [{ value: "costo_instalador", label: "Instalador" }] : []),
     ...(idProveedor !== null ? [{ value: "costo_proveedor", label: "Proveedor" }] : []),
-    ...materialTokens,
+    ...polymorphicMaterialTokens,
   ];
 
   const formulaPreview = chunks
