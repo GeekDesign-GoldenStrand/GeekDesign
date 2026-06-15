@@ -20,8 +20,11 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
       {/* Header */}
       <div>
         <h3 className="text-[20px] font-ibm-plex font-semibold text-[#1e1e1e] break-words">
-          {servicio.nombre_servicio}
+          {servicio.apodo_servicio}
         </h3>
+        <p className="text-[14px] font-IBM-plex-sans font-normal text-[#575757] break-words">
+          {servicio.nombre_servicio}
+        </p>
       </div>
 
       <p className="text-[14px] text-gray-500">Modificado: {fechaFormateada}</p>
@@ -79,13 +82,13 @@ export function ServicioCard({ servicio, onEliminar }: ServicioCardProps) {
       <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 gap-2 flex-wrap">
         <ActionLink
           href={`/servicios/${servicio.id_servicio}/editar`}
-          aria-label="Editar"
+          aria-label={`Editar ${servicio.apodo_servicio} (${servicio.nombre_servicio})`}
           icon={<EditIcon size={16} />}
         />
         <ActionButton
           tone="danger"
           onClick={() => onEliminar?.(servicio.id_servicio)}
-          aria-label="Eliminar"
+          aria-label={`Eliminar ${servicio.apodo_servicio}`}
           icon={<TrashIcon size={16} />}
         />
       </div>

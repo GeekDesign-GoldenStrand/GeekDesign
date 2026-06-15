@@ -57,6 +57,7 @@ const SERVICIO_PARA_ADMIN_MOCK = {
   id_instalador: null,
   id_proveedor: null,
   nombre_servicio: "Corte Láser",
+  apodo_servicio: "Corte CO2",
   descripcion_servicio: "Corte con láser CO2",
   estatus_servicio: true,
   imagen_url: null,
@@ -191,6 +192,7 @@ describe("GET /api/servicios/[id]", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.id_servicio).toBe(1);
     expect(res.body.data.nombre_servicio).toBe("Corte Láser");
+    expect(res.body.data.apodo_servicio).toBe("Corte CO2");
   });
 
   it("retorna 200 con detalle del servicio (Direccion)", async () => {
@@ -278,6 +280,7 @@ describe("POST /api/servicios", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFindFirst.mockResolvedValue(null);
   });
 
   it("retorna 401 sin sesión", async () => {
@@ -285,7 +288,7 @@ describe("POST /api/servicios", () => {
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/servicios")
-      .send({ nombre_servicio: "Test", id_estatus: 1 });
+      .send({ nombre_servicio: "Test", apodo_servicio: "Corte CO2", id_estatus: 1 });
 
     expect(res.status).toBe(401);
   });
@@ -295,7 +298,7 @@ describe("POST /api/servicios", () => {
 
     const res = await createApp({ POST: routes.POST })
       .post("/api/servicios")
-      .send({ descripcion_servicio: "Sin nombre" });
+      .send({ descripcion_servicio: "Sin nombre", apodo_servicio: "Corte CO2" });
 
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("nombre_servicio");
@@ -319,9 +322,12 @@ describe("POST /api/servicios", () => {
       return callback(tx);
     });
 
-    const res = await createApp({ POST: routes.POST })
-      .post("/api/servicios")
-      .send({ nombre_servicio: "Corte Láser", id_sucursal: 1, estatus_servicio: true });
+    const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
+      nombre_servicio: "Corte Láser",
+      apodo_servicio: "Corte CO2",
+      id_sucursal: 1,
+      estatus_servicio: true,
+    });
 
     expect(res.status).toBe(201);
     expect(findFirstOrThrow).toHaveBeenCalledWith({ where: { descripcion: "Activo" } });
@@ -332,6 +338,7 @@ describe("POST /api/servicios", () => {
 
     const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
       nombre_servicio: "Test",
+      apodo_servicio: "Corte CO2",
       id_estatus: 1,
       id_sucursal: 1,
     });
@@ -371,6 +378,7 @@ describe("POST /api/servicios", () => {
 
     const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
       nombre_servicio: "Servicio Test",
+      apodo_servicio: "Corte CO2",
       descripcion_servicio: "Descripción de prueba",
       id_estatus: 1,
       id_sucursal: 1,
@@ -418,6 +426,7 @@ describe("POST /api/servicios", () => {
       .post("/api/servicios")
       .send({
         nombre_servicio: "Corte con fórmula",
+        apodo_servicio: "Corte CO2",
         id_estatus: 1,
         id_sucursal: 1,
         estatus_servicio: true,
@@ -460,6 +469,7 @@ describe("POST /api/servicios", () => {
       .post("/api/servicios")
       .send({
         nombre_servicio: "Servicio inválido",
+        apodo_servicio: "Corte CO2",
         id_estatus: 1,
         id_sucursal: 1,
         formula: {
@@ -479,6 +489,7 @@ describe("POST /api/servicios", () => {
       .post("/api/servicios")
       .send({
         nombre_servicio: "Servicio inválido",
+        apodo_servicio: "Corte CO2",
         id_estatus: 1,
         id_sucursal: 1,
         formula: {
@@ -498,6 +509,22 @@ describe("POST /api/servicios", () => {
     expect(res.status).toBe(422);
   });
 
+  it("retorna 422 cuando apodo_servicio ya existe", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst.mockResolvedValue({ id_servicio: 99 });
+
+    const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
+      nombre_servicio: "Servicio Test",
+      apodo_servicio: "Corte CO2",
+      id_sucursal: 1,
+      estatus_servicio: true,
+    });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain('Ya existe un servicio con el apodo "Corte CO2".');
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
   it.each(["iva", "precio_material", "costo_instalador", "costo_proveedor"])(
     "retorna 422 cuando una variable usa el identificador reservado %s",
     async (reservedName) => {
@@ -507,6 +534,7 @@ describe("POST /api/servicios", () => {
         .post("/api/servicios")
         .send({
           nombre_servicio: "Servicio con variable reservada",
+          apodo_servicio: "Corte CO2",
           id_estatus: 1,
           id_sucursal: 1,
           formula: {
@@ -537,6 +565,7 @@ describe("POST /api/servicios", () => {
         .post("/api/servicios")
         .send({
           nombre_servicio: "Servicio con constante reservada",
+          apodo_servicio: "Corte CO2",
           id_estatus: 1,
           id_sucursal: 1,
           formula: {
@@ -571,6 +600,7 @@ describe("POST /api/servicios", () => {
       .post("/api/servicios")
       .send({
         nombre_servicio: "Servicio inválido",
+        apodo_servicio: "Corte CO2",
         id_estatus: 1,
         id_sucursal: 1,
         formula: {
@@ -594,6 +624,7 @@ describe("POST /api/servicios", () => {
     const txCreate = jest.fn().mockResolvedValue({
       id_servicio: 12,
       nombre_servicio: "Servicio Con Imágenes",
+      apodo_servicio: "Corte CO2",
       id_estatus: 1,
       id_sucursal: 1,
       estatus_servicio: true,
@@ -623,6 +654,7 @@ describe("POST /api/servicios", () => {
       .post("/api/servicios")
       .send({
         nombre_servicio: "Servicio Con Imágenes",
+        apodo_servicio: "Corte CO2",
         id_sucursal: 1,
         estatus_servicio: true,
         imagenes: [
@@ -635,6 +667,7 @@ describe("POST /api/servicios", () => {
     expect(txCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          apodo_servicio: "Corte CO2",
           imagen_url: JSON.stringify([
             "servicios/2026/05/11111111-2222-3333-4444-555555555551.png",
             "servicios/2026/05/11111111-2222-3333-4444-555555555552.png",
@@ -642,6 +675,35 @@ describe("POST /api/servicios", () => {
         }),
       })
     );
+  });
+
+  it("retorna 422 cuando el body no tiene apodo_servicio", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const res = await createApp({ POST: routes.POST }).post("/api/servicios").send({
+      nombre_servicio: "Servicio Test",
+      id_sucursal: 1,
+      estatus_servicio: true,
+    });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("apodo_servicio");
+  });
+
+  it("retorna 422 cuando apodo_servicio excede 100 caracteres", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+
+    const res = await createApp({ POST: routes.POST })
+      .post("/api/servicios")
+      .send({
+        nombre_servicio: "Servicio Test",
+        apodo_servicio: "A".repeat(101),
+        id_sucursal: 1,
+        estatus_servicio: true,
+      });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("apodo_servicio");
   });
 });
 
@@ -707,7 +769,10 @@ describe("PUT /api/servicios/[id] — ADMIN-02 Modificar servicio", () => {
 
   it("retorna 200 con el servicio actualizado (Administrador)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
-    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+    mockFindFirst.mockResolvedValueOnce(SERVICIO_PARA_ADMIN_MOCK).mockResolvedValueOnce({
+      ...SERVICIO_PARA_ADMIN_MOCK,
+      apodo_servicio: "Nuevo apodo",
+    });
 
     mockTransaction.mockImplementation(async (callback) => {
       const tx = {
@@ -740,7 +805,7 @@ describe("PUT /api/servicios/[id] — ADMIN-02 Modificar servicio", () => {
 
   it("retorna 422 cuando FK de sucursal no existe (ValidationError)", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
-    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+    mockFindFirst.mockResolvedValueOnce(SERVICIO_PARA_ADMIN_MOCK);
 
     mockTransaction.mockImplementation(async (callback) => {
       const tx = {
@@ -763,6 +828,19 @@ describe("PUT /api/servicios/[id] — ADMIN-02 Modificar servicio", () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error).toContain("Sucursal");
+  });
+
+  it("retorna 422 cuando intenta actualizar a un apodo_servicio usado por otro servicio", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst
+      .mockResolvedValueOnce(SERVICIO_PARA_ADMIN_MOCK)
+      .mockResolvedValueOnce({ id_servicio: 2 });
+
+    const res = await putApp().put("/api/servicios/1").send({ apodo_servicio: "Grabado CO2" });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain('Ya existe un servicio con el apodo "Grabado CO2".');
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 });
 
@@ -874,7 +952,13 @@ describe("PUT /api/servicios/[id]", () => {
 
   it("retorna 200 y actualiza el servicio con imágenes serializadas", async () => {
     mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
-    mockFindFirst.mockResolvedValue(SERVICIO_PARA_ADMIN_MOCK);
+    mockFindFirst.mockResolvedValueOnce(SERVICIO_PARA_ADMIN_MOCK).mockResolvedValueOnce({
+      ...SERVICIO_PARA_ADMIN_MOCK,
+      imagen_url: JSON.stringify([
+        "servicios/2026/05/11111111-2222-3333-4444-555555555553.jpg",
+        "servicios/2026/05/11111111-2222-3333-4444-555555555554.jpg",
+      ]),
+    });
 
     const mockTx = {
       servicios: {
@@ -912,6 +996,53 @@ describe("PUT /api/servicios/[id]", () => {
             "servicios/2026/05/11111111-2222-3333-4444-555555555553.jpg",
             "servicios/2026/05/11111111-2222-3333-4444-555555555554.jpg",
           ]),
+        }),
+      })
+    );
+  });
+
+  it("permite actualizar apodo_servicio", async () => {
+    mockGetSession.mockResolvedValue({ id: 1, role: "Administrador" });
+    mockFindFirst
+      .mockResolvedValueOnce(SERVICIO_PARA_ADMIN_MOCK)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        ...SERVICIO_PARA_ADMIN_MOCK,
+        apodo_servicio: "Nuevo apodo",
+      });
+
+    const mockTx = {
+      servicios: {
+        update: jest.fn().mockResolvedValue({
+          ...SERVICIO_PARA_ADMIN_MOCK,
+          apodo_servicio: "Nuevo apodo",
+        }),
+      },
+      servicioMaquina: { deleteMany: jest.fn(), createMany: jest.fn() },
+      servicioMaterial: { deleteMany: jest.fn(), createMany: jest.fn() },
+      formulas: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn(),
+        create: jest.fn(),
+      },
+      formulaVariables: { updateMany: jest.fn(), createMany: jest.fn() },
+      formulaConstantes: { createMany: jest.fn() },
+      sucursales: { findFirst: jest.fn() },
+      instaladores: { findFirst: jest.fn() },
+      proveedores: { findFirst: jest.fn() },
+      maquinas: { findMany: jest.fn().mockResolvedValue([]) },
+      materiales: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+
+    mockTransaction.mockImplementation(async (callback) => callback(mockTx));
+
+    const res = await putApp().put("/api/servicios/1").send({ apodo_servicio: "Nuevo apodo" });
+
+    expect(res.status).toBe(200);
+    expect(mockTx.servicios.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          apodo_servicio: "Nuevo apodo",
         }),
       })
     );

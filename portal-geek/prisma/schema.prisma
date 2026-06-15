@@ -163,6 +163,7 @@ model Servicios {
   id_estatus                 Int
   id_sucursal                Int
   nombre_servicio            String   @db.VarChar(100)
+  apodo_servicio             String   @unique @db.VarChar(100)
   descripcion_servicio       String?
   estatus_servicio           Boolean  @default(true)
   imagen_url                 String?  @db.VarChar(500)

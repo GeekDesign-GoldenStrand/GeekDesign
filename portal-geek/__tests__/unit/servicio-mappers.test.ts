@@ -12,6 +12,7 @@ function makeDetalle(overrides: Partial<ServicioAdminDetalle> = {}): ServicioAdm
   return {
     id_servicio: 1,
     nombre_servicio: "Test",
+    apodo_servicio: "Corte CO2",
     descripcion_servicio: null,
     imagenes: [],
     id_sucursal: 1,
@@ -29,10 +30,7 @@ function makeDetalle(overrides: Partial<ServicioAdminDetalle> = {}): ServicioAdm
   };
 }
 
-// Regression coverage for the ADMIN-02 merge bug. Before this fix the mapper
-// hardcoded `imagenes: []`, so editing a servicio with saved images dropped
-// them on the first save.
-describe("mapServicioDetalladoToFormState imagenes", () => {
+describe("mapServicioDetalladoToFormState", () => {
   it("propaga imagenes del detalle al estado del form", () => {
     const detalle = makeDetalle({ imagenes: ["servicios/a.png", "servicios/b.png"] });
     const state = mapServicioDetalladoToFormState(detalle);
@@ -42,6 +40,16 @@ describe("mapServicioDetalladoToFormState imagenes", () => {
   it("deja imagenes como [] cuando el detalle no tiene imágenes", () => {
     const state = mapServicioDetalladoToFormState(makeDetalle({ imagenes: [] }));
     expect(state.imagenes).toEqual([]);
+  });
+
+  it("mapea apodo_servicio al estado del formulario", () => {
+    const form = mapServicioDetalladoToFormState(
+      makeDetalle({
+        apodo_servicio: "Corte CO2",
+      })
+    );
+
+    expect(form.apodo_servicio).toBe("Corte CO2");
   });
 });
 

@@ -139,6 +139,7 @@ export function mapServicioDetalladoToFormState(
 
   return {
     nombre_servicio: servicio.nombre_servicio,
+    apodo_servicio: servicio.apodo_servicio,
     descripcion_servicio: servicio.descripcion_servicio ?? "",
     id_sucursal: servicio.id_sucursal,
     id_maquinas: servicio.maquinas.map((m) => m.maquina.id_maquina),

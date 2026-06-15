@@ -67,7 +67,11 @@ export function ServicioDetalleClient({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={url}
+                  alt={`${nombreServicio} - imagen ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
               </button>
             ))}
           </div>
@@ -88,9 +92,11 @@ export function ServicioDetalleClient({
       <div className="flex flex-col gap-[20px]">
         <div className="flex flex-col gap-[8px]">
           <h1 className="font-bold text-[32px] leading-tight text-[#1e1e1e]">{nombreServicio}</h1>
+
           {descripcionServicio && (
             <p className="text-[14px] text-[#1e1e1e] leading-normal">{descripcionServicio}</p>
           )}
+
           {materialesText && (
             <p className="text-[14px] text-[#1e1e1e] mt-[4px]">
               <span className="font-semibold">Materiales disponibles:</span> {materialesText}.
